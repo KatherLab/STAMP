@@ -34,10 +34,13 @@ if __name__ == '__main__':
                         help='Path of where the whole-slide images are.')
     parser.add_argument('-m', '--model', metavar='DIR', type=Path, required=True,
                         help='Path of where model for the feature extractor is.')
-    parser.add_argument('--cache-dir', type=Path, default=None,
+    parser.add_argument('--cache-dir', type=Path, required=True, default=None,
         help='Directory to store resulting slide JPGs.')
-    parser.add_argument('-e', '--extractor', type=str, 
-                        help='Feature extractor to use.')
+    
+    parser.add_argument('--patch-size', type=int, default=224,
+                        help='Size of the square patch to tessellate.')
+    parser.add_argument('--mpp', type=float, default=256/224,
+                    help='Microns-per-pixel value for slide resolution.')
     parser.add_argument('-c', '--cores', type=int, default=8,
                     help='CPU cores to use, 8 default.')
     parser.add_argument('-n','--norm', action='store_true')
@@ -46,8 +49,6 @@ if __name__ == '__main__':
     parser.add_argument('-d', '--del-slide', action='store_true', default=False,
                          help='Removing the original slide after processing.')
     parser.add_argument('--only-fex', action='store_true', default=False)
-    #TODO: add patch size
-    #TODO: add MPP
 
     args = parser.parse_args()
 
@@ -68,13 +69,16 @@ if __name__ == "__main__":
     has_gpu=torch.cuda.is_available()
     print(f"GPU is available: {has_gpu}")
     norm=args.norm
+    patch_shape = (args.patch_size, args.patch_size) #(224, 224) by default
+    step_size = patch_shape #have 0 overlap by default
+    target_mpp = args.mpp
 
     if has_gpu:
         print(f"Number of GPUs in the system: {torch.cuda.device_count()}")
 
     if norm:
         print("\nInitialising Macenko normaliser...")
-        target = cv2.imread('normalization_template.jpg') #TODO: make scaleable with path
+        target = cv2.imread('normalization_template.jpg')
         target = cv2.cvtColor(target, cv2.COLOR_BGR2RGB)
 
         normalizer = stainNorm_Macenko.Normalizer()
@@ -142,8 +146,7 @@ if __name__ == "__main__":
  
                 #measure time performance
                 start_time = time.time()
-                #TODO: add custom target MPP
-                slide_array = load_slide(slide=slide, cores=args.cores)
+                slide_array = load_slide(slide=slide, target_mpp=target_mpp, cores=args.cores)
                 if slide_array is None:
                     if args.del_slide:
                         print(f"Skipping slide and deleting {slide_url} due to missing MPP...")
@@ -160,20 +163,22 @@ if __name__ == "__main__":
 
                 #########################
                 #Do edge detection here and reject unnecessary tiles BEFORE normalisation
-                #TODO: make patch_size according to input flag
-                bg_reject_array, rejected_tile_array, patch_shapes = reject_background(img = slide_array, patch_size=(224,224), step=224, outdir=args.cache_dir, save_tiles=False, cores=args.cores)
+                bg_reject_array, rejected_tile_array, patch_shapes = reject_background(img = slide_array, patch_size=patch_shape, step=step_size,
+                                                                                       outdir=args.cache_dir, save_tiles=False, cores=args.cores)
 
                 #measure time performance
                 start_time = time.time()
                 #pass raw slide_array for getting the initial concentrations, bg_reject_array for actual normalisation
                 if norm:
                     logging.info(f"Normalising {slide_name}...")
-                    canny_img, img_norm_wsi_jpg, canny_norm_patch_list, coords_list = normalizer.transform(slide_array, bg_reject_array, rejected_tile_array, patch_shapes, cores=args.cores)
+                    canny_img, img_norm_wsi_jpg, canny_norm_patch_list, coords_list = normalizer.transform(slide_array, bg_reject_array, 
+                                                                                                           rejected_tile_array, patch_shapes, cores=args.cores)
                     print(f"\n--- Normalised slide {slide_name}: {(time.time() - start_time)} seconds ---")
                     img_norm_wsi_jpg.save(slide_jpg) #save WSI.svs -> WSI.jpg
 
                 else:
-                    canny_img, canny_norm_patch_list, coords_list = get_raw_tile_list(slide_array.shape, bg_reject_array, rejected_tile_array, patch_shapes)
+                    canny_img, canny_norm_patch_list, coords_list = get_raw_tile_list(slide_array.shape, bg_reject_array,
+                                                                                      rejected_tile_array, patch_shapes)
 
                 print("Saving Canny background rejected image...")
                 canny_img.save(f'{slide_cache_dir}/canny_slide.jpg')

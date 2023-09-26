@@ -1,2 +1,2 @@
-# STAMP
-Solid Tumor Associative Modeling in Pathology
+# STAMP protocol
+A protocol for Solid Tumor Associative Modeling in Pathology
