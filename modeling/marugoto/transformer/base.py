@@ -14,10 +14,9 @@ import numpy as np
 
 from marugoto.data import SKLearnEncoder
 
-from .data import make_dataset
+from .data import make_dataset, SKLearnEncoder
 from .transformer import Transformer
 from .ViT import ViT
-from .timmViT import MILModel
 
 
 __all__ = ['train', 'deploy']
