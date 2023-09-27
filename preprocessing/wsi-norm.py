@@ -56,7 +56,7 @@ if __name__ == '__main__':
 PIL.Image.MAX_IMAGE_PIXELS = None
 
 if __name__ == "__main__":
-    # print current dir
+    ### START INITIALIZATION
     print(f"Current working directory: {os.getcwd()}")
     Path(args.cache_dir).mkdir(exist_ok=True, parents=True)
     logdir = args.cache_dir/'logfile'
@@ -100,6 +100,7 @@ if __name__ == "__main__":
     model_name_norm = Path(norm_method+model_name)
     output_file_dir = args.output_path/model_name_norm
     output_file_dir.mkdir(parents=True, exist_ok=True)
+    ### END INITIALIZATION
     
     total_start_time = time.time()
     
