@@ -1,6 +1,6 @@
 import argparse
 from pathlib import Path
-from modeling.marugoto.transformer.helpers import train_categorical_model_, categorical_crossval_
+from modeling.marugoto.transformer.helpers import train_categorical_model_, deploy_categorical_model_, categorical_crossval_
 
 
 def main():
@@ -17,25 +17,44 @@ def main():
     parser.add_argument("--categories", type=str, nargs="+", default=None, help="Categories")
 
     group = parser.add_mutually_exclusive_group()
-    group.add_argument("--n_splits", type=int, default=5, help="Number of splits")
     group.add_argument("--one_model", action="store_true", help="Run full training instead of cross-validation")
+    group.add_argument("--deploy_model", action=Path, help="Path to the model .pkl to deploy")
+    group.add_argument("--n_splits", type=int, default=5, help="Number of splits")
     
     args = parser.parse_args()
 
     if args.one_model:
         #run full training for 1 model
-        train_categorical_model_(clini_table=args.clini_table, slide_csv=args.slide_csv,
-                                 feature_dir=args.feature_dir, output_path=args.output_path,
-                                 target_label=args.target_label, cat_labels=args.cat_labels,
-                                 cont_labels=args.cont_labels, categories=args.categories)
+        train_categorical_model_(clini_table=args.clini_table, 
+                                 slide_csv=args.slide_csv,
+                                 feature_dir=args.feature_dir, 
+                                 output_path=args.output_path,
+                                 target_label=args.target_label, 
+                                 cat_labels=args.cat_labels,
+                                 cont_labels=args.cont_labels, 
+                                 categories=args.categories)
+    elif args.deploy_model:
+        #deploy 1 model on data
+        deploy_categorical_model_(clini_table=args.clini_table,
+                                  slide_csv=args.slide_csv,
+                                  feature_dir=args.feature_dir,
+                                  model_path=args.deploy_model,
+                                  output_path=args.output_path,
+                                  target_label=args.target_label,
+                                  cat_labels=args.cat_labels,
+                                  cont_labels=args.cont_labels)
 
     else:
         #run cross validation for n_splits models
-        categorical_crossval_(clini_table=args.clini_table, slide_csv=args.slide_csv,
-                                feature_dir=args.feature_dir, output_path=args.output_path,
-                                target_label=args.target_label, cat_labels=args.cat_labels,
-                                cont_labels=args.cont_labels, categories=args.categories,
-                                n_splits=args.n_splits)
+        categorical_crossval_(clini_table=args.clini_table, 
+                              slide_csv=args.slide_csv,
+                              feature_dir=args.feature_dir,
+                              output_path=args.output_path,
+                              target_label=args.target_label,
+                              cat_labels=args.cat_labels,
+                              cont_labels=args.cont_labels,
+                              categories=args.categories,
+                              n_splits=args.n_splits)
 
 
 if __name__ == "__main__":
