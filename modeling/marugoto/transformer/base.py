@@ -1,4 +1,3 @@
-from dataclasses import dataclass
 from typing import Any, Iterable, Optional, Sequence, Tuple, TypeVar
 from pathlib import Path
 import os
@@ -8,12 +7,11 @@ from torch import nn
 import torch.nn.functional as F
 from fastai.vision.all import (
     Learner, DataLoader, DataLoaders, RocAuc,
-    SaveModelCallback, CSVLogger)
+    SaveModelCallback, CSVLogger, EarlyStoppingCallback)
 import pandas as pd
 import numpy as np
 
 from .data import make_dataset, SKLearnEncoder
-from .transformer import Transformer
 from .ViT import ViT
 
 
@@ -85,8 +83,8 @@ def train(
 
     cbs = [
         SaveModelCallback(fname=f'best_valid'),
-        #EarlyStoppingCallback(monitor='roc_auc_score',
-        #                      min_delta=0.01, patience=patience),
+        EarlyStoppingCallback(monitor='roc_auc_score',
+                             min_delta=0.01, patience=patience),
         CSVLogger()]
 
     learn.fit_one_cycle(n_epoch=n_epoch, lr_max=1e-4, cbs=cbs)

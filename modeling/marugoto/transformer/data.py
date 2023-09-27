@@ -306,7 +306,6 @@ def get_cohort_df(
     h5s = set(feature_dir.glob('*.h5'))
     assert h5s, f'no features found in {feature_dir}!'
     h5_df = pd.DataFrame(h5s, columns=['slide_path'])
-    breakpoint()
     h5_df['FILENAME'] = h5_df.slide_path.map(lambda p: p.stem)
     df = df.merge(h5_df, on='FILENAME')
 
