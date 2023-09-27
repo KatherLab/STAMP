@@ -12,8 +12,6 @@ from fastai.vision.all import (
 import pandas as pd
 import numpy as np
 
-from marugoto.data import SKLearnEncoder
-
 from .data import make_dataset, SKLearnEncoder
 from .transformer import Transformer
 from .ViT import ViT
@@ -67,10 +65,9 @@ def train(
         valid_ds, batch_size=1, shuffle=False, num_workers=os.cpu_count())
     batch = train_dl.one_batch()
 
-    # for binary classification num_classes=2 for same output dim as normal MILModel
+    # for binary classification num_classes=2
     #TODO: change num classes depending on data?
     model = ViT(num_classes=2) # Transformer(num_classes=2)
-    #model = MILModel(num_classes=2)
     model.to(torch.device('cuda' if torch.cuda.is_available() else 'cpu')) #
 
     # weigh inversely to class occurances

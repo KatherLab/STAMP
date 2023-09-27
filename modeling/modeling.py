@@ -1,7 +1,6 @@
 import argparse
 from pathlib import Path
-from modeling.marugoto.transformer.helpers import train_categorical_model_, deploy_categorical_model_, categorical_crossval_
-
+from marugoto.transformer.helpers import train_categorical_model_, deploy_categorical_model_, categorical_crossval_
 
 def main():
     parser = argparse.ArgumentParser(
@@ -11,14 +10,14 @@ def main():
     parser.add_argument("--slide_csv", type=Path, help="Path to slide_csv file")
     parser.add_argument("--feature_dir", type=Path, help="Path to feature directory")
     parser.add_argument("--output_path", type=Path, help="Path to output file")
-    parser.add_argument("--target_label", type=str, required=True, help="Target label")
+    parser.add_argument("--target_label", type=str, help="Target label")
     parser.add_argument("--cat_labels", type=str, nargs="+", default=[], help="Category labels")
     parser.add_argument("--cont_labels", type=str, nargs="+", default=[], help="Continuous labels")
     parser.add_argument("--categories", type=str, nargs="+", default=None, help="Categories")
 
     group = parser.add_mutually_exclusive_group()
     group.add_argument("--one_model", action="store_true", help="Run full training instead of cross-validation")
-    group.add_argument("--deploy_model", action=Path, help="Path to the model .pkl to deploy")
+    group.add_argument("--deploy_model", type=Path, help="Path to the model .pkl to deploy")
     group.add_argument("--n_splits", type=int, default=5, help="Number of splits")
     
     args = parser.parse_args()

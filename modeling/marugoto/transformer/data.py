@@ -300,14 +300,14 @@ def get_cohort_df(
     clini_df = pd.read_csv(clini_table, dtype=str) if Path(clini_table).suffix == '.csv' else pd.read_excel(clini_table, dtype=str)
     slide_df = pd.read_csv(slide_csv, dtype=str)
     df = clini_df.merge(slide_df, on='PATIENT')
-
     # remove uninteresting
     df = df[df[target_label].isin(categories)]
     # remove slides we don't have
     h5s = set(feature_dir.glob('*.h5'))
     assert h5s, f'no features found in {feature_dir}!'
     h5_df = pd.DataFrame(h5s, columns=['slide_path'])
-    h5_df['FILENAME'] = h5_df.slide_path.map(lambda p: p.stem.split('.')[0])  # added .split('.')[0] for TCGA
+    breakpoint()
+    h5_df['FILENAME'] = h5_df.slide_path.map(lambda p: p.stem)
     df = df.merge(h5_df, on='FILENAME')
 
     # reduce to one row per patient with list of slides in `df['slide_path']`

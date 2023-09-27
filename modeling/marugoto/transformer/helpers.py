@@ -13,10 +13,8 @@ from sklearn.preprocessing import OneHotEncoder, StandardScaler
 from fastai.vision.learner import load_learner
 import torch
 
-from marugoto.data import SKLearnEncoder
-
 from .base import train, deploy
-from .data import get_cohort_df, get_target_enc
+from .data import get_cohort_df, get_target_enc, SKLearnEncoder
 
 __all__ = [
     'train_categorical_model_', 'deploy_categorical_model_', 'categorical_crossval_']
@@ -167,7 +165,7 @@ def deploy_categorical_model_(
     """Deploy a categorical model on a cohort's tile's features.
 
     Args:
-        clini_excel:  Path to the clini table.
+        clini_table:  Path to the clini table.
         slide_csv:  Path to the slide tabel.
         target_label:  Label to train for.
         feature_dir:  Path containing the features.
@@ -235,7 +233,7 @@ def categorical_crossval_(
         'n_splits': n_splits,
         'datetime': datetime.now().astimezone().isoformat()}
 
-    clini_df = pd.read_csv(clini_table, dtype=str) if Path(clini_table).suffix == '.csv' else pd.read_excel(clini_excel, dtype=str)
+    clini_df = pd.read_csv(clini_table, dtype=str) if Path(clini_table).suffix == '.csv' else pd.read_excel(clini_table, dtype=str)
     slide_df = pd.read_csv(slide_csv, dtype=str)
     df = clini_df.merge(slide_df, on='PATIENT')
 
