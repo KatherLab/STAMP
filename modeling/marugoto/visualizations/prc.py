@@ -104,7 +104,7 @@ def plot_precision_recall_curves(
 
 
 def plot_precision_recall_curves_(
-        *pred_csvs: Iterable[str], target_label: str, true_label: str, outpath
+        pred_csvs, target_label: str, true_label: str, outpath
 ) -> None:
     """Creates precision-recall curves.
 
@@ -127,7 +127,7 @@ def plot_precision_recall_curves_(
     else:
         plot_precision_recall_curves(ax, y_trues, y_preds, title=title)
 
-    fig.savefig(Path(outpath)/f'prc-{target_label}={true_label}.svg')
+    fig.savefig(Path(outpath)/f'AUPRC_{target_label}={true_label}.svg')
     plt.close(fig)
 
 

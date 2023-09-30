@@ -63,19 +63,20 @@ def categorical(preds_df: pd.DataFrame, target_label: str) -> pd.DataFrame:
 def aggregate_categorical_stats(df) -> pd.DataFrame:
     stats = {}
     for cat, data in df.groupby('level_1'):
-        scores_df = data[score_labels]
+        scores_df = data[['roc_auc_score', 'average_precision_score']]
         means, sems = scores_df.mean(), scores_df.sem()
         l, h = st.t.interval(alpha=.95, df=len(
             scores_df)-1, loc=means, scale=sems)
         cat_stats_df = pd.DataFrame.from_dict(
-            {'mean': means, '95% conf': (h-l)/2}).transpose().unstack()
+            {'mean': means, '95%_low': l, '95%_high': h}).transpose().unstack()
         cat_stats_df[('count', 'sum')] = data['count'].sum()
         stats[cat] = cat_stats_df
+
 
     return pd.DataFrame.from_dict(stats, orient='index')
 
 
-def categorical_aggregated_(*preds_csvs: str, outpath: str, target_label: str) -> None:
+def categorical_aggregated_(preds_csvs, outpath: str, target_label: str) -> None:
     """Calculate statistics for categorical deployments.
 
     Args:
