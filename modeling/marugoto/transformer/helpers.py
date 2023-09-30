@@ -89,7 +89,7 @@ def train_categorical_model_(
         k: int(v) for k, v in df[target_label].value_counts().items()}}
 
     # Split off validation set
-    train_patients, valid_patients = train_test_split(df.PATIENT, stratify=df[target_label])
+    train_patients, valid_patients = train_test_split(df.PATIENT, stratify=df[target_label], random_state=1337)
     train_df = df[df.PATIENT.isin(train_patients)]
     valid_df = df[df.PATIENT.isin(valid_patients)]
     train_df.drop(columns='slide_path').to_csv(output_path/'train.csv', index=False)
@@ -305,7 +305,7 @@ def _crossval_train(
         k: int(v) for k, v in fold_df[target_label].value_counts().items()}}
 
     train_patients, valid_patients = train_test_split(
-        fold_df.PATIENT, stratify=fold_df[target_label])
+        fold_df.PATIENT, stratify=fold_df[target_label], random_state=1337)
     train_df = fold_df[fold_df.PATIENT.isin(train_patients)]
     valid_df = fold_df[fold_df.PATIENT.isin(valid_patients)]
     train_df.drop(columns='slide_path').to_csv(fold_path/'train.csv', index=False)
