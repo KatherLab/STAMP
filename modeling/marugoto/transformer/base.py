@@ -64,8 +64,7 @@ def train(
     batch = train_dl.one_batch()
 
     # for binary classification num_classes=2
-    #TODO: change num classes depending on data?
-    model = ViT(num_classes=2) # Transformer(num_classes=2)
+    model = ViT(num_classes=len(target_enc.categories_[0])) # Transformer(num_classes=2)
     model.to(torch.device('cuda' if torch.cuda.is_available() else 'cpu')) #
 
     # weigh inversely to class occurances
