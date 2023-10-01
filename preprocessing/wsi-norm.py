@@ -192,7 +192,7 @@ if __name__ == "__main__":
                     print(f"Deleting slide {slide_name} from local folder...")
                     os.remove(str(slide_url))
 
-            print(f"Extracting {args.extractor} features from {slide_name}")
+            print(f"Extracting CTransPath features from {slide_name}")
             #FEATURE EXTRACTION
             #measure time performance
             start_time = time.time()
