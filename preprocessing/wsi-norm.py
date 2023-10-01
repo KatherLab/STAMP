@@ -23,6 +23,7 @@ from helpers.common import supported_extensions
 from helpers.concurrent_canny_rejection import reject_background
 from helpers.loading_slides import process_slide_jpg, load_slide, get_raw_tile_list
 from helpers.feature_extractors import FeatureExtractor, extract_features_
+from helpers.exceptions import MPPExtractionError
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
@@ -147,12 +148,14 @@ if __name__ == "__main__":
  
                 #measure time performance
                 start_time = time.time()
-                slide_array = load_slide(slide=slide, target_mpp=target_mpp, cores=args.cores)
-                if slide_array is None:
+                try:
+                    slide_array = load_slide(slide=slide, target_mpp=target_mpp, cores=args.cores)
+                except MPPExtractionError:
                     if args.del_slide:
                         print(f"Skipping slide and deleting {slide_url} due to missing MPP...")
                         os.remove(str(slide_url))
                     continue
+
                 #save raw .svs jpg
                 (PIL.Image.fromarray(slide_array)).save(f'{slide_cache_dir}/slide.jpg')
 
