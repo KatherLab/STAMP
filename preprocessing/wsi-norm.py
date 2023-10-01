@@ -70,7 +70,7 @@ if __name__ == "__main__":
     print(f"GPU is available: {has_gpu}")
     norm=args.norm
     patch_shape = (args.patch_size, args.patch_size) #(224, 224) by default
-    step_size = patch_shape #have 0 overlap by default
+    step_size = args.patch_size #have 0 overlap by default
     target_mpp = args.mpp
 
     if has_gpu:
