@@ -12,6 +12,8 @@ import json
 import h5py
 from helpers.swin_transformer import swin_tiny_patch4_window7_224, ConvStem
 
+__version__ = "001_01-10-2023"
+
 class FeatureExtractor:
     def __init__(self):
         self.model_type = "CTransPath"
@@ -101,7 +103,7 @@ def extract_features_(
         transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
     ])
 
-    extractor_string = f'STAMP-extract-v{__version__}_{model_name}'
+    extractor_string = f'STAMP-extract-{__version__}_{model_name}'
     with open(outdir.parent/'info.json', 'w') as f:
         json.dump({'extractor': extractor_string,
                   'augmented_repetitions': augmented_repetitions}, f)
