@@ -15,6 +15,7 @@ all = ['plot_precision_recall_curve', 'plot_precision_recall_curves', 'plot_prec
 
 
 def style_prc(ax, baseline: float):
+    ax.plot([0, 1], [0, 1], "r--", alpha=0)
     ax.set_aspect("equal")
     ax.set_xlabel("Recall")
     ax.set_ylabel("Precision")
