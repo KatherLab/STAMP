@@ -34,13 +34,13 @@ def plot_precision_recall_curve(
 
     style_auc(ax, baseline=y_true.sum()/len(y_true))
 
-    auc = average_precision_score(y_true, y_pred)
+    prc = average_precision_score(y_true, y_pred)
     if title:
-        ax.set_title(f'{title}\n(AUC = {auc:0.2f})')
+        ax.set_title(f'{title}\n(PRC = {prc:0.2f})')
     else:
-        ax.set_title(f'AUC = {auc:0.2f}')
+        ax.set_title(f'PRC = {prc:0.2f}')
 
-    return auc
+    return prc
 
 
 def style_auc(ax, baseline: float):
@@ -78,9 +78,9 @@ def plot_precision_recall_curves(
     tpas = sorted(tpas, key=lambda x: x.auc, reverse=True)
 
     # plot precision_recalls
-    for t, p, auc in tpas:
+    for t, p, prc in tpas:
         precision, recall, _ = precision_recall_curve(t, p)
-        ax.plot(recall, precision, label=f'AUC = {auc:0.2f}')
+        ax.plot(recall, precision, label=f'PRC = {prc:0.2f}')
 
     # style plot
     all_samples = np.concatenate(y_trues)
@@ -93,7 +93,7 @@ def plot_precision_recall_curves(
     l, h = st.t.interval(
         0.95, len(aucs)-1, loc=np.mean(aucs), scale=st.sem(aucs))
     conf_range = (h-l)/2
-    auc_str = f'AUC = ${np.mean(aucs):0.2f} \pm {conf_range:0.2f}$'
+    auc_str = f'PRC = ${np.mean(aucs):0.2f} \pm {conf_range:0.2f}$'
 
     if title:
         ax.set_title(f'{title}\n({auc_str})')
