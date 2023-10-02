@@ -7,7 +7,7 @@ import pandas as pd
 from matplotlib import pyplot as plt
 from marugoto.stats.categorical import categorical_aggregated_
 from marugoto.visualizations.roc import plot_multiple_decorated_roc_curves, plot_single_decorated_roc_curve
-from marugoto.visualizations.prc import plot_precision_recall_curves_
+from marugoto.visualizations.prc import plot_precision_recall_curves_, plot_single_decorated_prc_curve
 
 def add_roc_curve_args(parser: argparse.ArgumentParser) -> argparse.ArgumentParser:
     parser.add_argument(
@@ -128,11 +128,30 @@ if __name__ == "__main__":
     fig.savefig(stats_dir/f"AUROC_{args.target_label}={args.true_class}.svg")
     plt.close(fig)
 
-    plot_precision_recall_curves_(args.pred_csvs,
-                                  target_label=args.target_label,
-                                  true_label=args.true_class,
-                                  outpath=stats_dir)
-    
+    fig, ax = plt.subplots(
+        figsize=(args.figure_width, args.figure_width * roc_curve_figure_aspect_ratio),
+        dpi=300,
+    )
+    if len(preds_dfs) == 1:
+        plot_single_decorated_prc_curve(
+                ax,
+                y_trues[0],
+                y_preds[0],
+                title=f"{args.target_label} = {args.true_class}",
+                n_bootstrap_samples=args.n_bootstrap_samples
+            )
+
+    else:
+        plot_precision_recall_curves_(ax,
+                                      args.pred_csvs,
+                                    target_label=args.target_label,
+                                    true_label=args.true_class,
+                                    outpath=stats_dir)
+
+    fig.tight_layout()
+    fig.savefig(stats_dir/f"AUPRC_{args.target_label}={args.true_class}.svg")
+    plt.close(fig)
+
     categorical_aggregated_(args.pred_csvs,
                             target_label=args.target_label,
                             outpath=stats_dir)

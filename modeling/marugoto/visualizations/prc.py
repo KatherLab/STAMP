@@ -1,14 +1,124 @@
 # %%
 from collections import namedtuple
-from typing import Iterable, Sequence, Optional, Tuple
-
 import numpy as np
 import scipy.stats as st
 from matplotlib import pyplot as plt
-from sklearn.metrics import precision_recall_curve, average_precision_score
+from collections import namedtuple
+from typing import Optional, Sequence, Tuple
+import numpy.typing as npt
+from tqdm import trange
+from sklearn.metrics import precision_recall_curve, auc, average_precision_score
+from scipy.interpolate import interp1d
 
 
 all = ['plot_precision_recall_curve', 'plot_precision_recall_curves', 'plot_precision_recall_curves_']
+
+
+def style_prc(ax, baseline: float):
+    ax.set_aspect("equal")
+    ax.set_xlabel("Recall")
+    ax.set_ylabel("Precision")
+    ax.plot([0, 1], [baseline, baseline], "r--")
+
+
+def plot_bootstrapped_pr_curve(
+    ax: plt.Axes,
+    y_true: np.ndarray,
+    y_pred: np.ndarray,
+    *,
+    title: Optional[str] = None,
+    n_bootstrap_samples: Optional[int] = None,
+) -> Tuple[float, Optional[float]]:
+    """Plots a precision-recall curve with bootstrap interval.
+
+    Args:
+        ax: The axes to plot onto.
+        y_true: The ground truths.
+        y_pred: The predicted probabilities or scores.
+        title: A title for the plot.
+        n_bootstrap_samples: Number of bootstrap samples for confidence intervals.
+
+    Returns:
+        A tuple containing the AUPRC and the confidence interval (if calculated).
+    """
+    assert len(y_true) == len(y_pred), "Length of y_true and y_pred does not match."
+    conf_range = None
+
+    if n_bootstrap_samples:
+        rng = np.random.default_rng()
+        interp_recall = np.linspace(0, 1, num=1000)
+        interp_prcs = np.full((n_bootstrap_samples, len(interp_recall)), np.nan)
+        bootstrap_auprcs = []  # Initialize to collect AUPRC values for bootstrapped samples
+
+        for i in trange(n_bootstrap_samples, 
+                        desc="Bootstrapping PRC curves", leave=False):
+            sample_idxs = rng.choice(len(y_true), len(y_true), replace=True)
+            sample_y_true = y_true[sample_idxs]
+            sample_y_pred = y_pred[sample_idxs]
+            
+            if len(np.unique(sample_y_true)) != 2 or not (0 in sample_y_true and 1 in sample_y_true):
+                continue
+            
+            precision, recall, _ = precision_recall_curve(sample_y_true, sample_y_pred)
+            # Create an interpolation function with decreasing values
+            interp_func = interp1d(recall[::-1], precision[::-1], 
+                                   kind='linear', fill_value=np.nan, 
+                                   bounds_error=False)
+            interp_prc = interp_func(interp_recall)
+            interp_prcs[i] = interp_prc
+            bootstrapped_auprc = auc(interp_recall, interp_prc)
+            bootstrap_auprcs.append(bootstrapped_auprc)
+
+    # Calculate the confidence intervals for each threshold
+    lower = np.nanpercentile(interp_prcs, 2.5, axis=0)
+    upper = np.nanpercentile(interp_prcs, 97.5, axis=0)
+
+    conf_range = (
+        np.quantile(bootstrap_auprcs, 0.975) - np.quantile(bootstrap_auprcs, 0.025)
+        ) / 2
+
+    # Calculate the standard AUPRC
+    precision, recall, _ = precision_recall_curve(y_true, y_pred)
+    auprc_value = auc(recall, precision)
+
+    # Plot the AUPRC curve with confidence intervals
+    ax.plot(recall, precision, label=f'AUPRC = {auprc_value:.2f} $\pm$ {conf_range:.2f}')
+    ax.fill_between(interp_recall, lower, upper, alpha=0.5)
+
+    ax.set_xlabel('Recall')
+    ax.set_ylabel('Precision')
+    ax.set_title(title)
+    ax.legend()
+
+    return auprc_value, conf_range
+
+
+def plot_single_decorated_prc_curve(
+    ax: plt.Axes,
+    y_true: npt.NDArray[np.bool_],
+    y_pred: npt.NDArray[np.float_],
+    *,
+    title: Optional[str] = None,
+    n_bootstrap_samples: Optional[int] = None
+) -> plt.Axes:
+    """Plots a single ROC curve.
+
+    Args:
+        ax:  Axis to plot to.
+        y_true:  A sequence of ground truths.
+        y_pred:  A sequence of predictions.
+        title:  Title of the plot.
+    """
+    plot_bootstrapped_pr_curve(
+        ax,
+        y_true,
+        y_pred,
+        title="PRC = {ci}",
+        n_bootstrap_samples=n_bootstrap_samples
+    )
+    style_prc(ax, baseline=y_true.sum() / len(y_true))
+    if title:
+        ax.set_title(title)
 
 
 def plot_precision_recall_curve(
@@ -32,7 +142,7 @@ def plot_precision_recall_curve(
     precision, recall, _ = precision_recall_curve(y_true, y_pred)
     ax.plot(recall, precision)
 
-    style_auc(ax, baseline=y_true.sum()/len(y_true))
+    style_prc(ax, baseline=y_true.sum()/len(y_true))
 
     prc = average_precision_score(y_true, y_pred)
     if title:
@@ -41,14 +151,6 @@ def plot_precision_recall_curve(
         ax.set_title(f'PRC = {prc:0.2f}')
 
     return prc
-
-
-def style_auc(ax, baseline: float):
-    ax.plot([0, 1], [0, 1], 'r--', alpha=0)
-    ax.set_aspect('equal')
-    ax.set_xlabel('Recall')
-    ax.set_ylabel('Precision')
-    ax.plot([0, 1], [baseline, baseline], 'r--')
 
 
 TPA = namedtuple('TPA', ['true', 'pred', 'auc'])
@@ -85,7 +187,7 @@ def plot_precision_recall_curves(
     # style plot
     all_samples = np.concatenate(y_trues)
     baseline = all_samples.sum()/len(all_samples)
-    style_auc(ax, baseline=baseline)
+    style_prc(ax, baseline=baseline)
     ax.legend()
 
     # calculate confidence intervals and print title
@@ -104,7 +206,7 @@ def plot_precision_recall_curves(
 
 
 def plot_precision_recall_curves_(
-        pred_csvs, target_label: str, true_label: str, outpath
+        ax, pred_csvs, target_label: str, true_label: str, outpath
 ) -> None:
     """Creates precision-recall curves.
 
@@ -121,14 +223,13 @@ def plot_precision_recall_curves_(
     y_trues = [df[target_label] == true_label for df in pred_dfs]
     y_preds = [pd.to_numeric(df[f'{target_label}_{true_label}']) for df in pred_dfs]
     title = f'{target_label} = {true_label}'
-    fig, ax = plt.subplots()
     if len(pred_dfs) == 1:
         plot_precision_recall_curve(ax, y_trues[0], y_preds[0], title=title)
     else:
         plot_precision_recall_curves(ax, y_trues, y_preds, title=title)
 
-    fig.savefig(Path(outpath)/f'AUPRC_{target_label}={true_label}.svg')
-    plt.close(fig)
+    # fig.savefig(Path(outpath)/f'AUPRC_{target_label}={true_label}.svg')
+    # plt.close(fig)
 
 
 if __name__ == '__main__':
