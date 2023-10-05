@@ -139,14 +139,16 @@ if __name__ == "__main__":
                 y_preds[0],
                 title=f"{args.target_label} = {args.true_class}",
                 n_bootstrap_samples=args.n_bootstrap_samples
-            )
+        )
 
     else:
-        plot_precision_recall_curves_(ax,
-                                      args.pred_csvs,
-                                    target_label=args.target_label,
-                                    true_label=args.true_class,
-                                    outpath=stats_dir)
+        plot_precision_recall_curves_(
+            ax,
+            args.pred_csvs,
+            target_label=args.target_label,
+            true_label=args.true_class,
+            outpath=stats_dir
+        )
 
     fig.tight_layout()
     fig.savefig(stats_dir/f"AUPRC_{args.target_label}={args.true_class}.svg")

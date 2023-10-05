@@ -44,6 +44,8 @@ def plot_bootstrapped_pr_curve(
     """
     assert len(y_true) == len(y_pred), "Length of y_true and y_pred does not match."
     conf_range = None
+    l = None
+    h = None
 
     if n_bootstrap_samples:
         rng = np.random.default_rng()
@@ -73,7 +75,8 @@ def plot_bootstrapped_pr_curve(
     # Calculate the confidence intervals for each threshold
     lower = np.nanpercentile(interp_prcs, 2.5, axis=0)
     upper = np.nanpercentile(interp_prcs, 97.5, axis=0)
-
+    h=np.quantile(bootstrap_auprcs, 0.975)
+    l=np.quantile(bootstrap_auprcs, 0.025)
     conf_range = (
         np.quantile(bootstrap_auprcs, 0.975) - np.quantile(bootstrap_auprcs, 0.025)
         ) / 2
@@ -83,12 +86,12 @@ def plot_bootstrapped_pr_curve(
     auprc_value = auc(recall, precision)
 
     # Plot the AUPRC curve with confidence intervals
-    ax.plot(recall, precision, label=f'AUPRC = {auprc_value:.2f} $\pm$ {conf_range:.2f}')
+    ax.plot(recall, precision, label=f'PRC = {auprc_value:.2f}')
     ax.fill_between(interp_recall, lower, upper, alpha=0.5)
 
     ax.set_xlabel('Recall')
     ax.set_ylabel('Precision')
-    ax.set_title(title)
+    ax.set_title(title + f'\nAUPRC = {auprc_value:.2f} [{l:.2f}-{h:.2f}]')
     ax.legend()
 
     return auprc_value, conf_range
@@ -114,12 +117,10 @@ def plot_single_decorated_prc_curve(
         ax,
         y_true,
         y_pred,
-        title="PRC = {ci}",
+        title=title,
         n_bootstrap_samples=n_bootstrap_samples
     )
     style_prc(ax, baseline=y_true.sum() / len(y_true))
-    if title:
-        ax.set_title(title)
 
 
 def plot_precision_recall_curve(
@@ -195,11 +196,11 @@ def plot_precision_recall_curves(
     aucs = [x.auc for x in tpas]
     l, h = st.t.interval(
         0.95, len(aucs)-1, loc=np.mean(aucs), scale=st.sem(aucs))
-    conf_range = (h-l)/2
-    auc_str = f'PRC = ${np.mean(aucs):0.2f} \pm {conf_range:0.2f}$'
+    # conf_range = (h-l)/2
+    auc_str = f'PRC = {np.mean(aucs):0.2f} [{l:0.2f}-{h:0.2f}]'
 
     if title:
-        ax.set_title(f'{title}\n({auc_str})')
+        ax.set_title(f'{title}\n{auc_str}')
     else:
         ax.set_title(auc_str)
 

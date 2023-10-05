@@ -36,24 +36,23 @@ def plot_single_decorated_roc_curve(
         y_pred:  A sequence of predictions.
         title:  Title of the plot.
     """
-    plot_bootstrapped_roc_curve(
+    auc, l, h = plot_bootstrapped_roc_curve(
         ax,
         y_true,
         y_pred,
-        label="AUC = {ci}",
+        label=title,
         n_bootstrap_samples=n_bootstrap_samples,
         threshold_cmap=threshold_cmap,
     )
     style_auc(ax)
-    if title:
-        ax.set_title(title)
+    ax.set_title(title+f'\nAUROC = {auc:.2f} [{l:.2f}-{h:.2f}]')
 
 
 def auc_str(auc: float, l: Optional[float], h: Optional[float]) -> str:
     if l:
-        return f"AUC = ${auc:0.2f} [{l:0.2f} - {h:0.2f}]$"
+        return f"AUC = {auc:0.2f} [{l:0.2f}-{h:0.2f}]"
     else:
-        return f"AUC = ${auc:0.2f}$"
+        return f"AUC = {auc:0.2f}"
 
 
 def style_auc(ax: plt.Axes) -> None:
@@ -89,7 +88,7 @@ def plot_multiple_decorated_roc_curves(
 
     # plot rocs
     for t, p, auc in tpas:
-        auc, _ = plot_bootstrapped_roc_curve(
+        auc, l, h = plot_bootstrapped_roc_curve(
             ax, t, p, label="AUC = {ci}", n_bootstrap_samples=n_bootstrap_samples
         )
 
@@ -99,8 +98,9 @@ def plot_multiple_decorated_roc_curves(
     # calculate confidence intervals and print title
     aucs = [x.auc for x in tpas]
     mean_auc=np.mean(aucs)
-    l, h = st.t.interval(0.95, len(aucs) - 1, loc=np.mean(aucs), scale=st.sem(aucs))
-    conf_range = (h - l) / 2
+    if not n_bootstrap_samples:    
+        l, h = st.t.interval(0.95, len(aucs) - 1, loc=np.mean(aucs), scale=st.sem(aucs))
+    # conf_range = (h - l) / 2
 
     if title:
         ax.set_title(f"{title}\n {auc_str(mean_auc, l, h)}")
@@ -192,6 +192,8 @@ def plot_bootstrapped_roc_curve(
     """
     assert len(y_true) == len(y_score), "length of truths and scores does not match."
     conf_range = None
+    l = None
+    h = None
     if n_bootstrap_samples:
         # draw some confidence intervals based on bootstrapping
         # sample repeatedly (with replacement) from our data points,
@@ -217,24 +219,25 @@ def plot_bootstrapped_roc_curve(
         lower = np.quantile(interp_rocs, 0.025, axis=0)
         upper = np.quantile(interp_rocs, 0.975, axis=0)
         ax.fill_between(interp_fpr, lower, upper, alpha=0.5)
-
+        h=np.quantile(bootstrap_aucs, 0.975)
+        l=np.quantile(bootstrap_aucs, 0.025)
         conf_range = (
             np.quantile(bootstrap_aucs, 0.975) - np.quantile(bootstrap_aucs, 0.025)
         ) / 2
 
     fpr, tpr, thresh = roc_curve(y_true, y_score)
     auc = roc_auc_score(y_true, y_score)
-    ci_str = f"${auc:0.2f} \pm {conf_range:0.2f}$" if conf_range else f"${auc:0.2f}$"
+    # ci_str = f"${auc:0.2f} [{l:0.2f}-{h:0.2f}]$" if conf_range else f"${auc:0.2f}$"
     # ax.plot(fpr, tpr, label=label.format(ci=ci_str) if label else "")
     plot_curve(
         ax,
         fpr,
         tpr,
         np.clip(thresh, 0, 1),
-        label=label.format(ci=ci_str) if label else "",
-        threshold_cmap=threshold_cmap,
+        label=f"AUC = {auc:0.2f}",
+        threshold_cmap=threshold_cmap
     )
-    return auc, conf_range
+    return auc, l, h
 
 
 def plot_curve(
