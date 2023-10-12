@@ -10,7 +10,8 @@ from torch.utils.data import Dataset, ConcatDataset
 from tqdm import tqdm
 import json
 import h5py
-from helpers.swin_transformer import swin_tiny_patch4_window7_224, ConvStem
+
+from .swin_transformer import swin_tiny_patch4_window7_224, ConvStem
 
 __version__ = "001_01-10-2023"
 

@@ -18,12 +18,12 @@ import time
 from datetime import timedelta
 from pathlib import Path
 import torch
-from helpers import stainNorm_Macenko
-from helpers.common import supported_extensions
-from helpers.concurrent_canny_rejection import reject_background
-from helpers.loading_slides import process_slide_jpg, load_slide, get_raw_tile_list
-from helpers.feature_extractors import FeatureExtractor, extract_features_
-from helpers.exceptions import MPPExtractionError
+from .helpers import stainNorm_Macenko
+from .helpers.common import supported_extensions
+from .helpers.concurrent_canny_rejection import reject_background
+from .helpers.loading_slides import process_slide_jpg, load_slide, get_raw_tile_list
+from .helpers.feature_extractors import FeatureExtractor, extract_features_
+from .helpers.exceptions import MPPExtractionError
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(

@@ -6,6 +6,7 @@ import openslide
 from tqdm import tqdm
 import numpy as np
 import PIL
+
 from .exceptions import MPPExtractionError
 
 PIL.Image.MAX_IMAGE_PIXELS = None
