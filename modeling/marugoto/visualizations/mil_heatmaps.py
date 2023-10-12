@@ -5,7 +5,6 @@ from fastai.vision.learner import load_learner
 import numpy as np
 from sklearn.preprocessing import OneHotEncoder
 import torch.nn as nn
-from marugoto.mil.data import get_target_enc
 from matplotlib.patches import Patch
 from scipy import interpolate
 import torch
@@ -13,6 +12,8 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 from PIL import Image
 import h5py
+
+from ..transformer.data import get_target_enc
 
 __all__ = ['plot_heatmaps_', 'MapType']
 # list of allowed formats for whole slide images
