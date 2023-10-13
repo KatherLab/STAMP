@@ -42,7 +42,7 @@ done
 # export CUDA_VISIBLE_DEVICES="$gpu_ids"
 
 # Run the WSI normalization script
-python wsi-norm.py \
+python wsi_norm.py \
     --wsi-dir "$wsi_dir" \
     --cache-dir "$cache_dir" \
     -o "$output_dir" \
