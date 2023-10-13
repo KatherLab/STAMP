@@ -20,7 +20,7 @@ from tqdm import tqdm
 from typing import Dict, Tuple
 import os
 
-import .stain_utils as ut
+from . import stain_utils as ut
 
 @njit
 def v1v2_mult(V, minPhi, maxPhi):

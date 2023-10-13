@@ -73,7 +73,7 @@ class SlideTileDataset(Dataset):
 def extract_features_(
         *,
         model, model_name, norm_wsi_img: np.ndarray, coords: list, wsi_name: str, outdir: Path,
-        augmented_repetitions: int = 0, cores: int = 8, is_norm: bool = True
+        augmented_repetitions: int = 0, cores: int = 8, is_norm: bool = True, device: str = 'cpu'
 ) -> None:
     """Extracts features from slide tiles.
 
@@ -117,14 +117,15 @@ def extract_features_(
 
     ds = ConcatDataset([unaugmented_ds, augmented_ds])
     dl = torch.utils.data.DataLoader(
-        ds, batch_size=64, shuffle=False, num_workers=cores, drop_last=False)
+        ds, batch_size=64, shuffle=False, num_workers=cores, drop_last=False, pin_memory=device != 'cpu')
 
-    model = model.eval()
+    model = model.eval().to(device)
+    dtype = next(model.parameters()).dtype
 
     feats = []
     for batch in tqdm(dl, leave=False):
         feats.append(
-            model(batch.type_as(next(model.parameters()))).half().cpu().detach())
+            model(batch.astype(dtype).to(device)).half().cpu().detach())
 
     with h5py.File(f'{outdir}.h5', 'w') as f:
         f['coords'] = coords

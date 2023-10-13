@@ -6,3 +6,8 @@ fastai
 torch
 h5py
 einops
+omegaconf
+openslide-python
+opencv-python
+numba
+gdown

@@ -1,0 +1,26 @@
+preprocessing:
+  output_dir: /data/stamp/preprocess/output # Path to save features to
+  wsi_dir: /data/CAMELYON17/training/center_0 # Path of where the whole-slide images are.
+  cache_dir: ${preprocessing.output_dir}/cache # Directory to store resulting slide JPGs
+  patch_size: 224 # Size of the square patch to tessellate
+  mpp: 1.1428571429 # Microns-per-pixel value for slide resolution (default: 256/224)
+  cores: 8 # CPU cores to use
+  norm: true # Perform Macenko normalisation
+  del_slide: false # Remove the original slide after processing
+  only_feature_extraction: false # Only perform feature extraction
+  device: cpu # device to run feature extraction on (cpu, cuda, cuda:0, etc.)
+  normalization_template: ${oc.env:STAMP_RESOURCES_DIR}/normalization_template.jpg # Path to normalization template
+  model_path: ${oc.env:STAMP_RESOURCES_DIR}/ctranspath.pth  # Path of where model for the feature extractor is
+
+modeling:
+  clini_table: # Path to clini_excel file
+  slide_csv: # Path to slide_csv file
+  feature_dir: ${preprocessing.output_dir} # Path to feature directory
+  output_dir: # Path to output directory
+  target_label: # Target label
+  cat_labels: [] # Category labels (list)
+  cont_labels: [] # Continuous labels (list)
+  categories: # Categories (list)
+  n_splits: 5 # Number of splits for cross-validation (only applicable to cross-validation)
+
+heatmaps:
