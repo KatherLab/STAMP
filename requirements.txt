@@ -1,0 +1,8 @@
+pandas
+matplotlib
+scikit-learn
+tqdm
+fastai
+torch
+h5py
+einops
