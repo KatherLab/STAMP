@@ -11,25 +11,6 @@ if "STAMP_RESOURCES_DIR" not in os.environ:
     from .utils import DEFAULT_RESOURCES_DIR
     os.environ["STAMP_RESOURCES_DIR"] = str(DEFAULT_RESOURCES_DIR)
 
-parser = argparse.ArgumentParser(prog="stamp", description="STAMP: Solid Tumor Associative Modeling in Pathology")
-parser.add_argument("--config", "-c", type=str, default="config.yaml", help="Path to config file")
-
-commands = parser.add_subparsers(dest="command")
-cmd_setup = commands.add_parser("setup", help="Download required resources")
-cmd_preprocess = commands.add_parser("preprocess", help="Preprocess data")
-cmd_train = commands.add_parser("train", help="Train a vision transformer model")
-cmd_crossval = commands.add_parser("crossval", help="Train a vision transformer model with cross validation")
-cmd_deploy = commands.add_parser("deploy", help="Deploy a trained vision transformer model")
-cmd_roc = commands.add_parser("roc", help="Generate ROC curves for a trained model")
-cmd_config = commands.add_parser("config", help="Print the loaded configuation")
-
-args = parser.parse_args()
-try:
-    cfg = OmegaConf.load(args.config)
-except FileNotFoundError:
-    print(f"Config file {args.config} not found")
-    exit(1)
-
 class ConfigurationError(Exception):
     pass
 
@@ -50,52 +31,128 @@ def require_configs(cfg: DictConfig, keys: Iterable[str], prefix: Optional[str] 
     if len(missing) > 0:
         raise ConfigurationError(f"Missing required configuration keys: {missing}")
 
-match args.command:
-    case "setup":
-        import gdown
-        model_path = Path(cfg.preprocessing.model_path)
-        if model_path.exists():
-            print(f"Skipping download, feature extractor model already exists at {model_path}")
-        else:
-            print(f"Downloading CTransPath weights to {model_path}")
-            gdown.download("https://drive.google.com/u/0/uc?id=1DoDx_70_TLj98gTf6YTXnu4tFhsFocDX&export=download", str(model_path))
-    case "config":
-        print(OmegaConf.to_yaml(cfg, resolve=True))
-    case "preprocess":
-        require_configs(
-            cfg,
-            ["output_dir", "wsi_dir", "model_path", "cache_dir", "patch_size", "mpp", "cores", "norm", "del_slide", "only_feature_extraction", "device", "normalization_template"],
-            prefix="preprocessing"
-        )
-        c = cfg.preprocessing
-        from .preprocessing.wsi_norm import preprocess
-        preprocess(
-            output_dir=Path(c.output_dir),
-            wsi_dir=Path(c.wsi_dir),
-            model_path=Path(c.model_path),
-            cache_dir=Path(c.cache_dir),
-            patch_size=c.patch_size,
-            target_mpp=c.mpp,
-            cores=c.cores,
-            norm=c.norm,
-            del_slide=c.del_slide,
-            only_feature_extraction=c.only_feature_extraction,
-            device=c.device,
-            normalization_template=Path(c.normalization_template)
-        )
-    case "train":
-        require_configs(
-            cfg,
-            ["output_dir", "feature_dir", "model_name", "target_label"],
-            prefix="modeling"
-        )
-        c = cfg.modeling
-        from .modeling.marugoto.transformer.helpers import train_categorical_model_
-        train_categorical_model_(clini_table=c.clini_table, 
-                                 slide_csv=c.slide_csv,
-                                 feature_dir=c.feature_dir, 
-                                 output_path=c.output_dir,
-                                 target_label=c.target_label, 
-                                 cat_labels=c.cat_labels,
-                                 cont_labels=c.cont_labels, 
-                                 categories=c.categories)
+def run_cli(args: argparse.Namespace):
+    try:
+        cfg = OmegaConf.load(args.config)
+    except FileNotFoundError:
+        raise ConfigurationError(f"Config file {args.config} not found (use the --config flag to specify a different config file)")
+    match args.command:
+        case "setup":
+            import gdown
+            model_path = Path(cfg.preprocessing.model_path)
+            if model_path.exists():
+                print(f"Skipping download, feature extractor model already exists at {model_path}")
+            else:
+                print(f"Downloading CTransPath weights to {model_path}")
+                gdown.download("https://drive.google.com/u/0/uc?id=1DoDx_70_TLj98gTf6YTXnu4tFhsFocDX&export=download", str(model_path))
+        case "config":
+            print(OmegaConf.to_yaml(cfg, resolve=True))
+        case "preprocess":
+            require_configs(
+                cfg,
+                ["output_dir", "wsi_dir", "model_path", "cache_dir", "patch_size", "mpp", "cores", "norm", "del_slide", "only_feature_extraction", "device", "normalization_template"],
+                prefix="preprocessing"
+            )
+            c = cfg.preprocessing
+            from .preprocessing.wsi_norm import preprocess
+            preprocess(
+                output_dir=Path(c.output_dir),
+                wsi_dir=Path(c.wsi_dir),
+                model_path=Path(c.model_path),
+                cache_dir=Path(c.cache_dir),
+                patch_size=c.patch_size,
+                target_mpp=c.mpp,
+                cores=c.cores,
+                norm=c.norm,
+                del_slide=c.del_slide,
+                only_feature_extraction=c.only_feature_extraction,
+                device=c.device,
+                normalization_template=Path(c.normalization_template)
+            )
+        case "train":
+            require_configs(
+                cfg,
+                ["output_dir", "feature_dir", "target_label", "cat_labels", "cont_labels"],
+                prefix="modeling"
+            )
+            c = cfg.modeling
+            from .modeling.marugoto.transformer.helpers import train_categorical_model_
+            train_categorical_model_(clini_table=Path(c.clini_table), 
+                                     slide_csv=Path(c.slide_csv),
+                                     feature_dir=Path(c.feature_dir), 
+                                     output_path=Path(c.output_dir),
+                                     target_label=c.target_label, 
+                                     cat_labels=c.cat_labels,
+                                     cont_labels=c.cont_labels, 
+                                     categories=c.categories)
+        case "crossval":
+            require_configs(
+                cfg,
+                ["output_dir", "feature_dir", "target_label", "cat_labels", "cont_labels", "n_splits"], # this one requires the n_splits key!
+                prefix="modeling"
+            )
+            c = cfg.modeling
+            from .modeling.marugoto.transformer.helpers import categorical_crossval_
+            categorical_crossval_(clini_table=Path(c.clini_table), 
+                                  slide_csv=Path(c.slide_csv),
+                                  feature_dir=Path(c.feature_dir),
+                                  output_path=Path(c.output_dir),
+                                  target_label=c.target_label,
+                                  cat_labels=c.cat_labels,
+                                  cont_labels=c.cont_labels,
+                                  categories=c.categories,
+                                  n_splits=c.n_splits)
+        case "deploy":
+            require_configs(
+                cfg,
+                ["output_dir", "feature_dir", "target_label", "cat_labels", "cont_labels", "model_path"], # this one requires the model_path key!
+                prefix="modeling"
+            )
+            c = cfg.modeling
+            from .modeling.marugoto.transformer.helpers import deploy_categorical_model_
+            deploy_categorical_model_(clini_table=Path(c.clini_table),
+                                      slide_csv=Path(c.slide_csv),
+                                      feature_dir=Path(c.feature_dir),
+                                      output_path=Path(c.output_dir),
+                                      target_label=c.target_label,
+                                      cat_labels=c.cat_labels,
+                                      cont_labels=c.cont_labels,
+                                      model_path=Path(c.model_path))
+        case "stats":
+            require_configs(
+                cfg,
+                ["pred_csvs", "target_label", "true_class", "output_dir", "n_bootstrap_samples", "figure_width"],
+                prefix="modeling.statistics")
+            from .modeling.statistics import compute_stats
+            c = cfg.modeling.statistics
+            compute_stats(pred_csvs=[Path(x) for x in c.pred_csvs],
+                          target_label=c.target_label,
+                          true_class=c.true_class,
+                          output_dir=Path(c.output_dir),
+                          n_bootstrap_samples=c.n_bootstrap_samples,
+                          figure_width=c.figure_width,
+                          threshold_cmap=c.threshold_cmap)
+        case "heatmaps":
+            raise NotImplementedError("Heatmaps are not yet implemented")
+        case _:
+            raise ConfigurationError(f"Unknown command {args.command}")
+
+parser = argparse.ArgumentParser(prog="stamp", description="STAMP: Solid Tumor Associative Modeling in Pathology")
+parser.add_argument("--config", "-c", type=str, default="config.yaml", help="Path to config file")
+
+commands = parser.add_subparsers(dest="command")
+cmd_setup = commands.add_parser("setup", help="Download required resources")
+cmd_preprocess = commands.add_parser("preprocess", help="Preprocess data")
+cmd_train = commands.add_parser("train", help="Train a vision transformer model")
+cmd_crossval = commands.add_parser("crossval", help="Train a vision transformer model with cross validation for modeling.n_splits folds")
+cmd_deploy = commands.add_parser("deploy", help="Deploy a trained vision transformer model")
+cmd_stats = commands.add_parser("stats", help="Generate ROC curves for a trained model")
+cmd_config = commands.add_parser("config", help="Print the loaded configuation")
+cmd_heatmaps = commands.add_parser("heatmaps", help="Generate heatmaps for a trained model")
+
+args = parser.parse_args()
+try:
+    run_cli(args)
+except ConfigurationError as e:
+    print(e)
+    exit(1)

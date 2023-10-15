@@ -30,12 +30,12 @@ def categorical(preds_df: pd.DataFrame, target_label: str) -> pd.DataFrame:
     """
     categories = preds_df[target_label].unique()
     y_true = preds_df[target_label]
-    y_pred = preds_df[[f'{target_label}_{cat}' for cat in categories]].applymap(float).values
+    y_pred = preds_df[[f'{target_label}_{cat}' for cat in categories]].map(float).values
 
     stats_df = pd.DataFrame(index=categories)
 
     # class counts
-    stats_df['count'] = pd.value_counts(y_true)
+    stats_df['count'] = y_true.value_counts()
 
     # roc_auc
     stats_df['roc_auc_score'] = [
@@ -65,7 +65,7 @@ def aggregate_categorical_stats(df) -> pd.DataFrame:
     for cat, data in df.groupby('level_1'):
         scores_df = data[['roc_auc_score', 'average_precision_score']]
         means, sems = scores_df.mean(), scores_df.sem()
-        l, h = st.t.interval(alpha=.95, df=len(
+        l, h = st.t.interval(.95, df=len(
             scores_df)-1, loc=means, scale=sems)
         cat_stats_df = pd.DataFrame.from_dict(
             {'mean': means, '95%_low': l, '95%_high': h}).transpose().unstack()
