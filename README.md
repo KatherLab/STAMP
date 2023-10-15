@@ -18,3 +18,17 @@ Finally, to download required resources such as the weights of the CTransPath fe
 ```bash
 python -m stamp setup
 ```
+
+## Running
+Available commands are:
+```bash
+stamp setup    # download required resources
+stamp config   # print resolved configuration
+stamp train    # train single model
+stamp crossval # train n_splits models using cross-validation
+stamp deploy   # deploy a model on another test set
+stamp stats    # compute stats including ROC curves
+stamp heatmaps # generate heatmaps
+```
+
+By default, stamp will use the configuration file `config.yaml` in the current working directory. If you want to use a different configuration file use the `--config` command line option, i.e. `stamp --config some/other/file.yaml train`.
