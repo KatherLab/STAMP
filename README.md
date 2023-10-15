@@ -11,7 +11,7 @@ Then, run the following commands (NOTE: will be updated once this is a PyPI pack
 ```bash
 python -m venv env
 source env/bin/activate
-pip install -r requirements.txt
+pip install git+https://github.com/Avic3nna/STAMP
 ```
 
 Finally, to download required resources such as the weights of the CTransPath feature extractor, run the following command:
