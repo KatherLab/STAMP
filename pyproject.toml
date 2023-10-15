@@ -39,3 +39,12 @@ dependencies = [
 [project.urls]
 "Homepage" = "https://github.com/Avic3nna/STAMP"
 "Bug Tracker" = "https://github.com/Avic3nna/STAMP/issues"
+
+[tool.hatch.build]
+include = [
+  "stamp/**/*",
+  "resources/**/*",
+]
+exclude = [
+  "*.pth"
+]

@@ -7,16 +7,16 @@ First, install OpenSlide using either the command below or the [official install
 apt update && apt install -y openslide-tools libgl1-mesa-glx # libgl1-mesa-glx is needed for OpenCV
 ```
 
-Then, run the following commands (NOTE: will be updated once this is a PyPI package):
+Then, install this package via `pip` (NOTE: will be updated once this is a PyPI package):
 ```bash
-python -m venv env
-source env/bin/activate
 pip install git+https://github.com/Avic3nna/STAMP
 ```
 
+Once installed, you will be able to run the command line interface directly using the `stamp` command.
+
 Finally, to download required resources such as the weights of the CTransPath feature extractor, run the following command:
 ```bash
-python -m stamp setup
+stamp setup
 ```
 
 ## Running

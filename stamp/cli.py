@@ -6,10 +6,8 @@ from functools import partial
 import os
 from typing import Iterable, Optional
 
-# Set environment variables
-if "STAMP_RESOURCES_DIR" not in os.environ:
-    from .utils import DEFAULT_RESOURCES_DIR
-    os.environ["STAMP_RESOURCES_DIR"] = str(DEFAULT_RESOURCES_DIR)
+NORMALIZATION_TEMPLATE_URL = "https://github.com/Avic3nna/STAMP/blob/main/preprocessing/normalization_template.jpg?raw=true"
+CTRANSPATH_WEIGHTS_URL = "https://drive.google.com/u/0/uc?id=1DoDx_70_TLj98gTf6YTXnu4tFhsFocDX&export=download"
 
 class ConfigurationError(Exception):
     pass
@@ -32,19 +30,38 @@ def require_configs(cfg: DictConfig, keys: Iterable[str], prefix: Optional[str] 
         raise ConfigurationError(f"Missing required configuration keys: {missing}")
 
 def run_cli(args: argparse.Namespace):
+    # Load YAML configuration
     try:
         cfg = OmegaConf.load(args.config)
     except FileNotFoundError:
         raise ConfigurationError(f"Config file {args.config} not found (use the --config flag to specify a different config file)")
+    
+    # Set environment variables
+    if "STAMP_RESOURCES_DIR" not in os.environ:
+        os.environ["STAMP_RESOURCES_DIR"] = str(Path(args.config).with_name("resources"))
+    
     match args.command:
         case "setup":
-            import gdown
+            # Download normalization template
+            normalization_template_path = Path(cfg.preprocessing.normalization_template)
+            normalization_template_path.parent.mkdir(parents=True, exist_ok=True)
+            if normalization_template_path.exists():
+                print(f"Skipping download, normalization template already exists at {normalization_template_path}")
+            else:
+                print(f"Downloading normalization template to {normalization_template_path}")
+                import requests
+                r = requests.get(NORMALIZATION_TEMPLATE_URL)
+                with normalization_template_path.open("wb") as f:
+                    f.write(r.content)
+            # Download feature extractor model
             model_path = Path(cfg.preprocessing.model_path)
+            model_path.parent.mkdir(parents=True, exist_ok=True)
             if model_path.exists():
                 print(f"Skipping download, feature extractor model already exists at {model_path}")
             else:
                 print(f"Downloading CTransPath weights to {model_path}")
-                gdown.download("https://drive.google.com/u/0/uc?id=1DoDx_70_TLj98gTf6YTXnu4tFhsFocDX&export=download", str(model_path))
+                import gdown
+                gdown.download(CTRANSPATH_WEIGHTS_URL, str(model_path))
         case "config":
             print(OmegaConf.to_yaml(cfg, resolve=True))
         case "preprocess":
@@ -54,6 +71,11 @@ def run_cli(args: argparse.Namespace):
                 prefix="preprocessing"
             )
             c = cfg.preprocessing
+            # Some checks
+            if not Path(c.normalization_template).exists():
+                raise ConfigurationError(f"Normalization template {c.normalization_template} does not exist, please run `stamp setup` to download it.")
+            if not Path(c.model_path).exists():
+                raise ConfigurationError(f"Feature extractor model {c.model_path} does not exist, please run `stamp setup` to download it.")
             from .preprocessing.wsi_norm import preprocess
             preprocess(
                 output_dir=Path(c.output_dir),
@@ -142,16 +164,23 @@ def main() -> None:
     parser.add_argument("--config", "-c", type=str, default="config.yaml", help="Path to config file")
 
     commands = parser.add_subparsers(dest="command")
-    cmd_setup = commands.add_parser("setup", help="Download required resources")
-    cmd_preprocess = commands.add_parser("preprocess", help="Preprocess data")
-    cmd_train = commands.add_parser("train", help="Train a vision transformer model")
-    cmd_crossval = commands.add_parser("crossval", help="Train a vision transformer model with cross validation for modeling.n_splits folds")
-    cmd_deploy = commands.add_parser("deploy", help="Deploy a trained vision transformer model")
-    cmd_stats = commands.add_parser("stats", help="Generate ROC curves for a trained model")
-    cmd_config = commands.add_parser("config", help="Print the loaded configuation")
-    cmd_heatmaps = commands.add_parser("heatmaps", help="Generate heatmaps for a trained model")
+    commands.add_parser("setup", help="Download required resources")
+    commands.add_parser("preprocess", help="Preprocess data")
+    commands.add_parser("train", help="Train a vision transformer model")
+    commands.add_parser("crossval", help="Train a vision transformer model with cross validation for modeling.n_splits folds")
+    commands.add_parser("deploy", help="Deploy a trained vision transformer model")
+    commands.add_parser("stats", help="Generate ROC curves for a trained model")
+    commands.add_parser("config", help="Print the loaded configuation")
+    commands.add_parser("heatmaps", help="Generate heatmaps for a trained model")
 
     args = parser.parse_args()
+
+    # If no command is given, print help and exit
+    if args.command is None:
+        parser.print_help()
+        exit(1)
+
+    # Run the CLI
     try:
         run_cli(args)
     except ConfigurationError as e:
