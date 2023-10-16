@@ -14,27 +14,33 @@ From: ubuntu:latest
 	DEBIAN_FRONTEND="noninteractive" TZ="Europe/Berlin" apt-get install -y tzdata	
         apt-get install ffmpeg libsm6 libxext6  -y
 	apt-get install -y openslide-tools
+        apt-get install -y libgl1-mesa-glx
         apt-get install -y python3-openslide
         apt install -y build-essential
         apt-get install -y apt-utils wget git
+        
         #get anaconda inside the container
         wget https://repo.anaconda.com/miniconda/Miniconda3-py38_4.8.3-Linux-x86_64.sh
         chmod +x Miniconda3-py38_4.8.3-Linux-x86_64.sh
         ./Miniconda3-py38_4.8.3-Linux-x86_64.sh -b -p /opt/miniconda3
         ln -s /opt/miniconda3/bin/conda /usr/bin/conda
+        
         #allows for conda functionality inside container
         export PATH="/miniconda3/bin:$PATH"
+        
         #install the necessary packages
         conda create --name hpc_cenv --file=cenv_conda.txt python=3.8
         chmod --recursive a+rw /opt/miniconda3
+        
         #clean-up       
         apt-get clean
         rm -rf /var/lib/apt/lists/*
         rm /Miniconda3-py38_4.8.3-Linux-x86_64.sh
+        
         #activate environment, then pip install rest of packages
         . /opt/miniconda3/etc/profile.d/conda.sh
         conda activate hpc_cenv
-        #pip install -r cenv_pip.txt
+        pip install git+https://github.com/Avic3nna/STAMP
         pip install --no-input torch torchvision torchaudio
         pip install openslide-python numba scikit-learn pytest
 
@@ -46,6 +52,6 @@ From: ubuntu:latest
                 echo "Activating HPC conda environment..."
                 . /opt/miniconda3/etc/profile.d/conda.sh
                 conda activate hpc_cenv
-                echo "Activated conda environment, running $1..."
+                echo "Activated conda environment, running command $1..."
                 sh $1
 
