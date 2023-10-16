@@ -21,8 +21,8 @@ From: ubuntu:latest
         
         #get anaconda inside the container
         wget https://repo.anaconda.com/miniconda/Miniconda3-py39_23.5.2-0-Linux-x86_64.sh
-        chmod +x Miniconda3-py38_4.8.3-Linux-x86_64.sh
-        ./Miniconda3-py38_4.8.3-Linux-x86_64.sh -b -p /opt/miniconda3
+        chmod +x Miniconda3-py39_23.5.2-0-Linux-x86_64.sh
+        ./Miniconda3-py39_23.5.2-0-Linux-x86_64.sh -b -p /opt/miniconda3
         ln -s /opt/miniconda3/bin/conda /usr/bin/conda
         
         #allows for conda functionality inside container
@@ -35,7 +35,7 @@ From: ubuntu:latest
         #clean-up       
         apt-get clean
         rm -rf /var/lib/apt/lists/*
-        rm /Miniconda3-py38_4.8.3-Linux-x86_64.sh
+        rm /Miniconda3-py39_23.5.2-0-Linux-x86_64.sh
         
         #activate environment, then pip install rest of packages
         . /opt/miniconda3/etc/profile.d/conda.sh
