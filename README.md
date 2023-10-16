@@ -25,14 +25,14 @@ First, install Go and Singularity on your local machine using the [official inst
 ### Build container from scratch (requires root)
 Second, build the container first on your local machine with (fake) root access:
 ```bash
-sudo singularity build STAMP_container.sif container.def
+sudo singularity build STAMP_container.sif setup/container.def
 ```
 ### Download pre-built container
 Alternatively, TODO
 
 Finally, to download required resources such as the weights of the CTransPath feature extractor, run the following command in the base directory of the protocol:
 ```bash
-singularity run --nv -B /mnt:/mnt setup/e2e_container.sif "stamp setup"
+singularity run --nv -B /mnt:/mnt STAMP_container.sif "stamp setup"
 ```
 Note that the binding of filesystems (-B) should be adapted to your own system. GPU acceleration (--nv) should be enabled if GPUs are available in the system, but is optional.
 
