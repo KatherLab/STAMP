@@ -40,9 +40,8 @@ From: ubuntu:latest
         #activate environment, then pip install rest of packages
         . /opt/miniconda3/etc/profile.d/conda.sh
         conda activate hpc_cenv
+        python --version
         pip install git+https://github.com/Avic3nna/STAMP
-        pip install --no-input torch torchvision torchaudio
-        pip install openslide-python numba scikit-learn pytest
 
 %runscript
         if [ $# -ne 1 ]; then
