@@ -2,12 +2,13 @@ import sys
 import argparse
 from pathlib import Path
 import os
-
+from typing import Sequence
 import pandas as pd
 from matplotlib import pyplot as plt
-from marugoto.stats.categorical import categorical_aggregated_
-from marugoto.visualizations.roc import plot_multiple_decorated_roc_curves, plot_single_decorated_roc_curve
-from marugoto.visualizations.prc import plot_precision_recall_curves_, plot_single_decorated_prc_curve
+
+from .marugoto.stats.categorical import categorical_aggregated_
+from .marugoto.visualizations.roc import plot_multiple_decorated_roc_curves, plot_single_decorated_roc_curve
+from .marugoto.visualizations.prc import plot_precision_recall_curves_, plot_single_decorated_prc_curve
 
 def add_roc_curve_args(parser: argparse.ArgumentParser) -> argparse.ArgumentParser:
     parser.add_argument(
@@ -79,25 +80,21 @@ def read_table(file) -> pd.DataFrame:
     else:
         return pd.read_csv(file)
 
-
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Create a ROC Curve.")
-    args = (add_roc_curve_args(parser)).parse_args()
-
+def compute_stats(pred_csvs: Sequence[Path], target_label: str, true_class: str, output_dir: Path, n_bootstrap_samples: int = 1000, figure_width: float = 3.8, threshold_cmap= plt.get_cmap()):
     # read all the patient preds
     # and transform their true / preds columns into np arrays
     preds_dfs = [
-        pd.read_csv(p, dtype={f"{args.target_label}": str, "pred": str})
-        for p in args.pred_csvs
+        pd.read_csv(p, dtype={f"{target_label}": str, "pred": str})
+        for p in pred_csvs
     ]
-    y_trues = [df[args.target_label] == args.true_class for df in preds_dfs]
+    y_trues = [df[target_label] == true_class for df in preds_dfs]
     y_preds = [
-        pd.to_numeric(df[f"{args.target_label}_{args.true_class}"]) for df in preds_dfs
+        pd.to_numeric(df[f"{target_label}_{true_class}"]) for df in preds_dfs
     ]
 
     roc_curve_figure_aspect_ratio = 1.08
     fig, ax = plt.subplots(
-        figsize=(args.figure_width, args.figure_width * roc_curve_figure_aspect_ratio),
+        figsize=(figure_width, figure_width * roc_curve_figure_aspect_ratio),
         dpi=300,
     )
 
@@ -106,9 +103,9 @@ if __name__ == "__main__":
                 ax,
                 y_trues[0],
                 y_preds[0],
-                title=f"{args.target_label} = {args.true_class}",
-                n_bootstrap_samples=args.n_bootstrap_samples,
-                threshold_cmap=args.threshold_cmap,
+                title=f"{target_label} = {true_class}",
+                n_bootstrap_samples=n_bootstrap_samples,
+                threshold_cmap=threshold_cmap,
             )
 
     else:
@@ -116,20 +113,20 @@ if __name__ == "__main__":
             ax,
             y_trues,
             y_preds,
-            title=f"{args.target_label} = {args.true_class}",
+            title=f"{target_label} = {true_class}",
             n_bootstrap_samples=None,
         )
 
     fig.tight_layout()
-    stats_dir=(args.outpath/"model_statistics")
+    stats_dir=(output_dir/"model_statistics")
     if not stats_dir.exists():
         stats_dir.mkdir(parents=True, exist_ok=True)
     
-    fig.savefig(stats_dir/f"AUROC_{args.target_label}={args.true_class}.svg")
+    fig.savefig(stats_dir/f"AUROC_{target_label}={true_class}.svg")
     plt.close(fig)
 
     fig, ax = plt.subplots(
-        figsize=(args.figure_width, args.figure_width * roc_curve_figure_aspect_ratio),
+        figsize=(figure_width, figure_width * roc_curve_figure_aspect_ratio),
         dpi=300,
     )
     if len(preds_dfs) == 1:
@@ -137,23 +134,34 @@ if __name__ == "__main__":
                 ax,
                 y_trues[0],
                 y_preds[0],
-                title=f"{args.target_label} = {args.true_class}",
-                n_bootstrap_samples=args.n_bootstrap_samples
+                title=f"{target_label} = {true_class}",
+                n_bootstrap_samples=n_bootstrap_samples
         )
 
     else:
         plot_precision_recall_curves_(
             ax,
-            args.pred_csvs,
-            target_label=args.target_label,
-            true_label=args.true_class,
+            pred_csvs,
+            target_label=target_label,
+            true_label=true_class,
             outpath=stats_dir
         )
 
     fig.tight_layout()
-    fig.savefig(stats_dir/f"AUPRC_{args.target_label}={args.true_class}.svg")
+    fig.savefig(stats_dir/f"AUPRC_{target_label}={true_class}.svg")
     plt.close(fig)
 
-    categorical_aggregated_(args.pred_csvs,
-                            target_label=args.target_label,
+    categorical_aggregated_(pred_csvs,
+                            target_label=target_label,
                             outpath=stats_dir)
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Create a ROC Curve.")
+    args = add_roc_curve_args(parser).parse_args()
+    compute_stats(pred_csvs=args.pred_csvs,
+                  target_label=args.target_label,
+                  true_class=args.true_class,
+                  output_dir=args.outpath,
+                  n_bootstrap_samples=args.n_bootstrap_samples,
+                  figure_width=args.figure_width,
+                  threshold_cmap=args.threshold_cmap)

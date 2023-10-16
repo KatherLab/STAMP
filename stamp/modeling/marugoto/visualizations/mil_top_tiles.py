@@ -7,8 +7,8 @@ import torch
 from fastai.learner import load_learner
 import h5py
 from PIL import Image
-from marugoto import mil
-from marugoto.mil.data import get_target_enc
+
+from ..transformer.data import get_target_enc, get_cohort_df
 
 __all__ = ['plot_top_att_tiles_',
            'plot_top_att_from_df_']
@@ -25,7 +25,7 @@ def _top_att_tiles_df(
 
     if ~isinstance(feature_dir, list):
         feature_dir = [feature_dir]
-    df = mil.data.get_cohort_df(
+    df = get_cohort_df(
         clini_excel=patient_preds_csv,
         slide_csv=slide_csv,
         feature_dirs=feature_dir,

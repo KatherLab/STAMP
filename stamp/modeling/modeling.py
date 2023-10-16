@@ -1,6 +1,7 @@
 import argparse
 from pathlib import Path
-from marugoto.transformer.helpers import train_categorical_model_, deploy_categorical_model_, categorical_crossval_
+
+from .marugoto.transformer.helpers import train_categorical_model_, deploy_categorical_model_, categorical_crossval_
 
 def main():
     parser = argparse.ArgumentParser(

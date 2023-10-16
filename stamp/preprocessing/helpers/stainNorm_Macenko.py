@@ -13,13 +13,14 @@ Use with python via e.g https://anaconda.org/conda-forge/python-spams
 from __future__ import division
 
 import numpy as np
-import helpers.stain_utils as ut
 from numba import njit
 import time
 from concurrent import futures
 from tqdm import tqdm
 from typing import Dict, Tuple
 import os
+
+from . import stain_utils as ut
 
 @njit
 def v1v2_mult(V, minPhi, maxPhi):
