@@ -29,14 +29,14 @@ modeling:
   n_splits: 5 # Number of splits for cross-validation (only applicable to cross-validation)
   model_path: ${modeling.output_dir}/... # Path to saved model (only applicable to deployment)
 
-  statistics:
-    pred_csvs: # Paths to prediction CSVs to plot ROC curves for
-      - ${modeling.output_dir}/patient-preds.csv
-    target_label: # ${modeling.target_label} # Target label
-    true_class: # Class to consider as positive
-    output_dir: ${modeling.output_dir}/roc # Path to save ROC curve and statistics to
-    n_bootstrap_samples: 1000 # Number of bootstrapping samples to take for confidence interval generation
-    figure_width: 3.8 # Width of the figure in inches
-    threshold_cmap: # Draw curve with threshold color
+statistics:
+  pred_csvs: # Paths to prediction CSVs to plot ROC curves for
+    - ${modeling.output_dir}/patient-preds.csv
+  target_label: # ${modeling.target_label} # Target label
+  true_class: # Class to consider as positive
+  output_dir: ${modeling.output_dir}/roc # Path to save ROC curve and statistics to
+  n_bootstrap_samples: 1000 # Number of bootstrapping samples to take for confidence interval generation
+  figure_width: 3.8 # Width of the figure in inches
+  threshold_cmap: # Draw curve with threshold color
 
-  heatmaps:
+heatmaps:
