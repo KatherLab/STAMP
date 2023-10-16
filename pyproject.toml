@@ -6,7 +6,10 @@ build-backend = "hatchling.build"
 name = "stamp"
 version = "0.0.1"
 authors = [
-  { name="Example Author", email="author@example.com" },
+  { name="Omar El Nahhas", email="omar.el_nahhas@tu-dresden.de" },
+  { name="Marko van Treeck", email="markovantreeck@gmail.com" },
+  { name="Georg Wölflein", email="georgw7777@gmail.com" },
+  { name="Tim Lenz", email="tim.lenz@tu-dresden.de" },
 ]
 description = "A protocol for Solid Tumor Associative Modeling in Pathology"
 readme = "README.md"
