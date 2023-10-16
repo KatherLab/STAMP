@@ -6,7 +6,7 @@ from functools import partial
 import os
 from typing import Iterable, Optional
 
-NORMALIZATION_TEMPLATE_URL = "https://github.com/Avic3nna/STAMP/blob/main/preprocessing/normalization_template.jpg?raw=true"
+NORMALIZATION_TEMPLATE_URL = "https://github.com/Avic3nna/STAMP/blob/main/resources/normalization_template.jpg?raw=true"
 CTRANSPATH_WEIGHTS_URL = "https://drive.google.com/u/0/uc?id=1DoDx_70_TLj98gTf6YTXnu4tFhsFocDX&export=download"
 
 class ConfigurationError(Exception):
