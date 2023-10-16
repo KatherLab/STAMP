@@ -29,7 +29,7 @@ From: ubuntu:latest
         export PATH="/miniconda3/bin:$PATH"
         
         #install the necessary packages
-        conda create --name hpc_cenv --file=cenv_conda.txt python=3.8
+        conda create --name hpc_cenv --file=cenv_conda.txt python=3.9
         chmod --recursive a+rw /opt/miniconda3
         
         #clean-up       

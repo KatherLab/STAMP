@@ -13,15 +13,15 @@ authors = [
 ]
 description = "A protocol for Solid Tumor Associative Modeling in Pathology"
 readme = "README.md"
-requires-python = ">=3.7"
+requires-python = ">=3.9"
 classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
 ]
 dependencies = [
-  "pandas~=2.0",
-  "matplotlib~=3.7",
+  "pandas~=2.1",
+  "matplotlib~=3.8",
   "scikit-learn~=1.3",
   "tqdm~=4.66",
   "fastai~=2.7",
