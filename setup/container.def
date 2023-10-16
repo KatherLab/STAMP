@@ -43,7 +43,7 @@ From: ubuntu:latest
 
 %runscript
         if [ $# -ne 1 ]; then
-                echo "Please provide a 'stamp xxx' command to run."
+                echo "Please provide a 'stamp .....' command to run."
                 exit 1
         fi
                 echo "Activating HPC conda environment..."
