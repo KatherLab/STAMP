@@ -27,8 +27,14 @@ Second, build the container first on your local machine with (fake) root access:
 ```bash
 sudo singularity build STAMP_container.sif setup/container.def
 ```
+Note that the container is approximately 6 GB in size.
+
 ### Download pre-built container
-Alternatively, TODO
+Alternatively, lab members with access to the ZIH server can download the pre-built container from:
+
+```bash
+/glw/ekfz_proj/STAMP_container.sif
+```
 
 Finally, to download required resources such as the weights of the CTransPath feature extractor, run the following command in the base directory of the protocol:
 ```bash
