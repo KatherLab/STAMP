@@ -28,6 +28,7 @@ dependencies = [
   "torch~=2.0",
   "torchvision~=0.15",
   "h5py~=3.10",
+  "jaxtyping~=0.2",
   "einops~=0.7",
   "omegaconf~=2.3",
   "openslide-python~=1.3",
