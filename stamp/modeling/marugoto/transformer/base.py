@@ -60,7 +60,7 @@ def train(
     train_dl = DataLoader(
         train_ds, batch_size=64, shuffle=True, num_workers=1, drop_last=True)
     valid_dl = DataLoader(
-        valid_ds, batch_size=1, shuffle=False, num_workers=os.cpu_count())
+        valid_ds, batch_size=1, shuffle=False, num_workers=1)
     batch = train_dl.one_batch()
 
     # for binary classification num_classes=2
@@ -121,7 +121,7 @@ def deploy(
         bag_size=None)
 
     test_dl = DataLoader(
-        test_ds, batch_size=1, shuffle=False, num_workers=os.cpu_count())
+        test_ds, batch_size=1, shuffle=False, num_workers=1)
 
     #removed softmax in forward, but add here to get 0-1 probabilities
     patient_preds, patient_targs = learn.get_preds(dl=test_dl, act=nn.Softmax(dim=1))

@@ -53,7 +53,7 @@ def vals_to_im(
 
 
 def show_thumb(thumb_ax: Axes, svs_dir: Path, h5_path: Path, attention: Tensor) -> None:
-    slide = openslide.open_slide(svs_dir / h5_path.with_suffix(".svs").name)
+    slide = openslide.open_slide(svs_dir / h5_path.with_suffix(".svs").name) # only supporting svs is clearly a limitation
     mpp = float(slide.properties[openslide.PROPERTY_NAME_MPP_X])
     dims_um = np.array(slide.dimensions) * mpp
     thumb = slide.get_thumbnail(np.round(dims_um * 8 / 256).astype(int))
@@ -146,7 +146,7 @@ def main(feature_dir: Path, svs_dir: Path, model_path: Path, output_dir: Path) -
             )
 
         show_thumb(
-            thumb_ax=ax[0, 0], svs_dir=svs_dir, h5_path=h5_path, attention=attention
+            thumb_ax=ax, svs_dir=svs_dir, h5_path=h5_path, attention=attention
         )
 
         for ax in axs.ravel():

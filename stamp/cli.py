@@ -127,14 +127,14 @@ def run_cli(args: argparse.Namespace):
         case "deploy":
             require_configs(
                 cfg,
-                ["output_dir", "feature_dir", "target_label", "cat_labels", "cont_labels", "model_path"], # this one requires the model_path key!
+                ["output_dir", "deploy_feature_dir", "target_label", "cat_labels", "cont_labels", "model_path"], # this one requires the model_path key!
                 prefix="modeling"
             )
             c = cfg.modeling
             from .modeling.marugoto.transformer.helpers import deploy_categorical_model_
             deploy_categorical_model_(clini_table=Path(c.clini_table),
                                       slide_csv=Path(c.slide_csv),
-                                      feature_dir=Path(c.feature_dir),
+                                      feature_dir=Path(c.deploy_feature_dir),
                                       output_path=Path(c.output_dir),
                                       target_label=c.target_label,
                                       cat_labels=c.cat_labels,
@@ -147,6 +147,8 @@ def run_cli(args: argparse.Namespace):
                 prefix="modeling.statistics")
             from .modeling.statistics import compute_stats
             c = cfg.modeling.statistics
+            if isinstance(c.pred_csvs,str):
+                c.pred_csvs = [c.pred_csvs]
             compute_stats(pred_csvs=[Path(x) for x in c.pred_csvs],
                           target_label=c.target_label,
                           true_class=c.true_class,
@@ -155,7 +157,16 @@ def run_cli(args: argparse.Namespace):
                           figure_width=c.figure_width,
                           threshold_cmap=c.threshold_cmap)
         case "heatmaps":
-            raise NotImplementedError("Heatmaps are not yet implemented")
+            require_configs(
+                cfg,
+                ["feature_dir","wsi_dir","model_path","output_dir"], 
+                prefix="heatmaps")
+            c = cfg.heatmaps
+            from .heatmaps.__main__ import main
+            main(feature_dir=Path(c.feature_dir),
+                 svs_dir=Path(c.wsi_dir),
+                 model_path=Path(c.model_path),
+                 output_dir=Path(c.output_dir))
         case _:
             raise ConfigurationError(f"Unknown command {args.command}")
 

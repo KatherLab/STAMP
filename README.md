@@ -45,13 +45,14 @@ Note that the binding of filesystems (-B) should be adapted to your own system. 
 ## Running
 Available commands are:
 ```bash
-stamp setup    # download required resources
-stamp config   # print resolved configuration
-stamp crossval # train n_splits models using cross-validation
-stamp train    # train single model
-stamp deploy   # deploy a model on another test set
-stamp stats    # compute stats including ROC curves
-stamp heatmaps # generate heatmaps
+stamp setup      # download required resources
+stamp config     # print resolved configuration
+stamp preprocess # normalization and feature extraction with CTransPath
+stamp crossval   # train n_splits models using cross-validation
+stamp train      # train single model
+stamp deploy     # deploy a model on another test set
+stamp stats      # compute stats including ROC curves
+stamp heatmaps   # generate heatmaps
 ```
 
 By default, stamp will use the configuration file `config.yaml` in the current working directory. If you want to use a different configuration file use the `--config` command line option, i.e. `stamp --config some/other/file.yaml train`.

@@ -125,7 +125,7 @@ def extract_features_(
     feats = []
     for batch in tqdm(dl, leave=False):
         feats.append(
-            model(batch.astype(dtype).to(device)).half().cpu().detach())
+            model(batch.type(dtype).to(device)).half().cpu().detach())
 
     with h5py.File(f'{outdir}.h5', 'w') as f:
         f['coords'] = coords

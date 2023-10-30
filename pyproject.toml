@@ -10,6 +10,7 @@ authors = [
   { name="Marko van Treeck", email="markovantreeck@gmail.com" },
   { name="Georg Wölflein", email="georgw7777@gmail.com" },
   { name="Tim Lenz", email="tim.lenz@tu-dresden.de" },
+  { name="Laura Žigutytė", email="laura.zigutyte@tu-dresden.de" },
 ]
 description = "A protocol for Solid Tumor Associative Modeling in Pathology"
 readme = "README.md"
