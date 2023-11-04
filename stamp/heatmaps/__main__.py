@@ -74,7 +74,7 @@ def show_class_map(
     )
 
 
-def main(feature_dir: Path, svs_dir: Path, model_path: Path, output_dir: Path) -> None:
+def main(slide_name: str, feature_dir: Path, svs_dir: Path, model_path: Path, output_dir: Path) -> None:
     learn = load_learner(model_path)
     learn.model.eval()
     categories: Collection[str] = learn.dls.train.dataset._datasets[
@@ -82,8 +82,8 @@ def main(feature_dir: Path, svs_dir: Path, model_path: Path, output_dir: Path) -
     ].encode.categories_[0]
 
     output_dir.mkdir(exist_ok=True, parents=True)
-
-    for h5_path in feature_dir.glob(f"**/*.h5"):
+    for h5_path in feature_dir.glob(f"**/{slide_name}.h5"):
+        print(f"Creating heatmaps for {h5_path}...")
         with h5py.File(h5_path) as h5:
             feats = torch.tensor(h5["feats"][:]).float()
             coords = torch.tensor(h5["coords"][:], dtype=torch.int)
@@ -157,6 +157,14 @@ def main(feature_dir: Path, svs_dir: Path, model_path: Path, output_dir: Path) -
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser("heatmaps")
+    parser.add_argument(
+        "--slide-name",
+        metavar="PATH",
+        type=str,
+        required=True,
+        help="Name of the WSI to create heatmap for (no extensions)",
+    )
+    
     parser.add_argument(
         "--svs-dir",
         metavar="PATH",

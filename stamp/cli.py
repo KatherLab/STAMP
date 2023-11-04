@@ -163,7 +163,8 @@ def run_cli(args: argparse.Namespace):
                 prefix="heatmaps")
             c = cfg.heatmaps
             from .heatmaps.__main__ import main
-            main(feature_dir=Path(c.feature_dir),
+            main(slide_name=str(c.slide_name),
+                 feature_dir=Path(c.feature_dir),
                  svs_dir=Path(c.wsi_dir),
                  model_path=Path(c.model_path),
                  output_dir=Path(c.output_dir))
