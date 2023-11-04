@@ -13,7 +13,7 @@ preprocessing:
   norm: true # Perform Macenko normalisation
   del_slide: false # Remove the original slide after processing
   only_feature_extraction: false # Only perform feature extraction (intermediate images (background rejected, [normalized]) have to exist)
-  device: cpu # device to run feature extraction on (cpu, cuda, cuda:0, etc.)
+  device: cuda:0 # device to run feature extraction on (cpu, cuda, cuda:0, etc.)
   normalization_template: ${oc.env:STAMP_RESOURCES_DIR}/normalization_template.jpg # Path to normalization template
   model_path: ${oc.env:STAMP_RESOURCES_DIR}/ctranspath.pth  # Path of where model for the feature extractor is
 
@@ -28,20 +28,21 @@ modeling:
   cat_labels: [] # Extra input category labels (list, can be empty)
   cont_labels: [] # Extra input continuous labels (list, can be empty)
   n_splits: 5 # Number of splits for cross-validation (only applicable to cross-validation)
-  model_path: ${modeling.output_dir}/fold-0/export.pkl # Path to saved model (only applicable to deployment)
+  model_path: /path/to/export.pkl # Path to saved model (only applicable to deployment)
 
-  statistics:
-    pred_csvs: # Paths to prediction CSVs to plot ROC curves for
-      - ${modeling.output_dir}/patient-preds.csv
-    target_label: # ${modeling.target_label} # Target label
-    true_class: # Class to consider as positive
-    output_dir: ${modeling.output_dir}/roc # Path to save ROC curve and statistics to
-    n_bootstrap_samples: 1000 # Number of bootstrapping samples to take for confidence interval generation
-    figure_width: 3.8 # Width of the figure in inches
-    threshold_cmap: # Draw curve with threshold color
+statistics:
+  pred_csvs: # Paths to prediction CSVs to plot ROC curves for
+    - ${modeling.output_dir}/patient-preds.csv
+  target_label: # ${modeling.target_label} # Target label
+  true_class: # Class to consider as positive
+  output_dir: ${modeling.output_dir}/roc # Path to save ROC curve and statistics to
+  n_bootstrap_samples: 1000 # Number of bootstrapping samples to take for confidence interval generation
+  figure_width: 3.8 # Width of the figure in inches
+  threshold_cmap: # Draw curve with threshold color
 
 heatmaps:
+  slide_name: # Name of the slide to create heatmaps for, wildcards allowed, no extensions
   feature_dir: ${preprocessing.output_dir} # Path to feature directory
-  wsi_dir: # Path of where the whole-slide images are.
-  model_path: ${modeling.output_dir}/export.pkl # Path to saved model (only applicable to deployment)
+  wsi_dir: # Path to whole-slide image directory.
+  model_path: /path/to/export.pkl # Path to saved model (only applicable to deployment)
   output_dir: # Path to output directory
