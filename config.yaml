@@ -41,7 +41,7 @@ statistics:
   threshold_cmap: # Draw curve with threshold color
 
 heatmaps:
-  slide_name: # Name of the slide to create heatmaps for, wildcards allowed, no extensions
+  slide_name: # Name of the slide to create heatmaps for, wildcards allowed, no file extensions
   feature_dir: ${preprocessing.output_dir} # Path to feature directory
   wsi_dir: # Path to whole-slide image directory.
   model_path: /path/to/export.pkl # Path to saved model (only applicable to deployment)
