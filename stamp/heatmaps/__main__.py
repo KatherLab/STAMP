@@ -146,7 +146,7 @@ def main(slide_name: str, feature_dir: Path, svs_dir: Path, model_path: Path, ou
             )
 
         show_thumb(
-            thumb_ax=ax, svs_dir=svs_dir, h5_path=h5_path, attention=attention
+            thumb_ax=axs[0, 0], svs_dir=svs_dir, h5_path=h5_path, attention=attention
         )
 
         for ax in axs.ravel():
