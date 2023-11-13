@@ -74,20 +74,53 @@ def show_class_map(
     )
 
 
-def main(slide_name: str, feature_dir: Path, svs_dir: Path, model_path: Path, output_dir: Path) -> None:
+def get_n_toptiles(category: str, svs_dir: Path, h5_path: Path, 
+                   output_dir: Path, coords: Tensor, 
+                   scores: Tensor, stride: int, n: int = 8) -> None:
+    slide = openslide.open_slide(svs_dir / h5_path.with_suffix(".svs").name) # TODO: add the OpenSlide supported extensions
+    slide_mpp = float(slide.properties[openslide.PROPERTY_NAME_MPP_X])
+
+    (output_dir / f"toptiles_{category}").mkdir(exist_ok=True, parents=True)
+    
+    # determine the scaling factor between heatmap and original slide
+    # 256 microns edge length by default, with 224px = ~1.14 MPP (± 10x magnification)
+    feature_downsample_mpp = (256/stride) # NOTE: stride here only makes sense if the tiles were NON-OVERLAPPING
+    scaling_factor = feature_downsample_mpp/slide_mpp
+
+    top_score = scores.topk(n)
+
+    # OPTIONAL: if the score is not larger than 0.5, it's indecisive on directionality
+    # then add [top_score.values > 0.5]
+    top_coords_downscaled = coords[top_score.indices]
+    top_coords_original = np.uint(top_coords_downscaled*scaling_factor)
+
+    # NOTE: target size (stride, stride) only works for NON-OVERLAPPING tiles
+    # that were extracted in previous steps.
+    for score_idx, pos in enumerate(top_coords_original):
+        tile = slide.read_region((pos[0], pos[1]), 0, (stride, stride)).convert('RGB')
+        tile.save(
+                (output_dir / f"toptiles_{category}")
+                / f"score_{top_score.values[score_idx]:.2f}_toptiles_{category}_{(pos[0], pos[1])}.png"
+            )
+
+
+def main(slide_name: str, feature_dir: Path, svs_dir: Path, model_path: Path, output_dir: Path, n_toptiles: int = 8) -> None:
     learn = load_learner(model_path)
     learn.model.eval()
     categories: Collection[str] = learn.dls.train.dataset._datasets[
         -1
     ].encode.categories_[0]
+    
 
-    output_dir.mkdir(exist_ok=True, parents=True)
     for h5_path in feature_dir.glob(f"**/{slide_name}.h5"):
+        slide_output_dir = output_dir / h5_path.stem
+        slide_output_dir.mkdir(exist_ok=True, parents=True)
         print(f"Creating heatmaps for {h5_path}...")
         with h5py.File(h5_path) as h5:
             feats = torch.tensor(h5["feats"][:]).float()
             coords = torch.tensor(h5["coords"][:], dtype=torch.int)
 
+        # stride is 224 using normal operations
         stride = get_stride(coords)
 
         preds, gradcam = gradcam_per_category(
@@ -99,7 +132,6 @@ def main(slide_name: str, feature_dir: Path, svs_dir: Path, model_path: Path, ou
             learn.model(feats.unsqueeze(-2), torch.ones((len(feats)))), dim=1
         )
         scores_2d = vals_to_im(scores, coords // stride).detach()
-
         fig, axs = plt.subplots(nrows=2, ncols=min(2, len(categories)), figsize=(12, 8))
 
         show_class_map(
@@ -113,10 +145,23 @@ def main(slide_name: str, feature_dir: Path, svs_dir: Path, model_path: Path, ou
             ax: Axes
             topk = scores_2d.topk(2)
             category_support = torch.where(
+                # To get the "positiveness", 
+                # it checks whether the "hot" class has the highest score for each pixel
                 topk.indices[..., 0] == pos_idx,
+
+                # Then, if the hot class has the highest score, 
+                # it assigns a positive value based on its difference from the second highest score
                 scores_2d[..., pos_idx] - topk.values[..., 1],
+
+                # Likewise, if it has NOT a negative value based on the difference of that class' score to the highest one
                 scores_2d[..., pos_idx] - topk.values[..., 0],
             )
+
+            # So, if we have a pixel with scores (.4, .4, .2) and would want to get the heat value for the first class, 
+            # we would get a neutral color, because it is matched with the second class
+            # But if our scores were (.4, .3, .3), it would be red, 
+            # because now our class is .1 above its nearest competitor
+
             attention = torch.where(
                 topk.indices[..., 0] == pos_idx,
                 gradcam_2d[..., pos_idx] / gradcam_2d.max(),
@@ -133,6 +178,7 @@ def main(slide_name: str, feature_dir: Path, svs_dir: Path, model_path: Path, ou
             score_im = plt.get_cmap("RdBu")(
                 -category_support * attention / attention.max() / 2 + 0.5
             )
+
             score_im[..., -1] = attention > 0
 
             ax.imshow(score_im)
@@ -141,9 +187,14 @@ def main(slide_name: str, feature_dir: Path, svs_dir: Path, model_path: Path, ou
             Image.fromarray(np.uint8(score_im * 255)).resize(
                 np.array(score_im.shape[:2][::-1]) * 8, resample=Image.NEAREST
             ).save(
-                output_dir
+                slide_output_dir
                 / f"scores-{h5_path.stem}--score_{category}={preds[0][pos_idx]:0.2f}.png"
             )
+
+            get_n_toptiles(category=category, stride=stride, 
+                           output_dir=slide_output_dir, svs_dir=svs_dir, 
+                           h5_path=h5_path, scores=scores[:, pos_idx], #(category_support * attention)
+                           coords=coords, n=n_toptiles)
 
         show_thumb(
             thumb_ax=axs[0, 0], svs_dir=svs_dir, h5_path=h5_path, attention=attention
@@ -152,7 +203,7 @@ def main(slide_name: str, feature_dir: Path, svs_dir: Path, model_path: Path, ou
         for ax in axs.ravel():
             ax.axis("off")
 
-        fig.savefig(output_dir / f"overview-{h5_path.stem}.png")
+        fig.savefig(slide_output_dir / f"overview-{h5_path.stem}.png")
 
 
 if __name__ == "__main__":
@@ -164,7 +215,6 @@ if __name__ == "__main__":
         required=True,
         help="Name of the WSI to create heatmap for (no extensions)",
     )
-    
     parser.add_argument(
         "--svs-dir",
         metavar="PATH",
@@ -193,6 +243,12 @@ if __name__ == "__main__":
         type=Path,
         required=True,
         help="Directory to save the heatmaps to",
+    )
+    parser.add_argument(
+        "--n-toptiles",
+        type=int,
+        required=False,
+        help="Number of toptiles to generate, 8 by default",
     )
     args = parser.parse_args()
     main(**vars(args))
