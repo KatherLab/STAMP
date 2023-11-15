@@ -140,7 +140,7 @@ def run_cli(args: argparse.Namespace):
                                       cat_labels=c.cat_labels,
                                       cont_labels=c.cont_labels,
                                       model_path=Path(c.model_path))
-        case "stats":
+        case "statistics":
             require_configs(
                 cfg,
                 ["pred_csvs", "target_label", "true_class", "output_dir", "n_bootstrap_samples", "figure_width"],
