@@ -4,7 +4,6 @@ from pathlib import Path
 from typing import Sequence
 import pandas as pd
 from matplotlib import pyplot as plt
-import glob
 
 from .marugoto.stats.categorical import categorical_aggregated_
 from .marugoto.visualizations.roc import plot_multiple_decorated_roc_curves, plot_single_decorated_roc_curve
@@ -79,11 +78,9 @@ def read_table(file) -> pd.DataFrame:
     else:
         return pd.read_csv(file)
 
-def compute_stats(pred_csvs: str, target_label: str, true_class: str, output_dir: Path, n_bootstrap_samples: int = 1000, figure_width: float = 3.8, threshold_cmap= plt.get_cmap()):
+def compute_stats(pred_csvs: Sequence[Path], target_label: str, true_class: str, output_dir: Path, n_bootstrap_samples: int = 1000, figure_width: float = 3.8, threshold_cmap= plt.get_cmap()):
     # read all the patient preds
     # and transform their true / preds columns into np arrays
-
-    pred_csvs=glob.glob(pred_csvs)
 
     preds_dfs = [
         pd.read_csv(p, dtype={f"{target_label}": str, "pred": str})
