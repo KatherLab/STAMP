@@ -51,7 +51,7 @@ stamp preprocess # normalization and feature extraction with CTransPath
 stamp crossval   # train n_splits models using cross-validation
 stamp train      # train single model
 stamp deploy     # deploy a model on another test set
-stamp stats      # compute stats including ROC curves
+stamp statistics # compute stats including ROC curves
 stamp heatmaps   # generate heatmaps
 ```
 
