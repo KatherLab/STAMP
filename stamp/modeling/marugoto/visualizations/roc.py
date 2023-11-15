@@ -100,6 +100,11 @@ def plot_multiple_decorated_roc_curves(
     mean_auc=np.mean(aucs)
     if not n_bootstrap_samples:    
         l, h = st.t.interval(0.95, len(aucs) - 1, loc=np.mean(aucs), scale=st.sem(aucs))
+
+    # limit conf bounds to [0,1] in case of low sample numbers
+    l = max(0, l)
+    h = min(1, h)
+
     # conf_range = (h - l) / 2
 
     if title:

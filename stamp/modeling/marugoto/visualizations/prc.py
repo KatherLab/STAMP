@@ -196,6 +196,11 @@ def plot_precision_recall_curves(
     aucs = [x.auc for x in tpas]
     l, h = st.t.interval(
         0.95, len(aucs)-1, loc=np.mean(aucs), scale=st.sem(aucs))
+    
+    # limit conf bounds to [0,1] in case of low sample numbers
+    l = max(0, l)
+    h = min(1, h)
+    
     # conf_range = (h-l)/2
     auc_str = f'PRC = {np.mean(aucs):0.2f} [{l:0.2f}-{h:0.2f}]'
 
