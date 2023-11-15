@@ -1,6 +1,7 @@
 import sys
 import argparse
 from pathlib import Path
+import os
 from typing import Sequence
 import pandas as pd
 from matplotlib import pyplot as plt
@@ -13,8 +14,9 @@ def add_roc_curve_args(parser: argparse.ArgumentParser) -> argparse.ArgumentPars
     parser.add_argument(
         "pred_csvs",
         metavar="PREDS_CSV",
-        type=str,
-        help="Predictions to create ROC/PRC for.",
+        nargs="*",
+        type=Path,
+        help="Predictions to create ROC curves for.",
         default=[sys.stdin],
     )
     parser.add_argument(
@@ -81,7 +83,6 @@ def read_table(file) -> pd.DataFrame:
 def compute_stats(pred_csvs: Sequence[Path], target_label: str, true_class: str, output_dir: Path, n_bootstrap_samples: int = 1000, figure_width: float = 3.8, threshold_cmap= plt.get_cmap()):
     # read all the patient preds
     # and transform their true / preds columns into np arrays
-
     preds_dfs = [
         pd.read_csv(p, dtype={f"{target_label}": str, "pred": str})
         for p in pred_csvs
@@ -155,7 +156,7 @@ def compute_stats(pred_csvs: Sequence[Path], target_label: str, true_class: str,
                             outpath=stats_dir)
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Compute statistics.")
+    parser = argparse.ArgumentParser(description="Create a ROC Curve.")
     args = add_roc_curve_args(parser).parse_args()
     compute_stats(pred_csvs=args.pred_csvs,
                   target_label=args.target_label,

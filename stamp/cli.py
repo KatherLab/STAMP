@@ -5,7 +5,6 @@ from omegaconf.dictconfig import DictConfig
 from functools import partial
 import os
 from typing import Iterable, Optional
-import glob
 
 NORMALIZATION_TEMPLATE_URL = "https://github.com/Avic3nna/STAMP/blob/main/resources/normalization_template.jpg?raw=true"
 CTRANSPATH_WEIGHTS_URL = "https://drive.google.com/u/0/uc?id=1DoDx_70_TLj98gTf6YTXnu4tFhsFocDX&export=download"
@@ -148,7 +147,8 @@ def run_cli(args: argparse.Namespace):
                 prefix="modeling.statistics")
             from .modeling.statistics import compute_stats
             c = cfg.modeling.statistics
-            c.pred_csvs = glob.glob(c.pred_csvs)
+            if isinstance(c.pred_csvs,str):
+                c.pred_csvs = [c.pred_csvs]
             compute_stats(pred_csvs=[Path(x) for x in c.pred_csvs],
                           target_label=c.target_label,
                           true_class=c.true_class,
