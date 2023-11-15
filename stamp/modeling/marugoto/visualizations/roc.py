@@ -49,10 +49,7 @@ def plot_single_decorated_roc_curve(
 
 
 def auc_str(auc: float, l: Optional[float], h: Optional[float]) -> str:
-    if l:
-        return f"AUC = {auc:0.2f} [{l:0.2f}-{h:0.2f}]"
-    else:
-        return f"AUC = {auc:0.2f}"
+    return f"AUC = {auc:0.2f} [{l:0.2f}-{h:0.2f}]"
 
 
 def style_auc(ax: plt.Axes) -> None:
@@ -104,8 +101,6 @@ def plot_multiple_decorated_roc_curves(
     # limit conf bounds to [0,1] in case of low sample numbers
     l = max(0, l)
     h = min(1, h)
-
-    # conf_range = (h - l) / 2
 
     if title:
         ax.set_title(f"{title}\n {auc_str(mean_auc, l, h)}")
@@ -226,9 +221,6 @@ def plot_bootstrapped_roc_curve(
         ax.fill_between(interp_fpr, lower, upper, alpha=0.5)
         h=np.quantile(bootstrap_aucs, 0.975)
         l=np.quantile(bootstrap_aucs, 0.025)
-        conf_range = (
-            np.quantile(bootstrap_aucs, 0.975) - np.quantile(bootstrap_aucs, 0.025)
-        ) / 2
 
     fpr, tpr, thresh = roc_curve(y_true, y_score)
     auc = roc_auc_score(y_true, y_score)
