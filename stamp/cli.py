@@ -181,7 +181,7 @@ def main() -> None:
     commands.add_parser("train", help="Train a vision transformer model")
     commands.add_parser("crossval", help="Train a vision transformer model with cross validation for modeling.n_splits folds")
     commands.add_parser("deploy", help="Deploy a trained vision transformer model")
-    commands.add_parser("stats", help="Generate ROC curves for a trained model")
+    commands.add_parser("statistics", help="Generate ROC curves for a trained model")
     commands.add_parser("config", help="Print the loaded configuation")
     commands.add_parser("heatmaps", help="Generate heatmaps for a trained model")
 
