@@ -7,7 +7,7 @@ First, install OpenSlide using either the command below or the [official install
 apt update && apt install -y openslide-tools libgl1-mesa-glx # libgl1-mesa-glx is needed for OpenCV
 ```
 
-Create a [virtual environment]{https://docs.python.org/3/library/venv.html} or [conda environment]{https://docs.conda.io/projects/conda/en/latest/commands/create.html} with Python 3.10, and activate it.
+Create a [virtual environment](https://docs.python.org/3/library/venv.html) or [conda environment](https://docs.conda.io/projects/conda/en/latest/commands/create.html) with Python 3.10, and activate it.
 
 Then, install this package via `pip` (NOTE: will be updated once this is a PyPI package):
 ```bash
