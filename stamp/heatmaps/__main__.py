@@ -247,6 +247,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--n-toptiles",
         type=int,
+        default=8,
         required=False,
         help="Number of toptiles to generate, 8 by default",
     )
