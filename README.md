@@ -1,15 +1,24 @@
 # STAMP protocol
-A protocol for Solid Tumor Associative Modeling in Pathology
+A protocol for Solid Tumor Associative Modeling in Pathology. This repository contains the accompanying code for the steps described in the paper: 
 
-## Local installation
+>From Whole Slide Image to Patient-Level Biomarker Prediction: A Protocol for End-to-End Deep Learning in Computational Pathology 
+
+The code can be executed either in a local environment, or in a containerized environment (preferred in clusters).
+
+## Using a local environment
 First, install OpenSlide using either the command below or the [official installation instructions](https://openslide.org/download/#distribution-packages):
 ```bash
 apt update && apt install -y openslide-tools libgl1-mesa-glx # libgl1-mesa-glx is needed for OpenCV
 ```
 
-Second, create a [virtual environment](https://docs.python.org/3/library/venv.html) or [conda environment](https://docs.conda.io/projects/conda/en/latest/commands/create.html) with Python 3.10, and activate it.
+Second, [install conda](https://conda.io/projects/conda/en/latest/user-guide/install/index.html) on your local computer, create an environment with Python 3.10, and activate it:
 
-Then, install this package via `pip` (NOTE: will be updated once this is a PyPI package):
+```bash
+conda create -n stamp python=3.10
+conda activate stamp
+```
+
+Then, install the STAMP package via `pip`:
 ```bash
 pip install git+https://github.com/Avic3nna/STAMP
 ```
@@ -32,7 +41,7 @@ sudo singularity build STAMP_container.sif setup/container.def
 Note that the container is approximately 6 GB in size.
 
 ### Download pre-built container
-Alternatively, lab members with access to the ZIH server can download the pre-built container from:
+Alternatively, lab members with access to the ZIH server can download the pre-built container into the base STAMP directory from:
 
 ```bash
 /glw/ekfz_proj/STAMP_container.sif
