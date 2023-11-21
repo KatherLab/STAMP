@@ -114,7 +114,7 @@ def get_n_toptiles(slide, category: str, output_dir: Path, coords: Tensor,
     # NOTE: target size (stride, stride) only works for NON-OVERLAPPING tiles
     # that were extracted in previous steps.
     for score_idx, pos in enumerate(top_coords_original):
-        tile = slide.read_region((pos[0], pos[1]), 0, (stride, stride)).convert('RGB')
+        tile = slide.read_region((pos[0], pos[1]), 0, (np.uint(stride*scaling_factor), np.uint(stride*scaling_factor))).convert('RGB').resize((stride,stride))
         tile.save(
                 (output_dir / f"toptiles_{category}")
                 / f"score_{top_score.values[score_idx]:.2f}_toptiles_{category}_{(pos[0], pos[1])}.png"
