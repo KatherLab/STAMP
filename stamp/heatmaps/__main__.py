@@ -13,6 +13,24 @@ from matplotlib.axes import Axes
 from matplotlib.patches import Patch
 from PIL import Image
 from torch import Tensor
+from preprocessing.helpers.common import supported_extensions
+
+
+def load_slide_ext(svs_dir: Path, h5_path: Path) -> openslide.OpenSlide:
+    file_path = svs_dir / h5_path.with_suffix("").name  # Path to the file without any specific extension
+    
+    # Check if any supported extension matches the file
+    slide = None
+    for ext in supported_extensions:
+        slide_path = file_path.with_suffix(f".{ext}")
+        if slide_path.exists():
+            slide = openslide.open_slide(slide_path)
+            break  # Stop searching if a supported file is found
+    if slide is None:
+        raise FileNotFoundError(f"No supported slide file found in {svs_dir}.\
+                                 \nOnly support for: {supported_extensions}")
+    else:
+        return slide
 
 
 def get_stride(coords: Tensor) -> int:
@@ -52,8 +70,7 @@ def vals_to_im(
     return im
 
 
-def show_thumb(thumb_ax: Axes, svs_dir: Path, h5_path: Path, attention: Tensor) -> None:
-    slide = openslide.open_slide(svs_dir / h5_path.with_suffix(".svs").name) # only supporting svs is clearly a limitation
+def show_thumb(slide, thumb_ax: Axes, svs_dir: Path, h5_path: Path, attention: Tensor) -> None:  
     mpp = float(slide.properties[openslide.PROPERTY_NAME_MPP_X])
     dims_um = np.array(slide.dimensions) * mpp
     thumb = slide.get_thumbnail(np.round(dims_um * 8 / 256).astype(int))
@@ -74,10 +91,10 @@ def show_class_map(
     )
 
 
-def get_n_toptiles(category: str, svs_dir: Path, h5_path: Path, 
-                   output_dir: Path, coords: Tensor, 
+def get_n_toptiles(slide, category: str, output_dir: Path, coords: Tensor, 
                    scores: Tensor, stride: int, n: int = 8) -> None:
-    slide = openslide.open_slide(svs_dir / h5_path.with_suffix(".svs").name) # TODO: add the OpenSlide supported extensions
+    
+ 
     slide_mpp = float(slide.properties[openslide.PROPERTY_NAME_MPP_X])
 
     (output_dir / f"toptiles_{category}").mkdir(exist_ok=True, parents=True)
@@ -110,7 +127,6 @@ def main(slide_name: str, feature_dir: Path, svs_dir: Path, model_path: Path, ou
     categories: Collection[str] = learn.dls.train.dataset._datasets[
         -1
     ].encode.categories_[0]
-    
 
     for h5_path in feature_dir.glob(f"**/{slide_name}.h5"):
         slide_output_dir = output_dir / h5_path.stem
@@ -140,6 +156,8 @@ def main(slide_name: str, feature_dir: Path, svs_dir: Path, model_path: Path, ou
             gradcam_2d=gradcam_2d,
             categories=categories,
         )
+
+        slide = load_slide_ext(svs_dir=svs_dir, h5_path=h5_path)
 
         for ax, (pos_idx, category) in zip(axs[1, :], enumerate(categories)):
             ax: Axes
@@ -191,13 +209,14 @@ def main(slide_name: str, feature_dir: Path, svs_dir: Path, model_path: Path, ou
                 / f"scores-{h5_path.stem}--score_{category}={preds[0][pos_idx]:0.2f}.png"
             )
 
-            get_n_toptiles(category=category, stride=stride, 
-                           output_dir=slide_output_dir, svs_dir=svs_dir, 
-                           h5_path=h5_path, scores=scores[:, pos_idx], #(category_support * attention)
+            get_n_toptiles(slide=slide,category=category, stride=stride, 
+                           output_dir=slide_output_dir,
+                           scores=scores[:, pos_idx],
                            coords=coords, n=n_toptiles)
 
         show_thumb(
-            thumb_ax=axs[0, 0], svs_dir=svs_dir, h5_path=h5_path, attention=attention
+            slide=slide,thumb_ax=axs[0, 0], svs_dir=svs_dir, 
+            h5_path=h5_path, attention=attention
         )
 
         for ax in axs.ravel():
