@@ -68,7 +68,8 @@ def train(
     model.to(torch.device('cuda' if torch.cuda.is_available() else 'cpu')) #
 
     # weigh inversely to class occurances
-    counts = pd.value_counts(targs[~valid_idxs])
+    counts = pd.Series(targs[~valid_idxs]).value_counts()
+
     weight = counts.sum() / counts
     weight /= weight.sum()
     # reorder according to vocab
