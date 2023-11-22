@@ -100,7 +100,7 @@ def run_cli(args: argparse.Namespace):
             c = cfg.modeling
             from .modeling.marugoto.transformer.helpers import train_categorical_model_
             train_categorical_model_(clini_table=Path(c.clini_table), 
-                                     slide_csv=Path(c.slide_csv),
+                                     slide_table=Path(c.slide_table),
                                      feature_dir=Path(c.feature_dir), 
                                      output_path=Path(c.output_dir),
                                      target_label=c.target_label, 
@@ -116,7 +116,7 @@ def run_cli(args: argparse.Namespace):
             c = cfg.modeling
             from .modeling.marugoto.transformer.helpers import categorical_crossval_
             categorical_crossval_(clini_table=Path(c.clini_table), 
-                                  slide_csv=Path(c.slide_csv),
+                                  slide_table=Path(c.slide_table),
                                   feature_dir=Path(c.feature_dir),
                                   output_path=Path(c.output_dir),
                                   target_label=c.target_label,
@@ -133,7 +133,7 @@ def run_cli(args: argparse.Namespace):
             c = cfg.modeling
             from .modeling.marugoto.transformer.helpers import deploy_categorical_model_
             deploy_categorical_model_(clini_table=Path(c.clini_table),
-                                      slide_csv=Path(c.slide_csv),
+                                      slide_table=Path(c.slide_table),
                                       feature_dir=Path(c.deploy_feature_dir),
                                       output_path=Path(c.output_dir),
                                       target_label=c.target_label,

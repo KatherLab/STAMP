@@ -20,8 +20,8 @@ preprocessing:
   model_path: ${oc.env:STAMP_RESOURCES_DIR}/ctranspath.pth  # Path of where model for the feature extractor is
 
 modeling:
-  clini_table: # Path to clini_excel file
-  slide_csv: # Path to slide_csv file
+  clini_table: # Path to clini_table file (.xlsx or .csv)
+  slide_table: # Path to slide_table file (.xlsx or .csv)
   feature_dir: ${preprocessing.output_dir}/STAMP_macenko_xiyuewang-ctranspath-7c998680 # Path to feature directory
   deploy_feature_dir: # Path to directory containing the features to deploy on (external cohort)
   output_dir: # Path to output directory

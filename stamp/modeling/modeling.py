@@ -8,7 +8,7 @@ def main():
         description='Associative modeling with a Vision Transformer.')
     
     parser.add_argument("--clini_table", type=Path, help="Path to clini_excel file")
-    parser.add_argument("--slide_csv", type=Path, help="Path to slide_csv file")
+    parser.add_argument("--slide_table", type=Path, help="Path to slide_table file")
     parser.add_argument("--feature_dir", type=Path, help="Path to feature directory")
     parser.add_argument("--output_path", type=Path, help="Path to output file")
     parser.add_argument("--target_label", type=str, help="Target label")
@@ -26,7 +26,7 @@ def main():
     if args.one_model:
         #run full training for 1 model
         train_categorical_model_(clini_table=args.clini_table, 
-                                 slide_csv=args.slide_csv,
+                                 slide_table=args.slide_table,
                                  feature_dir=args.feature_dir, 
                                  output_path=args.output_path,
                                  target_label=args.target_label, 
@@ -36,7 +36,7 @@ def main():
     elif args.deploy_model:
         #deploy 1 model on data
         deploy_categorical_model_(clini_table=args.clini_table,
-                                  slide_csv=args.slide_csv,
+                                  slide_table=args.slide_table,
                                   feature_dir=args.feature_dir,
                                   model_path=args.deploy_model,
                                   output_path=args.output_path,
@@ -47,7 +47,7 @@ def main():
     else:
         #run cross validation for n_splits models
         categorical_crossval_(clini_table=args.clini_table, 
-                              slide_csv=args.slide_csv,
+                              slide_table=args.slide_table,
                               feature_dir=args.feature_dir,
                               output_path=args.output_path,
                               target_label=args.target_label,

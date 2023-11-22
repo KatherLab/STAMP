@@ -25,7 +25,7 @@ PathLike = Union[str, Path]
 
 def train_categorical_model_(
     clini_table: PathLike,
-    slide_csv: PathLike,
+    slide_table: PathLike,
     feature_dir: PathLike,
     output_path: PathLike,
     *,
@@ -38,7 +38,7 @@ def train_categorical_model_(
 
     Args:
         clini_table:  Path to the clini table.
-        slide_csv:  Path to the slide tabel.
+        slide_table:  Path to the slide tabel.
         target_label:  Label to train for.
         categories:  Categories to train for, or all categories appearing in the
             clini table if none given (e.g. '["MSIH", "nonMSIH"]').
@@ -55,7 +55,7 @@ def train_categorical_model_(
     info = {
         'description': 'MIL training',
         'clini': str(Path(clini_table).absolute()),
-        'slide': str(Path(slide_csv).absolute()),
+        'slide': str(Path(slide_table).absolute()),
         'feature_dir': str(feature_dir.absolute()),
         'target_label': str(target_label),
         'cat_labels': [str(c) for c in cat_labels],
@@ -69,7 +69,7 @@ def train_categorical_model_(
         return
 
     clini_df = pd.read_csv(clini_table, dtype=str) if Path(clini_table).suffix == '.csv' else pd.read_excel(clini_table, dtype=str)
-    slide_df = pd.read_csv(slide_csv, dtype=str) if Path(slide_csv).suffix == '.csv' else pd.read_excel(slide_csv, dtype=str)
+    slide_df = pd.read_csv(slide_table, dtype=str) if Path(slide_table).suffix == '.csv' else pd.read_excel(slide_table, dtype=str)
  
     df = clini_df.merge(slide_df, on='PATIENT')
 
@@ -82,7 +82,7 @@ def train_categorical_model_(
     categories = np.array(categories)
     info['categories'] = list(categories)
 
-    df = get_cohort_df(clini_table, slide_csv, feature_dir, target_label, categories)
+    df = get_cohort_df(clini_table, slide_table, feature_dir, target_label, categories)
 
     print('Overall distribution')
     print(df[target_label].value_counts())
@@ -154,7 +154,7 @@ def _make_cont_enc(df, conts) -> SKLearnEncoder:
 
 def deploy_categorical_model_(
     clini_table: PathLike,
-    slide_csv: PathLike,
+    slide_table: PathLike,
     feature_dir: PathLike,
     model_path: PathLike,
     output_path: PathLike,
@@ -167,7 +167,7 @@ def deploy_categorical_model_(
 
     Args:
         clini_table:  Path to the clini table.
-        slide_csv:  Path to the slide tabel.
+        slide_table:  Path to the slide tabel.
         target_label:  Label to train for.
         feature_dir:  Path containing the features.
         model_path:  Path of the model to deploy.
@@ -188,7 +188,7 @@ def deploy_categorical_model_(
     cat_labels = cat_labels or learn.cat_labels
     cont_labels = cont_labels or learn.cont_labels
 
-    test_df = get_cohort_df(clini_table, slide_csv, feature_dir, target_label, categories)
+    test_df = get_cohort_df(clini_table, slide_table, feature_dir, target_label, categories)
 
     patient_preds_df = deploy(test_df=test_df, learn=learn, target_label=target_label)
     output_path.mkdir(parents=True, exist_ok=True)
@@ -196,7 +196,7 @@ def deploy_categorical_model_(
 
 
 def categorical_crossval_(
-    clini_table: PathLike, slide_csv: PathLike, feature_dir: PathLike, output_path: PathLike,
+    clini_table: PathLike, slide_table: PathLike, feature_dir: PathLike, output_path: PathLike,
     *,
     target_label: str,
     cat_labels: Sequence[str] = [],
@@ -208,7 +208,7 @@ def categorical_crossval_(
 
     Args:
         clini_table:  Path to the clini table.
-        slide_csv:  Path to the slide tabel.
+        slide_table:  Path to the slide tabel.
         feature_dir:  Path containing the features.
         target_label:  Label to train for.
         output_path:  File to save model and the results in.
@@ -225,7 +225,7 @@ def categorical_crossval_(
     info = {
         'description': 'MIL cross-validation',
         'clini': str(Path(clini_table).absolute()),
-        'slide': str(Path(slide_csv).absolute()),
+        'slide': str(Path(slide_table).absolute()),
         'feature_dir': str(feature_dir.absolute()),
         'target_label': str(target_label),
         'cat_labels': [str(c) for c in cat_labels],
@@ -235,7 +235,7 @@ def categorical_crossval_(
         'datetime': datetime.now().astimezone().isoformat()}
 
     clini_df = pd.read_csv(clini_table, dtype=str) if Path(clini_table).suffix == '.csv' else pd.read_excel(clini_table, dtype=str)
-    slide_df = pd.read_csv(slide_csv, dtype=str) if Path(slide_csv).suffix == '.csv' else pd.read_excel(slide_csv, dtype=str)
+    slide_df = pd.read_csv(slide_table, dtype=str) if Path(slide_table).suffix == '.csv' else pd.read_excel(slide_table, dtype=str)
 
 
     if 'PATIENT' not in clini_df.columns:
@@ -243,7 +243,7 @@ def categorical_crossval_(
                          Please ensure the patient identifier column is named PATIENT.")
     
     if 'PATIENT' not in slide_df.columns:
-        raise ValueError("The PATIENT column is missing in the slide_csv.\n\
+        raise ValueError("The PATIENT column is missing in the slide_table.\n\
                          Please ensure the patient identifier column is named PATIENT.")
 
     df = clini_df.merge(slide_df, on='PATIENT')
@@ -256,7 +256,7 @@ def categorical_crossval_(
     categories = np.array(categories)
     info['categories'] = list(categories)
 
-    df = get_cohort_df(clini_table, slide_csv, feature_dir, target_label, categories)
+    df = get_cohort_df(clini_table, slide_table, feature_dir, target_label, categories)
 
     info['class distribution'] = {'overall': {
         k: int(v) for k, v in df[target_label].value_counts().items()}}

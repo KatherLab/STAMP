@@ -14,7 +14,7 @@ __all__ = ['plot_top_att_tiles_',
            'plot_top_att_from_df_']
 
 def _top_att_tiles_df(
-        feature_dir: Path, tile_dir: Path, model_path: Path, patient_preds_csv: Path, slide_csv: Path,
+        feature_dir: Path, tile_dir: Path, model_path: Path, patient_preds_csv: Path, slide_table: Path,
         target_label: str, pos_class: str, n_patients=5, n_tiles: int = 5, out_dir: Path = None) -> pd.DataFrame:
 
     feature_dir = Path(feature_dir)
@@ -27,7 +27,7 @@ def _top_att_tiles_df(
         feature_dir = [feature_dir]
     df = get_cohort_df(
         clini_excel=patient_preds_csv,
-        slide_csv=slide_csv,
+        slide_table=slide_table,
         feature_dirs=feature_dir,
         target_label=target_label,
         categories=[pos_class],
@@ -107,12 +107,12 @@ def plot_top_att_from_df_(df: pd.DataFrame, out_file: Path):
 
 def plot_top_att_tiles_(
     feature_dir: Path, tile_dir: Path, model_path: Path,
-    patient_preds_csv: Path, slide_csv: Path, target_label: str, pos_class: str, n_patients=5, n_tiles: int = 5, out_dir: Path = None
+    patient_preds_csv: Path, slide_table: Path, target_label: str, pos_class: str, n_patients=5, n_tiles: int = 5, out_dir: Path = None
 ) -> None:
     if not out_dir:
         out_dir = Path(patient_preds_csv).parent
 
-    df = _top_att_tiles_df(feature_dir, tile_dir, model_path, patient_preds_csv, slide_csv,
+    df = _top_att_tiles_df(feature_dir, tile_dir, model_path, patient_preds_csv, slide_table,
                            target_label, pos_class, n_patients=n_patients, n_tiles=n_tiles, out_dir=out_dir)
     if out_dir.exists():
         pass
