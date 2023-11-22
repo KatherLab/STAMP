@@ -3,6 +3,8 @@
 # NOTE: you may use environment variables in this file, e.g. ${oc.env:STAMP_RESOURCES_DIR}.
 # The STAMP_RESOURCES_DIR environment variable is a special environment variable that, if not set, will be set to the resources/ directory relative to the config.yaml file.
 
+# Only use absolute paths!
+
 preprocessing:
   output_dir: # Path to save features to
   wsi_dir: # Path of where the whole-slide images are.
