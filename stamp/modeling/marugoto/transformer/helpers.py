@@ -69,7 +69,8 @@ def train_categorical_model_(
         return
 
     clini_df = pd.read_csv(clini_table, dtype=str) if Path(clini_table).suffix == '.csv' else pd.read_excel(clini_table, dtype=str)
-    slide_df = pd.read_csv(slide_csv, dtype=str)
+    slide_df = pd.read_csv(slide_csv, dtype=str) if Path(slide_csv).suffix == '.csv' else pd.read_excel(slide_csv, dtype=str)
+ 
     df = clini_df.merge(slide_df, on='PATIENT')
 
     # filter na, infer categories if not given
@@ -234,7 +235,17 @@ def categorical_crossval_(
         'datetime': datetime.now().astimezone().isoformat()}
 
     clini_df = pd.read_csv(clini_table, dtype=str) if Path(clini_table).suffix == '.csv' else pd.read_excel(clini_table, dtype=str)
-    slide_df = pd.read_csv(slide_csv, dtype=str)
+    slide_df = pd.read_csv(slide_csv, dtype=str) if Path(slide_csv).suffix == '.csv' else pd.read_excel(slide_csv, dtype=str)
+
+
+    if 'PATIENT' not in clini_df.columns:
+        raise ValueError("The PATIENT column is missing in the clini_table.\n\
+                         Please ensure the patient identifier column is named PATIENT.")
+    
+    if 'PATIENT' not in slide_df.columns:
+        raise ValueError("The PATIENT column is missing in the slide_csv.\n\
+                         Please ensure the patient identifier column is named PATIENT.")
+
     df = clini_df.merge(slide_df, on='PATIENT')
 
     # filter na, infer categories if not given
