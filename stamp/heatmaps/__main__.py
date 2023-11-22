@@ -16,21 +16,14 @@ from torch import Tensor
 from preprocessing.helpers.common import supported_extensions
 
 
-def load_slide_ext(svs_dir: Path, h5_path: Path) -> openslide.OpenSlide:
-    file_path = svs_dir / h5_path.with_suffix("").name  # Path to the file without any specific extension
-    
+def load_slide_ext(wsi_dir: Path) -> openslide.OpenSlide:
     # Check if any supported extension matches the file
-    slide = None
-    for ext in supported_extensions:
-        slide_path = file_path.with_suffix(f".{ext}")
-        if slide_path.exists():
-            slide = openslide.open_slide(slide_path)
-            break  # Stop searching if a supported file is found
-    if slide is None:
-        raise FileNotFoundError(f"No supported slide file found in {svs_dir}.\
-                                 \nOnly support for: {supported_extensions}")
+    if wsi_dir.suffix not in supported_extensions:
+        raise FileNotFoundError(f"No supported slide file found for slide {wsi_dir.name} in provided directory {wsi_dir.parent}\
+                                 \nOnly support for: {supported_extensions}")  
     else:
-        return slide
+        return(openslide.open_slide(wsi_dir))
+
 
 
 def get_stride(coords: Tensor) -> int:
@@ -70,7 +63,7 @@ def vals_to_im(
     return im
 
 
-def show_thumb(slide, thumb_ax: Axes, svs_dir: Path, h5_path: Path, attention: Tensor) -> None:  
+def show_thumb(slide, thumb_ax: Axes, wsi_dir: Path, h5_path: Path, attention: Tensor) -> None:  
     mpp = float(slide.properties[openslide.PROPERTY_NAME_MPP_X])
     dims_um = np.array(slide.dimensions) * mpp
     thumb = slide.get_thumbnail(np.round(dims_um * 8 / 256).astype(int))
@@ -121,17 +114,19 @@ def get_n_toptiles(slide, category: str, output_dir: Path, coords: Tensor,
             )
 
 
-def main(slide_name: str, feature_dir: Path, svs_dir: Path, model_path: Path, output_dir: Path, n_toptiles: int = 8) -> None:
+def main(slide_name: str, feature_dir: Path, wsi_dir: Path, model_path: Path, output_dir: Path, n_toptiles: int = 8) -> None:
     learn = load_learner(model_path)
     learn.model.eval()
     categories: Collection[str] = learn.dls.train.dataset._datasets[
         -1
     ].encode.categories_[0]
 
-    for h5_path in feature_dir.glob(f"**/{slide_name}.h5"):
+    # for h5_path in feature_dir.glob(f"**/{slide_name}.h5"):
+    for slide_path in wsi_dir.glob(f"**/{slide_name}.*"):
+        h5_path = feature_dir / slide_path.with_suffix(".h5").name
         slide_output_dir = output_dir / h5_path.stem
         slide_output_dir.mkdir(exist_ok=True, parents=True)
-        print(f"Creating heatmaps for {h5_path}...")
+        print(f"Creating heatmaps for {slide_path.name}...")
         with h5py.File(h5_path) as h5:
             feats = torch.tensor(h5["feats"][:]).float()
             coords = torch.tensor(h5["coords"][:], dtype=torch.int)
@@ -157,7 +152,7 @@ def main(slide_name: str, feature_dir: Path, svs_dir: Path, model_path: Path, ou
             categories=categories,
         )
 
-        slide = load_slide_ext(svs_dir=svs_dir, h5_path=h5_path)
+        slide = load_slide_ext(slide_path)
 
         for ax, (pos_idx, category) in zip(axs[1, :], enumerate(categories)):
             ax: Axes
@@ -215,7 +210,7 @@ def main(slide_name: str, feature_dir: Path, svs_dir: Path, model_path: Path, ou
                            coords=coords, n=n_toptiles)
 
         show_thumb(
-            slide=slide,thumb_ax=axs[0, 0], svs_dir=svs_dir, 
+            slide=slide,thumb_ax=axs[0, 0], wsi_dir=slide_path, 
             h5_path=h5_path, attention=attention
         )
 
@@ -235,7 +230,7 @@ if __name__ == "__main__":
         help="Name of the WSI to create heatmap for (no extensions)",
     )
     parser.add_argument(
-        "--svs-dir",
+        "--wsi-dir",
         metavar="PATH",
         type=Path,
         required=True,

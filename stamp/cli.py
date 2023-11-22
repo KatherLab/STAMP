@@ -165,7 +165,7 @@ def run_cli(args: argparse.Namespace):
             from .heatmaps.__main__ import main
             main(slide_name=str(c.slide_name),
                  feature_dir=Path(c.feature_dir),
-                 svs_dir=Path(c.wsi_dir),
+                 wsi_dir=Path(c.wsi_dir),
                  model_path=Path(c.model_path),
                  output_dir=Path(c.output_dir))
         case _:
