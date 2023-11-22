@@ -81,7 +81,7 @@ def preprocess(output_dir: Path, wsi_dir: Path, model_path: Path, cache_dir: Pat
     
     img_name = "norm_slide.jpg" if norm else "canny_slide.jpg"
     if not only_feature_extraction:
-        img_dir = sum((list(wsi_dir.glob(f'**/*.{ext}'))
+        img_dir = sum((list(wsi_dir.glob(f'**/*{ext}'))
                     for ext in supported_extensions),
                     start=[])
     else:
