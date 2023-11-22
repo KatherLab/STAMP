@@ -105,18 +105,15 @@ class Normalizer(object):
 
     def transform(self, og_img: np.array, bg_rejected_img: np.array, rejected_list: np.array, patch_shapes: list, cores: int=8): #TODO: add optional split, patch sizes, overlap
         begin = time.time()
-        I = ut.standardize_brightness(og_img)
-        after_sb = time.time()
-        print(f'Standardized brightness: {after_sb-begin}')
-        stain_matrix_source = get_stain_matrix(I)
+        stain_matrix_source = get_stain_matrix(og_img)
         after_sm = time.time()
         print(f'Get stain matrix: {after_sm-begin}')
-        I_shape = I.shape
+        I_shape = og_img.shape
         source_concentrations_list = ut.get_concentrations_source(bg_rejected_img, I_shape, stain_matrix_source, rejected_list)
         after_conc = time.time()
         print(f'\nGet concentrations (normalisation): {after_conc-after_sm}')
 
-        del I, stain_matrix_source
+        del og_img, stain_matrix_source
 
         split=True
         if split:
