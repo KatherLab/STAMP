@@ -20,10 +20,10 @@ preprocessing:
 modeling:
   clini_table: # Path to clini_excel file
   slide_csv: # Path to slide_csv file
-  feature_dir: ${preprocessing.output_dir} # Path to feature directory
-  deploy_feature_dir: # Path to deploy feature directory
+  feature_dir: ${preprocessing.output_dir}/STAMP_macenko_xiyuewang-ctranspath-7c998680 # Path to feature directory
+  deploy_feature_dir: # Path to directory containing the features to deploy on (external cohort)
   output_dir: # Path to output directory
-  target_label: # Target label
+  target_label: # Target label. No spaces allowed! Format clinical table accordingly
   categories: [] # Categories (list), leave empty to automatically infer based on unique values in the target_label column
   cat_labels: [] # Extra input category labels (list, can be empty)
   cont_labels: [] # Extra input continuous labels (list, can be empty)
@@ -47,4 +47,4 @@ heatmaps:
   wsi_dir: # Path to whole-slide image directory.
   model_path: /path/to/export.pkl # Path to saved model (only applicable to deployment)
   output_dir: # Path to output directory
-  n_toptiles: # Number of toptiles, default is 8
+  n_toptiles: 8 # Number of toptiles, default is 8
