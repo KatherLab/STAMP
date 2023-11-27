@@ -13,7 +13,7 @@ from matplotlib.axes import Axes
 from matplotlib.patches import Patch
 from PIL import Image
 from torch import Tensor
-from preprocessing.helpers.common import supported_extensions
+from stamp.preprocessing.helpers.common import supported_extensions
 
 
 def load_slide_ext(wsi_dir: Path) -> openslide.OpenSlide:
