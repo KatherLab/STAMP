@@ -68,6 +68,7 @@ def show_thumb(slide, thumb_ax: Axes, wsi_dir: Path, h5_path: Path, attention: T
     dims_um = np.array(slide.dimensions) * mpp
     thumb = slide.get_thumbnail(np.round(dims_um * 8 / 256).astype(int))
     thumb_ax.imshow(np.array(thumb)[: attention.shape[0] * 8, : attention.shape[1] * 8])
+    return np.array(thumb)[: attention.shape[0] * 8, : attention.shape[1] * 8]
 
 
 def show_class_map(
@@ -209,10 +210,11 @@ def main(slide_name: str, feature_dir: Path, wsi_dir: Path, model_path: Path, ou
                            scores=scores[:, pos_idx],
                            coords=coords, n=n_toptiles)
 
-        show_thumb(
+        thumb=show_thumb(
             slide=slide,thumb_ax=axs[0, 0], wsi_dir=slide_path, 
             h5_path=h5_path, attention=attention
         )
+        Image.fromarray(thumb).save(slide_output_dir / f"thumbnail-{h5_path.stem}.png")
 
         for ax in axs.ravel():
             ax.axis("off")
