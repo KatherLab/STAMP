@@ -220,6 +220,7 @@ def main(slide_name: str, feature_dir: Path, wsi_dir: Path, model_path: Path, ou
             ax.axis("off")
 
         fig.savefig(slide_output_dir / f"overview-{h5_path.stem}.png")
+        plt.close(fig)
 
 
 if __name__ == "__main__":
