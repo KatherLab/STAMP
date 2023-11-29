@@ -65,9 +65,7 @@ def vals_to_im(
     return im
 
 
-def show_thumb(
-    slide, thumb_ax: Axes, wsi_dir: Path, h5_path: Path, attention: Tensor
-) -> None:
+def show_thumb(slide, thumb_ax: Axes, attention: Tensor) -> None:
     mpp = float(slide.properties[openslide.PROPERTY_NAME_MPP_X])
     dims_um = np.array(slide.dimensions) * mpp
     thumb = slide.get_thumbnail(np.round(dims_um * 8 / 256).astype(int))
@@ -242,8 +240,6 @@ def main(
         thumb = show_thumb(
             slide=slide,
             thumb_ax=axs[0, 0],
-            wsi_dir=slide_path,
-            h5_path=h5_path,
             attention=attention,
         )
         Image.fromarray(thumb).save(slide_output_dir / f"thumbnail-{h5_path.stem}.png")
