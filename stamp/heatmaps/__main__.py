@@ -13,17 +13,19 @@ from matplotlib.axes import Axes
 from matplotlib.patches import Patch
 from PIL import Image
 from torch import Tensor
+
 from stamp.preprocessing.helpers.common import supported_extensions
 
 
 def load_slide_ext(wsi_dir: Path) -> openslide.OpenSlide:
     # Check if any supported extension matches the file
     if wsi_dir.suffix not in supported_extensions:
-        raise FileNotFoundError(f"No supported slide file found for slide {wsi_dir.name} in provided directory {wsi_dir.parent}\
-                                 \nOnly support for: {supported_extensions}")  
+        raise FileNotFoundError(
+            f"No supported slide file found for slide {wsi_dir.name} in provided directory {wsi_dir.parent}\
+                                 \nOnly support for: {supported_extensions}"
+        )
     else:
-        return(openslide.open_slide(wsi_dir))
-
+        return openslide.open_slide(wsi_dir)
 
 
 def get_stride(coords: Tensor) -> int:
@@ -63,7 +65,7 @@ def vals_to_im(
     return im
 
 
-def show_thumb(slide, thumb_ax: Axes, wsi_dir: Path, h5_path: Path, attention: Tensor) -> None:  
+def show_thumb(slide, thumb_ax: Axes, attention: Tensor) -> None:
     mpp = float(slide.properties[openslide.PROPERTY_NAME_MPP_X])
     dims_um = np.array(slide.dimensions) * mpp
     thumb = slide.get_thumbnail(np.round(dims_um * 8 / 256).astype(int))
@@ -85,37 +87,59 @@ def show_class_map(
     )
 
 
-def get_n_toptiles(slide, category: str, output_dir: Path, coords: Tensor, 
-                   scores: Tensor, stride: int, n: int = 8) -> None:
-    
- 
+def get_n_toptiles(
+    slide,
+    category: str,
+    output_dir: Path,
+    coords: Tensor,
+    scores: Tensor,
+    stride: int,
+    n: int = 8,
+) -> None:
     slide_mpp = float(slide.properties[openslide.PROPERTY_NAME_MPP_X])
 
     (output_dir / f"toptiles_{category}").mkdir(exist_ok=True, parents=True)
-    
+
     # determine the scaling factor between heatmap and original slide
     # 256 microns edge length by default, with 224px = ~1.14 MPP (± 10x magnification)
-    feature_downsample_mpp = (256/stride) # NOTE: stride here only makes sense if the tiles were NON-OVERLAPPING
-    scaling_factor = feature_downsample_mpp/slide_mpp
+    feature_downsample_mpp = (
+        256 / stride
+    )  # NOTE: stride here only makes sense if the tiles were NON-OVERLAPPING
+    scaling_factor = feature_downsample_mpp / slide_mpp
 
     top_score = scores.topk(n)
 
     # OPTIONAL: if the score is not larger than 0.5, it's indecisive on directionality
     # then add [top_score.values > 0.5]
     top_coords_downscaled = coords[top_score.indices]
-    top_coords_original = np.uint(top_coords_downscaled*scaling_factor)
+    top_coords_original = np.uint(top_coords_downscaled * scaling_factor)
 
     # NOTE: target size (stride, stride) only works for NON-OVERLAPPING tiles
     # that were extracted in previous steps.
     for score_idx, pos in enumerate(top_coords_original):
-        tile = slide.read_region((pos[0], pos[1]), 0, (np.uint(stride*scaling_factor), np.uint(stride*scaling_factor))).convert('RGB').resize((stride,stride))
-        tile.save(
-                (output_dir / f"toptiles_{category}")
-                / f"score_{top_score.values[score_idx]:.2f}_toptiles_{category}_{(pos[0], pos[1])}.png"
+        tile = (
+            slide.read_region(
+                (pos[0], pos[1]),
+                0,
+                (np.uint(stride * scaling_factor), np.uint(stride * scaling_factor)),
             )
+            .convert("RGB")
+            .resize((stride, stride))
+        )
+        tile.save(
+            (output_dir / f"toptiles_{category}")
+            / f"score_{top_score.values[score_idx]:.2f}_toptiles_{category}_{(pos[0], pos[1])}.png"
+        )
 
 
-def main(slide_name: str, feature_dir: Path, wsi_dir: Path, model_path: Path, output_dir: Path, n_toptiles: int = 8) -> None:
+def main(
+    slide_name: str,
+    feature_dir: Path,
+    wsi_dir: Path,
+    model_path: Path,
+    output_dir: Path,
+    n_toptiles: int = 8,
+) -> None:
     learn = load_learner(model_path)
     learn.model.eval()
     categories: Collection[str] = learn.dls.train.dataset._datasets[
@@ -159,21 +183,19 @@ def main(slide_name: str, feature_dir: Path, wsi_dir: Path, model_path: Path, ou
             ax: Axes
             topk = scores_2d.topk(2)
             category_support = torch.where(
-                # To get the "positiveness", 
+                # To get the "positiveness",
                 # it checks whether the "hot" class has the highest score for each pixel
                 topk.indices[..., 0] == pos_idx,
-
-                # Then, if the hot class has the highest score, 
+                # Then, if the hot class has the highest score,
                 # it assigns a positive value based on its difference from the second highest score
                 scores_2d[..., pos_idx] - topk.values[..., 1],
-
                 # Likewise, if it has NOT a negative value based on the difference of that class' score to the highest one
                 scores_2d[..., pos_idx] - topk.values[..., 0],
             )
 
-            # So, if we have a pixel with scores (.4, .4, .2) and would want to get the heat value for the first class, 
+            # So, if we have a pixel with scores (.4, .4, .2) and would want to get the heat value for the first class,
             # we would get a neutral color, because it is matched with the second class
-            # But if our scores were (.4, .3, .3), it would be red, 
+            # But if our scores were (.4, .3, .3), it would be red,
             # because now our class is .1 above its nearest competitor
 
             attention = torch.where(
@@ -205,14 +227,20 @@ def main(slide_name: str, feature_dir: Path, wsi_dir: Path, model_path: Path, ou
                 / f"scores-{h5_path.stem}--score_{category}={preds[0][pos_idx]:0.2f}.png"
             )
 
-            get_n_toptiles(slide=slide,category=category, stride=stride, 
-                           output_dir=slide_output_dir,
-                           scores=scores[:, pos_idx],
-                           coords=coords, n=n_toptiles)
+            get_n_toptiles(
+                slide=slide,
+                category=category,
+                stride=stride,
+                output_dir=slide_output_dir,
+                scores=scores[:, pos_idx],
+                coords=coords,
+                n=n_toptiles,
+            )
 
-        thumb=show_thumb(
-            slide=slide,thumb_ax=axs[0, 0], wsi_dir=slide_path, 
-            h5_path=h5_path, attention=attention
+        thumb = show_thumb(
+            slide=slide,
+            thumb_ax=axs[0, 0],
+            attention=attention,
         )
         Image.fromarray(thumb).save(slide_output_dir / f"thumbnail-{h5_path.stem}.png")
 
@@ -220,6 +248,7 @@ def main(slide_name: str, feature_dir: Path, wsi_dir: Path, model_path: Path, ou
             ax.axis("off")
 
         fig.savefig(slide_output_dir / f"overview-{h5_path.stem}.png")
+        plt.close(fig)
 
 
 if __name__ == "__main__":
