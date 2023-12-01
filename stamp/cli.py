@@ -82,7 +82,7 @@ def run_cli(args: argparse.Namespace):
                 wsi_dir=Path(c.wsi_dir),
                 model_path=Path(c.model_path),
                 cache_dir=Path(c.cache_dir),
-                patch_size=c.patch_size,
+                # patch_size=c.patch_size,
                 target_mpp=c.mpp,
                 cores=c.cores,
                 norm=c.norm,

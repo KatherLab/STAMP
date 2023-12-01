@@ -9,8 +9,7 @@ preprocessing:
   output_dir: # Path to save features to
   wsi_dir: # Path of where the whole-slide images are.
   cache_dir: # Directory to store resulting slide JPGs
-  patch_size: 224 # Size of the square patch to tessellate
-  mpp: 1.1428571429 # Microns-per-pixel value for slide resolution (default: 256/224)
+  mpp: 1.1428571429 # Microns-per-pixel value for slide resolution (default edge length of 256 microns and pixel size of 224x224 = 256/224)
   cores: 8 # CPU cores to use
   norm: true # Perform Macenko normalisation
   del_slide: false # Remove the original slide after processing
@@ -23,7 +22,6 @@ modeling:
   clini_table: # Path to clini_table file (.xlsx or .csv)
   slide_table: # Path to slide_table file (.xlsx or .csv)
   feature_dir: ${preprocessing.output_dir}/STAMP_macenko_xiyuewang-ctranspath-7c998680 # Path to feature directory
-  deploy_feature_dir: # Path to directory containing the features to deploy on (external cohort)
   output_dir: # Path to output directory
   target_label: # Target label. No spaces allowed! Format clinical table accordingly
   categories: [] # Categories (list), leave empty to automatically infer based on unique values in the target_label column
@@ -31,7 +29,8 @@ modeling:
   cont_labels: [] # Extra input continuous labels (list, can be empty)
   n_splits: 5 # Number of splits for cross-validation (only applicable to cross-validation)
   model_path: /path/to/export.pkl # Path to saved model (only applicable to deployment)
-
+  deploy_feature_dir: # Path to directory containing the external cohort features (only applicable to deployment)
+  
   statistics:
     pred_csvs: # Paths to prediction CSVs to plot ROC curves for
       - path/to/patient-preds.csv # only need 1 path when fully training (remove second one)
