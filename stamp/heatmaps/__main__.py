@@ -128,7 +128,7 @@ def get_n_toptiles(
         )
         tile.save(
             (output_dir / f"toptiles_{category}")
-            / f"score_{top_score.values[score_idx]:.2f}_toptiles_{category}_{(pos[0], pos[1])}.png"
+            / f"score_{top_score.values[score_idx]:.2f}_toptiles_{category}_{(pos[0], pos[1])}.jpg"
         )
 
 
