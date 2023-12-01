@@ -19,7 +19,7 @@ class FeatureExtractor:
     def __init__(self):
         self.model_type = "CTransPath"
 
-    def init_feat_extractor(self, checkpoint_path: str, **kwargs):
+    def init_feat_extractor(self, checkpoint_path: str, device: str, **kwargs):
         """Extracts features from slide tiles.
         Args:
             checkpoint_path:  Path to the model checkpoint file.
@@ -41,7 +41,7 @@ class FeatureExtractor:
         model.load_state_dict(ctranspath['model'], strict=True)
         
         if torch.cuda.is_available():
-            model = model.cuda()
+            model = model.to(device)
 
         print("CTransPath model successfully initialised...")
         model_name='xiyuewang-ctranspath-7c998680'

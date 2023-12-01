@@ -65,7 +65,7 @@ def preprocess(output_dir: Path, wsi_dir: Path, model_path: Path, cache_dir: Pat
     #initialize the feature extraction model
     print(f"\nInitialising CTransPath model as feature extractor...")
     extractor = FeatureExtractor()
-    model, model_name = extractor.init_feat_extractor(checkpoint_path=model_path)
+    model, model_name = extractor.init_feat_extractor(checkpoint_path=model_path, device=device)
 
     #create output feature folder, f.e.:
     #~/output_folder/E2E_macenko_xiyuewang-ctranspath/
