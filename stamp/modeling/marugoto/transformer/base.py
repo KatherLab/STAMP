@@ -62,9 +62,9 @@ def train(
     valid_dl = DataLoader(
         valid_ds, batch_size=1, shuffle=False, num_workers=1)
     batch = train_dl.one_batch()
-
+    feature_dim=batch[0].shape[-1]
     # for binary classification num_classes=2
-    model = ViT(num_classes=len(target_enc.categories_[0])) # Transformer(num_classes=2)
+    model = ViT(num_classes=len(target_enc.categories_[0]), input_dim=feature_dim) # Transformer(num_classes=2)
     model.to(torch.device('cuda' if torch.cuda.is_available() else 'cpu')) #
 
     # weigh inversely to class occurances
