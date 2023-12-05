@@ -1,4 +1,4 @@
-# STAMP protocol
+# STAMP protocol <img src="STAMP_logo.svg" width="250px" align="right" />
 A protocol for Solid Tumor Associative Modeling in Pathology. This repository contains the accompanying code for the steps described in the paper: 
 
 >From Whole Slide Image to Patient-Level Biomarker Prediction: A Protocol for End-to-End Deep Learning in Computational Pathology 
