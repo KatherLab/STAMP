@@ -39,7 +39,7 @@ From: ubuntu:latest
         . /opt/miniconda3/etc/profile.d/conda.sh
         conda activate hpc_cenv
         python --version
-        pip install git+https://github.com/Avic3nna/STAMP
+        pip install git+https://github.com/KatherLab/STAMP
 
 %runscript
         if [ $# -ne 1 ]; then
