@@ -20,7 +20,7 @@ conda activate stamp
 
 Then, install the STAMP package via `pip`:
 ```bash
-pip install git+https://github.com/Avic3nna/STAMP
+pip install git+https://github.com/KatherLab/STAMP
 ```
 
 Once installed, you will be able to run the command line interface directly using the `stamp` command.
