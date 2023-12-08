@@ -170,3 +170,7 @@ cython_debug/
 *pkl
 *sh
 *sif
+*jpg
+*png
+*.h5
+*.svg
