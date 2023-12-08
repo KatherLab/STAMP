@@ -30,8 +30,9 @@ from .helpers.exceptions import MPPExtractionError
 PIL.Image.MAX_IMAGE_PIXELS = None
 
 def preprocess(output_dir: Path, wsi_dir: Path, model_path: Path, cache_dir: Path,
-               target_mpp: float, cores: int, norm: bool, del_slide: bool, only_feature_extraction: bool, 
-               patch_size: int = 224, device: str = "cuda", normalization_template: Path = None):
+               norm: bool, del_slide: bool, only_feature_extraction: bool, 
+               cores: int = 8, target_microns: int = 256, patch_size: int = 224, 
+               device: str = "cuda", normalization_template: Path = None):
     ### START INITIALIZATION
     print(f"Current working directory: {os.getcwd()}")
     Path(cache_dir).mkdir(exist_ok=True, parents=True)
@@ -44,6 +45,7 @@ def preprocess(output_dir: Path, wsi_dir: Path, model_path: Path, cache_dir: Pat
     print(f"Number of CPU cores used: {cores}")
     has_gpu=torch.cuda.is_available()
     print(f"GPU is available: {has_gpu}")
+    target_mpp = target_microns/patch_size
     patch_shape = (patch_size, patch_size) #(224, 224) by default
     step_size = patch_size #have 0 overlap by default
 
