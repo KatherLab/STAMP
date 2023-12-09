@@ -143,7 +143,7 @@ def run_cli(args: argparse.Namespace):
         case "statistics":
             require_configs(
                 cfg,
-                ["pred_csvs", "target_label", "true_class", "output_dir", "n_bootstrap_samples", "figure_width"],
+                ["pred_csvs", "target_label", "true_class", "output_dir"],
                 prefix="modeling.statistics")
             from .modeling.statistics import compute_stats
             c = cfg.modeling.statistics
@@ -152,10 +152,7 @@ def run_cli(args: argparse.Namespace):
             compute_stats(pred_csvs=[Path(x) for x in c.pred_csvs],
                           target_label=c.target_label,
                           true_class=c.true_class,
-                          output_dir=Path(c.output_dir),
-                          n_bootstrap_samples=c.n_bootstrap_samples,
-                          figure_width=c.figure_width,
-                          threshold_cmap=c.threshold_cmap)
+                          output_dir=Path(c.output_dir))
         case "heatmaps":
             require_configs(
                 cfg,

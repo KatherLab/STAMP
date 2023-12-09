@@ -80,7 +80,7 @@ def read_table(file) -> pd.DataFrame:
     else:
         return pd.read_csv(file)
 
-def compute_stats(pred_csvs: Sequence[Path], target_label: str, true_class: str, output_dir: Path, n_bootstrap_samples: int = 1000, figure_width: float = 3.8, threshold_cmap= plt.get_cmap()):
+def compute_stats(pred_csvs: Sequence[Path], target_label: str, true_class: str, output_dir: Path):
     # read all the patient preds
     # and transform their true / preds columns into np arrays
     preds_dfs = [
@@ -91,7 +91,10 @@ def compute_stats(pred_csvs: Sequence[Path], target_label: str, true_class: str,
     y_preds = [
         pd.to_numeric(df[f"{target_label}_{true_class}"]) for df in preds_dfs
     ]
-
+    n_bootstrap_samples = 1000
+    figure_width = 3.8 # inches
+    threshold_cmap= plt.get_cmap()
+    
     roc_curve_figure_aspect_ratio = 1.08
     fig, ax = plt.subplots(
         figsize=(figure_width, figure_width * roc_curve_figure_aspect_ratio),

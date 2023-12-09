@@ -38,9 +38,6 @@ modeling:
     target_label: ${modeling.target_label} # Target label
     true_class: # Class to consider as positive
     output_dir: /path/to/store/model_statistics # Path to save ROC curve and statistics to
-    n_bootstrap_samples: 1000 # Number of bootstrapping samples to take for confidence interval generation
-    figure_width: 3.8 # Width of the figure in inches
-    threshold_cmap: # Draw curve with threshold color
 
 heatmaps:
   slide_name: # Name of the slide to create heatmaps for, wildcards allowed, no file extensions
