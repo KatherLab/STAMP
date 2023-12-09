@@ -156,7 +156,7 @@ def run_cli(args: argparse.Namespace):
         case "heatmaps":
             require_configs(
                 cfg,
-                ["feature_dir","wsi_dir","model_path","output_dir"], 
+                ["feature_dir","wsi_dir","model_path","output_dir", "n_toptiles"], 
                 prefix="heatmaps")
             c = cfg.heatmaps
             from .heatmaps.__main__ import main
@@ -164,7 +164,8 @@ def run_cli(args: argparse.Namespace):
                  feature_dir=Path(c.feature_dir),
                  wsi_dir=Path(c.wsi_dir),
                  model_path=Path(c.model_path),
-                 output_dir=Path(c.output_dir))
+                 output_dir=Path(c.output_dir),
+                 n_toptiles=int(c.n_toptiles))
         case _:
             raise ConfigurationError(f"Unknown command {args.command}")
 
