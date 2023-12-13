@@ -38,6 +38,7 @@ From: ubuntu:latest
         #activate environment, then pip install rest of packages
         . /opt/miniconda3/etc/profile.d/conda.sh
         conda activate hpc_cenv
+        conda install -c conda-forge libstdcxx-ng=12
         python --version
         pip install git+https://github.com/KatherLab/STAMP
 

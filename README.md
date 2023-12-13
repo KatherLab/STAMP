@@ -16,6 +16,7 @@ Second, [install conda](https://conda.io/projects/conda/en/latest/user-guide/ins
 ```bash
 conda create -n stamp python=3.10
 conda activate stamp
+conda install -c conda-forge libstdcxx-ng=12
 ```
 
 Then, install the STAMP package via `pip`:
