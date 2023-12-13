@@ -67,7 +67,7 @@ def run_cli(args: argparse.Namespace):
         case "preprocess":
             require_configs(
                 cfg,
-                ["output_dir", "wsi_dir", "model_path", "cache_dir", "patch_size", "microns", "cores", "norm", "del_slide", "only_feature_extraction", "device", "normalization_template"],
+                ["output_dir", "wsi_dir", "model_path", "cache_dir", "microns", "cores", "norm", "del_slide", "only_feature_extraction", "device", "normalization_template"],
                 prefix="preprocessing"
             )
             c = cfg.preprocessing
