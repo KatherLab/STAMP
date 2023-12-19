@@ -52,7 +52,7 @@ Alternatively, lab members with access to the ZIH server can download the pre-bu
 
 Finally, to download required resources such as the weights of the CTransPath feature extractor, run the following command in the base directory of the protocol:
 ```bash
-singularity run --nv -B /mnt:/mnt STAMP_container.sif "stamp setup"
+singularity run --nv -B /mnt:/mnt STAMP_container.sif "stamp --config /path/to/config.yaml setup"
 ```
 Note that the binding of filesystems (-B) should be adapted to your own system. GPU acceleration (--nv) should be enabled if GPUs are available in the system, but is optional.
 
