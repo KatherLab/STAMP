@@ -1,7 +1,9 @@
-# STAMP protocol <img src="docs/STAMP_logo.svg" width="250px" align="right" />
-A protocol for Solid Tumor Associative Modeling in Pathology. This repository contains the accompanying code for the steps described in the paper: 
+[![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/from-whole-slide-image-to-biomarker/classification-on-tcga)](https://paperswithcode.com/sota/classification-on-tcga?p=from-whole-slide-image-to-biomarker)
 
->From Whole Slide Image to Patient-Level Biomarker Prediction: A Protocol for End-to-End Deep Learning in Computational Pathology 
+# STAMP protocol <img src="docs/STAMP_logo.svg" width="250px" align="right" />
+A protocol for Solid Tumor Associative Modeling in Pathology. This repository contains the accompanying code for the steps described in the [preprint](https://arxiv.org/abs/2312.10944v1): 
+
+>From Whole Slide Image to Biomarker Prediction: A Protocol for End-to-End Deep Learning in Computational Pathology 
 
 The code can be executed either in a local environment, or in a containerized environment (preferred in clusters).
 
@@ -68,3 +70,18 @@ stamp heatmaps   # generate heatmaps
 ```
 
 By default, stamp will use the configuration file `config.yaml` in the current working directory. If you want to use a different configuration file use the `--config` command line option, i.e. `stamp --config some/other/file.yaml train`.
+
+## Reference
+
+If you find our work useful in your research or if you use parts of this code please consider citing our [preprint](https://arxiv.org/abs/2312.10944v1):
+
+```
+@misc{nahhas2023wholeslide,
+      title={From Whole-slide Image to Biomarker Prediction: A Protocol for End-to-End Deep Learning in Computational Pathology}, 
+      author={Omar S. M. El Nahhas and Marko van Treeck and Georg Wölflein and Michaela Unger and Marta Ligero and Tim Lenz and Sophia J. Wagner and Katherine J. Hewitt and Firas Khader and Sebastian Foersch and Daniel Truhn and Jakob Nikolas Kather},
+      year={2023},
+      eprint={2312.10944},
+      archivePrefix={arXiv},
+      primaryClass={cs.CV}
+}
+```
