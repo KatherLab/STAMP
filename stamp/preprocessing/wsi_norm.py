@@ -102,7 +102,9 @@ def preprocess(output_dir: Path, wsi_dir: Path, model_path: Path, cache_dir: Pat
         
         feat_out_dir = output_file_dir/slide_name
 
-        if not (os.path.exists((f'{feat_out_dir}.h5'))):
+        if not (os.path.exists((f'{feat_out_dir}.h5'))) and not os.path.exists(f'{slide_url}.tmp'):
+            # TODO: delete .tmp file on keyboard interrupt / crash (catch exception in __main__.py (?))
+            Path(f'{slide_url}.tmp').touch()
             # Load WSI as one image
             if (only_feature_extraction and (slide_jpg := slide_url).exists()) \
                 or (slide_jpg := slide_cache_dir/'norm_slide.jpg').exists():
@@ -183,9 +185,13 @@ def preprocess(output_dir: Path, wsi_dir: Path, model_path: Path, cache_dir: Pat
                 print("0 tiles remain to extract features from after pre-processing {slide_name}, skipping...")
                 continue
             #########################
+            os.remove(f'{str(slide_url)}.tmp')
 
         else:
-            print(f"{slide_name}.h5 already exists. Skipping...")
+            if os.path.exists((f'{feat_out_dir}.h5')):
+                print(f"{slide_name}.h5 already exists. Skipping...")
+            else:
+                print(f"{slide_name} is already being processed. Skipping...")
             if del_slide:
                 print(f"Deleting slide {slide_name} from local folder...")
                 os.remove(str(slide_url))
