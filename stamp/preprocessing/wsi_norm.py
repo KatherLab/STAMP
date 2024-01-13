@@ -195,36 +195,3 @@ def preprocess(output_dir: Path, wsi_dir: Path, model_path: Path, cache_dir: Pat
                 os.remove(str(slide_url))
 
     print(f"===== End-to-end processing time of {len(img_dir)} slides: {str(timedelta(seconds=(time.time() - total_start_time)))} =====")
-
-def main():
-    parser = argparse.ArgumentParser(
-        description='Normalise WSI directly.')
-
-    parser.add_argument('-o', '--output-dir', type=Path, required=True,
-                        help='Path to save features to.')
-    parser.add_argument('--wsi-dir', metavar='DIR', type=Path, required=True,
-                        help='Path of where the whole-slide images are.')
-    parser.add_argument('-m', '--model', metavar='DIR', type=Path, required=True,
-                        help='Path of where model for the feature extractor is.')
-    parser.add_argument('--cache-dir', type=Path, required=True, default=None,
-        help='Directory to store resulting slide JPGs.')
-    
-    parser.add_argument('--patch-size', type=int, default=224,
-                        help='Size of the square patch to tessellate.')
-    parser.add_argument('--mpp', type=float, default=256/224,
-                    help='Microns-per-pixel value for slide resolution.')
-    parser.add_argument('-c', '--cores', type=int, default=8,
-                    help='CPU cores to use, 8 default.')
-    parser.add_argument('-n','--norm', action='store_true')
-    parser.add_argument('--no-norm', dest='norm', action='store_false')
-    parser.set_defaults(norm=True)
-    parser.add_argument('-d', '--del-slide', action='store_true', default=False,
-                         help='Removing the original slide after processing.')
-    parser.add_argument('--only-fex', action='store_true', default=False)
-
-    args = parser.parse_args()
-    preprocess(output_dir=args.output_dir, wsi_dir=args.wsi_dir, model_path=args.model, cache_dir=args.cache_dir, patch_size=args.patch_size, target_mpp=args.mpp, cores=args.cores, norm=args.norm, del_slide=args.del_slide, only_feature_extraction=args.only_fex)
-
-
-if __name__ == '__main__':
-    main()
