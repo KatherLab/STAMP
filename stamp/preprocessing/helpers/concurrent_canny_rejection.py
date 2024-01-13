@@ -76,5 +76,5 @@ Tuple[ndarray, ndarray, List[Any]]:
 
         end = time.time()
 
-    print(f"\nFinished Canny background rejection, rejected {np.sum(rejected_tile_list)} tiles: {end-begin}")
+    print(f"Finished Canny background rejection, rejected {np.sum(rejected_tile_list)} tiles: {end-begin:.2f} seconds")
     return ordered_patch_list, rejected_tile_list, patches_shapes_list

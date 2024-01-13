@@ -88,9 +88,8 @@ def preprocess(output_dir: Path, wsi_dir: Path, model_path: Path, cache_dir: Pat
                     start=[])
     else:
         img_dir = list(wsi_dir.glob(f'**/*/{img_name}'))
-                       
-    for slide_url in (progress := tqdm(img_dir, leave=False)):
-        
+
+    for slide_url in tqdm(img_dir, "\nPreprocessing progress", leave=False, miniters=1, mininterval=0):
         if not only_feature_extraction:
             slide_name = Path(slide_url).stem
             slide_cache_dir = cache_dir/slide_name
@@ -98,10 +97,8 @@ def preprocess(output_dir: Path, wsi_dir: Path, model_path: Path, cache_dir: Pat
         else:
             slide_name = Path(slide_url).parent.name
 
-        progress.set_description(slide_name)
-        
+        print(f"\n\n===== Processing slide {slide_name} =====")        
         feat_out_dir = output_file_dir/slide_name
-
         if not (os.path.exists((f'{feat_out_dir}.h5'))) and not os.path.exists(f'{slide_url}.tmp'):
             # TODO: delete .tmp file on keyboard interrupt / crash (catch exception in __main__.py (?))
             Path(f'{slide_url}.tmp').touch()
@@ -130,8 +127,10 @@ def preprocess(output_dir: Path, wsi_dir: Path, model_path: Path, cache_dir: Pat
                     slide_array = load_slide(slide=slide, target_mpp=target_mpp, cores=cores)
                 except MPPExtractionError:
                     if del_slide:
-                        print(f"Skipping slide and deleting {slide_url} due to missing MPP...")
+                        print(f"Skipping slide and deleting due to missing MPP...")
                         os.remove(str(slide_url))
+                    else:
+                        print(f"Skipping slide due to missing MPP...")
                     continue
 
                 #save raw .svs jpg
@@ -140,7 +139,7 @@ def preprocess(output_dir: Path, wsi_dir: Path, model_path: Path, cache_dir: Pat
                 #remove .SVS from memory
                 del slide
                 
-                print("\n--- Loaded slide: %s seconds ---" % (time.time() - start_time))
+                print(f"\nLoaded slide: {time.time() - start_time:.2f} seconds")
                 #########################
 
                 #########################
@@ -152,12 +151,11 @@ def preprocess(output_dir: Path, wsi_dir: Path, model_path: Path, cache_dir: Pat
                 start_time = time.time()
                 #pass raw slide_array for getting the initial concentrations, bg_reject_array for actual normalisation
                 if norm:
-                    logging.info(f"Normalising {slide_name}...")
+                    logging.info(f"Normalising slide...")
                     canny_img, img_norm_wsi_jpg, canny_norm_patch_list, coords_list = normalizer.transform(slide_array, bg_reject_array, 
                                                                                                            rejected_tile_array, patch_shapes, cores=cores)
-                    print(f"\n--- Normalised slide {slide_name}: {(time.time() - start_time)} seconds ---")
+                    print(f"\nNormalised slide: {time.time() - start_time:.2f} seconds")
                     img_norm_wsi_jpg.save(slide_jpg) #save WSI.svs -> WSI.jpg
-
                 else:
                     canny_img, canny_norm_patch_list, coords_list = get_raw_tile_list(slide_array.shape, bg_reject_array,
                                                                                       rejected_tile_array, patch_shapes)
@@ -170,17 +168,17 @@ def preprocess(output_dir: Path, wsi_dir: Path, model_path: Path, cache_dir: Pat
                 
                 #optionally removing the original slide from harddrive
                 if del_slide:
-                    print(f"Deleting slide {slide_name} from local folder...")
+                    print(f"Deleting slide from local folder...")
                     os.remove(str(slide_url))
 
-            print(f"Extracting CTransPath features from {slide_name}")
+            print(f"\nExtracting CTransPath features from slide...")
             #FEATURE EXTRACTION
             #measure time performance
             start_time = time.time()
             if len(canny_norm_patch_list) > 0:
                 extract_features_(model=model, model_name=model_name, norm_wsi_img=canny_norm_patch_list,
                                 coords=coords_list, wsi_name=slide_name, outdir=feat_out_dir, cores=cores, is_norm=norm, device=device if has_gpu else "cpu")
-                print("\n--- Extracted features from slide: %s seconds ---" % (time.time() - start_time))
+                print(f"\nExtracted features from slide: {time.time() - start_time:.2f} seconds")
             else:
                 print("0 tiles remain to extract features from after pre-processing {slide_name}, skipping...")
                 continue
@@ -189,14 +187,14 @@ def preprocess(output_dir: Path, wsi_dir: Path, model_path: Path, cache_dir: Pat
 
         else:
             if os.path.exists((f'{feat_out_dir}.h5')):
-                print(f"{slide_name}.h5 already exists. Skipping...")
+                print(f".h5 file for this slide already exists. Skipping...")
             else:
-                print(f"{slide_name} is already being processed. Skipping...")
+                print(f"Slide is already being processed. Skipping...")
             if del_slide:
-                print(f"Deleting slide {slide_name} from local folder...")
+                print(f"Deleting slide from local folder...")
                 os.remove(str(slide_url))
 
-    print(f"--- End-to-end processing time of {len(img_dir)} slides: {str(timedelta(seconds=(time.time() - total_start_time)))} ---")
+    print(f"===== End-to-end processing time of {len(img_dir)} slides: {str(timedelta(seconds=(time.time() - total_start_time)))} =====")
 
 def main():
     parser = argparse.ArgumentParser(

@@ -67,7 +67,7 @@ def get_slide_mpp(slide: openslide.OpenSlide) -> float:
     return slide_mpp
 
 def extract_mpp_from_metadata(slide: openslide.OpenSlide) -> float:
-    logging.exception("MPP is missing in the metadata of this file format, attempting to extract from metadata...")
+    logging.error(f"MPP is missing in the metadata of this file format, attempting to extract from metadata of {slide._filename}")
     import xml.dom.minidom as minidom
     xml_path = slide.properties['tiff.ImageDescription']
     doc = minidom.parseString(xml_path)

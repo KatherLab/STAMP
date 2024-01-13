@@ -43,7 +43,7 @@ class FeatureExtractor:
         if torch.cuda.is_available():
             model = model.to(device)
 
-        print("CTransPath model successfully initialised...")
+        print("CTransPath model successfully initialised...\n")
         model_name='xiyuewang-ctranspath-7c998680'
 
         return model, model_name
