@@ -8,6 +8,7 @@ __email__ = "omar.el_nahhas@tu-dresden.de"
 
 import argparse
 from pathlib import Path
+from contextlib import contextmanager
 import logging
 import os
 import openslide
@@ -28,6 +29,14 @@ from .helpers.exceptions import MPPExtractionError
 
 
 PIL.Image.MAX_IMAGE_PIXELS = None
+
+@contextmanager
+def lock_file(slide_url):
+    Path(f'{slide_url}.tmp').touch()
+    try:
+        yield
+    finally:
+        os.remove(f'{str(slide_url)}.tmp')
 
 def preprocess(output_dir: Path, wsi_dir: Path, model_path: Path, cache_dir: Path,
                norm: bool, del_slide: bool, only_feature_extraction: bool, 
@@ -100,91 +109,88 @@ def preprocess(output_dir: Path, wsi_dir: Path, model_path: Path, cache_dir: Pat
         print(f"\n\n===== Processing slide {slide_name} =====")        
         feat_out_dir = output_file_dir/slide_name
         if not (os.path.exists((f'{feat_out_dir}.h5'))) and not os.path.exists(f'{slide_url}.tmp'):
-            # TODO: delete .tmp file on keyboard interrupt / crash (catch exception in __main__.py (?))
-            Path(f'{slide_url}.tmp').touch()
-            # Load WSI as one image
-            if (only_feature_extraction and (slide_jpg := slide_url).exists()) \
-                or (slide_jpg := slide_cache_dir/'norm_slide.jpg').exists():
-                canny_norm_patch_list, coords_list, patch_saved, total = process_slide_jpg(slide_jpg)
-                print(f"Loaded {img_name}, {patch_saved}/{total} tiles remain")
-                if patch_saved == 0:
-                    print("No tiles remain for {slide_name}, skipping...")
-                    continue
-            else:
-                logging.info(f"\nLoading {slide_name}")
-                try:
-                    slide = openslide.OpenSlide(str(slide_url))
-                except openslide.lowlevel.OpenSlideUnsupportedFormatError:
-                    logging.error(f"Unsupported format for {slide_name}")
-                    continue
-                except Exception as e:
-                    logging.error(f"Failed loading {slide_name}, error: {e}")
-                    continue
- 
-                #measure time performance
-                start_time = time.time()
-                try:
-                    slide_array = load_slide(slide=slide, target_mpp=target_mpp, cores=cores)
-                except MPPExtractionError:
-                    if del_slide:
-                        print(f"Skipping slide and deleting due to missing MPP...")
-                        os.remove(str(slide_url))
-                    else:
-                        print(f"Skipping slide due to missing MPP...")
-                    continue
-
-                #save raw .svs jpg
-                (PIL.Image.fromarray(slide_array)).save(f'{slide_cache_dir}/slide.jpg')
-
-                #remove .SVS from memory
-                del slide
-                
-                print(f"\nLoaded slide: {time.time() - start_time:.2f} seconds")
-                #########################
-
-                #########################
-                #Do edge detection here and reject unnecessary tiles BEFORE normalisation
-                bg_reject_array, rejected_tile_array, patch_shapes = reject_background(img = slide_array, patch_size=patch_shape, step=step_size,
-                                                                                       outdir=cache_dir, save_tiles=False, cores=cores)
-
-                #measure time performance
-                start_time = time.time()
-                #pass raw slide_array for getting the initial concentrations, bg_reject_array for actual normalisation
-                if norm:
-                    logging.info(f"Normalising slide...")
-                    canny_img, img_norm_wsi_jpg, canny_norm_patch_list, coords_list = normalizer.transform(slide_array, bg_reject_array, 
-                                                                                                           rejected_tile_array, patch_shapes, cores=cores)
-                    print(f"\nNormalised slide: {time.time() - start_time:.2f} seconds")
-                    img_norm_wsi_jpg.save(slide_jpg) #save WSI.svs -> WSI.jpg
+            with lock_file(slide_url):
+                # Load WSI as one image
+                if (only_feature_extraction and (slide_jpg := slide_url).exists()) \
+                    or (slide_jpg := slide_cache_dir/'norm_slide.jpg').exists():
+                    canny_norm_patch_list, coords_list, patch_saved, total = process_slide_jpg(slide_jpg)
+                    print(f"Loaded {img_name}, {patch_saved}/{total} tiles remain")
+                    if patch_saved == 0:
+                        print("No tiles remain for {slide_name}, skipping...")
+                        continue
                 else:
-                    canny_img, canny_norm_patch_list, coords_list = get_raw_tile_list(slide_array.shape, bg_reject_array,
-                                                                                      rejected_tile_array, patch_shapes)
+                    logging.info(f"\nLoading {slide_name}")
+                    try:
+                        slide = openslide.OpenSlide(str(slide_url))
+                    except openslide.lowlevel.OpenSlideUnsupportedFormatError:
+                        logging.error(f"Unsupported format for {slide_name}")
+                        continue
+                    except Exception as e:
+                        logging.error(f"Failed loading {slide_name}, error: {e}")
+                        continue
 
-                print("Saving Canny background rejected image...")
-                canny_img.save(f'{slide_cache_dir}/canny_slide.jpg')
-                
-                #remove original slide jpg from memory
-                del slide_array
-                
-                #optionally removing the original slide from harddrive
-                if del_slide:
-                    print(f"Deleting slide from local folder...")
-                    os.remove(str(slide_url))
+                    #measure time performance
+                    start_time = time.time()
+                    try:
+                        slide_array = load_slide(slide=slide, target_mpp=target_mpp, cores=cores)
+                    except MPPExtractionError:
+                        if del_slide:
+                            print(f"Skipping slide and deleting due to missing MPP...")
+                            os.remove(str(slide_url))
+                        else:
+                            print(f"Skipping slide due to missing MPP...")
+                        continue
 
-            print(f"\nExtracting CTransPath features from slide...")
-            #FEATURE EXTRACTION
-            #measure time performance
-            start_time = time.time()
-            if len(canny_norm_patch_list) > 0:
-                extract_features_(model=model, model_name=model_name, norm_wsi_img=canny_norm_patch_list,
-                                coords=coords_list, wsi_name=slide_name, outdir=feat_out_dir, cores=cores, is_norm=norm, device=device if has_gpu else "cpu")
-                print(f"\nExtracted features from slide: {time.time() - start_time:.2f} seconds")
-            else:
-                print("0 tiles remain to extract features from after pre-processing {slide_name}, skipping...")
-                continue
-            #########################
-            os.remove(f'{str(slide_url)}.tmp')
+                    #save raw .svs jpg
+                    (PIL.Image.fromarray(slide_array)).save(f'{slide_cache_dir}/slide.jpg')
 
+                    #remove .SVS from memory
+                    del slide
+                    
+                    print(f"\nLoaded slide: {time.time() - start_time:.2f} seconds")
+                    #########################
+
+                    #########################
+                    #Do edge detection here and reject unnecessary tiles BEFORE normalisation
+                    bg_reject_array, rejected_tile_array, patch_shapes = reject_background(img = slide_array, patch_size=patch_shape, step=step_size,
+                                                                                        outdir=cache_dir, save_tiles=False, cores=cores)
+
+                    #measure time performance
+                    start_time = time.time()
+                    #pass raw slide_array for getting the initial concentrations, bg_reject_array for actual normalisation
+                    if norm:
+                        logging.info(f"Normalising slide...")
+                        canny_img, img_norm_wsi_jpg, canny_norm_patch_list, coords_list = normalizer.transform(slide_array, bg_reject_array, 
+                                                                                                            rejected_tile_array, patch_shapes, cores=cores)
+                        print(f"\nNormalised slide: {time.time() - start_time:.2f} seconds")
+                        img_norm_wsi_jpg.save(slide_jpg) #save WSI.svs -> WSI.jpg
+                    else:
+                        canny_img, canny_norm_patch_list, coords_list = get_raw_tile_list(slide_array.shape, bg_reject_array,
+                                                                                        rejected_tile_array, patch_shapes)
+
+                    print("Saving Canny background rejected image...")
+                    canny_img.save(f'{slide_cache_dir}/canny_slide.jpg')
+                    
+                    #remove original slide jpg from memory
+                    del slide_array
+                    
+                    #optionally removing the original slide from harddrive
+                    if del_slide:
+                        print(f"Deleting slide from local folder...")
+                        os.remove(str(slide_url))
+
+                print(f"\nExtracting CTransPath features from slide...")
+                #FEATURE EXTRACTION
+                #measure time performance
+                start_time = time.time()
+                if len(canny_norm_patch_list) > 0:
+                    extract_features_(model=model, model_name=model_name, norm_wsi_img=canny_norm_patch_list,
+                                    coords=coords_list, wsi_name=slide_name, outdir=feat_out_dir, cores=cores, is_norm=norm, device=device if has_gpu else "cpu")
+                    print(f"\nExtracted features from slide: {time.time() - start_time:.2f} seconds")
+                else:
+                    print("0 tiles remain to extract features from after pre-processing {slide_name}, skipping...")
+                    continue
+                #########################
         else:
             if os.path.exists((f'{feat_out_dir}.h5')):
                 print(f".h5 file for this slide already exists. Skipping...")
