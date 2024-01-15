@@ -41,22 +41,24 @@ def lock_file(slide_url):
 def preprocess(output_dir: Path, wsi_dir: Path, model_path: Path, cache_dir: Path,
                norm: bool, del_slide: bool, only_feature_extraction: bool, 
                cores: int = 8, target_microns: int = 256, patch_size: int = 224, 
-               device: str = "cuda", normalization_template: Path = None):
-    ### START INITIALIZATION
-    print(f"Current working directory: {os.getcwd()}")
-    Path(cache_dir).mkdir(exist_ok=True, parents=True)
-    logdir = cache_dir/'logfile'
-    logging.basicConfig(filename=logdir, force=True)
-    logging.getLogger().addHandler(logging.StreamHandler())
-    logging.info(f'Stored logfile in {logdir}')
-    #init the Macenko normaliser
-    print(f"Number of CPUs in the system: {os.cpu_count()}")
-    print(f"Number of CPU cores used: {cores}")
-    has_gpu=torch.cuda.is_available()
-    print(f"GPU is available: {has_gpu}")
+               device: str = "cuda", normalization_template: Path = None):    
+    has_gpu = torch.cuda.is_available()
     target_mpp = target_microns/patch_size
     patch_shape = (patch_size, patch_size) #(224, 224) by default
     step_size = patch_size #have 0 overlap by default
+
+    cache_dir.mkdir(exist_ok=True, parents=True)
+    logfile_name = 'logfile_' + time.strftime("%Y%m%d-%H%M%S")
+    logdir = cache_dir/logfile_name
+    logging.basicConfig(filename=logdir, force=True, level=logging.INFO, format="[%(levelname)s] %(message)s")
+    logging.getLogger().addHandler(logging.StreamHandler())
+    logging.info("Preprocessing started at: " + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
+    logging.info(f"Norm: {norm} | Target_microns: {target_microns} | Patch_size: {patch_size} | MPP: {target_mpp}")
+    print(f"Current working directory: {os.getcwd()}")
+    print(f"Stored logfile in {logdir}")
+    print(f"Number of CPUs in the system: {os.cpu_count()}")
+    print(f"Number of CPU cores used: {cores}")
+    print(f"GPU is available: {has_gpu}")
 
     if has_gpu:
         print(f"Number of GPUs in the system: {torch.cuda.device_count()}, using device {device}")
@@ -69,24 +71,20 @@ def preprocess(output_dir: Path, wsi_dir: Path, model_path: Path, cache_dir: Pat
 
         normalizer = stainNorm_Macenko.Normalizer()
         normalizer.fit(target)
-        logging.info('Running WSI to normalised feature extraction...')
-    else:
-        logging.info('Running WSI to raw feature extraction...')
 
-    #initialize the feature extraction model
+    # Initialize the feature extraction model
     print(f"\nInitialising CTransPath model as feature extractor...")
     extractor = FeatureExtractor()
     model, model_name = extractor.init_feat_extractor(checkpoint_path=model_path, device=device)
+    logging.info(f"Model: {model_name}\n")
 
-    #create output feature folder, f.e.:
-    #~/output_folder/E2E_macenko_xiyuewang-ctranspath/
-    (output_dir).mkdir(parents=True, exist_ok=True)
-    
+    # Create output feature folder, f.e.:
+    # ~/output_folder/E2E_macenko_xiyuewang-ctranspath/
+    output_dir.mkdir(parents=True, exist_ok=True)
     norm_method = "STAMP_macenko_" if norm else "STAMP_raw_"
-    model_name_norm = Path(norm_method+model_name)
+    model_name_norm = Path(norm_method + model_name)
     output_file_dir = output_dir/model_name_norm
     output_file_dir.mkdir(parents=True, exist_ok=True)
-    ### END INITIALIZATION
     
     total_start_time = time.time()
     
@@ -106,7 +104,8 @@ def preprocess(output_dir: Path, wsi_dir: Path, model_path: Path, cache_dir: Pat
         else:
             slide_name = Path(slide_url).parent.name
 
-        print(f"\n\n===== Processing slide {slide_name} =====")        
+        print("\n")
+        logging.info(f"===== Processing slide {slide_name} =====")
         feat_out_dir = output_file_dir/slide_name
         if not (os.path.exists((f'{feat_out_dir}.h5'))) and not os.path.exists(f'{slide_url}.tmp'):
             with lock_file(slide_url):
@@ -119,7 +118,6 @@ def preprocess(output_dir: Path, wsi_dir: Path, model_path: Path, cache_dir: Pat
                         print("No tiles remain for {slide_name}, skipping...")
                         continue
                 else:
-                    logging.info(f"\nLoading {slide_name}")
                     try:
                         slide = openslide.OpenSlide(str(slide_url))
                     except openslide.lowlevel.OpenSlideUnsupportedFormatError:
@@ -129,37 +127,32 @@ def preprocess(output_dir: Path, wsi_dir: Path, model_path: Path, cache_dir: Pat
                         logging.error(f"Failed loading {slide_name}, error: {e}")
                         continue
 
-                    #measure time performance
                     start_time = time.time()
                     try:
                         slide_array = load_slide(slide=slide, target_mpp=target_mpp, cores=cores)
                     except MPPExtractionError:
                         if del_slide:
-                            print(f"Skipping slide and deleting due to missing MPP...")
+                            logging.error(f"Skipping slide and deleting due to missing MPP...")
                             os.remove(str(slide_url))
                         else:
-                            print(f"Skipping slide due to missing MPP...")
+                            logging.error(f"Skipping slide due to missing MPP...")
                         continue
 
-                    #save raw .svs jpg
-                    (PIL.Image.fromarray(slide_array)).save(f'{slide_cache_dir}/slide.jpg')
+                    # Save raw .svs jpg
+                    PIL.Image.fromarray(slide_array).save(f'{slide_cache_dir}/slide.jpg')
 
-                    #remove .SVS from memory
-                    del slide
-                    
+                    # Remove .SVS from memory
+                    del slide                    
                     print(f"\nLoaded slide: {time.time() - start_time:.2f} seconds")
-                    #########################
 
-                    #########################
                     #Do edge detection here and reject unnecessary tiles BEFORE normalisation
                     bg_reject_array, rejected_tile_array, patch_shapes = reject_background(img = slide_array, patch_size=patch_shape, step=step_size,
                                                                                         outdir=cache_dir, save_tiles=False, cores=cores)
 
-                    #measure time performance
                     start_time = time.time()
-                    #pass raw slide_array for getting the initial concentrations, bg_reject_array for actual normalisation
+                    # Pass raw slide_array for getting the initial concentrations, bg_reject_array for actual normalisation
                     if norm:
-                        logging.info(f"Normalising slide...")
+                        print(f"Normalising slide...")
                         canny_img, img_norm_wsi_jpg, canny_norm_patch_list, coords_list = normalizer.transform(slide_array, bg_reject_array, 
                                                                                                             rejected_tile_array, patch_shapes, cores=cores)
                         print(f"\nNormalised slide: {time.time() - start_time:.2f} seconds")
@@ -171,33 +164,30 @@ def preprocess(output_dir: Path, wsi_dir: Path, model_path: Path, cache_dir: Pat
                     print("Saving Canny background rejected image...")
                     canny_img.save(f'{slide_cache_dir}/canny_slide.jpg')
                     
-                    #remove original slide jpg from memory
+                    # Remove original slide jpg from memory
                     del slide_array
                     
-                    #optionally removing the original slide from harddrive
+                    # Optionally removing the original slide from harddrive
                     if del_slide:
                         print(f"Deleting slide from local folder...")
                         os.remove(str(slide_url))
 
                 print(f"\nExtracting CTransPath features from slide...")
-                #FEATURE EXTRACTION
-                #measure time performance
                 start_time = time.time()
                 if len(canny_norm_patch_list) > 0:
                     extract_features_(model=model, model_name=model_name, norm_wsi_img=canny_norm_patch_list,
                                     coords=coords_list, wsi_name=slide_name, outdir=feat_out_dir, cores=cores, is_norm=norm, device=device if has_gpu else "cpu")
-                    print(f"\nExtracted features from slide: {time.time() - start_time:.2f} seconds")
+                    logging.info(f"Extracted features from slide: {time.time() - start_time:.2f} seconds")
                 else:
-                    print("0 tiles remain to extract features from after pre-processing {slide_name}, skipping...")
+                    logging.error("0 tiles remain to extract features from after pre-processing {slide_name}, skipping...")
                     continue
-                #########################
         else:
             if os.path.exists((f'{feat_out_dir}.h5')):
-                print(f".h5 file for this slide already exists. Skipping...")
+                logging.info(f".h5 file for this slide already exists. Skipping...")
             else:
-                print(f"Slide is already being processed. Skipping...")
+                logging.info("Slide is already being processed. Skipping...")
             if del_slide:
-                print(f"Deleting slide from local folder...")
+                print("Deleting slide from local folder...")
                 os.remove(str(slide_url))
 
-    print(f"===== End-to-end processing time of {len(img_dir)} slides: {str(timedelta(seconds=(time.time() - total_start_time)))} =====")
+    logging.info(f"===== End-to-end processing time of {len(img_dir)} slides: {str(timedelta(seconds=(time.time() - total_start_time)))} =====")

@@ -17,7 +17,6 @@ model.load_state_dict(td['model'], strict=True)
 
 import sys
 import math
-import logging
 import collections.abc
 
 from copy import deepcopy

@@ -1,7 +1,6 @@
 import re
 from typing import Dict, Tuple
 from concurrent import futures
-import logging
 import openslide
 from tqdm import tqdm
 import numpy as np
@@ -60,6 +59,7 @@ def get_slide_mpp(slide: openslide.OpenSlide) -> float:
             if slide_mpp:
                 print(f"MPP retrieved from comments after initial failure: {slide_mpp}")
             else:
+                print(f"MPP is missing in the metadata of this file format, attempting to extract from metadata...")
                 slide_mpp = extract_mpp_from_metadata(slide)
                 print(f"MPP re-matched from metadata after initial failure: {slide_mpp}")
         except:
@@ -67,7 +67,6 @@ def get_slide_mpp(slide: openslide.OpenSlide) -> float:
     return slide_mpp
 
 def extract_mpp_from_metadata(slide: openslide.OpenSlide) -> float:
-    logging.error(f"MPP is missing in the metadata of this file format, attempting to extract from metadata of {slide._filename}")
     import xml.dom.minidom as minidom
     xml_path = slide.properties['tiff.ImageDescription']
     doc = minidom.parseString(xml_path)
