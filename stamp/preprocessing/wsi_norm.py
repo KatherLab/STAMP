@@ -36,7 +36,8 @@ def lock_file(slide_url):
     try:
         yield
     finally:
-        os.remove(f'{str(slide_url)}.tmp')
+        if os.path.exists(f'{slide_url}.tmp'): # Catch collision cases
+            os.remove(f'{str(slide_url)}.tmp')
 
 def preprocess(output_dir: Path, wsi_dir: Path, model_path: Path, cache_dir: Path,
                norm: bool, del_slide: bool, only_feature_extraction: bool, 
