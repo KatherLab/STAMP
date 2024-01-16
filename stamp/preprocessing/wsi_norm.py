@@ -135,8 +135,9 @@ def preprocess(output_dir: Path, wsi_dir: Path, model_path: Path, cache_dir: Pat
                         slide_array = load_slide(slide=slide, target_mpp=target_mpp, cores=cores)
                     except MPPExtractionError:
                         if del_slide:
-                            logging.error(f"Skipping slide and deleting due to missing MPP...")
-                            os.remove(str(slide_url))
+                            logging.error(f"MPP missing in slide metadata, deleting slide and continuing...")
+                            if os.path.exists(str(slide_url)):
+                                os.remove(str(slide_url))
                         else:
                             logging.error(f"Skipping slide due to missing MPP...")
                         continue
@@ -173,10 +174,11 @@ def preprocess(output_dir: Path, wsi_dir: Path, model_path: Path, cache_dir: Pat
                     # Remove original slide jpg from memory
                     del slide_array
                     
-                    # Optionally removing the original slide from harddrive
+                    # Optionally remove the original slide from harddrive
                     if del_slide:
                         print(f"Deleting slide from local folder...")
-                        os.remove(str(slide_url))
+                        if os.path.exists(str(slide_url)):
+                            os.remove(str(slide_url))
 
                 print(f"\nExtracting CTransPath features from slide...")
                 start_time = time.time()
@@ -194,6 +196,7 @@ def preprocess(output_dir: Path, wsi_dir: Path, model_path: Path, cache_dir: Pat
                 logging.info("Slide is already being processed. Skipping...")
             if del_slide:
                 print("Deleting slide from local folder...")
-                os.remove(str(slide_url))
+                if os.path.exists(str(slide_url)):
+                    os.remove(str(slide_url))
 
     logging.info(f"===== End-to-end processing time of {len(img_dir)} slides: {str(timedelta(seconds=(time.time() - total_start_time)))} =====")
