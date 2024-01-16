@@ -18,6 +18,7 @@ import cv2
 import time
 from datetime import timedelta
 from pathlib import Path
+from random import shuffle
 import torch
 from typing import Optional
 from .helpers import stainNorm_Macenko
@@ -97,6 +98,7 @@ def preprocess(output_dir: Path, wsi_dir: Path, model_path: Path, cache_dir: Pat
     else:
         img_dir = list(wsi_dir.glob(f'**/*/{img_name}'))
 
+    shuffle(img_dir)
     for slide_url in tqdm(img_dir, "\nPreprocessing progress", leave=False, miniters=1, mininterval=0):
         if not only_feature_extraction:
             slide_name = Path(slide_url).stem
