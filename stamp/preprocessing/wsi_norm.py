@@ -140,6 +140,9 @@ def preprocess(output_dir: Path, wsi_dir: Path, model_path: Path, cache_dir: Pat
                         else:
                             logging.error(f"Skipping slide due to missing MPP...")
                         continue
+                    except openslide.lowlevel.OpenSlideError as e:
+                        logging.error(f"Failed loading slide, skipping... Error: {e}")
+                        continue
 
                     # Save raw .svs jpg
                     PIL.Image.fromarray(slide_array).save(f'{slide_cache_dir}/slide.jpg')
