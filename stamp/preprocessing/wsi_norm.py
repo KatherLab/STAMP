@@ -99,6 +99,7 @@ def preprocess(output_dir: Path, wsi_dir: Path, model_path: Path, cache_dir: Pat
         img_dir = list(wsi_dir.glob(f'**/*/{img_name}'))
 
     shuffle(img_dir)
+    num_processed = num_skipped = num_error = 0
     for slide_url in tqdm(img_dir, "\nPreprocessing progress", leave=False, miniters=1, mininterval=0):
         if not only_feature_extraction:
             slide_name = Path(slide_url).stem
@@ -115,19 +116,18 @@ def preprocess(output_dir: Path, wsi_dir: Path, model_path: Path, cache_dir: Pat
                 # Load WSI as one image
                 if (only_feature_extraction and (slide_jpg := slide_url).exists()) \
                     or (slide_jpg := slide_cache_dir/'norm_slide.jpg').exists():
-                    canny_norm_patch_list, coords_list, patch_saved, total = process_slide_jpg(slide_jpg)
-                    print(f"Loaded {img_name}, {patch_saved}/{total} tiles remain")
-                    if patch_saved == 0:
-                        print("No tiles remain for {slide_name}, skipping...")
-                        continue
+                    canny_norm_patch_list, coords_list, total = process_slide_jpg(slide_jpg)
+                    print(f"Loaded {img_name}, {len(canny_norm_patch_list)}/{total} tiles remain")
                 else:
                     try:
                         slide = openslide.OpenSlide(str(slide_url))
                     except openslide.lowlevel.OpenSlideUnsupportedFormatError:
-                        logging.error(f"Unsupported format for {slide_name}")
+                        logging.error("Unsupported format for slide, continuing...")
+                        num_error += 1
                         continue
                     except Exception as e:
-                        logging.error(f"Failed loading {slide_name}, error: {e}")
+                        logging.error(f"Failed loading slide, continuing... Error: {e}")
+                        num_error += 1
                         continue
 
                     start_time = time.time()
@@ -139,10 +139,13 @@ def preprocess(output_dir: Path, wsi_dir: Path, model_path: Path, cache_dir: Pat
                             if os.path.exists(str(slide_url)):
                                 os.remove(str(slide_url))
                         else:
-                            logging.error(f"Skipping slide due to missing MPP...")
+                            logging.error(f"MPP missing in slide metadata, continuing...")
+                        num_error += 1
                         continue
                     except openslide.lowlevel.OpenSlideError as e:
-                        logging.error(f"Failed loading slide, skipping... Error: {e}")
+                        print('')
+                        logging.error(f"Failed loading slide, continuing... Error: {e}")
+                        num_error += 1
                         continue
 
                     # Save raw .svs jpg
@@ -185,18 +188,22 @@ def preprocess(output_dir: Path, wsi_dir: Path, model_path: Path, cache_dir: Pat
                 if len(canny_norm_patch_list) > 0:
                     extract_features_(model=model, model_name=model_name, norm_wsi_img=canny_norm_patch_list,
                                     coords=coords_list, wsi_name=slide_name, outdir=feat_out_dir, cores=cores, is_norm=norm, device=device if has_gpu else "cpu")
-                    logging.info(f"Extracted features from slide: {time.time() - start_time:.2f} seconds")
+                    logging.info(f"Extracted features from slide: {time.time() - start_time:.2f} seconds ({len(canny_norm_patch_list)} tiles)")
+                    num_processed += 1
                 else:
-                    logging.error("0 tiles remain to extract features from after pre-processing {slide_name}, skipping...")
+                    logging.warning("0 tiles remain to extract features from after pre-processing. Skipping...")
+                    num_skipped += 1
                     continue
         else:
             if os.path.exists((f'{feat_out_dir}.h5')):
-                logging.info(f".h5 file for this slide already exists. Skipping...")
+                logging.info(".h5 file for this slide already exists. Skipping...")
             else:
                 logging.info("Slide is already being processed. Skipping...")
+            num_skipped += 1
             if del_slide:
                 print("Deleting slide from local folder...")
                 if os.path.exists(str(slide_url)):
                     os.remove(str(slide_url))
 
     logging.info(f"===== End-to-end processing time of {len(img_dir)} slides: {str(timedelta(seconds=(time.time() - total_start_time)))} =====")
+    logging.info(f"Processed {num_processed} slides, encountered {num_error} errors, skipped {num_skipped} slides")
