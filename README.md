@@ -8,6 +8,8 @@ A protocol for Solid Tumor Associative Modeling in Pathology. This repository co
 The code can be executed either in a local environment, or in a containerized environment (preferred in clusters).
 
 ## Using a local environment
+For setting up a local environment, note that the following steps are for Ubuntu Linux systems. For other operating systems such as Windows, MacOS or other Linux distributions, it is recommend to use the containerized environment as described below.
+
 First, install OpenSlide using either the command below or the [official installation instructions](https://openslide.org/download/#distribution-packages):
 ```bash
 apt update && apt install -y openslide-tools libgl1-mesa-glx # libgl1-mesa-glx is needed for OpenCV
