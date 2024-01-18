@@ -188,7 +188,9 @@ def preprocess(output_dir: Path, wsi_dir: Path, model_path: Path, cache_dir: Pat
                 start_time = time.time()
                 if len(canny_norm_patch_list) > 0:
                     extract_features_(model=model, model_name=model_name, norm_wsi_img=canny_norm_patch_list,
-                                    coords=coords_list, wsi_name=slide_name, outdir=feat_out_dir, cores=cores, is_norm=norm, device=device if has_gpu else "cpu")
+                                    coords=coords_list, wsi_name=slide_name, outdir=feat_out_dir, cores=cores,
+                                    is_norm=norm, device=device if has_gpu else "cpu", target_microns=target_microns,
+                                    patch_size=patch_size)
                     logging.info(f"Extracted features from slide: {time.time() - start_time:.2f} seconds ({len(canny_norm_patch_list)} tiles)")
                     num_processed += 1
                 else:
