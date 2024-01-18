@@ -107,11 +107,11 @@ class Normalizer(object):
         begin = time.time()
         stain_matrix_source = get_stain_matrix(og_img)
         after_sm = time.time()
-        print(f'Get stain matrix: {after_sm-begin}')
+        print(f'Get stain matrix: {after_sm-begin} seconds')
         I_shape = og_img.shape
         source_concentrations_list = ut.get_concentrations_source(bg_rejected_img, I_shape, stain_matrix_source, rejected_list)
         after_conc = time.time()
-        print(f'\nGet concentrations (normalisation): {after_conc-after_sm}')
+        print(f'\nGet concentrations (normalisation): {after_conc-after_sm} seconds')
 
         del og_img, stain_matrix_source
 
@@ -135,7 +135,7 @@ class Normalizer(object):
                     norm_img_patches_list[i] = patch
                 
             after_transform = time.time()
-            print(f'Concentrations x Stain matrix: {after_transform-after_conc}')
+            print(f'\nConcentrations x Stain matrix: {after_transform-after_conc} seconds')
 
             print('Reconstructing image from patches...')
             norm_output_array = []
@@ -181,7 +181,7 @@ class Normalizer(object):
             maxC_target = np.percentile(self.target_concentrations, 99, axis=0).reshape((1, 2))
             jit_output = transform_return(source_concentrations_list, self.stain_matrix_target, maxC_target, maxC_source, I_shape) #I_shape, @3 (removed)
             after_transform = time.time()
-            print(f'Concentrations x Stain matrix: {after_transform-after_conc}')
+            print(f'Concentrations x Stain matrix: {after_transform-after_conc} seconds')
             output_img = Image.fromarray(np.array(jit_output))
             output_array = jit_output
             coords_list = None #TODO

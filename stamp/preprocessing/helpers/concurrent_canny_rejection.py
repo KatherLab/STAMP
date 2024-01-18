@@ -39,7 +39,6 @@ def canny_fcn(patch: np.array) -> Tuple[np.array, bool]:
 def reject_background(img: np.array, patch_size: Tuple[int,int], step: int, save_tiles: bool = False, outdir: Path = None, cores: int = 8) -> \
 Tuple[ndarray, ndarray, List[Any]]:
     img_shape = img.shape
-    print(f"\nSize of WSI: {img_shape}")
 
     split=True
     x=(img_shape[0]//patch_size[0])*(img_shape[1]//patch_size[1])
