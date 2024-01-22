@@ -99,7 +99,8 @@ def preprocess(output_dir: Path, wsi_dir: Path, model_path: Path, cache_dir: Pat
         img_dir = list(wsi_dir.glob(f'**/*/{img_name}'))
 
     shuffle(img_dir)
-    num_processed = num_skipped = num_error = 0
+    num_processed = num_skipped = 0
+    error_slides = []
     for slide_url in tqdm(img_dir, "\nPreprocessing progress", leave=False, miniters=1, mininterval=0):
         if not only_feature_extraction:
             slide_name = Path(slide_url).stem
@@ -123,11 +124,11 @@ def preprocess(output_dir: Path, wsi_dir: Path, model_path: Path, cache_dir: Pat
                         slide = openslide.OpenSlide(str(slide_url))
                     except openslide.lowlevel.OpenSlideUnsupportedFormatError:
                         logging.error("Unsupported format for slide, continuing...")
-                        num_error += 1
+                        error_slides.append(slide_name)
                         continue
                     except Exception as e:
                         logging.error(f"Failed loading slide, continuing... Error: {e}")
-                        num_error += 1
+                        error_slides.append(slide_name)
                         continue
 
                     start_time = time.time()
@@ -140,12 +141,12 @@ def preprocess(output_dir: Path, wsi_dir: Path, model_path: Path, cache_dir: Pat
                                 os.remove(str(slide_url))
                         else:
                             logging.error(f"MPP missing in slide metadata, continuing...")
-                        num_error += 1
+                        error_slides.append(slide_name)
                         continue
                     except openslide.lowlevel.OpenSlideError as e:
                         print('')
                         logging.error(f"Failed loading slide, continuing... Error: {e}")
-                        num_error += 1
+                        error_slides.append(slide_name)
                         continue
 
                     # Save raw .svs jpg
@@ -194,8 +195,8 @@ def preprocess(output_dir: Path, wsi_dir: Path, model_path: Path, cache_dir: Pat
                     logging.info(f"Extracted features from slide: {time.time() - start_time:.2f} seconds ({len(canny_norm_patch_list)} tiles)")
                     num_processed += 1
                 else:
-                    logging.warning("0 tiles remain to extract features from after pre-processing. Skipping...")
-                    num_skipped += 1
+                    logging.error("0 tiles remain to extract features from after pre-processing. Continuing...")
+                    error_slides.append(slide_name)
                     continue
         else:
             if os.path.exists((f'{feat_out_dir}.h5')):
@@ -209,4 +210,6 @@ def preprocess(output_dir: Path, wsi_dir: Path, model_path: Path, cache_dir: Pat
                     os.remove(str(slide_url))
 
     logging.info(f"===== End-to-end processing time of {len(img_dir)} slides: {str(timedelta(seconds=(time.time() - total_start_time)))} =====")
-    logging.info(f"Processed {num_processed} slides, encountered {num_error} errors, skipped {num_skipped} slides")
+    logging.info(f"\nSummary: Processed {num_processed} slides, encountered {len(error_slides)} errors, skipped {num_skipped} readily-processed slides")
+    logging.info("The following slides were not processed due to errors:\n")
+    logging.info("\n".join(error_slides))
