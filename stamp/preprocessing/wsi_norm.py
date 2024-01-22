@@ -49,19 +49,31 @@ def preprocess(output_dir: Path, wsi_dir: Path, model_path: Path, cache_dir: Pat
     patch_shape = (patch_size, patch_size) #(224, 224) by default
     step_size = patch_size #have 0 overlap by default
 
+    # Initialize the feature extraction model
+    print(f"Initialising CTransPath model as feature extractor...")
+    extractor = FeatureExtractor()
+    model, model_name = extractor.init_feat_extractor(checkpoint_path=model_path, device=device)
+
+    # Create cache and output directories
     cache_dir.mkdir(exist_ok=True, parents=True)
-    logfile_name = 'logfile_' + time.strftime("%Y%m%d-%H%M%S")
-    logdir = cache_dir/logfile_name
+    output_dir.mkdir(parents=True, exist_ok=True)
+    norm_method = "STAMP_macenko_" if norm else "STAMP_raw_"
+    model_name_norm = Path(norm_method + model_name)
+    output_file_dir = output_dir/model_name_norm
+    output_file_dir.mkdir(parents=True, exist_ok=True)
+    # Create logfile and set up logging
+    logfile_name = 'logfile_' + time.strftime("%Y-%m-%d_%H-%M-%S")
+    logdir = output_file_dir/logfile_name
     logging.basicConfig(filename=logdir, force=True, level=logging.INFO, format="[%(levelname)s] %(message)s")
     logging.getLogger().addHandler(logging.StreamHandler())
     logging.info("Preprocessing started at: " + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
     logging.info(f"Norm: {norm} | Target_microns: {target_microns} | Patch_size: {patch_size} | MPP: {target_mpp}")
+    logging.info(f"Model: {model_name}\n")
     print(f"Current working directory: {os.getcwd()}")
     print(f"Stored logfile in {logdir}")
     print(f"Number of CPUs in the system: {os.cpu_count()}")
     print(f"Number of CPU cores used: {cores}")
     print(f"GPU is available: {has_gpu}")
-
     if has_gpu:
         print(f"Number of GPUs in the system: {torch.cuda.device_count()}, using device {device}")
 
@@ -70,23 +82,8 @@ def preprocess(output_dir: Path, wsi_dir: Path, model_path: Path, cache_dir: Pat
         print(normalization_template)
         target = cv2.imread(str(normalization_template))
         target = cv2.cvtColor(target, cv2.COLOR_BGR2RGB)
-
         normalizer = stainNorm_Macenko.Normalizer()
         normalizer.fit(target)
-
-    # Initialize the feature extraction model
-    print(f"\nInitialising CTransPath model as feature extractor...")
-    extractor = FeatureExtractor()
-    model, model_name = extractor.init_feat_extractor(checkpoint_path=model_path, device=device)
-    logging.info(f"Model: {model_name}\n")
-
-    # Create output feature folder, f.e.:
-    # ~/output_folder/E2E_macenko_xiyuewang-ctranspath/
-    output_dir.mkdir(parents=True, exist_ok=True)
-    norm_method = "STAMP_macenko_" if norm else "STAMP_raw_"
-    model_name_norm = Path(norm_method + model_name)
-    output_file_dir = output_dir/model_name_norm
-    output_file_dir.mkdir(parents=True, exist_ok=True)
     
     total_start_time = time.time()
     
@@ -210,6 +207,6 @@ def preprocess(output_dir: Path, wsi_dir: Path, model_path: Path, cache_dir: Pat
                     os.remove(str(slide_url))
 
     logging.info(f"===== End-to-end processing time of {len(img_dir)} slides: {str(timedelta(seconds=(time.time() - total_start_time)))} =====")
-    logging.info(f"\nSummary: Processed {num_processed} slides, encountered {len(error_slides)} errors, skipped {num_skipped} readily-processed slides")
-    logging.info("The following slides were not processed due to errors:\n")
-    logging.info("\n".join(error_slides))
+    logging.info(f"Summary: Processed {num_processed} slides, encountered {len(error_slides)} errors, skipped {num_skipped} readily-processed slides")
+    if len(error_slides):
+        logging.info("The following slides were not processed due to errors:\n\n" + "\n".join(error_slides))
