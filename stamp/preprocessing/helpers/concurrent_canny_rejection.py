@@ -36,7 +36,7 @@ def canny_fcn(patch: np.array) -> Tuple[np.array, bool]:
         return (patch, False)
 
 
-def reject_background(img: np.array, patch_size: Tuple[int,int], step: int, save_tiles: bool = False, outdir: Path = None, cores: int = 8) -> \
+def reject_background(img: np.array, patch_size: Tuple[int,int], step: int, cores: int = 8) -> \
 Tuple[ndarray, ndarray, List[Any]]:
     img_shape = img.shape
 
@@ -54,7 +54,6 @@ Tuple[ndarray, ndarray, List[Any]]:
         for i in i_range:
             for j in j_range:
                 patch = img[(i*patch_size[0]):(i*patch_size[0]+step), (j*patch_size[1]):(j*patch_size[1]+step)]
-                #(PIL.Image.fromarray(patch)).save(f'{outdir}/patch_{i*len(j_range) + j}.jpg')
                 patches_shapes_list.append(patch.shape)
                 future = executor.submit(canny_fcn, patch)
                 # begin_time_list.append(time.time())

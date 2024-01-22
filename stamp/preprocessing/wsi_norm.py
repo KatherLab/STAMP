@@ -155,8 +155,7 @@ def preprocess(output_dir: Path, wsi_dir: Path, model_path: Path, cache_dir: Pat
                     print(f"\nSize of WSI: {slide_array.shape}")
 
                     #Do edge detection here and reject unnecessary tiles BEFORE normalisation
-                    bg_reject_array, rejected_tile_array, patch_shapes = reject_background(img=slide_array, patch_size=patch_shape, step=step_size,
-                                                                                        outdir=cache_dir, save_tiles=False, cores=cores)
+                    bg_reject_array, rejected_tile_array, patch_shapes = reject_background(img=slide_array, patch_size=patch_shape, step=step_size, cores=cores)
 
                     start_time = time.time()
                     # Pass raw slide_array for getting the initial concentrations, bg_reject_array for actual normalisation
