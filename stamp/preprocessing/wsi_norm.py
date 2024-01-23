@@ -32,13 +32,21 @@ from .helpers.exceptions import MPPExtractionError
 PIL.Image.MAX_IMAGE_PIXELS = None
 
 @contextmanager
-def lock_file(slide_url):
-    Path(f'{slide_url}.tmp').touch()
+def lock_file(slide_path: Path):
+    Path(f'{slide_path}.tmp').touch()
     try:
         yield
     finally:
-        if os.path.exists(f'{slide_url}.tmp'): # Catch collision cases
-            os.remove(f'{str(slide_url)}.tmp')
+        if os.path.exists(f'{slide_path}.tmp'): # Catch collision cases
+            os.remove(f'{slide_path}.tmp')
+
+def save_image(image, path: Path):
+    width, height = image.size
+    if width > 65500 or height > 65500:
+        logging.warning(f"Image size ({width}x{height}) exceeds maximum size of 65500x65500, resizing {path.name} before saving...")
+        ratio = 65500 / max(width, height)
+        image = image.resize((int(width * ratio), int(height * ratio)))
+    image.save(path)
 
 def preprocess(output_dir: Path, wsi_dir: Path, model_path: Path, cache_dir: Path,
                norm: bool, del_slide: bool, only_feature_extraction: bool, cache: bool = True,
@@ -63,7 +71,7 @@ def preprocess(output_dir: Path, wsi_dir: Path, model_path: Path, cache_dir: Pat
     output_file_dir = output_dir/model_name_norm
     output_file_dir.mkdir(parents=True, exist_ok=True)
     # Create logfile and set up logging
-    logfile_name = 'logfile_' + time.strftime("%Y-%m-%d_%H-%M-%S")
+    logfile_name = "logfile_" + time.strftime("%Y-%m-%d_%H-%M-%S")
     logdir = output_file_dir/logfile_name
     logging.basicConfig(filename=logdir, force=True, level=logging.INFO, format="[%(levelname)s] %(message)s")
     logging.getLogger().addHandler(logging.StreamHandler())
@@ -81,7 +89,7 @@ def preprocess(output_dir: Path, wsi_dir: Path, model_path: Path, cache_dir: Pat
     if norm:
         print("\nInitialising Macenko normaliser...")
         print(normalization_template)
-        target = cv2.imread(str(normalization_template))
+        target = cv2.imread(normalization_template)
         target = cv2.cvtColor(target, cv2.COLOR_BGR2RGB)
         normalizer = stainNorm_Macenko.Normalizer()
         normalizer.fit(target)
@@ -103,7 +111,7 @@ def preprocess(output_dir: Path, wsi_dir: Path, model_path: Path, cache_dir: Pat
     num_processed = num_skipped = 0
     error_slides = []
     for slide_url in tqdm(img_dir, "\nPreprocessing progress", leave=False, miniters=1, mininterval=0):
-        slide_name = Path(slide_url).stem if not only_feature_extraction else Path(slide_url).parent.name
+        slide_name = slide_url.stem if not only_feature_extraction else slide_url.parent.name
         slide_cache_dir = cache_dir/slide_name
         if cache:
             slide_cache_dir.mkdir(parents=True, exist_ok=True)
@@ -121,7 +129,7 @@ def preprocess(output_dir: Path, wsi_dir: Path, model_path: Path, cache_dir: Pat
                     print(f"Loaded {img_name}, {len(canny_norm_patch_list)}/{total} tiles remain")
                 else:
                     try:
-                        slide = openslide.OpenSlide(str(slide_url))
+                        slide = openslide.OpenSlide(slide_url)
                     except openslide.lowlevel.OpenSlideUnsupportedFormatError:
                         logging.error("Unsupported format for slide, continuing...")
                         error_slides.append(slide_name)
@@ -137,8 +145,8 @@ def preprocess(output_dir: Path, wsi_dir: Path, model_path: Path, cache_dir: Pat
                     except MPPExtractionError:
                         if del_slide:
                             logging.error(f"MPP missing in slide metadata, deleting slide and continuing...")
-                            if os.path.exists(str(slide_url)):
-                                os.remove(str(slide_url))
+                            if os.path.exists(slide_url):
+                                os.remove(slide_url)
                         else:
                             logging.error(f"MPP missing in slide metadata, continuing...")
                         error_slides.append(slide_name)
@@ -149,14 +157,15 @@ def preprocess(output_dir: Path, wsi_dir: Path, model_path: Path, cache_dir: Pat
                         error_slides.append(slide_name)
                         continue
 
-                    if cache:
-                        # Save raw .svs jpg
-                        PIL.Image.fromarray(slide_array).save(f'{slide_cache_dir}/slide.jpg')
-
                     # Remove .SVS from memory
                     del slide                    
                     print(f"\nLoaded slide: {time.time() - start_time:.2f} seconds")
                     print(f"\nSize of WSI: {slide_array.shape}")
+                        
+                    if cache:
+                        # Save raw .svs jpg
+                        raw_image = PIL.Image.fromarray(slide_array)
+                        save_image(raw_image, slide_cache_dir/"slide.jpg")
 
                     #Do edge detection here and reject unnecessary tiles BEFORE normalisation
                     bg_reject_array, rejected_tile_array, patch_shapes = reject_background(img=slide_array, patch_size=patch_shape, step=step_size, cores=cores)
@@ -169,14 +178,14 @@ def preprocess(output_dir: Path, wsi_dir: Path, model_path: Path, cache_dir: Pat
                                                                                                             rejected_tile_array, patch_shapes, cores=cores)
                         print(f"\nNormalised slide: {time.time() - start_time:.2f} seconds")
                         if cache:
-                            img_norm_wsi_jpg.save(slide_jpg) #save WSI.svs -> WSI.jpg
+                            save_image(img_norm_wsi_jpg, slide_cache_dir/"norm_slide.jpg")
                     else:
                         canny_img, canny_norm_patch_list, coords_list = get_raw_tile_list(slide_array.shape, bg_reject_array,
                                                                                         rejected_tile_array, patch_shapes)
 
                     if cache:
                         print("Saving Canny background rejected image...")
-                        canny_img.save(f'{slide_cache_dir}/canny_slide.jpg')
+                        save_image(canny_img, slide_cache_dir/"canny_slide.jpg")
 
                     # Remove original slide jpg from memory
                     del slide_array
@@ -184,8 +193,8 @@ def preprocess(output_dir: Path, wsi_dir: Path, model_path: Path, cache_dir: Pat
                     # Optionally remove the original slide from harddrive
                     if del_slide:
                         print(f"Deleting slide from local folder...")
-                        if os.path.exists(str(slide_url)):
-                            os.remove(str(slide_url))
+                        if os.path.exists(slide_url):
+                            os.remove(slide_url)
 
                 print(f"\nExtracting CTransPath features from slide...")
                 start_time = time.time()
@@ -208,8 +217,8 @@ def preprocess(output_dir: Path, wsi_dir: Path, model_path: Path, cache_dir: Pat
             num_skipped += 1
             if del_slide:
                 print("Deleting slide from local folder...")
-                if os.path.exists(str(slide_url)):
-                    os.remove(str(slide_url))
+                if os.path.exists(slide_url):
+                    os.remove(slide_url)
 
     logging.info(f"===== End-to-end processing time of {len(img_dir)} slides: {str(timedelta(seconds=(time.time() - total_start_time)))} =====")
     logging.info(f"Summary: Processed {num_processed} slides, encountered {len(error_slides)} errors, skipped {num_skipped} readily-processed slides")
