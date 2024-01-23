@@ -87,6 +87,7 @@ def run_cli(args: argparse.Namespace):
                 cores=c.cores,
                 norm=c.norm,
                 del_slide=c.del_slide,
+                cache=c.cache if 'cache' in c else True,
                 only_feature_extraction=c.only_feature_extraction,
                 device=c.device,
                 normalization_template=Path(c.normalization_template)

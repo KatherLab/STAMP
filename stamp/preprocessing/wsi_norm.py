@@ -41,9 +41,9 @@ def lock_file(slide_url):
             os.remove(f'{str(slide_url)}.tmp')
 
 def preprocess(output_dir: Path, wsi_dir: Path, model_path: Path, cache_dir: Path,
-               norm: bool, del_slide: bool, only_feature_extraction: bool, 
+               norm: bool, del_slide: bool, only_feature_extraction: bool, cache: bool = True,
                cores: int = 8, target_microns: int = 256, patch_size: int = 224, 
-               device: str = "cuda", normalization_template: Path = None):    
+               device: str = "cuda", normalization_template: Path = None):
     has_gpu = torch.cuda.is_available()
     target_mpp = target_microns/patch_size
     patch_shape = (patch_size, patch_size) #(224, 224) by default
@@ -55,7 +55,8 @@ def preprocess(output_dir: Path, wsi_dir: Path, model_path: Path, cache_dir: Pat
     model, model_name = extractor.init_feat_extractor(checkpoint_path=model_path, device=device)
 
     # Create cache and output directories
-    cache_dir.mkdir(exist_ok=True, parents=True)
+    if cache:
+        cache_dir.mkdir(exist_ok=True, parents=True)
     output_dir.mkdir(parents=True, exist_ok=True)
     norm_method = "STAMP_macenko_" if norm else "STAMP_raw_"
     model_name_norm = Path(norm_method + model_name)
@@ -93,27 +94,29 @@ def preprocess(output_dir: Path, wsi_dir: Path, model_path: Path, cache_dir: Pat
                     for ext in supported_extensions),
                     start=[])
     else:
-        img_dir = list(wsi_dir.glob(f'**/*/{img_name}'))
+        if not cache_dir.exists():
+            logging.error("Cache directory does not exist, cannot extract features from cached slides!")
+            exit(1)
+        img_dir = list(cache_dir.glob(f'**/*/{img_name}'))
 
     shuffle(img_dir)
     num_processed = num_skipped = 0
     error_slides = []
     for slide_url in tqdm(img_dir, "\nPreprocessing progress", leave=False, miniters=1, mininterval=0):
-        if not only_feature_extraction:
-            slide_name = Path(slide_url).stem
-            slide_cache_dir = cache_dir/slide_name
+        slide_name = Path(slide_url).stem if not only_feature_extraction else Path(slide_url).parent.name
+        slide_cache_dir = cache_dir/slide_name
+        if cache:
             slide_cache_dir.mkdir(parents=True, exist_ok=True)
-        else:
-            slide_name = Path(slide_url).parent.name
 
         print("\n")
         logging.info(f"===== Processing slide {slide_name} =====")
         feat_out_dir = output_file_dir/slide_name
         if not (os.path.exists((f'{feat_out_dir}.h5'))) and not os.path.exists(f'{slide_url}.tmp'):
             with lock_file(slide_url):
-                # Load WSI as one image
-                if (only_feature_extraction and (slide_jpg := slide_url).exists()) \
-                    or (slide_jpg := slide_cache_dir/'norm_slide.jpg').exists():
+                if (
+                    (only_feature_extraction and (slide_jpg := slide_url).exists()) or \
+                    (slide_jpg := slide_cache_dir/'norm_slide.jpg').exists()
+                ):
                     canny_norm_patch_list, coords_list, total = process_slide_jpg(slide_jpg)
                     print(f"Loaded {img_name}, {len(canny_norm_patch_list)}/{total} tiles remain")
                 else:
@@ -146,8 +149,9 @@ def preprocess(output_dir: Path, wsi_dir: Path, model_path: Path, cache_dir: Pat
                         error_slides.append(slide_name)
                         continue
 
-                    # Save raw .svs jpg
-                    PIL.Image.fromarray(slide_array).save(f'{slide_cache_dir}/slide.jpg')
+                    if cache:
+                        # Save raw .svs jpg
+                        PIL.Image.fromarray(slide_array).save(f'{slide_cache_dir}/slide.jpg')
 
                     # Remove .SVS from memory
                     del slide                    
@@ -164,14 +168,16 @@ def preprocess(output_dir: Path, wsi_dir: Path, model_path: Path, cache_dir: Pat
                         canny_img, img_norm_wsi_jpg, canny_norm_patch_list, coords_list = normalizer.transform(slide_array, bg_reject_array, 
                                                                                                             rejected_tile_array, patch_shapes, cores=cores)
                         print(f"\nNormalised slide: {time.time() - start_time:.2f} seconds")
-                        img_norm_wsi_jpg.save(slide_jpg) #save WSI.svs -> WSI.jpg
+                        if cache:
+                            img_norm_wsi_jpg.save(slide_jpg) #save WSI.svs -> WSI.jpg
                     else:
                         canny_img, canny_norm_patch_list, coords_list = get_raw_tile_list(slide_array.shape, bg_reject_array,
                                                                                         rejected_tile_array, patch_shapes)
 
-                    print("Saving Canny background rejected image...")
-                    canny_img.save(f'{slide_cache_dir}/canny_slide.jpg')
-                    
+                    if cache:
+                        print("Saving Canny background rejected image...")
+                        canny_img.save(f'{slide_cache_dir}/canny_slide.jpg')
+
                     # Remove original slide jpg from memory
                     del slide_array
                     
