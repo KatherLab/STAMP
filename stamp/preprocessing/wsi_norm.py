@@ -43,9 +43,8 @@ def lock_file(slide_path: Path):
 def save_image(image, path: Path):
     width, height = image.size
     if width > 65500 or height > 65500:
-        logging.warning(f"Image size ({width}x{height}) exceeds maximum size of 65500x65500, resizing {path.name} before saving...")
-        ratio = 65500 / max(width, height)
-        image = image.resize((int(width * ratio), int(height * ratio)))
+        logging.warning(f"Image size ({width}x{height}) exceeds maximum size of 65500x65500, {path.name} will not be cached...")
+        return
     image.save(path)
 
 def preprocess(output_dir: Path, wsi_dir: Path, model_path: Path, cache_dir: Path,

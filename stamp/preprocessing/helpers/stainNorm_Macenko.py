@@ -107,11 +107,11 @@ class Normalizer(object):
         begin = time.time()
         stain_matrix_source = get_stain_matrix(og_img)
         after_sm = time.time()
-        print(f'Get stain matrix: {after_sm-begin} seconds')
+        print(f"Get stain matrix: {after_sm-begin} seconds")
         I_shape = og_img.shape
         source_concentrations_list = ut.get_concentrations_source(bg_rejected_img, I_shape, stain_matrix_source, rejected_list)
         after_conc = time.time()
-        print(f'\nGet concentrations (normalisation): {after_conc-after_sm} seconds')
+        print(f"\nGet concentrations (normalisation): {after_conc-after_sm} seconds")
 
         del og_img, stain_matrix_source
 
@@ -124,20 +124,19 @@ class Normalizer(object):
                 for i, source_concentrations in enumerate(source_concentrations_list):
                     # if all zeroes, skip
                     if np.any(source_concentrations):
-                        future = executor.submit(
-                        concurrent_concXstain, self, source_concentrations=source_concentrations, patch_shapes=patch_shapes, idx=i)
+                        future = executor.submit(concurrent_concXstain, self, source_concentrations=source_concentrations, patch_shapes=patch_shapes, idx=i)
                         future_coords[future] = i
                 
                 norm_img_patches_list = np.zeros((len(source_concentrations_list), 224, 224, 3), dtype=np.uint8)
-                for tile_future in tqdm(futures.as_completed(future_coords), total=len(source_concentrations_list)-len(rejected_list), desc='Concentrations x Stain', leave=False):
+                for tile_future in tqdm(futures.as_completed(future_coords), total=len(source_concentrations_list)-len(rejected_list), desc="Concentrations x Stain", leave=False):
                     i = future_coords[tile_future]
                     patch = tile_future.result()
                     norm_img_patches_list[i] = patch
                 
             after_transform = time.time()
-            print(f'\nConcentrations x Stain matrix: {after_transform-after_conc} seconds')
+            print(f"\nConcentrations x Stain matrix: {after_transform-after_conc} seconds")
 
-            print('Reconstructing image from patches...')
+            print("Reconstructing image from patches...")
             norm_output_array = []
             canny_output_array = []
             for i in range(len(norm_img_patches_list)):
@@ -181,7 +180,7 @@ class Normalizer(object):
             maxC_target = np.percentile(self.target_concentrations, 99, axis=0).reshape((1, 2))
             jit_output = transform_return(source_concentrations_list, self.stain_matrix_target, maxC_target, maxC_source, I_shape) #I_shape, @3 (removed)
             after_transform = time.time()
-            print(f'Concentrations x Stain matrix: {after_transform-after_conc} seconds')
+            print(f"Concentrations x Stain matrix: {after_transform-after_conc} seconds")
             output_img = Image.fromarray(np.array(jit_output))
             output_array = jit_output
             coords_list = None #TODO
@@ -204,7 +203,7 @@ class Normalizer(object):
 
 #test get_stain_matrix
 def test_get_stain_matrix():
-    img = Image.open('test_images/1.jpg')
+    img = Image.open("test_images/1.jpg")
     img = np.array(img)
     img = ut.standardize_brightness(img)
     stain_matrix = get_stain_matrix(img)
