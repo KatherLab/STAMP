@@ -94,21 +94,24 @@ def preprocess(output_dir: Path, wsi_dir: Path, model_path: Path, cache_dir: Pat
         normalizer.fit(target)
     
     total_start_time = time.time()
-    
+
     img_name = "norm_slide.jpg" if norm else "canny_slide.jpg"
+    existing_features = [f.stem for f in output_file_dir.glob("**/*.h5")] if output_file_dir.exists() else []
     if not only_feature_extraction:
-        img_dir = sum((list(wsi_dir.glob(f'**/*{ext}'))
-                    for ext in supported_extensions),
-                    start=[])
+        img_dir = [
+            svs for ext in supported_extensions for svs in wsi_dir.glob(f'**/*{ext}') if svs.stem not in existing_features
+        ]
     else:
         if not cache_dir.exists():
             logging.error("Cache directory does not exist, cannot extract features from cached slides!")
             exit(1)
-        img_dir = list(cache_dir.glob(f'**/*/{img_name}'))
+        img_dir = [jpg for jpg in cache_dir.glob(f'**/*/{img_name}') if jpg.parent.name not in existing_features]
 
     shuffle(img_dir)
-    num_processed = num_skipped = 0
+    num_processed = 0
     error_slides = []
+    if len(existing_features):
+        print(f"\nFound {len(existing_features)} existing feature files, skipping these slides...")
     for slide_url in tqdm(img_dir, "\nPreprocessing progress", leave=False, miniters=1, mininterval=0):
         slide_name = slide_url.stem if not only_feature_extraction else slide_url.parent.name
         slide_cache_dir = cache_dir/slide_name
@@ -213,13 +216,13 @@ def preprocess(output_dir: Path, wsi_dir: Path, model_path: Path, cache_dir: Pat
                 logging.info(".h5 file for this slide already exists. Skipping...")
             else:
                 logging.info("Slide is already being processed. Skipping...")
-            num_skipped += 1
+            existing_features.append(slide_name)
             if del_slide:
                 print("Deleting slide from local folder...")
                 if os.path.exists(slide_url):
                     os.remove(slide_url)
 
     logging.info(f"===== End-to-end processing time of {len(img_dir)} slides: {str(timedelta(seconds=(time.time() - total_start_time)))} =====")
-    logging.info(f"Summary: Processed {num_processed} slides, encountered {len(error_slides)} errors, skipped {num_skipped} readily-processed slides")
+    logging.info(f"Summary: Processed {num_processed} slides, encountered {len(error_slides)} errors, skipped {len(existing_features)} readily-processed slides")
     if len(error_slides):
         logging.info("The following slides were not processed due to errors:\n\n" + "\n".join(error_slides))
