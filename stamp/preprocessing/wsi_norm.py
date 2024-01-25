@@ -33,17 +33,32 @@ PIL.Image.MAX_IMAGE_PIXELS = None
 
 @contextmanager
 def lock_file(slide_path: Path):
-    Path(f'{slide_path}.tmp').touch()
+    try:
+        Path(f"{slide_path}.tmp").touch()
+    except PermissionError:
+        pass # No write permissions for wsi directory
     try:
         yield
     finally:
-        if os.path.exists(f'{slide_path}.tmp'): # Catch collision cases
-            os.remove(f'{slide_path}.tmp')
+        if os.path.exists(f"{slide_path}.tmp"): # Catch collision cases
+            os.remove(f"{slide_path}.tmp")
+
+def test_wsidir_write_permissions(wsi_dir: Path):
+    try:
+        testfile = wsi_dir/f"test_{time.time()}.tmp"
+        Path(testfile).touch()
+    except PermissionError:
+        logging.warning("No write permissions for wsi directory! If multiple stamp processes are running "
+                        "in parallel, the final summary may show an incorrect number of slides processed.")
+    finally:
+        if os.path.exists(testfile):
+            os.remove(testfile)
 
 def save_image(image, path: Path):
     width, height = image.size
     if width > 65500 or height > 65500:
-        logging.warning(f"Image size ({width}x{height}) exceeds maximum size of 65500x65500, {path.name} will not be cached...")
+        logging.warning(f"Image size ({width}x{height}) exceeds maximum size of 65500x65500, "
+                        f"{path.name} will not be cached...")
         return
     image.save(path)
 
@@ -74,7 +89,7 @@ def preprocess(output_dir: Path, wsi_dir: Path, model_path: Path, cache_dir: Pat
     logdir = output_file_dir/logfile_name
     logging.basicConfig(filename=logdir, force=True, level=logging.INFO, format="[%(levelname)s] %(message)s")
     logging.getLogger().addHandler(logging.StreamHandler())
-    logging.info("Preprocessing started at: " + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
+    logging.info("Preprocessing started at: " + time.strftime("%Y-%m-%d %H:%M:%S"))
     logging.info(f"Norm: {norm} | Target_microns: {target_microns} | Patch_size: {patch_size} | MPP: {target_mpp}")
     logging.info(f"Model: {model_name}\n")
     print(f"Current working directory: {os.getcwd()}")
@@ -92,20 +107,22 @@ def preprocess(output_dir: Path, wsi_dir: Path, model_path: Path, cache_dir: Pat
         target = cv2.cvtColor(target, cv2.COLOR_BGR2RGB)
         normalizer = stainNorm_Macenko.Normalizer()
         normalizer.fit(target)
-    
+
+    test_wsidir_write_permissions(wsi_dir)
+
     total_start_time = time.time()
 
     img_name = "norm_slide.jpg" if norm else "canny_slide.jpg"
     existing_features = [f.stem for f in output_file_dir.glob("**/*.h5")] if output_file_dir.exists() else []
     if not only_feature_extraction:
         img_dir = [
-            svs for ext in supported_extensions for svs in wsi_dir.glob(f'**/*{ext}') if svs.stem not in existing_features
+            svs for ext in supported_extensions for svs in wsi_dir.glob(f"**/*{ext}") if svs.stem not in existing_features
         ]
     else:
         if not cache_dir.exists():
             logging.error("Cache directory does not exist, cannot extract features from cached slides!")
             exit(1)
-        img_dir = [jpg for jpg in cache_dir.glob(f'**/*/{img_name}') if jpg.parent.name not in existing_features]
+        img_dir = [jpg for jpg in cache_dir.glob(f"**/*/{img_name}") if jpg.parent.name not in existing_features]
 
     shuffle(img_dir)
     num_processed = 0
@@ -121,11 +138,11 @@ def preprocess(output_dir: Path, wsi_dir: Path, model_path: Path, cache_dir: Pat
         print("\n")
         logging.info(f"===== Processing slide {slide_name} =====")
         feat_out_dir = output_file_dir/slide_name
-        if not (os.path.exists((f'{feat_out_dir}.h5'))) and not os.path.exists(f'{slide_url}.tmp'):
+        if not (os.path.exists((f"{feat_out_dir}.h5"))) and not os.path.exists(f"{slide_url}.tmp"):
             with lock_file(slide_url):
                 if (
                     (only_feature_extraction and (slide_jpg := slide_url).exists()) or \
-                    (slide_jpg := slide_cache_dir/'norm_slide.jpg').exists()
+                    (slide_jpg := slide_cache_dir/"norm_slide.jpg").exists()
                 ):
                     canny_norm_patch_list, coords_list, total = process_slide_jpg(slide_jpg)
                     print(f"Loaded {img_name}, {len(canny_norm_patch_list)}/{total} tiles remain")
@@ -146,15 +163,15 @@ def preprocess(output_dir: Path, wsi_dir: Path, model_path: Path, cache_dir: Pat
                         slide_array = load_slide(slide=slide, target_mpp=target_mpp, cores=cores)
                     except MPPExtractionError:
                         if del_slide:
-                            logging.error(f"MPP missing in slide metadata, deleting slide and continuing...")
+                            logging.error("MPP missing in slide metadata, deleting slide and continuing...")
                             if os.path.exists(slide_url):
                                 os.remove(slide_url)
                         else:
-                            logging.error(f"MPP missing in slide metadata, continuing...")
+                            logging.error("MPP missing in slide metadata, continuing...")
                         error_slides.append(slide_name)
                         continue
                     except openslide.lowlevel.OpenSlideError as e:
-                        print('')
+                        print("")
                         logging.error(f"Failed loading slide, continuing... Error: {e}")
                         error_slides.append(slide_name)
                         continue
@@ -194,11 +211,11 @@ def preprocess(output_dir: Path, wsi_dir: Path, model_path: Path, cache_dir: Pat
                     
                     # Optionally remove the original slide from harddrive
                     if del_slide:
-                        print(f"Deleting slide from local folder...")
+                        print("Deleting slide from local folder...")
                         if os.path.exists(slide_url):
                             os.remove(slide_url)
 
-                print(f"\nExtracting CTransPath features from slide...")
+                print("\nExtracting CTransPath features from slide...")
                 start_time = time.time()
                 if len(canny_norm_patch_list) > 0:
                     extract_features_(model=model, model_name=model_name, norm_wsi_img=canny_norm_patch_list,
@@ -212,7 +229,7 @@ def preprocess(output_dir: Path, wsi_dir: Path, model_path: Path, cache_dir: Pat
                     error_slides.append(slide_name)
                     continue
         else:
-            if os.path.exists((f'{feat_out_dir}.h5')):
+            if os.path.exists((f"{feat_out_dir}.h5")):
                 logging.info(".h5 file for this slide already exists. Skipping...")
             else:
                 logging.info("Slide is already being processed. Skipping...")
