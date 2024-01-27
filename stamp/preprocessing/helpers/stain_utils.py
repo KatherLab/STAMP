@@ -259,7 +259,6 @@ def get_concentrations_source(I, I_shape, stain_matrix, rejection_list, lamda=0.
     # patchify returns a NumPy array with shape (n_rows, n_cols, 1, H, W, N), if image is N-channels.
     # H W N is Height Width N-channels of the extracted patch
     # n_rows is the number of patches for each column and n_cols is the number of patches for each row
-    print(f"\nSize of WSI: {I_shape}")
 
     if True: #(I_shape[0] + I_shape[1]) > (224*2): #bigger than 30k edge pixels combined, i.e. 15k x 15k
         #x = 500 # 2 for largest possible blocks

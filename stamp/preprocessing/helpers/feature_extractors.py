@@ -43,7 +43,7 @@ class FeatureExtractor:
         if torch.cuda.is_available():
             model = model.to(device)
 
-        print("CTransPath model successfully initialised...")
+        print("CTransPath model successfully initialised...\n")
         model_name='xiyuewang-ctranspath-7c998680'
 
         return model, model_name
@@ -73,7 +73,8 @@ class SlideTileDataset(Dataset):
 def extract_features_(
         *,
         model, model_name, norm_wsi_img: np.ndarray, coords: list, wsi_name: str, outdir: Path,
-        augmented_repetitions: int = 0, cores: int = 8, is_norm: bool = True, device: str = 'cpu'
+        augmented_repetitions: int = 0, cores: int = 8, is_norm: bool = True, device: str = 'cpu',
+        target_microns: int = 256, patch_size: int = 224
 ) -> None:
     """Extracts features from slide tiles.
 
@@ -107,7 +108,10 @@ def extract_features_(
     extractor_string = f'STAMP-extract-{__version__}_{model_name}'
     with open(outdir.parent/'info.json', 'w') as f:
         json.dump({'extractor': extractor_string,
-                  'augmented_repetitions': augmented_repetitions}, f)
+                  'augmented_repetitions': augmented_repetitions,
+                  'normalized': is_norm,
+                  'microns': target_microns,
+                  'patch_size': patch_size}, f)
 
     unaugmented_ds = SlideTileDataset(norm_wsi_img, normal_transform)
     augmented_ds = []

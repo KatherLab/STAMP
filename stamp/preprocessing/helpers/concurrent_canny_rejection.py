@@ -36,10 +36,9 @@ def canny_fcn(patch: np.array) -> Tuple[np.array, bool]:
         return (patch, False)
 
 
-def reject_background(img: np.array, patch_size: Tuple[int,int], step: int, save_tiles: bool = False, outdir: Path = None, cores: int = 8) -> \
+def reject_background(img: np.array, patch_size: Tuple[int,int], step: int, cores: int = 8) -> \
 Tuple[ndarray, ndarray, List[Any]]:
     img_shape = img.shape
-    print(f"\nSize of WSI: {img_shape}")
 
     split=True
     x=(img_shape[0]//patch_size[0])*(img_shape[1]//patch_size[1])
@@ -55,7 +54,6 @@ Tuple[ndarray, ndarray, List[Any]]:
         for i in i_range:
             for j in j_range:
                 patch = img[(i*patch_size[0]):(i*patch_size[0]+step), (j*patch_size[1]):(j*patch_size[1]+step)]
-                #(PIL.Image.fromarray(patch)).save(f'{outdir}/patch_{i*len(j_range) + j}.jpg')
                 patches_shapes_list.append(patch.shape)
                 future = executor.submit(canny_fcn, patch)
                 # begin_time_list.append(time.time())
@@ -76,5 +74,5 @@ Tuple[ndarray, ndarray, List[Any]]:
 
         end = time.time()
 
-    print(f"\nFinished Canny background rejection, rejected {np.sum(rejected_tile_list)} tiles: {end-begin}")
+    print(f"Finished Canny background rejection, rejected {np.sum(rejected_tile_list)} tiles: {end-begin:.2f} seconds")
     return ordered_patch_list, rejected_tile_list, patches_shapes_list

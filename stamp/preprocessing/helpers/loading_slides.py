@@ -1,7 +1,6 @@
 import re
 from typing import Dict, Tuple
 from concurrent import futures
-import logging
 import openslide
 from tqdm import tqdm
 import numpy as np
@@ -60,6 +59,7 @@ def get_slide_mpp(slide: openslide.OpenSlide) -> float:
             if slide_mpp:
                 print(f"MPP retrieved from comments after initial failure: {slide_mpp}")
             else:
+                print(f"MPP is missing in the comments of this file format, attempting to extract from metadata...")
                 slide_mpp = extract_mpp_from_metadata(slide)
                 print(f"MPP re-matched from metadata after initial failure: {slide_mpp}")
         except:
@@ -67,7 +67,6 @@ def get_slide_mpp(slide: openslide.OpenSlide) -> float:
     return slide_mpp
 
 def extract_mpp_from_metadata(slide: openslide.OpenSlide) -> float:
-    logging.exception("MPP is missing in the metadata of this file format, attempting to extract from metadata...")
     import xml.dom.minidom as minidom
     xml_path = slide.properties['tiff.ImageDescription']
     doc = minidom.parseString(xml_path)
@@ -113,9 +112,8 @@ def process_slide_jpg(slide_jpg: PIL.Image):
     img_norm_wsi_jpg = PIL.Image.open(slide_jpg)
     image_array = np.array(img_norm_wsi_jpg)
     canny_norm_patch_list = []
-    coords_list=[]
-    total=0
-    patch_saved=0
+    coords_list = []
+    total = 0
     for i in range(0, image_array.shape[0]-224, 224):
         for j in range(0, image_array.shape[1]-224, 224):
             total+=1
@@ -123,9 +121,8 @@ def process_slide_jpg(slide_jpg: PIL.Image):
             # if patch is not fully black (i.e. rejected previously)
             if np.sum(patch) > 0:
                 canny_norm_patch_list.append(patch)
-                coords_list.append((i,j))
-                patch_saved+=1
-    return canny_norm_patch_list, coords_list, patch_saved, total
+                coords_list.append((i, j))
+    return canny_norm_patch_list, coords_list, total
 
 
 # test get_raw_tile_list function
