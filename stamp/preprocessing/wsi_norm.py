@@ -141,11 +141,12 @@ def preprocess(output_dir: Path, wsi_dir: Path, model_path: Path, cache_dir: Pat
 
         print("\n")
         logging.info(f"===== Processing slide {slide_name} =====")
-        if not keep_dir_structure or slide_url.parent == wsi_dir:
+        slide_subdir = slide_url.parent.relative_to(wsi_dir)
+        if not keep_dir_structure or slide_subdir == Path("."):
             feat_out_dir = output_file_dir/slide_name
         else:
-            (output_file_dir/slide_url.parent.name).mkdir(parents=True, exist_ok=True)
-            feat_out_dir = output_file_dir/slide_url.parent.name/slide_name
+            (output_file_dir/slide_subdir).mkdir(parents=True, exist_ok=True)
+            feat_out_dir = output_file_dir/slide_subdir/slide_name
         if not (os.path.exists((f"{feat_out_dir}.h5"))) and not os.path.exists(f"{slide_url}.tmp"):
             with lock_file(slide_url):
                 if (
