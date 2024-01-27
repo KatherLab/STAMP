@@ -16,6 +16,7 @@ preprocessing:
   del_slide: false # Remove the original slide after processing
   cache: true # Save intermediate images (slide, background rejected, normalized)
   only_feature_extraction: false # Only perform feature extraction (intermediate images (background rejected, [normalized]) have to exist)
+  keep_dir_structure: false # Keep directory structure of WSI directory in feature directory (instead of writing all features to the same directory)
   cores: 8 # CPU cores to use
   device: cuda:0 # device to run feature extraction on (cpu, cuda, cuda:0, etc.)
 
