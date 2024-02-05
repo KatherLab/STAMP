@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "stamp"
-version = "1.0.2"
+version = "1.0.1"
 authors = [
   { name="Omar El Nahhas", email="omar.el_nahhas@tu-dresden.de" },
   { name="Marko van Treeck", email="markovantreeck@gmail.com" },
