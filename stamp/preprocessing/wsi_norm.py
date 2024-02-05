@@ -62,9 +62,9 @@ def save_image(image, path: Path):
         return
     image.save(path)
 
-def preprocess(output_dir: Path, wsi_dir: Path, model_path: Path, cache_dir: Path,
-               norm: bool, del_slide: bool, only_feature_extraction: bool, cache: bool = True,
-               cores: int = 8, target_microns: int = 256, patch_size: int = 224, 
+def preprocess(output_dir: Path, wsi_dir: Path, model_path: Path, cache_dir: Path, norm: bool,
+               del_slide: bool, only_feature_extraction: bool, cache: bool = True, cores: int = 8,
+               target_microns: int = 256, patch_size: int = 224, keep_dir_structure: bool = False,
                device: str = "cuda", normalization_template: Path = None):
     has_gpu = torch.cuda.is_available()
     target_mpp = target_microns/patch_size
@@ -103,7 +103,7 @@ def preprocess(output_dir: Path, wsi_dir: Path, model_path: Path, cache_dir: Pat
     if norm:
         print("\nInitialising Macenko normaliser...")
         print(normalization_template)
-        target = cv2.imread(normalization_template)
+        target = cv2.imread(str(normalization_template))
         target = cv2.cvtColor(target, cv2.COLOR_BGR2RGB)
         normalizer = stainNorm_Macenko.Normalizer()
         normalizer.fit(target)
@@ -114,6 +114,7 @@ def preprocess(output_dir: Path, wsi_dir: Path, model_path: Path, cache_dir: Pat
 
     img_name = "norm_slide.jpg" if norm else "canny_slide.jpg"
     # Get list of slides, filter out slides that have already been processed
+    print("Scanning for existing feature files...")
     existing = [f.stem for f in output_file_dir.glob("**/*.h5")] if output_file_dir.exists() else []
     if not only_feature_extraction:
         img_dir = [svs for ext in supported_extensions for svs in wsi_dir.glob(f"**/*{ext}")]
@@ -141,7 +142,12 @@ def preprocess(output_dir: Path, wsi_dir: Path, model_path: Path, cache_dir: Pat
 
         print("\n")
         logging.info(f"===== Processing slide {slide_name} =====")
-        feat_out_dir = output_file_dir/slide_name
+        slide_subdir = slide_url.parent.relative_to(wsi_dir)
+        if not keep_dir_structure or slide_subdir == Path("."):
+            feat_out_dir = output_file_dir/slide_name
+        else:
+            (output_file_dir/slide_subdir).mkdir(parents=True, exist_ok=True)
+            feat_out_dir = output_file_dir/slide_subdir/slide_name
         if not (os.path.exists((f"{feat_out_dir}.h5"))) and not os.path.exists(f"{slide_url}.tmp"):
             with lock_file(slide_url):
                 if (
