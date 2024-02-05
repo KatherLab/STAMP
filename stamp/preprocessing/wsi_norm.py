@@ -103,7 +103,7 @@ def preprocess(output_dir: Path, wsi_dir: Path, model_path: Path, cache_dir: Pat
     if norm:
         print("\nInitialising Macenko normaliser...")
         print(normalization_template)
-        target = cv2.imread(normalization_template)
+        target = cv2.imread(str(normalization_template))
         target = cv2.cvtColor(target, cv2.COLOR_BGR2RGB)
         normalizer = stainNorm_Macenko.Normalizer()
         normalizer.fit(target)
@@ -114,6 +114,7 @@ def preprocess(output_dir: Path, wsi_dir: Path, model_path: Path, cache_dir: Pat
 
     img_name = "norm_slide.jpg" if norm else "canny_slide.jpg"
     # Get list of slides, filter out slides that have already been processed
+    print("Scanning for existing feature files...")
     existing = [f.stem for f in output_file_dir.glob("**/*.h5")] if output_file_dir.exists() else []
     if not only_feature_extraction:
         img_dir = [svs for ext in supported_extensions for svs in wsi_dir.glob(f"**/*{ext}")]
