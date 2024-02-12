@@ -177,12 +177,12 @@ def main() -> None:
 
     commands = parser.add_subparsers(dest="command")
     commands.add_parser("setup", help="Download required resources")
-    commands.add_parser("preprocess", help="Preprocess data")
-    commands.add_parser("train", help="Train a vision transformer model")
-    commands.add_parser("crossval", help="Train a vision transformer model with cross validation for modeling.n_splits folds")
-    commands.add_parser("deploy", help="Deploy a trained vision transformer model")
-    commands.add_parser("statistics", help="Generate ROC curves for a trained model")
-    commands.add_parser("config", help="Print the loaded configuation")
+    commands.add_parser("preprocess", help="Preprocess whole-slide images into feature vectors")
+    commands.add_parser("train", help="Train a Vision Transformer model")
+    commands.add_parser("crossval", help="Train a Vision Transformer model with cross validation for modeling.n_splits folds")
+    commands.add_parser("deploy", help="Deploy a trained Vision Transformer model")
+    commands.add_parser("statistics", help="Generate AUROCs and AUPRCs with 95%CI for a trained Vision Transformer model")
+    commands.add_parser("config", help="Print the loaded configuration")
     commands.add_parser("heatmaps", help="Generate heatmaps for a trained model")
 
     args = parser.parse_args()
