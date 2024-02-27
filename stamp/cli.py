@@ -82,17 +82,18 @@ def run_cli(args: argparse.Namespace):
                 wsi_dir=Path(c.wsi_dir),
                 model_path=Path(c.model_path),
                 cache_dir=Path(c.cache_dir),
-                # patch_size=c.patch_size,
-                target_microns=c.microns,
-                cores=c.cores,
-                norm=c.norm,
-                del_slide=c.del_slide,
                 cache=c.cache if 'cache' in c else True,
+                norm=c.norm,
+                normalization_template=Path(c.normalization_template),
+                del_slide=c.del_slide,
                 only_feature_extraction=c.only_feature_extraction,
                 keep_dir_structure=c.keep_dir_structure if 'keep_dir_structure' in c else False,
-                device=c.device,
-                normalization_template=Path(c.normalization_template)
-            )
+                cores=c.cores,
+                target_microns=c.microns,
+                # patch_size=c.patch_size,
+                # batch_size = 64,
+                device=c.device
+            ) 
         case "train":
             require_configs(
                 cfg,
