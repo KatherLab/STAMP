@@ -7,5 +7,16 @@ __version__ = "0.1.0"
 __maintainer__ = ["Jeff"]
 __email__ = "jiefu.zhu@tu-dresden.de"
 
-supported_extensions = {'.svs', '.tif', '.vms', '.vmu',
-                        '.ndpi', '.scn', '.mrxs', '.tiff', '.svslide', '.bif', '.qptiff'}
+supported_extensions = {
+    ".svs",
+    ".tif",
+    ".vms",
+    ".vmu",
+    ".ndpi",
+    ".scn",
+    ".mrxs",
+    ".tiff",
+    ".svslide",
+    ".bif",
+    ".qptiff",
+}

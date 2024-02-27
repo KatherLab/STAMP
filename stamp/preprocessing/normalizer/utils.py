@@ -1,18 +1,17 @@
 from __future__ import division
 from concurrent import futures
-from typing import Dict
+from typing import Dict, Tuple
 import numpy as np
 from numba import njit
 from tqdm import tqdm
 
 
-
-def standardize_brightness(I):
+def standardize_brightness(I: np.ndarray) -> np.ndarray:
     p = np.percentile(I, 90)
     return np.clip(I * 255.0 / p, 0, 255).astype(np.uint8)
 
 
-def remove_zeros(I):
+def remove_zeros(I: np.ndarray) -> np.ndarray:
     """
     Remove zeros, replace with 1's.
     :param I: uint8 array
@@ -22,7 +21,7 @@ def remove_zeros(I):
 
 
 @njit
-def RGB_to_OD(I):
+def RGB_to_OD(I: np.ndarray) -> np.ndarray:
     """
     Convert from RGB to optical density (OD_RGB) space.
 
@@ -35,7 +34,7 @@ def RGB_to_OD(I):
 
 
 @njit
-def OD_to_RGB(OD):
+def OD_to_RGB(OD: np.ndarray) -> np.ndarray:
     """
     Convert from optical density (OD_RGB) to RGB.
 
@@ -48,7 +47,7 @@ def OD_to_RGB(OD):
     return (255 * np.exp(-OD)).astype(np.uint8)
 
 
-def normalize_rows(A):
+def normalize_rows(A: np.ndarray) -> np.ndarray:
     """
     Normalize rows of an array
     :param A:
@@ -58,14 +57,14 @@ def normalize_rows(A):
 
 
 @njit
-def principle_colors(V, minPhi, maxPhi):
+def principle_colors(V: np.ndarray, minPhi: float, maxPhi: float):
     v1 = np.dot(V, np.array([np.cos(minPhi), np.sin(minPhi)]))
     v2 = np.dot(V, np.array([np.cos(maxPhi), np.sin(maxPhi)]))
     return v1, v2
 
 
 @njit
-def get_phi(OD, V, angular_percentile):
+def get_phi(OD: np.ndarray, V: np.ndarray, angular_percentile: int):
     # Project on this basis.
     That = np.dot(OD, V)
 
@@ -84,18 +83,31 @@ def calc_hematoxylin(source_concentrations, h, w):
 
 
 @njit
-def norm_patch(source_concentrations, stain_matrix_target, maxC_target, maxC_source, patch_shape):
-    source_concentrations *= (maxC_target / maxC_source)
-    return (255 * np.exp(-np.dot(source_concentrations, stain_matrix_target).reshape(patch_shape))).astype(np.uint8)
+def norm_patch(
+    source_concentrations: np.ndarray,
+    stain_matrix_target: np.ndarray,
+    maxC_target: np.ndarray,
+    maxC_source: np.ndarray,
+    patch_shape: Tuple[int, int, int],
+) -> np.ndarray:
+    source_concentrations *= maxC_target / maxC_source
+    return (
+        255 * np.exp(-np.dot(source_concentrations, stain_matrix_target).reshape(patch_shape))
+    ).astype(np.uint8)
 
 
-def norm_patch_fn(src_concentrations, stain_matrix_target, maxC_target, patch_shape):
+def norm_patch_fn(
+    src_concentrations: np.ndarray,
+    stain_matrix_target: np.ndarray,
+    maxC_target: np.ndarray,
+    patch_shape: np.ndarray,
+) -> np.ndarray:
     maxC_source = np.percentile(src_concentrations, 99, axis=0)[None]
-    jit_output = norm_patch(src_concentrations, stain_matrix_target, maxC_target, maxC_source, patch_shape)
-    return(jit_output)
+    patch_normed = norm_patch(src_concentrations, stain_matrix_target, maxC_target, maxC_source, patch_shape)
+    return patch_normed
 
 
-def get_target_concentrations(arr, stain_matrix):
+def get_target_concentrations(arr: np.ndarray, stain_matrix: np.ndarray) -> np.ndarray:
     """
     Get concentrations, a npix x 2 matrix
     :param I:
@@ -114,7 +126,9 @@ def get_target_concentrations(arr, stain_matrix):
     return x
 
 
-def get_src_concentration(patches_flat, stain_matrix, cores: int=8):
+def get_src_concentration(
+        patches_flat: np.ndarray, stain_matrix: np.ndarray, cores: int = 8
+) -> np.ndarray:
     print(f"Normalizing {patches_flat.shape[0]} tiles...")
     n, pxls = patches_flat.shape[0], patches_flat.shape[1] * patches_flat.shape[2]
     src_concentrations = np.zeros((n, pxls, 2), dtype=np.float64)
@@ -125,8 +139,13 @@ def get_src_concentration(patches_flat, stain_matrix, cores: int=8):
             future = executor.submit(get_target_concentrations, patch, stain_matrix)
             future_coords[future] = k
 
-        for tile_future in tqdm(futures.as_completed(future_coords), total=patches_flat.shape[0], desc='Calculating concentrations', leave=False):
+        for tile_future in tqdm(
+            futures.as_completed(future_coords),
+            total=patches_flat.shape[0],
+            desc="Calculating concentrations",
+            leave=False,
+        ):
             k = future_coords[tile_future]
             src_concentrations[k] = tile_future.result()
-  
+
     return src_concentrations

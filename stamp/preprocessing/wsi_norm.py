@@ -156,14 +156,15 @@ def preprocess(output_dir: Path, wsi_dir: Path, model_path: Path, cache_dir: Pat
                     (only_feature_extraction and (slide_jpg := slide_url).exists()) or \
                     (slide_jpg := slide_cache_dir/"norm_slide.jpg").exists()
                 ):
-                    # note that due to being stored as an JPEG rejected patches which
-                    # neighbor accepted patches will most likely also be loaded
-                    # thus when loading patches this way there will be more slides,
-                    # therefore we apply again a background filtering
                     slide_array = np.array(Image.open(slide_jpg))
                     patches, patches_coords, n = extract_patches(slide_array, patch_size, pad=False, drop_empty=True)
-                    print(f"Loaded {img_name}, {len(patches)}/{n} tiles remain")
+                    print(f"Loaded {img_name}, {patches.shape[0]}/{n} tiles remain")
+                    # note that due to being stored as an JPEG rejected patches which
+                    # neighbor accepted patches will most likely also be loaded
+                    # thus we again apply a background filtering
                     patches, patches_coords = filter_background(patches, patches_coords, cores)
+                    # patches.shape = (n_patches, patch_h, patch_w, 3)
+                    # patches_coords.shape = (n_patches, 2)
                 else:
                     try:
                         slide = openslide.OpenSlide(slide_url)
@@ -205,6 +206,8 @@ def preprocess(output_dir: Path, wsi_dir: Path, model_path: Path, cache_dir: Pat
                     # Canny edge detection to discard tiles containing no tissue BEFORE normalization
                     patches, patches_coords, _ = extract_patches(slide_array, patch_size, pad=False, drop_empty=True)
                     patches, patches_coords = filter_background(patches, patches_coords, cores)
+                    # patches.shape = (n_patches, patch_h, patch_w, 3)
+                    # patches_coords.shape = (n_patches, 2)
 
                     if cache:
                         print("Saving Canny background rejected image...")

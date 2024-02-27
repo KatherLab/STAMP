@@ -13,8 +13,8 @@ Image.MAX_IMAGE_PIXELS = None
 
 
 def _load_tile(
-    slide: openslide.OpenSlide, pos: Tuple[int, int], stride: Tuple[int, int], target_size: Tuple[int, int]
-) -> np.ndarray:
+        slide: openslide.OpenSlide, pos: Tuple[int, int], stride: Tuple[int, int], target_size: Tuple[int, int]
+    ) -> np.ndarray:
     # Loads part of a WSI. Used for parallelization with ThreadPoolExecutor
     tile = slide.read_region(pos, 0, stride).convert('RGB').resize(target_size)
     return np.array(tile)
@@ -22,14 +22,13 @@ def _load_tile(
 
 def load_slide(slide: openslide.OpenSlide, target_mpp: float = 256/224, cores: int = 8, chunks: int = 8) -> np.ndarray:
     """Loads a slide into a numpy array."""
-    # We load the slides in tiles to
+    # We load the slides in chunks to:
     #  1. parallelize the loading process using Threads since it's IO heavy
     #  2. not use too much data when then scaling down the tiles from their
     #     initial size
     stride = np.ceil(np.array(slide.dimensions) / chunks).astype(int)
     slide_mpp = float(get_slide_mpp(slide))
-    # (width, height) for openslide
-    tile_size = np.round(stride * slide_mpp / target_mpp).astype(int)
+    tile_size = np.round(stride * slide_mpp / target_mpp).astype(int) # (width, height) for openslide
 
     with futures.ThreadPoolExecutor(cores) as executor:
         # map from future to its (row, col) index
