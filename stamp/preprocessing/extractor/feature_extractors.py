@@ -5,8 +5,7 @@ import hashlib
 import torch
 import torch.nn as nn
 from torch.utils.data import Dataset, DataLoader
-from torchvision import transforms
-from PIL import Image
+from torchvision.transforms import v2 as transforms
 import numpy as np
 import h5py
 from tqdm import tqdm
@@ -61,20 +60,16 @@ class FeatureExtractor:
         """Extracts features from slide tiles.
 
         Args:
-            slide_tile_paths:  A list of paths containing the slide tiles, one
-                per slide.
-            outdir:  Path to save the features to.
-            augmented_repetitions:  How many additional iterations over the
-                dataset with augmentation should be performed.  0 means that
-                only one, non-augmentation iteration will be done.
+            patches:  Array of shape (n_patches, patch_h, patch_w, 3)
+            cores:  Number of cores for dataloader
         """
-        transform = transforms.Compose(
-            [
-                transforms.Resize(224),
-                transforms.ToTensor(),
-                transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
-            ]
-        )
+        transform = transforms.Compose([
+            transforms.ToImage(),  # Convert to tensor, only needed for PIL images
+            transforms.ToDtype(torch.uint8, scale=True),  # optional, most input are already uint8 at this point
+            transforms.Resize(size=(224, 224), antialias=True),
+            transforms.ToDtype(torch.float32, scale=True),  # Normalize expects float input
+            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+        ])
 
         dataset = SlideTileDataset(patches, transform)
         dataloader = DataLoader(
@@ -105,25 +100,20 @@ def store_metadata(
     normalized: bool,
 ):
     with open(outdir.parent / "info.json", "w") as f:
-        json.dump(
-            {
-                "extractor": extractor_name,
-                "augmented_repetitions": 0,
-                "patches_normalized": normalized,
-                "microns": target_microns,
-                "patch_size": patch_size,
-            },
-            f,
-        )
+        json.dump({
+            "extractor": extractor_name,
+            "augmented_repetitions": 0,
+            "patches_normalized": normalized,
+            "microns": target_microns,
+            "patch_size": patch_size,
+        }, f)
 
 
 def store_features(
     outdir: Path, features: np.ndarray, patches_coords: np.ndarray, extractor_name: str
 ):
     with h5py.File(f"{outdir}.h5", "w") as f:
-        f["coords"] = patches_coords[
-            :, ::-1
-        ]  # store as (w, h) not (h, w) for backwards compatibility
+        f["coords"] = patches_coords[:, ::-1]  # store as (w, h) not (h, w) for backwards compatibility
         f["feats"] = features
         f["augmented"] = np.repeat([False, True], [features.shape[0], 0])
         assert len(f["feats"]) == len(f["augmented"])
@@ -142,7 +132,7 @@ class SlideTileDataset(Dataset):
         return len(self.tiles)
 
     def __getitem__(self, i) -> torch.Tensor:
-        image = Image.fromarray(self.tiles[i])
+        image = self.tiles[i]
         if self.transform:
             image = self.transform(image)
 
