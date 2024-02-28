@@ -12,6 +12,7 @@ from contextlib import contextmanager
 import time
 from datetime import timedelta
 from typing import Optional
+import random
 
 import openslide
 from tqdm import tqdm
@@ -133,6 +134,7 @@ def preprocess(output_dir: Path, wsi_dir: Path, model_path: Path, cache_dir: Pat
         existing = [f for f in existing if f in [f.parent.name for f in img_dir]]
         img_dir = [f for f in img_dir if f.parent.name not in existing]
 
+    random.shuffle(img_dir)
     num_processed, num_total = 0, len(img_dir) + len(existing)
     error_slides = []
     if len(existing):

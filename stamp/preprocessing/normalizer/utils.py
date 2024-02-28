@@ -33,6 +33,18 @@ def RGB_to_OD(I: np.ndarray) -> np.ndarray:
     return np.maximum(-1 * np.log(I / 255), 1e-6)
 
 
+def RGB_to_OD_nojit(I: np.ndarray) -> np.ndarray:
+    """
+    Convert from RGB to optical density (OD_RGB) space.
+
+    RGB = 255 * exp(-1*OD_RGB).
+
+    :param I: Image RGB uint8.
+    :return: Optical denisty RGB image.
+    """
+    return np.maximum(-1 * np.log(I / 255), 1e-6)
+
+
 @njit
 def OD_to_RGB(OD: np.ndarray) -> np.ndarray:
     """
@@ -132,7 +144,7 @@ def get_target_concentrations(arr: np.ndarray, stain_matrix: np.ndarray) -> np.n
     :return:
     """
     arr = remove_zeros(arr)
-    OD = RGB_to_OD(arr).reshape((-1, 3))
+    OD = RGB_to_OD_nojit(arr).reshape((-1, 3)) # runs ~2x faster without jit :/
     try:
         # stain_matrix.T @ x = OD.T
         x, *_ = np.linalg.lstsq(stain_matrix.T, OD.T, rcond=None)

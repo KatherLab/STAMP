@@ -15,9 +15,9 @@ def extract_patches(
     img_size = np.array(img.shape)[:2]
     stride = kernel_size if not overlap else kernel_size // 2
     if pad:
-        rows, cols = np.ceil((img_size - kernel_size) / stride).astype(int)
+        rows, cols = np.ceil((img_size - kernel_size) / stride + 1).astype(int)
     else:  # if pad=False, then too small patches at the right and bottom border are getting discarded
-        rows, cols = (img_size - kernel_size) // stride
+        rows, cols = (img_size - kernel_size) // stride + 1
     n_max = rows * cols
 
     # overestimate the number of non-empty patches
