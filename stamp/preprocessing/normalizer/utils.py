@@ -58,6 +58,7 @@ def normalize_rows(A: np.ndarray) -> np.ndarray:
 
 @njit
 def principle_colors(V: np.ndarray, minPhi: float, maxPhi: float):
+    # the two principle colors
     v1 = np.dot(V, np.array([np.cos(minPhi), np.sin(minPhi)]))
     v2 = np.dot(V, np.array([np.cos(maxPhi), np.sin(maxPhi)]))
     return v1, v2
@@ -73,6 +74,22 @@ def get_phi(OD: np.ndarray, V: np.ndarray, angular_percentile: int):
     minPhi = np.percentile(phi, 100 - angular_percentile)
     maxPhi = np.percentile(phi, angular_percentile)
     return minPhi, maxPhi
+
+
+@njit
+def get_principle_colors(OD: np.ndarray, V: np.ndarray, angular_percentile: int):
+    # Project on this basis.
+    That = np.dot(OD, V)
+
+    # Angular coordinates with repect to the prinicple, orthogonal eigenvectors
+    phi = np.arctan2(That[:, 1], That[:, 0])
+    minPhi = np.percentile(phi, 100 - angular_percentile)
+    maxPhi = np.percentile(phi, angular_percentile)
+
+    # the two principle colors
+    v1 = np.dot(V, np.array([np.cos(minPhi), np.sin(minPhi)]))
+    v2 = np.dot(V, np.array([np.cos(maxPhi), np.sin(maxPhi)]))
+    return v1, v2
 
 
 @njit

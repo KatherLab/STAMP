@@ -1,40 +1,42 @@
 import numpy as np
-from PIL import Image
+from PIL import Image, ImageDraw
 from typing import Tuple
 
 
 def extract_patches(
-    img: np.ndarray, patch_size: Tuple[int, int], pad: bool = False, drop_empty: bool = False,
+    img: np.ndarray, patch_size: Tuple[int, int], pad: bool = False, drop_empty: bool = False, overlap: bool = False
 ) -> Tuple[np.ndarray, np.ndarray, int]:
     """
     Splits a the whole slide image into smaller patches.
     If `drop_empty`=True completly black patches are removed. This is useful
     when `img` was obtained from an JPEG of an already Canny+normed WSI. 
     """
-    patch_size = np.array(patch_size)
+    kernel_size = np.array(patch_size)
+    img_size = np.array(img.shape)[:2]
+    stride = kernel_size if not overlap else kernel_size // 2
     if pad:
-        rows, cols = np.ceil(np.array(img.shape)[:2] / patch_size).astype(int)
+        rows, cols = np.ceil((img_size - kernel_size) / stride).astype(int)
     else:  # if pad=False, then too small patches at the right and bottom border are getting discarded
-        rows, cols = np.array(img.shape)[:2] // patch_size
+        rows, cols = (img_size - kernel_size) // stride
     n_max = rows * cols
 
     # overestimate the number of non-empty patches
-    patches = np.zeros((n_max, patch_size[0], patch_size[1], img.shape[-1]), dtype=np.uint8)
+    patches = np.zeros((n_max, kernel_size[0], kernel_size[1], img.shape[-1]), dtype=np.uint8)
     # patches_coords stores the (height, width)-coordinate of the top-left corner for each patch
     patches_coords = np.zeros((n_max, 2), dtype=np.uint16)
 
     k = 0
     for i in range(rows):
         for j in range(cols):
-            x, y = (i, j) * patch_size
-            patch = img[x : x + patch_size[0], y : y + patch_size[1]]
+            x, y = (i, j) * stride
+            patch = img[x : x + kernel_size[0], y : y + kernel_size[1]]
             
             if drop_empty and not patch.any():  # skip empty/black patches
                 continue
             
             # pad on the left and bottom so patches on the edges of the WSI have the same size
-            if pad and ((real_shape := np.array(patch.shape[:2])) < patch_size).any():
-                padding = patch_size - real_shape
+            if pad and ((real_shape := np.array(patch.shape[:2])) < kernel_size).any():
+                padding = kernel_size - real_shape
                 patch = np.pad(
                     patch,
                     pad_width=((0, padding[0]), (0, padding[1]), (0, 0)),

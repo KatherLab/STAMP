@@ -108,10 +108,11 @@ class MacenkoNormalizer:
         :param angular_percentile:
         :return:
         """
-        # Convert to OD and ignore background (main bottleneck of this function)
+        # Convert to OD and ignore background
         I = utils.remove_zeros(I)
         OD = utils.RGB_to_OD(I).reshape(-1, 3)
-        OD = OD[(OD > luminosity_threshold).any(axis=1), :]
+        OD = OD[(OD > luminosity_threshold).any(axis=1)] # main bottleneck of this function
+        # tried using np.ma.masked_array, but this slowed down the following code
 
         # Eigenvectors of cov in OD space (orthogonal as cov symmetric)
         V = np.linalg.eigh(np.cov(OD, rowvar=False)).eigenvectors

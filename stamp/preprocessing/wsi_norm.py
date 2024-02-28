@@ -265,4 +265,4 @@ def preprocess(output_dir: Path, wsi_dir: Path, model_path: Path, cache_dir: Pat
     logging.info(f"\n===== End-to-end processing time of {num_total} slides: {str(timedelta(seconds=(time.time() - total_start_time)))} =====")
     logging.info(f"Summary: Processed {num_processed} slides, encountered {len(error_slides)} errors, skipped {len(existing)} readily-processed slides")
     if len(error_slides):
-        logging.info("The following slides were not processed due to errors:\n\t" + "\n\t".join(error_slides))
+        logging.info("The following slides were not processed due to errors:\n  " + "\n  ".join(error_slides))
