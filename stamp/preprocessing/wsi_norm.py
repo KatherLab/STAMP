@@ -159,7 +159,7 @@ def preprocess(output_dir: Path, wsi_dir: Path, model_path: Path, cache_dir: Pat
                     (slide_jpg := slide_cache_dir/"norm_slide.jpg").exists()
                 ):
                     slide_array = np.array(Image.open(slide_jpg))
-                    patches, patches_coords, n = extract_patches(slide_array, patch_size, pad=False, drop_empty=True)
+                    patches, patches_coords, n = extract_patches(slide_array, patch_size, pad=False, drop_empty=True, overlap=False)
                     print(f"Loaded {img_name}, {patches.shape[0]}/{n} tiles remain")
                     # note that due to being stored as an JPEG rejected patches which
                     # neighbor accepted patches will most likely also be loaded
@@ -206,7 +206,7 @@ def preprocess(output_dir: Path, wsi_dir: Path, model_path: Path, cache_dir: Pat
                         save_image(raw_image, slide_cache_dir/"slide.jpg")
 
                     # Canny edge detection to discard tiles containing no tissue BEFORE normalization
-                    patches, patches_coords, _ = extract_patches(slide_array, patch_size, pad=False, drop_empty=True)
+                    patches, patches_coords, _ = extract_patches(slide_array, patch_size, pad=False, drop_empty=True, overlap=False)
                     patches, patches_coords = filter_background(patches, patches_coords, cores)
                     # patches.shape = (n_patches, patch_h, patch_w, 3)
                     # patches_coords.shape = (n_patches, 2)
@@ -220,7 +220,7 @@ def preprocess(output_dir: Path, wsi_dir: Path, model_path: Path, cache_dir: Pat
                     if norm:
                         print(f"\nNormalizing slide...")
                         start_normalizing = time.time()                        
-                        patches = normalizer.transform(slide_array, patches)                        
+                        patches = normalizer.transform(slide_array, patches, cores, legacy_norm=False)                        
                         print(f"Normalized slide ({time.time() - start_normalizing:.2f} seconds)")
                         if cache:
                             norm_img = reconstruct_from_patches(patches, patches_coords, slide_array.shape[:2])

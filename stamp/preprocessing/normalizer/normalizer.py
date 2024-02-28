@@ -34,14 +34,16 @@ class MacenkoNormalizer:
         self.maxC_target = np.percentile(self.target_concentrations, 99, axis=0)[None]
 
     def transform(
-        self, slide_array: np.ndarray, patches: np.ndarray, cores: int = 8
+        self, slide_array: np.ndarray, patches: np.ndarray, cores: int = 8, legacy_norm: bool = False
     ) -> np.ndarray:
         """Returns an array the same shape as `patches` with Macenko normalization applied to all patches."""
         start_normalizing = time.time()
         # calculates the stain matrix only from the patches that contain some tissue
         # to restore the old behavior comment out the following line and uncomment the line after that
-        stain_matrix_src = self.get_stain_matrix(patches) # shape: (2, 3)
-        # stain_matrix_src = self.get_stain_matrix(slide_array)
+        if legacy_norm:
+            stain_matrix_src = self.get_stain_matrix(slide_array) # shape: (2, 3)
+        else:
+            stain_matrix_src = self.get_stain_matrix(patches) # shape: (2, 3)
         print(
             f"Get stain matrix ({(after_stain_mat := time.time()) - start_normalizing:.2f} seconds)"
         )
