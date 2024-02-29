@@ -206,7 +206,7 @@ def preprocess(output_dir: Path, wsi_dir: Path, model_path: Path, cache_dir: Pat
                         save_image(raw_image, slide_cache_dir/"slide.jpg")
 
                     # Canny edge detection to discard tiles containing no tissue BEFORE normalization
-                    patches, patches_coords, _ = extract_patches(slide_array, patch_size, pad=False, drop_empty=True, overlap=False)
+                    patches, patches_coords, _ = extract_patches(slide_array, patch_size, pad=True, drop_empty=True, overlap=False)
                     patches, patches_coords = filter_background(patches, patches_coords, cores)
                     # patches.shape = (n_patches, patch_h, patch_w, 3)
                     # patches_coords.shape = (n_patches, 2)

@@ -112,7 +112,7 @@ def calc_hematoxylin(source_concentrations, h, w):
 
 
 @njit
-def norm_patch(
+def norm_patch_jit(
     source_concentrations: np.ndarray,
     stain_matrix_target: np.ndarray,
     maxC_target: np.ndarray,
@@ -125,18 +125,18 @@ def norm_patch(
     ).astype(np.uint8)
 
 
-def norm_patch_fn(
+def norm_patch(
     src_concentrations: np.ndarray,
     stain_matrix_target: np.ndarray,
     maxC_target: np.ndarray,
     patch_shape: np.ndarray,
 ) -> np.ndarray:
     maxC_source = np.percentile(src_concentrations, 99, axis=0)[None]
-    patch_normed = norm_patch(src_concentrations, stain_matrix_target, maxC_target, maxC_source, patch_shape)
+    patch_normed = norm_patch_jit(src_concentrations, stain_matrix_target, maxC_target, maxC_source, patch_shape)
     return patch_normed
 
 
-def get_target_concentrations(arr: np.ndarray, stain_matrix: np.ndarray) -> np.ndarray:
+def get_concentrations(arr: np.ndarray, stain_matrix: np.ndarray) -> np.ndarray:
     """
     Get concentrations, a npix x 2 matrix
     :param I:
@@ -155,7 +155,7 @@ def get_target_concentrations(arr: np.ndarray, stain_matrix: np.ndarray) -> np.n
     return x
 
 
-def get_src_concentration(
+def get_concentrations_threaded(
         patches_flat: np.ndarray, stain_matrix: np.ndarray, cores: int = 8
 ) -> np.ndarray:
     print(f"Normalizing {patches_flat.shape[0]} tiles...")
@@ -165,7 +165,7 @@ def get_src_concentration(
     with futures.ThreadPoolExecutor(cores) as executor:
         future_coords: Dict[futures.Future, int] = {}
         for k, patch in enumerate(patches_flat):
-            future = executor.submit(get_target_concentrations, patch, stain_matrix)
+            future = executor.submit(get_concentrations, patch, stain_matrix)
             future_coords[future] = k
 
         for tile_future in tqdm(

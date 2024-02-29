@@ -20,7 +20,7 @@ def _load_tile(
     return np.array(tile)
 
 
-def load_slide(slide: openslide.OpenSlide, target_mpp: float = 256/224, cores: int = 8, chunks: int = 8) -> np.ndarray:
+def load_slide(slide: openslide.OpenSlide, target_mpp: float = 256/224, cores: int = 8, chunks: int = 16) -> np.ndarray:
     """Loads a slide into a numpy array."""
     # We load the slides in chunks to:
     #  1. parallelize the loading process using Threads since it's IO heavy

@@ -28,9 +28,7 @@ class MacenkoNormalizer:
     def fit(self, target):
         target = utils.standardize_brightness(target)
         self.stain_matrix_target = self.get_stain_matrix(target)
-        self.target_concentrations = utils.get_target_concentrations(
-            target, self.stain_matrix_target
-        )
+        self.target_concentrations = utils.get_concentrations(target, self.stain_matrix_target)
         self.maxC_target = np.percentile(self.target_concentrations, 99, axis=0)[None]
 
     def transform(
@@ -44,26 +42,20 @@ class MacenkoNormalizer:
             stain_matrix_src = self.get_stain_matrix(slide_array) # shape: (2, 3)
         else:
             stain_matrix_src = self.get_stain_matrix(patches) # shape: (2, 3)
-        print(
-            f"Get stain matrix ({(after_stain_mat := time.time()) - start_normalizing:.2f} seconds)"
-        )
+        print(f"Get stain matrix ({(after_stain_mat := time.time()) - start_normalizing:.2f} seconds)")
 
-        src_concentrations = utils.get_src_concentration(
-            patches, stain_matrix_src, cores
-        ) # shape: (n_patches, patch_h*patch_w, 3)
+        src_concentrations = utils.get_concentrations_threaded(patches, stain_matrix_src, cores) 
+        # shape: (n_patches, patch_h*patch_w, 3)
         del stain_matrix_src
-        print(
-            f" Get concentrations for normalization ({(after_conc := time.time()) - after_stain_mat:.2f} seconds)"
-        )
+        print(f" Get concentrations for normalization ({(after_conc := time.time()) - after_stain_mat:.2f} seconds)")
 
-        norm_patches = self._norm_patches(src_concentrations, patches.shape[1:], cores)
+        norm_patches = self._norm_patches_threaded(src_concentrations, patches.shape[1:], cores)
         # shape: (n_patches, patch_h, patch_w, 3)
-        print(
-            f" Normalized {len(patches)} patches ({time.time()-after_conc:.2f} seconds)"
-        )
+        print(f" Normalized {len(patches)} patches ({time.time()-after_conc:.2f} seconds)")
         return norm_patches
+        
 
-    def _norm_patches(
+    def _norm_patches_threaded(
         self,
         src_concentrations: np.ndarray,
         patch_shape: Tuple[int, int, int],
@@ -74,7 +66,7 @@ class MacenkoNormalizer:
             future_coords: Dict[futures.Future, int] = {}
             for i, src_conc in enumerate(src_concentrations):
                 future = executor.submit(
-                    utils.norm_patch_fn,
+                    utils.norm_patch,
                     src_conc,
                     self.stain_matrix_target,
                     self.maxC_target,
@@ -99,7 +91,7 @@ class MacenkoNormalizer:
 
     @staticmethod
     def get_stain_matrix(
-        I: np.ndarray, luminosity_threshold: float = 0.15, angular_percentile: int = 99
+        I: np.ndarray, luminosity_threshold: float = 0.08, angular_percentile: int = 99
     ) -> np.ndarray:
         """
         Stain matrix estimation via method of:
@@ -113,8 +105,7 @@ class MacenkoNormalizer:
         # Convert to OD and ignore background
         I = utils.remove_zeros(I)
         OD = utils.RGB_to_OD(I).reshape(-1, 3)
-        OD = OD[(OD > luminosity_threshold).any(axis=1)] # main bottleneck of this function
-        # tried using np.ma.masked_array, but this slowed down the following code
+        OD = OD[(OD > luminosity_threshold).any(axis=1)]
 
         # Eigenvectors of cov in OD space (orthogonal as cov symmetric)
         V = np.linalg.eigh(np.cov(OD, rowvar=False)).eigenvectors
@@ -131,7 +122,7 @@ class MacenkoNormalizer:
         # Project on this basis.
         That = np.dot(OD, V)
 
-        # # Angular coordinates with repect to the prinicple, orthogonal eigenvectors
+        # Angular coordinates with repect to the prinicple, orthogonal eigenvectors
         phi = np.arctan2(That[:, 1], That[:, 0])
 
         # # Min and max angles
@@ -141,6 +132,7 @@ class MacenkoNormalizer:
         # the two principle colors
         v1 = np.dot(V, np.array([np.cos(minPhi), np.sin(minPhi)]))
         v2 = np.dot(V, np.array([np.cos(maxPhi), np.sin(maxPhi)]))
+        # v1, v2 = utils.get_principle_colors(OD, V, angular_percentile)
 
         # Order of H and E.
         # H first row.
@@ -154,7 +146,7 @@ class MacenkoNormalizer:
         I = utils.standardize_brightness(I)
         h, w = I.shape[:2]
         stain_matrix_source = self.get_stain_matrix(I)
-        source_concentrations = utils.get_target_concentrations(
+        source_concentrations = utils.get_concentrations(
             I, stain_matrix_source
         )  # put target here, just in case
 
