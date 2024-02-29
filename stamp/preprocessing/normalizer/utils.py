@@ -56,7 +56,7 @@ def OD_to_RGB(OD: np.ndarray) -> np.ndarray:
     :return: Image RGB uint8.
     """
     OD = np.maximum(OD, 1e-6)
-    return (255 * np.exp(-OD)).astype(np.uint8)
+    return np.clip(255 * np.exp(-OD), 0, 255).astype(np.uint8)
 
 
 def normalize_rows(A: np.ndarray) -> np.ndarray:
@@ -120,8 +120,8 @@ def norm_patch_jit(
     patch_shape: Tuple[int, int, int],
 ) -> np.ndarray:
     source_concentrations *= maxC_target / maxC_source
-    return (
-        255 * np.exp(-np.dot(source_concentrations, stain_matrix_target).reshape(patch_shape))
+    return np.clip(
+        255 * np.exp(-np.dot(source_concentrations, stain_matrix_target).reshape(patch_shape)), 0, 255
     ).astype(np.uint8)
 
 

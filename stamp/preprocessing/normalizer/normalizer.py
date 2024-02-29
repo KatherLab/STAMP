@@ -91,7 +91,7 @@ class MacenkoNormalizer:
 
     @staticmethod
     def get_stain_matrix(
-        I: np.ndarray, luminosity_threshold: float = 0.08, angular_percentile: int = 99
+        I: np.ndarray, luminosity_threshold: float = 0.15, angular_percentile: int = 99
     ) -> np.ndarray:
         """
         Stain matrix estimation via method of:
