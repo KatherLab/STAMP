@@ -8,7 +8,6 @@ For the original implementation see: https://github.com/Peter554/StainTools
 from __future__ import division
 import time
 from concurrent import futures
-from typing import Dict, Tuple
 import numpy as np
 from tqdm import tqdm
 
@@ -19,65 +18,57 @@ class MacenkoNormalizer:
     """
     A stain normalization using the methods proposed by Macenko et al.
     """
-
     def __init__(self):
         self.stain_matrix_target = None
-        self.target_concentrations = None
-        self.maxC_target = None
+        self.max_target_conc = None
 
     def fit(self, target):
         target = utils.standardize_brightness(target)
-        self.stain_matrix_target = self.get_stain_matrix(target)
-        self.target_concentrations = utils.get_concentrations(target, self.stain_matrix_target)
-        self.maxC_target = np.percentile(self.target_concentrations, 99, axis=0)[None]
-
-    def transform(
-        self, slide_array: np.ndarray, patches: np.ndarray, cores: int = 8, legacy_norm: bool = False
-    ) -> np.ndarray:
+        target_OD = utils.RGB_to_OD(target)
+        self.stain_matrix_target = self.get_stain_matrix(target_OD, undersample=False) # shape: (2, 3)
+        target_conc = utils.get_concentrations(target, self.stain_matrix_target)
+        self.max_target_conc = np.percentile(target_conc, 99, axis=0) # shape: (2,)
+        
+    def transform(self, patches: np.ndarray, cores: int = 8) -> np.ndarray:
         """Returns an array the same shape as `patches` with Macenko normalization applied to all patches."""
         start_normalizing = time.time()
+
+        # convert from RGB to optical density (OD_RGB) space
+        patches_OD = utils.RGB_to_OD(patches) # shape: (n_patches, patch_h, patch_w, 3)
+
         # calculates the stain matrix only from the patches that contain some tissue
-        # to restore the old behavior comment out the following line and uncomment the line after that
-        if legacy_norm:
-            stain_matrix_src = self.get_stain_matrix(slide_array) # shape: (2, 3)
-        else:
-            stain_matrix_src = self.get_stain_matrix(patches) # shape: (2, 3)
+        stain_matrix_src = self.get_stain_matrix(patches_OD, undersample=True) # shape: (2, 3)
         print(f"Get stain matrix ({(after_stain_mat := time.time()) - start_normalizing:.2f} seconds)")
 
-        src_concentrations = utils.get_concentrations_threaded(patches, stain_matrix_src, cores) 
-        # shape: (n_patches, patch_h*patch_w, 3)
-        del stain_matrix_src
-        print(f" Get concentrations for normalization ({(after_conc := time.time()) - after_stain_mat:.2f} seconds)")
-
-        norm_patches = self._norm_patches_threaded(src_concentrations, patches.shape[1:], cores)
+        norm_patches = self._norm_patches_threaded(patches_OD, stain_matrix_src, cores)
         # shape: (n_patches, patch_h, patch_w, 3)
-        print(f" Normalized {len(patches)} patches ({time.time()-after_conc:.2f} seconds)")
+        print(f" Normalized {len(patches)} patches ({time.time()-after_stain_mat:.2f} seconds)")
+
         return norm_patches
         
-
     def _norm_patches_threaded(
         self,
-        src_concentrations: np.ndarray,
-        patch_shape: Tuple[int, int, int],
+        patches_OD: np.ndarray,
+        stain_matrix_src: np.ndarray,
         cores: int = 8,
     ) -> np.ndarray:
-        n = src_concentrations.shape[0]
+        patches_shape = patches_OD.shape
         with futures.ThreadPoolExecutor(cores) as executor:
-            future_coords: Dict[futures.Future, int] = {}
-            for i, src_conc in enumerate(src_concentrations):
+            future_coords: dict[futures.Future, int] = {}
+            for i, patch in enumerate(patches_OD):
                 future = executor.submit(
                     utils.norm_patch,
-                    src_conc,
+                    patch,
+                    stain_matrix_src,
                     self.stain_matrix_target,
-                    self.maxC_target,
-                    patch_shape=patch_shape,
+                    self.max_target_conc
                 )
                 future_coords[future] = i
 
-            norm_patches = np.zeros((n, *patch_shape), dtype=np.uint8)
+            norm_patches = np.zeros(patches_shape, dtype=np.uint8)
             for tile_future in tqdm(
                 futures.as_completed(future_coords),
-                total=n,
+                total=patches_shape[0],
                 desc="Normalizing patches",
                 leave=False,
             ):
@@ -86,12 +77,9 @@ class MacenkoNormalizer:
                 norm_patches[i] = patch
         return norm_patches
 
-    def target_stains(self):
-        return utils.OD_to_RGB(self.stain_matrix_target)
-
     @staticmethod
     def get_stain_matrix(
-        I: np.ndarray, luminosity_threshold: float = 0.15, angular_percentile: int = 99
+        OD: np.ndarray, luminosity_threshold: float = 0.0, angular_percentile: int = 99, undersample: bool = False
     ) -> np.ndarray:
         """
         Stain matrix estimation via method of:
@@ -102,11 +90,14 @@ class MacenkoNormalizer:
         :param angular_percentile:
         :return:
         """
-        # Convert to OD and ignore background
-        I = utils.remove_zeros(I)
-        OD = utils.RGB_to_OD(I).reshape(-1, 3)
-        OD = OD[(OD > luminosity_threshold).any(axis=1)]
+        # Optional additional background filtering
+        if luminosity_threshold > 0:
+            OD = OD[(OD > luminosity_threshold).any(axis=1)]
 
+        if undersample: # Alternatively PoissonDisk?
+            OD = OD[::4, ::4]
+
+        OD = OD.reshape(-1, 3)
         # Eigenvectors of cov in OD space (orthogonal as cov symmetric)
         V = np.linalg.eigh(np.cov(OD, rowvar=False)).eigenvectors
 
@@ -119,20 +110,8 @@ class MacenkoNormalizer:
         if V[0, 1] < 0:
             V[:, 1] *= -1
 
-        # Project on this basis.
-        That = np.dot(OD, V)
-
-        # Angular coordinates with repect to the prinicple, orthogonal eigenvectors
-        phi = np.arctan2(That[:, 1], That[:, 0])
-
-        # # Min and max angles
-        minPhi = np.percentile(phi, 100 - angular_percentile)
-        maxPhi = np.percentile(phi, angular_percentile)
-
         # the two principle colors
-        v1 = np.dot(V, np.array([np.cos(minPhi), np.sin(minPhi)]))
-        v2 = np.dot(V, np.array([np.cos(maxPhi), np.sin(maxPhi)]))
-        # v1, v2 = utils.get_principle_colors(OD, V, angular_percentile)
+        v1, v2 = utils.get_principle_colors(OD, V, angular_percentile)
 
         # Order of H and E.
         # H first row.
@@ -141,16 +120,14 @@ class MacenkoNormalizer:
         else:
             HE = np.array([v2, v1])
         return utils.normalize_rows(HE)
+    
+    def target_stains(self):
+        return utils.OD_to_RGB(self.stain_matrix_target)
 
     def hematoxylin(self, I: np.ndarray) -> np.ndarray:
         I = utils.standardize_brightness(I)
         h, w = I.shape[:2]
         stain_matrix_source = self.get_stain_matrix(I)
-        source_concentrations = utils.get_concentrations(
-            I, stain_matrix_source
-        )  # put target here, just in case
-
-        del I, stain_matrix_source
-
+        source_concentrations = utils.get_concentrations(I, stain_matrix_source)
         H = utils.calc_hematoxylin(source_concentrations, h, w)
         return H

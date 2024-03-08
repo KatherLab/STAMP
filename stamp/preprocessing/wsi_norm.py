@@ -220,7 +220,7 @@ def preprocess(output_dir: Path, wsi_dir: Path, model_path: Path, cache_dir: Pat
                     if norm:
                         print(f"\nNormalizing slide...")
                         start_normalizing = time.time()                        
-                        patches = normalizer.transform(slide_array, patches, cores, legacy_norm=False)                        
+                        patches = normalizer.transform(patches, cores)
                         print(f"Normalized slide ({time.time() - start_normalizing:.2f} seconds)")
                         if cache:
                             norm_img = reconstruct_from_patches(patches, patches_coords, slide_array.shape[:2])
