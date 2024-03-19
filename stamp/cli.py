@@ -7,8 +7,9 @@ import shutil
 
 NORMALIZATION_TEMPLATE_URL = "https://github.com/Avic3nna/STAMP/blob/main/resources/normalization_template.jpg?raw=true"
 CTRANSPATH_WEIGHTS_URL = "https://drive.google.com/u/0/uc?id=1DoDx_70_TLj98gTf6YTXnu4tFhsFocDX&export=download"
+DEFAULT_RESOURCES_DIR = Path(__file__).with_name("resources")
 DEFAULT_CONFIG_FILE = Path("config.yaml")
-STAMP_FACTORY_SETTINGS = Path(__file__).parent / "config.yaml"
+STAMP_FACTORY_SETTINGS = Path(__file__).with_name("config.yaml")
 
 class ConfigurationError(Exception):
     pass
@@ -66,7 +67,7 @@ def run_cli(args: argparse.Namespace):
 
     # Set environment variables
     if "STAMP_RESOURCES_DIR" not in os.environ:
-        os.environ["STAMP_RESOURCES_DIR"] = str(Path(config_file).with_name("resources"))
+        os.environ["STAMP_RESOURCES_DIR"] = str(DEFAULT_RESOURCES_DIR)
     
     match args.command:
         case "init":
