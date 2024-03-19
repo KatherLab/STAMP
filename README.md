@@ -73,7 +73,7 @@ stamp heatmaps   # generate heatmaps
 ```
 
 > [!NOTE]  
-> By default, stamp will use the configuration file `config.yaml` in the current working directory (or, if that does not exist, it will use the [default STAMP configuration file](stamp/config.yaml) shipped with this package). If you want to use a different configuration file, use the `--config` command line option, i.e. `stamp --config some/other/file.yaml train`. You may also run `stamp init` to create a local `config.yaml` in the current working directory initialized to the default settings.
+> By default, STAMP will use the configuration file `config.yaml` in the current working directory (or, if that does not exist, it will use the [default STAMP configuration file](stamp/config.yaml) shipped with this package). If you want to use a different configuration file, use the `--config` command line option, i.e. `stamp --config some/other/file.yaml train`. You may also run `stamp init` to create a local `config.yaml` in the current working directory initialized to the default settings.
 
 ## Reference
 
