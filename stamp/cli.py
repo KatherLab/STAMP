@@ -1,13 +1,14 @@
-from omegaconf import OmegaConf
+from omegaconf import OmegaConf, DictConfig
 import argparse
 from pathlib import Path
-from omegaconf.dictconfig import DictConfig
-from functools import partial
 import os
 from typing import Iterable, Optional
+import shutil
 
 NORMALIZATION_TEMPLATE_URL = "https://github.com/Avic3nna/STAMP/blob/main/resources/normalization_template.jpg?raw=true"
 CTRANSPATH_WEIGHTS_URL = "https://drive.google.com/u/0/uc?id=1DoDx_70_TLj98gTf6YTXnu4tFhsFocDX&export=download"
+DEFAULT_CONFIG_FILE = Path("config.yaml")
+STAMP_FACTORY_SETTINGS = Path(__file__).parent / "config.yaml"
 
 class ConfigurationError(Exception):
     pass
@@ -29,18 +30,47 @@ def require_configs(cfg: DictConfig, keys: Iterable[str], prefix: Optional[str] 
     if len(missing) > 0:
         raise ConfigurationError(f"Missing required configuration keys: {missing}")
 
+def create_config_file(config_file: Optional[Path]):
+    """Create a new config file at the specified path (by copying the default config file)."""
+    config_file = config_file or DEFAULT_CONFIG_FILE
+    # Locate original config file
+    if not STAMP_FACTORY_SETTINGS.exists():
+        raise ConfigurationError(f"Default STAMP config file not found at {STAMP_FACTORY_SETTINGS}")
+    # Copy original config file
+    shutil.copy(STAMP_FACTORY_SETTINGS, config_file)
+    print(f"Created new config file at {config_file.absolute()}")
+
+def resolve_config_file_path(config_file: Optional[Path]) -> Path:
+    """Resolve the path to the config file, falling back to the default config file if not specified."""
+    if config_file is None:
+        if DEFAULT_CONFIG_FILE.exists():
+            config_file = DEFAULT_CONFIG_FILE
+        else:
+            config_file = STAMP_FACTORY_SETTINGS
+            print(f"Falling back to default STAMP config file because {DEFAULT_CONFIG_FILE.absolute()} does not exist")
+            if not config_file.exists():
+                raise ConfigurationError(f"Default STAMP config file not found at {config_file}")
+    if not config_file.exists():
+        raise ConfigurationError(f"Config file {Path(config_file).absolute()} not found (run `stamp init` to create the config file or use the `--config` flag to specify a different config file)")
+    return config_file
+
 def run_cli(args: argparse.Namespace):
+    # Handle init command
+    if args.command == "init":
+        create_config_file(args.config)
+        return
+
     # Load YAML configuration
-    try:
-        cfg = OmegaConf.load(args.config)
-    except FileNotFoundError:
-        raise ConfigurationError(f"Config file {args.config} not found (use the --config flag to specify a different config file)")
-    
+    config_file = resolve_config_file_path(args.config)
+    cfg = OmegaConf.load(config_file)
+
     # Set environment variables
     if "STAMP_RESOURCES_DIR" not in os.environ:
-        os.environ["STAMP_RESOURCES_DIR"] = str(Path(args.config).with_name("resources"))
+        os.environ["STAMP_RESOURCES_DIR"] = str(Path(config_file).with_name("resources"))
     
     match args.command:
+        case "init":
+            return # this is handled above
         case "setup":
             # Download normalization template
             normalization_template_path = Path(cfg.preprocessing.normalization_template)
@@ -173,9 +203,10 @@ def run_cli(args: argparse.Namespace):
 
 def main() -> None:
     parser = argparse.ArgumentParser(prog="stamp", description="STAMP: Solid Tumor Associative Modeling in Pathology")
-    parser.add_argument("--config", "-c", type=str, default="config.yaml", help="Path to config file")
+    parser.add_argument("--config", "-c", type=Path, default=None, help=f"Path to config file (if unspecified, defaults to {DEFAULT_CONFIG_FILE.absolute()} or the default STAMP config file shipped with the package if {DEFAULT_CONFIG_FILE.absolute()} does not exist)")
 
     commands = parser.add_subparsers(dest="command")
+    commands.add_parser("init", help="Create a new STAMP configuration file at the path specified by --config")
     commands.add_parser("setup", help="Download required resources")
     commands.add_parser("preprocess", help="Preprocess whole-slide images into feature vectors")
     commands.add_parser("train", help="Train a Vision Transformer model")
