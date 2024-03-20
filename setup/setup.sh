@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -eux
+
 # get the directory of the script
 script_dir=$(realpath "$(dirname "${0}")")
 
