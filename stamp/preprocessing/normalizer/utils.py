@@ -62,14 +62,14 @@ def calc_hematoxylin(source_concentrations, h, w):
 
 
 @njit
-def get_principle_colors(OD: np.ndarray, V: np.ndarray, angular_percentile: int):
-    # Project on this basis.
+def get_principle_colors(OD: np.ndarray, V: np.ndarray, angular_percentile: int = 1):
+    # Project OD pixels on the plane of the two principle components.
     That = OD @ V
 
     # Angular coordinates with repect to the prinicple, orthogonal eigenvectors
     phi = np.arctan2(That[:, 1], That[:, 0])
-    minPhi = np.percentile(phi, 100 - angular_percentile)
-    maxPhi = np.percentile(phi, angular_percentile)
+    minPhi = np.percentile(phi, angular_percentile)
+    maxPhi = np.percentile(phi, 100 - angular_percentile)
 
     # the two principle colors
     v1 = V @ np.array([np.cos(minPhi), np.sin(minPhi)])

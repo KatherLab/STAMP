@@ -79,7 +79,7 @@ class MacenkoNormalizer:
 
     @staticmethod
     def get_stain_matrix(
-        OD: np.ndarray, luminosity_threshold: float = 0.0, angular_percentile: int = 99, undersample: bool = False
+        OD: np.ndarray, luminosity_threshold: float = 0.15, angular_percentile: int = 1, undersample: bool = False
     ) -> np.ndarray:
         """
         Stain matrix estimation via method of:
@@ -90,14 +90,14 @@ class MacenkoNormalizer:
         :param angular_percentile:
         :return:
         """
+        if undersample: # alternatively Poisson disk?
+            OD = OD[::3, ::3] # only use ~11% of the data per patch
+        OD = OD.reshape(-1, 3)
+
         # Optional additional background filtering
         if luminosity_threshold > 0:
             OD = OD[(OD > luminosity_threshold).any(axis=1)]
 
-        if undersample: # Alternatively PoissonDisk?
-            OD = OD[::4, ::4]
-
-        OD = OD.reshape(-1, 3)
         # Eigenvectors of cov in OD space (orthogonal as cov symmetric)
         V = np.linalg.eigh(np.cov(OD, rowvar=False)).eigenvectors
 
@@ -105,10 +105,8 @@ class MacenkoNormalizer:
         V = V[:, [2, 1]]
 
         # Make sure vectors are pointing the right way
-        if V[0, 0] < 0:
-            V[:, 0] *= -1
-        if V[0, 1] < 0:
-            V[:, 1] *= -1
+        V[:, 0] *= np.sign(V[0, 0])
+        V[:, 1] *= np.sign(V[0, 1])
 
         # the two principle colors
         v1, v2 = utils.get_principle_colors(OD, V, angular_percentile)
