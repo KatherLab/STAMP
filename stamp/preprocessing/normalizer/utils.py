@@ -51,7 +51,7 @@ def normalize_rows(A: np.ndarray) -> np.ndarray:
     :param A:
     :return:
     """
-    return A / np.linalg.norm(A, axis=1)[:, None]
+    return A / np.linalg.norm(A, axis=-1, keepdims=True)
 
 
 @njit
@@ -82,20 +82,29 @@ def norm_patch(
     stain_matrix_src: np.ndarray,
     stain_matrix_target: np.ndarray,
     max_target_conc: np.ndarray,
+    luminosity_threshold: float = 0.15,
 ) -> np.ndarray:
-    # calculate the source concentration
     patch_shape = patch_OD.shape
     patch_OD = patch_OD.reshape(-1, 3) # shape: (patch_h * patch_w, 3)
-    src_conc, *_ = np.linalg.lstsq(stain_matrix_src.T, patch_OD.T, rcond=None)
-    src_conc = src_conc.T # shape: (patch_h * patch_w, 2)
 
-    max_src_conc = np.percentile(src_conc, 99, axis=0) # shape: (2,)
-    src_conc *= max_target_conc / max_src_conc
+    # ignore background pixels during concentration calculations
+    # to prevent color distortions of the background
+    mask = (patch_OD > luminosity_threshold).any(axis=-1)
+    patch_OD_masked = patch_OD[mask]
+    
+    if patch_OD_masked.shape[0] > 0:
+        # calculate the source concentration
+        src_conc, *_ = np.linalg.lstsq(stain_matrix_src.T, patch_OD_masked.T, rcond=None)
+        src_conc = src_conc.T # shape: (patch_h * patch_w, 2)
 
-    # convert back to RGB color space 
-    patch_normed = np.clip(
-        255 * np.exp(-(src_conc @ stain_matrix_target)), 0, 255
-    ).astype(np.uint8)
+        max_src_conc = np.percentile(src_conc, 99, axis=0) # shape: (2,)
+        src_conc *= max_target_conc / max_src_conc
+
+        # convert HE concentrations back to OD-RGB color space
+        patch_OD[mask] = src_conc @ stain_matrix_target
+    
+    # convert to RGB color space
+    patch_normed = np.clip(255 * np.exp(-patch_OD), 0, 255).astype(np.uint8)
     patch_normed = patch_normed.reshape(patch_shape)
     return patch_normed
 

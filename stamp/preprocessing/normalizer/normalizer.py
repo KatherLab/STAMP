@@ -32,15 +32,16 @@ class MacenkoNormalizer:
     def transform(self, patches: np.ndarray, cores: int = 8) -> np.ndarray:
         """Returns an array the same shape as `patches` with Macenko normalization applied to all patches."""
         start_normalizing = time.time()
+        luminosity_threshold: float = 0.15
 
         # convert from RGB to optical density (OD_RGB) space
         patches_OD = utils.RGB_to_OD(patches) # shape: (n_patches, patch_h, patch_w, 3)
 
         # calculates the stain matrix only from the patches that contain some tissue
-        stain_matrix_src = self.get_stain_matrix(patches_OD, undersample=True) # shape: (2, 3)
+        stain_matrix_src = self.get_stain_matrix(patches_OD, luminosity_threshold, undersample=True) # shape: (2, 3)
         print(f"Get stain matrix ({(after_stain_mat := time.time()) - start_normalizing:.2f} seconds)")
 
-        norm_patches = self._norm_patches_threaded(patches_OD, stain_matrix_src, cores)
+        norm_patches = self._norm_patches_threaded(patches_OD, stain_matrix_src, luminosity_threshold, cores)
         # shape: (n_patches, patch_h, patch_w, 3)
         print(f" Normalized {len(patches)} patches ({time.time()-after_stain_mat:.2f} seconds)")
 
@@ -50,6 +51,7 @@ class MacenkoNormalizer:
         self,
         patches_OD: np.ndarray,
         stain_matrix_src: np.ndarray,
+        luminosity_threshold: float = 0.15,
         cores: int = 8,
     ) -> np.ndarray:
         patches_shape = patches_OD.shape
@@ -61,7 +63,8 @@ class MacenkoNormalizer:
                     patch,
                     stain_matrix_src,
                     self.stain_matrix_target,
-                    self.max_target_conc
+                    self.max_target_conc,
+                    luminosity_threshold
                 )
                 future_coords[future] = i
 
@@ -96,7 +99,7 @@ class MacenkoNormalizer:
 
         # Optional additional background filtering
         if luminosity_threshold > 0:
-            OD = OD[(OD > luminosity_threshold).any(axis=1)]
+            OD = OD[(OD > luminosity_threshold).any(axis=-1)]
 
         # Eigenvectors of cov in OD space (orthogonal as cov symmetric)
         V = np.linalg.eigh(np.cov(OD, rowvar=False)).eigenvectors
