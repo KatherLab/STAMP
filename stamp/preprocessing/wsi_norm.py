@@ -218,13 +218,18 @@ def preprocess(output_dir: Path, wsi_dir: Path, model_path: Path, cache_dir: Pat
 
                     # Pass raw slide_array for getting the initial concentrations, tissue_patches for actual normalization
                     if norm:
-                        print(f"\nNormalizing slide...")
-                        start_normalizing = time.time()                        
-                        patches = normalizer.transform(patches, cores)
-                        print(f"Normalized slide ({time.time() - start_normalizing:.2f} seconds)")
-                        if cache:
-                            norm_img = reconstruct_from_patches(patches, patches_coords, slide_array.shape[:2])
-                            save_image(norm_img, slide_cache_dir/"norm_slide.jpg")
+                        try: 
+                            print(f"\nNormalizing slide...")
+                            start_normalizing = time.time()                        
+                            patches = normalizer.transform(patches, cores)
+                            print(f"Normalized slide ({time.time() - start_normalizing:.2f} seconds)")
+                            if cache:
+                                norm_img = reconstruct_from_patches(patches, patches_coords, slide_array.shape[:2])
+                                save_image(norm_img, slide_cache_dir/"norm_slide.jpg")
+                        except np.linalg.LinAlgError as e:
+                            logging.error(f"Failed normalizing slide, continuing... Error: {e}")
+                            error_slides.append(slide_name)
+                            continue
 
                     # Remove original slide jpg from memory
                     del slide_array
@@ -237,7 +242,7 @@ def preprocess(output_dir: Path, wsi_dir: Path, model_path: Path, cache_dir: Pat
 
                 print("\nExtracting CTransPath features from slide...")
                 start_time = time.time()
-                if len(patches) > 0:
+                if patches.shape[0] > 0:
                     store_metadata(
                         outdir=feat_out_dir,
                         extractor_name=extractor.name,

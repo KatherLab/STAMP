@@ -34,6 +34,10 @@ class MacenkoNormalizer:
         start_normalizing = time.time()
         luminosity_threshold: float = 0.15
 
+        # skip normalization if no patches are given
+        if patches.shape[0] == 0:
+            return patches
+
         # convert from RGB to optical density (OD_RGB) space
         patches_OD = utils.RGB_to_OD(patches) # shape: (n_patches, patch_h, patch_w, 3)
 
