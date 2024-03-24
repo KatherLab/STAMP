@@ -30,6 +30,12 @@ pip install git+https://github.com/KatherLab/STAMP
 
 Once installed, you will be able to run the command line interface directly using the `stamp` command.
 
+Next, initialize STAMP and obtain the required configuration file, config.yaml, in your current working directory, by running the following command:
+
+```bash
+stamp init
+```
+
 Finally, to download required resources such as the weights of the CTransPath feature extractor, run the following command:
 ```bash
 stamp setup
