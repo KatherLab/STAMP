@@ -111,10 +111,9 @@ def preprocess(output_dir: Path, wsi_dir: Path, model_path: Path, cache_dir: Pat
     if norm:
         assert normalization_template is not None, "`normalization_template` can't be None if `norm`=True"
         print("\nInitializing Macenko normalizer...")
-        normalizer = MacenkoNormalizer()
         print(f"Reference: {normalization_template}")
-        target = Image.open(normalization_template).convert('RGB')
-        normalizer.fit(np.array(target))  
+        target = Image.open(normalization_template).convert("RGB")
+        normalizer = MacenkoNormalizer().fit(np.array(target))
 
     total_start_time = time.time()
     img_name = "norm_slide.jpg" if norm else "canny_slide.jpg"

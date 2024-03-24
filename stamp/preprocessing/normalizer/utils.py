@@ -66,12 +66,13 @@ def get_principle_colors(OD: np.ndarray, V: np.ndarray, angular_percentile: int 
     # Project OD pixels on the plane of the two principle components.
     That = OD @ V
 
-    # Angular coordinates with repect to the prinicple, orthogonal eigenvectors
+    # Angular coordinates with respect to the principle, orthogonal eigenvectors
     phi = np.arctan2(That[:, 1], That[:, 0])
     minPhi = np.percentile(phi, angular_percentile)
     maxPhi = np.percentile(phi, 100 - angular_percentile)
 
-    # the two principle colors
+    # The two principle colors are the unit vectors with the 1- and 99-percentile
+    # angular coordinates in the 2 principle component space of the slide
     v1 = V @ np.array([np.cos(minPhi), np.sin(minPhi)])
     v2 = V @ np.array([np.cos(maxPhi), np.sin(maxPhi)])
     return v1, v2
@@ -109,14 +110,17 @@ def norm_patch(
     return patch_normed
 
 
-def get_concentrations(arr: np.ndarray, stain_matrix: np.ndarray) -> np.ndarray:
+def get_concentrations(arr: np.ndarray, stain_matrix: np.ndarray, is_OD: bool = False) -> np.ndarray:
     """
     Get concentrations, a npix x 2 matrix
     :param I:
     :param stain_matrix: a 2x3 stain matrix
     :return:
     """
-    OD = RGB_to_OD(arr).reshape((-1, 3))
+    if not is_OD:
+        OD = RGB_to_OD(arr).reshape(-1, 3)
+    else:
+        OD = arr.reshape(-1, 3)
     try:
         # stain_matrix.T @ x = OD.T
         x, *_ = np.linalg.lstsq(stain_matrix.T, OD.T, rcond=None)
