@@ -61,6 +61,7 @@ Note that the binding of filesystems (-B) should be adapted to your own system. 
 ## Running
 Available commands are:
 ```bash
+stamp init       # create a new configuration file in the current directory
 stamp setup      # download required resources
 stamp config     # print resolved configuration
 stamp preprocess # normalization and feature extraction with CTransPath
@@ -71,7 +72,8 @@ stamp statistics # compute stats including ROC curves
 stamp heatmaps   # generate heatmaps
 ```
 
-By default, stamp will use the configuration file `config.yaml` in the current working directory. If you want to use a different configuration file use the `--config` command line option, i.e. `stamp --config some/other/file.yaml train`.
+> [!NOTE]  
+> By default, STAMP will use the configuration file `config.yaml` in the current working directory (or, if that does not exist, it will use the [default STAMP configuration file](stamp/config.yaml) shipped with this package). If you want to use a different configuration file, use the `--config` command line option, i.e. `stamp --config some/other/file.yaml train`. You may also run `stamp init` to create a local `config.yaml` in the current working directory initialized to the default settings.
 
 ## Reference
 
