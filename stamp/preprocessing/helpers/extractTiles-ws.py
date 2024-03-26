@@ -19,13 +19,11 @@ from PIL import Image
 import argparse
 import openslide as ops
 import shapely.geometry as sg
-import pandas as pd
-
 # conda config --add channels conda-forge
 # conda install shapely
 # It is explained in https://conda-forge.org/
 
-import slideio
+import pandas as pd
 import cv2
 import json
 from math import sqrt

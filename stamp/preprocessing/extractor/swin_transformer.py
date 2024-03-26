@@ -14,19 +14,15 @@ model.head = nn.Identity()
 td = torch.load('/content/ctranspath.pth')
 model.load_state_dict(td['model'], strict=True)
 """
-
-import sys
 import math
 import collections.abc
 
-from copy import deepcopy
 from typing import Optional
 from itertools import repeat
 
 import torch
 import torch.nn as nn
 import torch.utils.checkpoint as checkpoint
-
 from torch import _assert
 from torch.nn.init import _calculate_fan_in_and_fan_out
 
