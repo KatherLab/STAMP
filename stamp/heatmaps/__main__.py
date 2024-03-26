@@ -168,7 +168,7 @@ def main(
             learn.model(feats.unsqueeze(-2), torch.ones((len(feats)))), dim=1
         )
         scores_2d = vals_to_im(scores, coords // stride).detach()
-        fig, axs = plt.subplots(nrows=2, ncols=min(2, len(categories)), figsize=(12, 8))
+        fig, axs = plt.subplots(nrows=2, ncols=max(2, len(categories)), figsize=(12, 8))
 
         show_class_map(
             class_ax=axs[0, 1],
