@@ -7,6 +7,9 @@ A protocol for Solid Tumor Associative Modeling in Pathology. This repository co
 
 The code can be executed either in a local environment, or in a containerized environment (preferred in clusters).
 
+NEW: The package now has built-in support for the UNI Feature extractor. For details on fair use and licensing refer to:
+https://www.github.com/mahmoodlab/UNI.git
+
 ## Using a local environment
 For setting up a local environment, note that the following steps are for Ubuntu Linux systems. For other operating systems such as Windows, MacOS or other Linux distributions, it is recommend to use the containerized environment as described below.
 
