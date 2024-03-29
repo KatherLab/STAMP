@@ -43,10 +43,14 @@ To download required resources such as the weights of the CTransPath feature ext
 stamp setup
 ```
 
-Finally, to install the UNI package, switch to the UNI directory that is contained inside the STAMP directory:
+Finally, to install the UNI package, clone the UNI repository inside the STAMP directory:
+```bash
+git clone https://github.com/mahmoodlab/UNI.git
+```
+
+Lastly, switch to the UNI directory and `pip` install: 
 ```bash
 cd UNI
-
 pip install --upgrade pip
 pip install -e .
 ```
