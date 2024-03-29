@@ -10,6 +10,7 @@ from torch.utils.data import Dataset, ConcatDataset
 from tqdm import tqdm
 import json
 import h5py
+import uni
 
 from .swin_transformer import swin_tiny_patch4_window7_224, ConvStem
 
@@ -48,7 +49,28 @@ class FeatureExtractor:
 
         return model, model_name
         
+class FeatureExtractorUNI:
+    def __init__(self):
+        self.model_type = "UNI"
 
+    def init_feat_extractor(self, device: str, **kwargs):
+        """Extracts features from slide tiles. 
+        Requirements: 
+            Permission from authors via huggingface: https://huggingface.co/MahmoodLab/UNI
+            Huggingface account with valid login token
+        On first model initialization, you will be prompted to enter your login token. The token is
+        then stored in ./home/<user>/.cache/huggingface/token . Subsequent inits do not require you to re-enter the token. 
+
+        Args:
+            device: "cuda" or "cpu"
+        """
+        from huggingface_hub import login
+        login()
+
+        model, transform = uni.get_encoder(enc_name="uni", device=device)
+        model_name = "mahmood-uni-model"
+
+        return model, model_name
 
 class SlideTileDataset(Dataset):
     def __init__(self, patches: np.array, transform=None, *, repetitions: int = 1) -> None:

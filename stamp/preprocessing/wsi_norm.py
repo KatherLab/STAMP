@@ -25,7 +25,7 @@ from .helpers import stainNorm_Macenko
 from .helpers.common import supported_extensions
 from .helpers.concurrent_canny_rejection import reject_background
 from .helpers.loading_slides import process_slide_jpg, load_slide, get_raw_tile_list
-from .helpers.feature_extractors import FeatureExtractor, extract_features_
+from .helpers.feature_extractors import FeatureExtractor, FeatureExtractorUNI, extract_features_
 from .helpers.exceptions import MPPExtractionError
 
 
@@ -65,16 +65,22 @@ def save_image(image, path: Path):
 def preprocess(output_dir: Path, wsi_dir: Path, model_path: Path, cache_dir: Path, norm: bool,
                del_slide: bool, only_feature_extraction: bool, cache: bool = True, cores: int = 8,
                target_microns: int = 256, patch_size: int = 224, keep_dir_structure: bool = False,
-               device: str = "cuda", normalization_template: Path = None):
+               device: str = "cuda", normalization_template: Path = None, feat_extractor: str = "ctp"):
     has_gpu = torch.cuda.is_available()
     target_mpp = target_microns/patch_size
     patch_shape = (patch_size, patch_size) #(224, 224) by default
     step_size = patch_size #have 0 overlap by default
-
+    
     # Initialize the feature extraction model
-    print(f"Initialising CTransPath model as feature extractor...")
-    extractor = FeatureExtractor()
-    model, model_name = extractor.init_feat_extractor(checkpoint_path=model_path, device=device)
+    print(f"Initialising feature extractor...")
+    if feat_extractor == "ctp":
+        extractor = FeatureExtractor()
+        model, model_name = extractor.init_feat_extractor(checkpoint_path=model_path, device=device)
+        print(f"Initialized CTransPath... ")
+    elif feat_extractor == "uni":
+        extractor = FeatureExtractorUNI()
+        model, model_name = extractor.init_feat_extractor(device=device)
+        print(f"Initialized UNI...")
 
     # Create cache and output directories
     if cache:
@@ -225,7 +231,7 @@ def preprocess(output_dir: Path, wsi_dir: Path, model_path: Path, cache_dir: Pat
                         if os.path.exists(slide_url):
                             os.remove(slide_url)
 
-                print("\nExtracting CTransPath features from slide...")
+                print(f"\nExtracting {model_name} features from slide...")
                 start_time = time.time()
                 if len(canny_norm_patch_list) > 0:
                     extract_features_(model=model, model_name=model_name, norm_wsi_img=canny_norm_patch_list,

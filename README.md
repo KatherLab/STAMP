@@ -18,14 +18,16 @@ apt update && apt install -y openslide-tools libgl1-mesa-glx # libgl1-mesa-glx i
 Second, [install conda](https://conda.io/projects/conda/en/latest/user-guide/install/index.html) on your local computer, create an environment with Python 3.10, and activate it:
 
 ```bash
-conda create -n stamp python=3.10
-conda activate stamp
+conda create -n env_name python=3.10 -y
+conda activate env_name
 conda install -c conda-forge libstdcxx-ng=12
 ```
 
-Then, install the STAMP package via `pip`:
+Then, clone the repository and install the package via `pip`:
 ```bash
-pip install git+https://github.com/KatherLab/STAMP
+git clone https://github.com/tsorz/STAMP-UNI.git ./dir_name
+cd dir_name
+pip install -e .
 ```
 
 Once installed, you will be able to run the command line interface directly using the `stamp` command.
@@ -36,10 +38,21 @@ Next, initialize STAMP and obtain the required configuration file, config.yaml, 
 stamp init
 ```
 
-Finally, to download required resources such as the weights of the CTransPath feature extractor, run the following command:
+To download required resources such as the weights of the CTransPath feature extractor, run the following command:
 ```bash
 stamp setup
 ```
+
+Finally, to install the UNI package, switch to the UNI directory that is contained inside the STAMP directory:
+```bash
+cd UNI
+
+pip install --upgrade pip
+pip install -e .
+```
+
+NOTE: Using UNI requires prior authentication by the authors: https://huggingface.co/MahmoodLab/UNI
+Further, it requires a huggingface account with a valid login token (instructions in link above). 
 
 ## Using the container
 First, install Go and Singularity on your local machine using the [official installation instructions](https://docs.sylabs.io/guides/3.0/user-guide/installation.html). Note that the High-Performance Cluster (HPC) has Go and Singularity pre-installed, and do not require installation.

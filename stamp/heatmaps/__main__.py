@@ -66,7 +66,10 @@ def vals_to_im(
 
 
 def show_thumb(slide, thumb_ax: Axes, attention: Tensor) -> None:
-    mpp = float(slide.properties[openslide.PROPERTY_NAME_MPP_X])
+    try:
+        mpp = float(slide.properties[openslide.PROPERTY_NAME_MPP_X])
+    except:
+        mpp = 0.1377
     dims_um = np.array(slide.dimensions) * mpp
     thumb = slide.get_thumbnail(np.round(dims_um * 8 / 256).astype(int))
     thumb_ax.imshow(np.array(thumb)[: attention.shape[0] * 8, : attention.shape[1] * 8])
@@ -96,7 +99,10 @@ def get_n_toptiles(
     stride: int,
     n: int = 8,
 ) -> None:
-    slide_mpp = float(slide.properties[openslide.PROPERTY_NAME_MPP_X])
+    try:
+        slide_mpp = float(slide.properties[openslide.PROPERTY_NAME_MPP_X])
+    except:
+        slide_mpp = 0.1377
 
     (output_dir / f"toptiles_{category}").mkdir(exist_ok=True, parents=True)
 
@@ -139,6 +145,7 @@ def main(
     model_path: Path,
     output_dir: Path,
     n_toptiles: int = 8,
+    overview: bool = True,
 ) -> None:
     learn = load_learner(model_path)
     learn.model.eval()
@@ -237,18 +244,21 @@ def main(
                 n=n_toptiles,
             )
 
-        thumb = show_thumb(
-            slide=slide,
-            thumb_ax=axs[0, 0],
-            attention=attention,
-        )
-        Image.fromarray(thumb).save(slide_output_dir / f"thumbnail-{h5_path.stem}.png")
+        if overview:
+            thumb = show_thumb(
+                slide=slide,
+                thumb_ax=axs[0, 0],
+                attention=attention,
+            )
+            Image.fromarray(thumb).save(slide_output_dir / f"thumbnail-{h5_path.stem}.png")
 
-        for ax in axs.ravel():
-            ax.axis("off")
+            for ax in axs.ravel():
+                ax.axis("off")
 
-        fig.savefig(slide_output_dir / f"overview-{h5_path.stem}.png")
-        plt.close(fig)
+            fig.savefig(slide_output_dir / f"overview-{h5_path.stem}.png")
+            plt.close(fig)
+        else:
+            print(f"Done plotting {h5_path.stem}")
 
 
 if __name__ == "__main__":
@@ -295,6 +305,13 @@ if __name__ == "__main__":
         default=8,
         required=False,
         help="Number of toptiles to generate, 8 by default",
+    )
+    parser.add_argument(
+        "--overview",
+        type=bool,
+        default=True,
+        required=False,
+        help="Generate final overview image",
     )
     args = parser.parse_args()
     main(**vars(args))

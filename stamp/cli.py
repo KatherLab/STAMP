@@ -98,7 +98,7 @@ def run_cli(args: argparse.Namespace):
         case "preprocess":
             require_configs(
                 cfg,
-                ["output_dir", "wsi_dir", "model_path", "cache_dir", "microns", "cores", "norm", "del_slide", "only_feature_extraction", "device", "normalization_template"],
+                ["output_dir", "wsi_dir", "model_path", "cache_dir", "microns", "cores", "norm", "del_slide", "only_feature_extraction", "device", "normalization_template", "feat_extractor"],
                 prefix="preprocessing"
             )
             c = cfg.preprocessing
@@ -113,6 +113,7 @@ def run_cli(args: argparse.Namespace):
                 wsi_dir=Path(c.wsi_dir),
                 model_path=Path(c.model_path),
                 cache_dir=Path(c.cache_dir),
+                feat_extractor=c.feat_extractor,
                 # patch_size=c.patch_size,
                 target_microns=c.microns,
                 cores=c.cores,
@@ -198,7 +199,8 @@ def run_cli(args: argparse.Namespace):
                  wsi_dir=Path(c.wsi_dir),
                  model_path=Path(c.model_path),
                  output_dir=Path(c.output_dir),
-                 n_toptiles=int(c.n_toptiles))
+                 n_toptiles=int(c.n_toptiles),
+                 overview=c.overview)
         case _:
             raise ConfigurationError(f"Unknown command {args.command}")
 
