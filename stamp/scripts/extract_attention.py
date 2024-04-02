@@ -11,18 +11,17 @@ from pathlib import Path
 from fastai.learner import load_learner
 import argparse
 import h5py
-import re
 from tqdm import tqdm
 
 '''
-This script extracts raw attention weights from attMIL models. 
-NOTE: If cross-patient comparisons are made in any way, keep in mind the attention weights should be normalized prior. 
+This script extracts RAW attention weights from attMIL models. 
+NOTE: If cross-patient comparisons are made in any way, keep in mind the attention weights should be normalized first. 
 
 Output: .csv file
 '''
 
 df_list = [] # List of dataframes containing att-weights for patient - concatenated in fin_df
-attention_list = [] # Placeholder attention weight of current .h5 file
+attention_list = [] # Placeholder attention weights of current .h5 file
 
 parser = argparse.ArgumentParser("Extracts tile-wise attention weights")
 

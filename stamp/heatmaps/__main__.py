@@ -66,10 +66,7 @@ def vals_to_im(
 
 
 def show_thumb(slide, thumb_ax: Axes, attention: Tensor) -> None:
-    try:
-        mpp = float(slide.properties[openslide.PROPERTY_NAME_MPP_X])
-    except:
-        mpp = 0.1377
+    mpp = float(slide.properties[openslide.PROPERTY_NAME_MPP_X])
     dims_um = np.array(slide.dimensions) * mpp
     thumb = slide.get_thumbnail(np.round(dims_um * 8 / 256).astype(int))
     thumb_ax.imshow(np.array(thumb)[: attention.shape[0] * 8, : attention.shape[1] * 8])
@@ -99,10 +96,7 @@ def get_n_toptiles(
     stride: int,
     n: int = 8,
 ) -> None:
-    try:
-        slide_mpp = float(slide.properties[openslide.PROPERTY_NAME_MPP_X])
-    except:
-        slide_mpp = 0.1377
+    slide_mpp = float(slide.properties[openslide.PROPERTY_NAME_MPP_X])
 
     (output_dir / f"toptiles_{category}").mkdir(exist_ok=True, parents=True)
 
