@@ -10,7 +10,7 @@ The code can be executed either in a local environment, or in a containerized en
 NEW: The package now has built-in support for the UNI Feature extractor. For details on fair use and licensing refer to:
 https://www.github.com/mahmoodlab/UNI.git
 
-[Original paper](https://www.nature.com/articles/s41591-024-02857-3)
+[UNI original paper](https://www.nature.com/articles/s41591-024-02857-3)
 
 ## Using a local environment
 For setting up a local environment, note that the following steps are for Ubuntu Linux systems. For other operating systems such as Windows, MacOS or other Linux distributions, it is recommend to use the containerized environment as described below.
