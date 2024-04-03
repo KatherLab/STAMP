@@ -18,16 +18,14 @@ For setting up a local environment, note that the following steps are for Ubuntu
 Install [conda](https://conda.io/projects/conda/en/latest/user-guide/install/index.html) on your local computer, create an environment with Python 3.10, and activate it:
 
 ```bash
-conda create -n env_name python=3.10 -y
-conda activate env_name
+conda create -n stamp python=3.10 -y
+conda activate stamp
 conda install -c conda-forge libstdcxx-ng=12
 ```
 
-Then, clone the repository and install the package via `pip`:
+Then, install the STAMP package via `pip`:
 ```bash
-git clone https://github.com/tsorz/STAMP-UNI.git ./dir_name
-cd dir_name
-pip install -e .
+pip install git+https://github.com/KatherLab/STAMP
 ```
 
 Once installed, you will be able to run the command line interface directly using the `stamp` command.
