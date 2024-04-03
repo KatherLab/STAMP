@@ -43,18 +43,6 @@ To download required resources such as the weights of the CTransPath feature ext
 stamp setup
 ```
 
-Finally, to install the UNI package, clone the UNI repository inside the STAMP directory:
-```bash
-git clone https://github.com/mahmoodlab/UNI.git
-```
-
-Lastly, switch to the UNI directory and `pip` install: 
-```bash
-cd UNI
-pip install --upgrade pip
-pip install -e .
-```
-
 NOTE: Using UNI requires prior authentication by the authors: https://huggingface.co/MahmoodLab/UNI
 Further, it requires a huggingface account with a valid login token (instructions in link above). 
 
