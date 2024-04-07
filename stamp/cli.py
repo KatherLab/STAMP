@@ -103,9 +103,9 @@ def run_cli(args: argparse.Namespace):
             )
             c = cfg.preprocessing
             # Some checks
-            if not Path(c.normalization_template).exists():
+            if c.norm and not Path(c.normalization_template).exists():
                 raise ConfigurationError(f"Normalization template {c.normalization_template} does not exist, please run `stamp setup` to download it.")
-            if not Path(c.model_path).exists():
+            if c.feat_extractor == 'ctp' and not Path(c.model_path).exists():
                 raise ConfigurationError(f"Feature extractor model {c.model_path} does not exist, please run `stamp setup` to download it.")
             from .preprocessing.wsi_norm import preprocess
             preprocess(
