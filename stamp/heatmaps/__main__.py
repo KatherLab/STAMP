@@ -163,12 +163,12 @@ def main(
         preds, gradcam = gradcam_per_category(
             learn=learn, feats=feats, categories=categories
         )
-        gradcam_2d = vals_to_im(gradcam.permute(-1, -2), div(coords, stride, rounding_mode='floor')).detach()
+        gradcam_2d = vals_to_im(gradcam.permute(-1, -2), torch.div(coords, stride, rounding_mode='floor')).detach()
 
         scores = torch.softmax(
             learn.model(feats.unsqueeze(-2), torch.ones((len(feats)))), dim=1
         )
-        scores_2d = vals_to_im( div(coords, stride, rounding_mode='floor')).detach()
+        scores_2d = vals_to_im(scores, torch.div(coords, stride, rounding_mode='floor')).detach()
         fig, axs = plt.subplots(nrows=2, ncols=max(2, len(categories)), figsize=(12, 8))
 
         show_class_map(
