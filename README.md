@@ -15,12 +15,17 @@ https://www.github.com/mahmoodlab/UNI.git
 ## Using a local environment
 For setting up a local environment, note that the following steps are for Ubuntu Linux systems. For other operating systems such as Windows, MacOS or other Linux distributions, it is recommend to use the containerized environment as described below.
 
-Install [conda](https://conda.io/projects/conda/en/latest/user-guide/install/index.html) on your local computer, create an environment with Python 3.10, and activate it:
+First, install OpenSlide using either the command below or the [official installation instructions](https://openslide.org/download/#distribution-packages):
+```bash
+apt update && apt install -y openslide-tools libgl1-mesa-glx # libgl1-mesa-glx is needed for OpenCV
+```
+
+Second, [install conda](https://conda.io/projects/conda/en/latest/user-guide/install/index.html) on your local computer, create an environment with Python 3.10, and activate it:
 
 ```bash
-conda create -n stamp python=3.10 -y
+conda create -n stamp python=3.10
 conda activate stamp
-conda install -c conda-forge libstdcxx-ng=12 -y
+conda install -c conda-forge libstdcxx-ng=12
 ```
 
 Then, install the STAMP package via `pip`:
