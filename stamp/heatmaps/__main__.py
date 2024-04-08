@@ -251,8 +251,6 @@ def main(
 
             fig.savefig(slide_output_dir / f"overview-{h5_path.stem}.png")
             plt.close(fig)
-        else:
-            print(f"Done plotting {h5_path.stem}")
 
 
 if __name__ == "__main__":

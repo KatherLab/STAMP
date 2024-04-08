@@ -25,7 +25,7 @@ from .helpers import stainNorm_Macenko
 from .helpers.common import supported_extensions
 from .helpers.concurrent_canny_rejection import reject_background
 from .helpers.loading_slides import process_slide_jpg, load_slide, get_raw_tile_list
-from .helpers.feature_extractors import FeatureExtractor, FeatureExtractorUNI, extract_features_
+from .helpers.feature_extractors import FeatureExtractorCTP, FeatureExtractorUNI, extract_features_
 from .helpers.exceptions import MPPExtractionError
 
 
@@ -72,15 +72,15 @@ def preprocess(output_dir: Path, wsi_dir: Path, model_path: Path, cache_dir: Pat
     step_size = patch_size #have 0 overlap by default
     
     # Initialize the feature extraction model
-    print(f"Initialising feature extractor...")
+    print(f"Initialising feature extractor {feat_extractor}...")
     if feat_extractor == "ctp":
-        extractor = FeatureExtractor()
+        extractor = FeatureExtractorCTP()
         model, model_name = extractor.init_feat_extractor(checkpoint_path=model_path, device=device)
-        print(f"Initialized CTransPath... ")
     elif feat_extractor == "uni":
         extractor = FeatureExtractorUNI()
         model, model_name = extractor.init_feat_extractor(device=device)
-        print(f"Initialized UNI...")
+    else:
+        raise Exception(f"Invalid feature extractor '{feat_extractor}' selected")
 
     # Create cache and output directories
     if cache:

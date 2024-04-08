@@ -11,29 +11,30 @@ from tqdm import tqdm
 import json
 import h5py
 import uni
+import os
 
 from .swin_transformer import swin_tiny_patch4_window7_224, ConvStem
 
 __version__ = "001_01-10-2023"
 
-class FeatureExtractor:
-    def __init__(self):
-        self.model_type = "CTransPath"
+def get_digest(file: str):
+    sha256 = hashlib.sha256()
+    with open(file, 'rb') as f:
+        while True:
+            data = f.read(1 << 16)
+            if not data:
+                break
+            sha256.update(data)
+    return sha256.hexdigest()
 
+class FeatureExtractorCTP:
     def init_feat_extractor(self, checkpoint_path: str, device: str, **kwargs):
         """Extracts features from slide tiles.
         Args:
             checkpoint_path:  Path to the model checkpoint file.
         """
-        sha256 = hashlib.sha256()
-        with open(checkpoint_path, 'rb') as f:
-            while True:
-                data = f.read(1 << 16)
-                if not data:
-                    break
-                sha256.update(data)
-
-        assert sha256.hexdigest() == '7c998680060c8743551a412583fac689db43cec07053b72dfec6dcd810113539'
+        digest = get_digest(checkpoint_path)
+        assert digest == '7c998680060c8743551a412583fac689db43cec07053b72dfec6dcd810113539'
 
         model = swin_tiny_patch4_window7_224(embed_layer=ConvStem, pretrained=False)
         model.head = nn.Identity()
@@ -44,15 +45,12 @@ class FeatureExtractor:
         if torch.cuda.is_available():
             model = model.to(device)
 
-        print("CTransPath model successfully initialised...\n")
         model_name='xiyuewang-ctranspath-7c998680'
 
+        print("CTransPath model successfully initialised...\n")
         return model, model_name
         
 class FeatureExtractorUNI:
-    def __init__(self):
-        self.model_type = "UNI"
-
     def init_feat_extractor(self, device: str, **kwargs):
         """Extracts features from slide tiles. 
         Requirements: 
@@ -64,12 +62,13 @@ class FeatureExtractorUNI:
         Args:
             device: "cuda" or "cpu"
         """
-        from huggingface_hub import login
-        login()
+        asset_dir = f"{os.environ['STAMP_RESOURCES_DIR']}/uni"
+        model, transform = uni.get_encoder(enc_name="uni", device=device, assets_dir=asset_dir)
 
-        model, transform = uni.get_encoder(enc_name="uni", device=device)
-        model_name = "mahmood-uni-model"
+        digest = get_digest(f"{asset_dir}/vit_large_patch16_224.dinov2.uni_mass100k/pytorch_model.bin")
+        model_name = f"mahmood-uni-{digest[:8]}"
 
+        print("UNI model successfully initialised...\n")
         return model, model_name
 
 class SlideTileDataset(Dataset):
