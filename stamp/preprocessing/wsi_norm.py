@@ -91,7 +91,7 @@ def preprocess(output_dir: Path, wsi_dir: Path, model_path: Path, cache_dir: Pat
     output_file_dir = output_dir/model_name_norm
     output_file_dir.mkdir(parents=True, exist_ok=True)
     # Create logfile and set up logging
-    logfile_name = "logfile_" + time.strftime("%Y-%m-%d_%H-%M-%S")
+    logfile_name = "logfile_" + time.strftime("%Y-%m-%d_%H-%M-%S") + "_" + str(os.getpid())
     logdir = output_file_dir/logfile_name
     logging.basicConfig(filename=logdir, force=True, level=logging.INFO, format="[%(levelname)s] %(message)s")
     logging.getLogger().addHandler(logging.StreamHandler())
