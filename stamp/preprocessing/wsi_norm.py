@@ -11,6 +11,8 @@ from pathlib import Path
 from contextlib import contextmanager
 import logging
 import os
+import sys
+import signal
 import openslide
 from tqdm import tqdm
 import PIL
@@ -31,28 +33,34 @@ from .helpers.exceptions import MPPExtractionError
 
 PIL.Image.MAX_IMAGE_PIXELS = None
 
+def clean_lockfile(file, exit=False):
+    if os.path.exists(file): # Catch collision cases
+        os.remove(file)
+    if exit:
+        sys.exit(0)
+
 @contextmanager
 def lock_file(slide_path: Path):
     try:
-        Path(f"{slide_path}.tmp").touch()
+        Path(f"{slide_path}.lock").touch()
+        signal.signal(signal.SIGTERM, lambda signum, frame: clean_lockfile(f"{slide_path}.lock", True))
     except PermissionError:
         pass # No write permissions for wsi directory
     try:
         yield
     finally:
-        if os.path.exists(f"{slide_path}.tmp"): # Catch collision cases
-            os.remove(f"{slide_path}.tmp")
+        clean_lockfile(f"{slide_path}.lock")
+        signal.signal(signal.SIGTERM, signal.SIG_DFL)
 
 def test_wsidir_write_permissions(wsi_dir: Path):
     try:
-        testfile = wsi_dir/f"test_{time.time()}.tmp"
+        testfile = wsi_dir/f"test_{str(os.getpid())}.tmp"
         Path(testfile).touch()
     except PermissionError:
         logging.warning("No write permissions for wsi directory! If multiple stamp processes are running "
                         "in parallel, the final summary may show an incorrect number of slides processed.")
     finally:
-        if os.path.exists(testfile):
-            os.remove(testfile)
+        clean_lockfile(testfile)
 
 def save_image(image, path: Path):
     width, height = image.size
@@ -154,7 +162,7 @@ def preprocess(output_dir: Path, wsi_dir: Path, model_path: Path, cache_dir: Pat
         else:
             (output_file_dir/slide_subdir).mkdir(parents=True, exist_ok=True)
             feat_out_dir = output_file_dir/slide_subdir/slide_name
-        if not (os.path.exists((f"{feat_out_dir}.h5"))) and not os.path.exists(f"{slide_url}.tmp"):
+        if not (os.path.exists((f"{feat_out_dir}.h5"))) and not os.path.exists(f"{slide_url}.lock"):
             with lock_file(slide_url):
                 if (
                     (only_feature_extraction and (slide_jpg := slide_url).exists()) or \
