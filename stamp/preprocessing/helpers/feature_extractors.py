@@ -28,27 +28,35 @@ def get_digest(file: str):
     return sha256.hexdigest()
 
 class FeatureExtractorCTP:
-    def init_feat_extractor(self, checkpoint_path: str, device: str, **kwargs):
+    def __init__(self, checkpoint_path: str):
+        self.checkpoint_path = checkpoint_path
+
+    def init_feat_extractor(self, device: str, **kwargs):
         """Extracts features from slide tiles.
-        Args:
-            checkpoint_path:  Path to the model checkpoint file.
         """
-        digest = get_digest(checkpoint_path)
+        digest = get_digest(self.checkpoint_path)
         assert digest == '7c998680060c8743551a412583fac689db43cec07053b72dfec6dcd810113539'
 
-        model = swin_tiny_patch4_window7_224(embed_layer=ConvStem, pretrained=False)
-        model.head = nn.Identity()
+        self.model = swin_tiny_patch4_window7_224(embed_layer=ConvStem, pretrained=False)
+        self.model.head = nn.Identity()
 
-        ctranspath = torch.load(checkpoint_path, map_location=torch.device('cpu'))
-        model.load_state_dict(ctranspath['model'], strict=True)
+        ctranspath = torch.load(self.checkpoint_path, map_location=torch.device('cpu'))
+        self.model.load_state_dict(ctranspath['model'], strict=True)
         
         if torch.cuda.is_available():
-            model = model.to(device)
+            self.model = self.model.to(device)
+
+        self.transform = transforms.Compose([
+            transforms.Resize(224),
+            transforms.CenterCrop(224),
+            transforms.ToTensor(),
+            transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+        ])
 
         model_name='xiyuewang-ctranspath-7c998680'
 
         print("CTransPath model successfully initialised...\n")
-        return model, model_name
+        return model_name
         
 class FeatureExtractorUNI:
     def init_feat_extractor(self, device: str, **kwargs):
@@ -57,19 +65,21 @@ class FeatureExtractorUNI:
             Permission from authors via huggingface: https://huggingface.co/MahmoodLab/UNI
             Huggingface account with valid login token
         On first model initialization, you will be prompted to enter your login token. The token is
-        then stored in ./home/<user>/.cache/huggingface/token . Subsequent inits do not require you to re-enter the token. 
+        then stored in ./home/<user>/.cache/huggingface/token. Subsequent inits do not require you to re-enter the token. 
 
         Args:
             device: "cuda" or "cpu"
         """
         asset_dir = f"{os.environ['STAMP_RESOURCES_DIR']}/uni"
         model, transform = uni.get_encoder(enc_name="uni", device=device, assets_dir=asset_dir)
+        self.model = model
+        self.transform = transform
 
         digest = get_digest(f"{asset_dir}/vit_large_patch16_224.dinov2.uni_mass100k/pytorch_model.bin")
         model_name = f"mahmood-uni-{digest[:8]}"
 
         print("UNI model successfully initialised...\n")
-        return model, model_name
+        return model_name
 
 class SlideTileDataset(Dataset):
     def __init__(self, patches: np.array, transform=None, *, repetitions: int = 1) -> None:
@@ -93,7 +103,7 @@ class SlideTileDataset(Dataset):
 
 def extract_features_(
         *,
-        model, model_name, norm_wsi_img: np.ndarray, coords: list, wsi_name: str, outdir: Path,
+        model, model_name, transform, norm_wsi_img: np.ndarray, coords: list, wsi_name: str, outdir: Path,
         augmented_repetitions: int = 0, cores: int = 8, is_norm: bool = True, device: str = 'cpu',
         target_microns: int = 256, patch_size: int = 224
 ) -> None:
@@ -108,23 +118,18 @@ def extract_features_(
             only one, non-augmentation iteration will be done.
     """
 
-    normal_transform = transforms.Compose([
-        transforms.Resize(224),
-        transforms.CenterCrop(224),
-        transforms.ToTensor(),
-        transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
-    ])
-    augmenting_transform = transforms.Compose([
-        transforms.Resize(224),
-        transforms.CenterCrop(224),
-        transforms.RandomHorizontalFlip(p=.5),
-        transforms.RandomVerticalFlip(p=.5),
-        transforms.RandomApply([transforms.GaussianBlur(3)], p=.5),
-        transforms.RandomApply([transforms.ColorJitter(
-            brightness=.1, contrast=.2, saturation=.25, hue=.125)], p=.5),
-        transforms.ToTensor(),
-        transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
-    ])
+    # Obsolete (?)
+    # augmenting_transform = transforms.Compose([
+    #     transforms.Resize(224),
+    #     transforms.CenterCrop(224),
+    #     transforms.RandomHorizontalFlip(p=.5),
+    #     transforms.RandomVerticalFlip(p=.5),
+    #     transforms.RandomApply([transforms.GaussianBlur(3)], p=.5),
+    #     transforms.RandomApply([transforms.ColorJitter(
+    #         brightness=.1, contrast=.2, saturation=.25, hue=.125)], p=.5),
+    #     transforms.ToTensor(),
+    #     transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+    # ])
 
     extractor_string = f'STAMP-extract-{__version__}_{model_name}'
     with open(outdir.parent/'info.json', 'w') as f:
@@ -134,7 +139,7 @@ def extract_features_(
                   'microns': target_microns,
                   'patch_size': patch_size}, f)
 
-    unaugmented_ds = SlideTileDataset(norm_wsi_img, normal_transform)
+    unaugmented_ds = SlideTileDataset(norm_wsi_img, transform)
     augmented_ds = []
 
     #clean up memory

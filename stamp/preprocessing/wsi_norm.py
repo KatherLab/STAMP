@@ -82,14 +82,13 @@ def preprocess(output_dir: Path, wsi_dir: Path, model_path: Path, cache_dir: Pat
     # Initialize the feature extraction model
     print(f"Initialising feature extractor {feat_extractor}...")
     if feat_extractor == "ctp":
-        extractor = FeatureExtractorCTP()
-        model, model_name = extractor.init_feat_extractor(checkpoint_path=model_path, device=device)
+        extractor = FeatureExtractorCTP(checkpoint_path=model_path)
     elif feat_extractor == "uni":
         extractor = FeatureExtractorUNI()
-        model, model_name = extractor.init_feat_extractor(device=device)
     else:
         raise Exception(f"Invalid feature extractor '{feat_extractor}' selected")
 
+    model_name = extractor.init_feat_extractor(device=device)
     # Create cache and output directories
     if cache:
         cache_dir.mkdir(exist_ok=True, parents=True)
@@ -242,10 +241,10 @@ def preprocess(output_dir: Path, wsi_dir: Path, model_path: Path, cache_dir: Pat
                 print(f"\nExtracting {model_name} features from slide...")
                 start_time = time.time()
                 if len(canny_norm_patch_list) > 0:
-                    extract_features_(model=model, model_name=model_name, norm_wsi_img=canny_norm_patch_list,
-                                    coords=coords_list, wsi_name=slide_name, outdir=feat_out_dir, cores=cores,
-                                    is_norm=norm, device=device if has_gpu else "cpu", target_microns=target_microns,
-                                    patch_size=patch_size)
+                    extract_features_(model=extractor.model, transform=extractor.transform, model_name=model_name,
+                                      norm_wsi_img=canny_norm_patch_list, coords=coords_list, wsi_name=slide_name,
+                                      outdir=feat_out_dir, cores=cores, is_norm=norm, device=device if has_gpu else "cpu",
+                                      target_microns=target_microns, patch_size=patch_size)
                     logging.info(f"Extracted features from slide: {time.time() - start_time:.2f} seconds ({len(canny_norm_patch_list)} tiles)")
                     num_processed += 1
                 else:
