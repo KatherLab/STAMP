@@ -114,12 +114,12 @@ def run_cli(args: argparse.Namespace):
             # Some checks
             if c.norm and not Path(c.normalization_template).exists():
                 raise ConfigurationError(f"Normalization template {c.normalization_template} does not exist, please run `stamp setup` to download it.")
-            if c.feat_extractor == 'ctp' and not Path(c.model_path).exists():
-                raise ConfigurationError(f"Feature extractor model {c.model_path} does not exist, please run `stamp setup` to download it.")
-            if c.feat_extractor == 'uni':
-                uni_path = f"{os.environ['STAMP_RESOURCES_DIR']}/uni/vit_large_patch16_224.dinov2.uni_mass100k/pytorch_model.bin"
-                if not Path(uni_path).exists():
-                    raise ConfigurationError(f"Feature extractor model {uni_path} does not exist, please run `stamp setup` to download it.")
+            if c.feat_extractor == 'ctp':
+                model_path = c.model_path
+            elif c.feat_extractor == 'uni':
+                model_path = f"{os.environ['STAMP_RESOURCES_DIR']}/uni/vit_large_patch16_224.dinov2.uni_mass100k/pytorch_model.bin"
+            if not Path(model_path).exists():
+                raise ConfigurationError(f"Feature extractor model {model_path} does not exist, please run `stamp setup` to download it.")
             from .preprocessing.wsi_norm import preprocess
             preprocess(
                 output_dir=Path(c.output_dir),
