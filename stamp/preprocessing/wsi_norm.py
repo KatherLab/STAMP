@@ -11,8 +11,6 @@ from pathlib import Path
 from contextlib import contextmanager
 import logging
 import os
-import sys
-import signal
 import openslide
 from tqdm import tqdm
 import PIL
@@ -33,24 +31,20 @@ from .helpers.exceptions import MPPExtractionError
 
 PIL.Image.MAX_IMAGE_PIXELS = None
 
-def clean_lockfile(file, exit=False):
+def clean_lockfile(file):
     if os.path.exists(file): # Catch collision cases
         os.remove(file)
-    if exit:
-        sys.exit(0)
 
 @contextmanager
 def lock_file(slide_path: Path):
     try:
         Path(f"{slide_path}.lock").touch()
-        signal.signal(signal.SIGTERM, lambda signum, frame: clean_lockfile(f"{slide_path}.lock", True))
     except PermissionError:
         pass # No write permissions for wsi directory
     try:
         yield
     finally:
         clean_lockfile(f"{slide_path}.lock")
-        signal.signal(signal.SIGTERM, signal.SIG_DFL)
 
 def test_wsidir_write_permissions(wsi_dir: Path):
     try:
@@ -74,6 +68,10 @@ def preprocess(output_dir: Path, wsi_dir: Path, model_path: Path, cache_dir: Pat
                del_slide: bool, only_feature_extraction: bool, cache: bool = True, cores: int = 8,
                target_microns: int = 256, patch_size: int = 224, keep_dir_structure: bool = False,
                device: str = "cuda", normalization_template: Path = None, feat_extractor: str = "ctp"):
+    # Clean up potentially old leftover .lock files
+    for lockfile in wsi_dir.glob("**/*.lock"):
+        if time.time() - os.path.getmtime(lockfile) > 20:
+            clean_lockfile(lockfile)
     has_gpu = torch.cuda.is_available()
     target_mpp = target_microns/patch_size
     patch_shape = (patch_size, patch_size) #(224, 224) by default
