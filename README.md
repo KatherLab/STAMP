@@ -41,7 +41,7 @@ Next, initialize STAMP and obtain the required configuration file, config.yaml, 
 stamp init
 ```
 
-To download required resources such as the weights of the CTransPath feature extractor, run the following command:
+To download required resources such as the weights of the feature extractor, run the following command:
 ```bash
 stamp setup
 ```
