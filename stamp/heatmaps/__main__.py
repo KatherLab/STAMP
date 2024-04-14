@@ -139,6 +139,7 @@ def main(
     model_path: Path,
     output_dir: Path,
     n_toptiles: int = 8,
+    overview: bool = True,
 ) -> None:
     learn = load_learner(model_path)
     learn.model.eval()
@@ -162,12 +163,12 @@ def main(
         preds, gradcam = gradcam_per_category(
             learn=learn, feats=feats, categories=categories
         )
-        gradcam_2d = vals_to_im(gradcam.permute(-1, -2), coords // stride).detach()
+        gradcam_2d = vals_to_im(gradcam.permute(-1, -2), torch.div(coords, stride, rounding_mode='floor')).detach()
 
         scores = torch.softmax(
             learn.model(feats.unsqueeze(-2), torch.ones((len(feats)))), dim=1
         )
-        scores_2d = vals_to_im(scores, coords // stride).detach()
+        scores_2d = vals_to_im(scores, torch.div(coords, stride, rounding_mode='floor')).detach()
         fig, axs = plt.subplots(nrows=2, ncols=max(2, len(categories)), figsize=(12, 8))
 
         show_class_map(
@@ -237,18 +238,19 @@ def main(
                 n=n_toptiles,
             )
 
-        thumb = show_thumb(
-            slide=slide,
-            thumb_ax=axs[0, 0],
-            attention=attention,
-        )
-        Image.fromarray(thumb).save(slide_output_dir / f"thumbnail-{h5_path.stem}.png")
+        if overview:
+            thumb = show_thumb(
+                slide=slide,
+                thumb_ax=axs[0, 0],
+                attention=attention,
+            )
+            Image.fromarray(thumb).save(slide_output_dir / f"thumbnail-{h5_path.stem}.png")
 
-        for ax in axs.ravel():
-            ax.axis("off")
+            for ax in axs.ravel():
+                ax.axis("off")
 
-        fig.savefig(slide_output_dir / f"overview-{h5_path.stem}.png")
-        plt.close(fig)
+            fig.savefig(slide_output_dir / f"overview-{h5_path.stem}.png")
+            plt.close(fig)
 
 
 if __name__ == "__main__":
@@ -295,6 +297,13 @@ if __name__ == "__main__":
         default=8,
         required=False,
         help="Number of toptiles to generate, 8 by default",
+    )
+    parser.add_argument(
+        "--overview",
+        type=bool,
+        default=True,
+        required=False,
+        help="Generate final overview image",
     )
     args = parser.parse_args()
     main(**vars(args))

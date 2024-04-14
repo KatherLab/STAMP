@@ -1,5 +1,7 @@
 docker-compose.yml
 Dockerfile
+/config.yaml
+*.bin
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

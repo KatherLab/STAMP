@@ -85,34 +85,48 @@ def run_cli(args: argparse.Namespace):
                 with normalization_template_path.open("wb") as f:
                     f.write(r.content)
             # Download feature extractor model
-            model_path = Path(cfg.preprocessing.model_path)
+            feat_extractor = cfg.preprocessing.feat_extractor
+            if feat_extractor == 'ctp':
+                model_path = Path(cfg.preprocessing.model_path)
+            elif feat_extractor == 'uni':
+                model_path = Path(f"{os.environ['STAMP_RESOURCES_DIR']}/uni/vit_large_patch16_224.dinov2.uni_mass100k/pytorch_model.bin")
             model_path.parent.mkdir(parents=True, exist_ok=True)
             if model_path.exists():
                 print(f"Skipping download, feature extractor model already exists at {model_path}")
             else:
-                print(f"Downloading CTransPath weights to {model_path}")
-                import gdown
-                gdown.download(CTRANSPATH_WEIGHTS_URL, str(model_path))
+                if feat_extractor == 'ctp':
+                    print(f"Downloading CTransPath weights to {model_path}")
+                    import gdown
+                    gdown.download(CTRANSPATH_WEIGHTS_URL, str(model_path))
+                elif feat_extractor == 'uni':
+                    print(f"Downloading UNI weights")
+                    from uni.get_encoder import get_encoder
+                    get_encoder(enc_name='uni', checkpoint='pytorch_model.bin', assets_dir=f"{os.environ['STAMP_RESOURCES_DIR']}/uni")
         case "config":
             print(OmegaConf.to_yaml(cfg, resolve=True))
         case "preprocess":
             require_configs(
                 cfg,
-                ["output_dir", "wsi_dir", "model_path", "cache_dir", "microns", "cores", "norm", "del_slide", "only_feature_extraction", "device", "normalization_template"],
+                ["output_dir", "wsi_dir", "model_path", "cache_dir", "microns", "cores", "norm", "del_slide", "only_feature_extraction", "device", "normalization_template", "feat_extractor"],
                 prefix="preprocessing"
             )
             c = cfg.preprocessing
             # Some checks
-            if not Path(c.normalization_template).exists():
+            if c.norm and not Path(c.normalization_template).exists():
                 raise ConfigurationError(f"Normalization template {c.normalization_template} does not exist, please run `stamp setup` to download it.")
-            if not Path(c.model_path).exists():
-                raise ConfigurationError(f"Feature extractor model {c.model_path} does not exist, please run `stamp setup` to download it.")
+            if c.feat_extractor == 'ctp':
+                model_path = c.model_path
+            elif c.feat_extractor == 'uni':
+                model_path = f"{os.environ['STAMP_RESOURCES_DIR']}/uni/vit_large_patch16_224.dinov2.uni_mass100k/pytorch_model.bin"
+            if not Path(model_path).exists():
+                raise ConfigurationError(f"Feature extractor model {model_path} does not exist, please run `stamp setup` to download it.")
             from .preprocessing.wsi_norm import preprocess
             preprocess(
                 output_dir=Path(c.output_dir),
                 wsi_dir=Path(c.wsi_dir),
                 model_path=Path(c.model_path),
                 cache_dir=Path(c.cache_dir),
+                feat_extractor=c.feat_extractor,
                 # patch_size=c.patch_size,
                 target_microns=c.microns,
                 cores=c.cores,
@@ -198,7 +212,8 @@ def run_cli(args: argparse.Namespace):
                  wsi_dir=Path(c.wsi_dir),
                  model_path=Path(c.model_path),
                  output_dir=Path(c.output_dir),
-                 n_toptiles=int(c.n_toptiles))
+                 n_toptiles=int(c.n_toptiles),
+                 overview=c.overview)
         case _:
             raise ConfigurationError(f"Unknown command {args.command}")
 

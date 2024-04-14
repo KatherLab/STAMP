@@ -25,34 +25,36 @@ from .helpers import stainNorm_Macenko
 from .helpers.common import supported_extensions
 from .helpers.concurrent_canny_rejection import reject_background
 from .helpers.loading_slides import process_slide_jpg, load_slide, get_raw_tile_list
-from .helpers.feature_extractors import FeatureExtractor, extract_features_
+from .helpers.feature_extractors import FeatureExtractorCTP, FeatureExtractorUNI, extract_features_
 from .helpers.exceptions import MPPExtractionError
 
 
 PIL.Image.MAX_IMAGE_PIXELS = None
 
+def clean_lockfile(file):
+    if os.path.exists(file): # Catch collision cases
+        os.remove(file)
+
 @contextmanager
 def lock_file(slide_path: Path):
     try:
-        Path(f"{slide_path}.tmp").touch()
+        Path(f"{slide_path}.lock").touch()
     except PermissionError:
         pass # No write permissions for wsi directory
     try:
         yield
     finally:
-        if os.path.exists(f"{slide_path}.tmp"): # Catch collision cases
-            os.remove(f"{slide_path}.tmp")
+        clean_lockfile(f"{slide_path}.lock")
 
 def test_wsidir_write_permissions(wsi_dir: Path):
     try:
-        testfile = wsi_dir/f"test_{time.time()}.tmp"
+        testfile = wsi_dir/f"test_{str(os.getpid())}.tmp"
         Path(testfile).touch()
     except PermissionError:
         logging.warning("No write permissions for wsi directory! If multiple stamp processes are running "
                         "in parallel, the final summary may show an incorrect number of slides processed.")
     finally:
-        if os.path.exists(testfile):
-            os.remove(testfile)
+        clean_lockfile(testfile)
 
 def save_image(image, path: Path):
     width, height = image.size
@@ -65,17 +67,26 @@ def save_image(image, path: Path):
 def preprocess(output_dir: Path, wsi_dir: Path, model_path: Path, cache_dir: Path, norm: bool,
                del_slide: bool, only_feature_extraction: bool, cache: bool = True, cores: int = 8,
                target_microns: int = 256, patch_size: int = 224, keep_dir_structure: bool = False,
-               device: str = "cuda", normalization_template: Path = None):
+               device: str = "cuda", normalization_template: Path = None, feat_extractor: str = "ctp"):
+    # Clean up potentially old leftover .lock files
+    for lockfile in wsi_dir.glob("**/*.lock"):
+        if time.time() - os.path.getmtime(lockfile) > 20:
+            clean_lockfile(lockfile)
     has_gpu = torch.cuda.is_available()
     target_mpp = target_microns/patch_size
     patch_shape = (patch_size, patch_size) #(224, 224) by default
     step_size = patch_size #have 0 overlap by default
-
+    
     # Initialize the feature extraction model
-    print(f"Initialising CTransPath model as feature extractor...")
-    extractor = FeatureExtractor()
-    model, model_name = extractor.init_feat_extractor(checkpoint_path=model_path, device=device)
+    print(f"Initialising feature extractor {feat_extractor}...")
+    if feat_extractor == "ctp":
+        extractor = FeatureExtractorCTP(checkpoint_path=model_path)
+    elif feat_extractor == "uni":
+        extractor = FeatureExtractorUNI()
+    else:
+        raise Exception(f"Invalid feature extractor '{feat_extractor}' selected")
 
+    model_name = extractor.init_feat_extractor(device=device)
     # Create cache and output directories
     if cache:
         cache_dir.mkdir(exist_ok=True, parents=True)
@@ -85,7 +96,7 @@ def preprocess(output_dir: Path, wsi_dir: Path, model_path: Path, cache_dir: Pat
     output_file_dir = output_dir/model_name_norm
     output_file_dir.mkdir(parents=True, exist_ok=True)
     # Create logfile and set up logging
-    logfile_name = "logfile_" + time.strftime("%Y-%m-%d_%H-%M-%S")
+    logfile_name = "logfile_" + time.strftime("%Y-%m-%d_%H-%M-%S") + "_" + str(os.getpid())
     logdir = output_file_dir/logfile_name
     logging.basicConfig(filename=logdir, force=True, level=logging.INFO, format="[%(levelname)s] %(message)s")
     logging.getLogger().addHandler(logging.StreamHandler())
@@ -148,7 +159,7 @@ def preprocess(output_dir: Path, wsi_dir: Path, model_path: Path, cache_dir: Pat
         else:
             (output_file_dir/slide_subdir).mkdir(parents=True, exist_ok=True)
             feat_out_dir = output_file_dir/slide_subdir/slide_name
-        if not (os.path.exists((f"{feat_out_dir}.h5"))) and not os.path.exists(f"{slide_url}.tmp"):
+        if not (os.path.exists((f"{feat_out_dir}.h5"))) and not os.path.exists(f"{slide_url}.lock"):
             with lock_file(slide_url):
                 if (
                     (only_feature_extraction and (slide_jpg := slide_url).exists()) or \
@@ -225,13 +236,13 @@ def preprocess(output_dir: Path, wsi_dir: Path, model_path: Path, cache_dir: Pat
                         if os.path.exists(slide_url):
                             os.remove(slide_url)
 
-                print("\nExtracting CTransPath features from slide...")
+                print(f"\nExtracting {model_name} features from slide...")
                 start_time = time.time()
                 if len(canny_norm_patch_list) > 0:
-                    extract_features_(model=model, model_name=model_name, norm_wsi_img=canny_norm_patch_list,
-                                    coords=coords_list, wsi_name=slide_name, outdir=feat_out_dir, cores=cores,
-                                    is_norm=norm, device=device if has_gpu else "cpu", target_microns=target_microns,
-                                    patch_size=patch_size)
+                    extract_features_(model=extractor.model, transform=extractor.transform, model_name=model_name,
+                                      norm_wsi_img=canny_norm_patch_list, coords=coords_list, wsi_name=slide_name,
+                                      outdir=feat_out_dir, cores=cores, is_norm=norm, device=device if has_gpu else "cpu",
+                                      target_microns=target_microns, patch_size=patch_size)
                     logging.info(f"Extracted features from slide: {time.time() - start_time:.2f} seconds ({len(canny_norm_patch_list)} tiles)")
                     num_processed += 1
                 else:

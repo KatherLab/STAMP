@@ -2,9 +2,12 @@
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
+[tool.hatch.metadata]
+allow-direct-references = true
+
 [project]
 name = "stamp"
-version = "1.0.1"
+version = "1.0.3"
 authors = [
   { name="Omar El Nahhas", email="omar.el_nahhas@tu-dresden.de" },
   { name="Marko van Treeck", email="markovantreeck@gmail.com" },
@@ -37,7 +40,8 @@ dependencies = [
   "opencv-python~=4.8",
   "numba~=0.58",
   "gdown~=4.7",
-  "openpyxl~=3.1"
+  "openpyxl~=3.1",
+  "UNI@git+https://github.com/mahmoodlab/UNI.git"
 ]
 
 [project.scripts]

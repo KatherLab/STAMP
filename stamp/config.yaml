@@ -10,9 +10,10 @@ preprocessing:
   wsi_dir: # Path of where the whole-slide images are.
   cache_dir: # Directory to store intermediate slide JPGs
   microns: 256 # Edge length in microns for each patch (default is 256, with pixel size 224, 256/224 = ~1.14MPP = ~9x magnification)
-  norm: true # Perform Macenko normalisation
+  norm: false # Perform Macenko normalisation
   normalization_template: ${oc.env:STAMP_RESOURCES_DIR}/normalization_template.jpg # Path to normalization template
   model_path: ${oc.env:STAMP_RESOURCES_DIR}/ctranspath.pth  # Path of where model for the feature extractor is
+  feat_extractor: ctp # Use ctp for CTransPath (default) or uni for UNI (requires prior authentication)
   del_slide: false # Remove the original slide after processing
   cache: true # Save intermediate images (slide, background rejected, normalized)
   only_feature_extraction: false # Only perform feature extraction (intermediate images (background rejected, [normalized]) have to exist)
@@ -47,3 +48,4 @@ heatmaps:
   model_path: /path/to/export.pkl # Path to saved model (only applicable to deployment)
   output_dir: # Path to output directory
   n_toptiles: 8 # Number of toptiles, default is 8
+  overview: true # Create final overview image
