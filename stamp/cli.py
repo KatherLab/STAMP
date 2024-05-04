@@ -74,7 +74,7 @@ def run_cli(args: argparse.Namespace):
             return # this is handled above
         case "setup":
             # Download normalization template
-            normalization_template_path = Path(cfg.preprocessing.normalization_template)
+            normalization_template_path = Path(f"{os.environ['STAMP_RESOURCES_DIR']}/normalization_template.jpg")
             normalization_template_path.parent.mkdir(parents=True, exist_ok=True)
             if normalization_template_path.exists():
                 print(f"Skipping download, normalization template already exists at {normalization_template_path}")
@@ -87,7 +87,7 @@ def run_cli(args: argparse.Namespace):
             # Download feature extractor model
             feat_extractor = cfg.preprocessing.feat_extractor
             if feat_extractor == 'ctp':
-                model_path = Path(cfg.preprocessing.model_path)
+                model_path = Path(f"{os.environ['STAMP_RESOURCES_DIR']}/ctranspath.pth")
             elif feat_extractor == 'uni':
                 model_path = Path(f"{os.environ['STAMP_RESOURCES_DIR']}/uni/vit_large_patch16_224.dinov2.uni_mass100k/pytorch_model.bin")
             model_path.parent.mkdir(parents=True, exist_ok=True)
@@ -112,10 +112,10 @@ def run_cli(args: argparse.Namespace):
             )
             c = cfg.preprocessing
             # Some checks
-            if c.norm and not Path(c.normalization_template).exists():
-                raise ConfigurationError(f"Normalization template {c.normalization_template} does not exist, please run `stamp setup` to download it.")
+            if c.norm and not Path(normalization_template_path).exists():
+                raise ConfigurationError(f"Normalization template {normalization_template_path} does not exist, please run `stamp setup` to download it.")
             if c.feat_extractor == 'ctp':
-                model_path = c.model_path
+                model_path = f"{os.environ['STAMP_RESOURCES_DIR']}/ctranspath.pth"
             elif c.feat_extractor == 'uni':
                 model_path = f"{os.environ['STAMP_RESOURCES_DIR']}/uni/vit_large_patch16_224.dinov2.uni_mass100k/pytorch_model.bin"
             if not Path(model_path).exists():
@@ -124,7 +124,7 @@ def run_cli(args: argparse.Namespace):
             preprocess(
                 output_dir=Path(c.output_dir),
                 wsi_dir=Path(c.wsi_dir),
-                model_path=Path(c.model_path),
+                model_path=Path(model_path),
                 cache_dir=Path(c.cache_dir),
                 feat_extractor=c.feat_extractor,
                 # patch_size=c.patch_size,
@@ -136,7 +136,7 @@ def run_cli(args: argparse.Namespace):
                 only_feature_extraction=c.only_feature_extraction,
                 keep_dir_structure=c.keep_dir_structure if 'keep_dir_structure' in c else False,
                 device=c.device,
-                normalization_template=Path(c.normalization_template)
+                normalization_template=normalization_template_path
             )
         case "train":
             require_configs(
@@ -186,7 +186,7 @@ def run_cli(args: argparse.Namespace):
                                       target_label=c.target_label,
                                       cat_labels=c.cat_labels,
                                       cont_labels=c.cont_labels,
-                                      model_path=Path(c.model_path))
+                                      model_path=model_path)
         case "statistics":
             require_configs(
                 cfg,
@@ -210,7 +210,7 @@ def run_cli(args: argparse.Namespace):
             main(slide_name=str(c.slide_name),
                  feature_dir=Path(c.feature_dir),
                  wsi_dir=Path(c.wsi_dir),
-                 model_path=Path(c.model_path),
+                 model_path=model_path,
                  output_dir=Path(c.output_dir),
                  n_toptiles=int(c.n_toptiles),
                  overview=c.overview)
