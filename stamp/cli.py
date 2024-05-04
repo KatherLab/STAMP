@@ -112,6 +112,7 @@ def run_cli(args: argparse.Namespace):
             )
             c = cfg.preprocessing
             # Some checks
+            normalization_template_path = Path(f"{os.environ['STAMP_RESOURCES_DIR']}/normalization_template.jpg")
             if c.norm and not Path(normalization_template_path).exists():
                 raise ConfigurationError(f"Normalization template {normalization_template_path} does not exist, please run `stamp setup` to download it.")
             if c.feat_extractor == 'ctp':
