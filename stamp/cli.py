@@ -187,7 +187,7 @@ def run_cli(args: argparse.Namespace):
                                       target_label=c.target_label,
                                       cat_labels=c.cat_labels,
                                       cont_labels=c.cont_labels,
-                                      model_path=model_path)
+                                      model_path=Path(c.model_path))
         case "statistics":
             require_configs(
                 cfg,
@@ -211,7 +211,7 @@ def run_cli(args: argparse.Namespace):
             main(slide_name=str(c.slide_name),
                  feature_dir=Path(c.feature_dir),
                  wsi_dir=Path(c.wsi_dir),
-                 model_path=model_path,
+                 model_path=Path(c.model_path),
                  output_dir=Path(c.output_dir),
                  n_toptiles=int(c.n_toptiles),
                  overview=c.overview)
