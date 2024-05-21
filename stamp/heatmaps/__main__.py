@@ -65,10 +65,10 @@ def vals_to_im(
     return im
 
 
-def show_thumb(slide, thumb_ax: Axes, attention: Tensor) -> None:
+def show_thumb(slide, thumb_ax: Axes, attention: Tensor, target_microns: int = 256) -> None:
     mpp = float(slide.properties[openslide.PROPERTY_NAME_MPP_X])
     dims_um = np.array(slide.dimensions) * mpp
-    thumb = slide.get_thumbnail(np.round(dims_um * 8 / 256).astype(int))
+    thumb = slide.get_thumbnail(np.round(dims_um * 8 / target_microns).astype(int))
     thumb_ax.imshow(np.array(thumb)[: attention.shape[0] * 8, : attention.shape[1] * 8])
     return np.array(thumb)[: attention.shape[0] * 8, : attention.shape[1] * 8]
 
@@ -95,6 +95,7 @@ def get_n_toptiles(
     scores: Tensor,
     stride: int,
     n: int = 8,
+    target_microns: int = 256,
 ) -> None:
     slide_mpp = float(slide.properties[openslide.PROPERTY_NAME_MPP_X])
 
@@ -103,7 +104,7 @@ def get_n_toptiles(
     # determine the scaling factor between heatmap and original slide
     # 256 microns edge length by default, with 224px = ~1.14 MPP (± 10x magnification)
     feature_downsample_mpp = (
-        256 / stride
+        target_microns / stride
     )  # NOTE: stride here only makes sense if the tiles were NON-OVERLAPPING
     scaling_factor = feature_downsample_mpp / slide_mpp
 
@@ -140,6 +141,7 @@ def main(
     output_dir: Path,
     n_toptiles: int = 8,
     overview: bool = True,
+    target_microns: int = 256,
 ) -> None:
     learn = load_learner(model_path)
     learn.model.eval()
@@ -147,110 +149,113 @@ def main(
         -1
     ].encode.categories_[0]
 
-    # for h5_path in feature_dir.glob(f"**/{slide_name}.h5"):
-    for slide_path in wsi_dir.glob(f"**/{slide_name}.*"):
-        h5_path = feature_dir / slide_path.with_suffix(".h5").name
-        slide_output_dir = output_dir / h5_path.stem
-        slide_output_dir.mkdir(exist_ok=True, parents=True)
-        print(f"Creating heatmaps for {slide_path.name}...")
-        with h5py.File(h5_path) as h5:
-            feats = torch.tensor(h5["feats"][:]).float()
-            coords = torch.tensor(h5["coords"][:], dtype=torch.int)
+    arg_list = slide_name.split(' ')
+    for file_list in arg_list:
+        for slide_path in wsi_dir.glob(f"**/{file_list}.*"):
+            h5_path = feature_dir / slide_path.with_suffix(".h5").name
+            slide_output_dir = output_dir / h5_path.stem
+            slide_output_dir.mkdir(exist_ok=True, parents=True)
+            print(f"Creating heatmaps for {slide_path.name}...")
+            with h5py.File(h5_path) as h5:
+                feats = torch.tensor(h5["feats"][:]).float()
+                coords = torch.tensor(h5["coords"][:], dtype=torch.int)
 
-        # stride is 224 using normal operations
-        stride = get_stride(coords)
+            # stride is 224 using normal operations
+            stride = get_stride(coords)
 
-        preds, gradcam = gradcam_per_category(
-            learn=learn, feats=feats, categories=categories
-        )
-        gradcam_2d = vals_to_im(gradcam.permute(-1, -2), torch.div(coords, stride, rounding_mode='floor')).detach()
+            preds, gradcam = gradcam_per_category(
+                learn=learn, feats=feats, categories=categories
+            )
+            gradcam_2d = vals_to_im(gradcam.permute(-1, -2), torch.div(coords, stride, rounding_mode='floor')).detach()
 
-        scores = torch.softmax(
-            learn.model(feats.unsqueeze(-2), torch.ones((len(feats)))), dim=1
-        )
-        scores_2d = vals_to_im(scores, torch.div(coords, stride, rounding_mode='floor')).detach()
-        fig, axs = plt.subplots(nrows=2, ncols=max(2, len(categories)), figsize=(12, 8))
+            scores = torch.softmax(
+                learn.model(feats.unsqueeze(-2), torch.ones((len(feats)))), dim=1
+            )
+            scores_2d = vals_to_im(scores, torch.div(coords, stride, rounding_mode='floor')).detach()
+            fig, axs = plt.subplots(nrows=2, ncols=max(2, len(categories)), figsize=(12, 8))
 
-        show_class_map(
-            class_ax=axs[0, 1],
-            top_scores=scores_2d.topk(2),
-            gradcam_2d=gradcam_2d,
-            categories=categories,
-        )
-
-        slide = load_slide_ext(slide_path)
-
-        for ax, (pos_idx, category) in zip(axs[1, :], enumerate(categories)):
-            ax: Axes
-            topk = scores_2d.topk(2)
-            category_support = torch.where(
-                # To get the "positiveness",
-                # it checks whether the "hot" class has the highest score for each pixel
-                topk.indices[..., 0] == pos_idx,
-                # Then, if the hot class has the highest score,
-                # it assigns a positive value based on its difference from the second highest score
-                scores_2d[..., pos_idx] - topk.values[..., 1],
-                # Likewise, if it has NOT a negative value based on the difference of that class' score to the highest one
-                scores_2d[..., pos_idx] - topk.values[..., 0],
+            show_class_map(
+                class_ax=axs[0, 1],
+                top_scores=scores_2d.topk(2),
+                gradcam_2d=gradcam_2d,
+                categories=categories,
             )
 
-            # So, if we have a pixel with scores (.4, .4, .2) and would want to get the heat value for the first class,
-            # we would get a neutral color, because it is matched with the second class
-            # But if our scores were (.4, .3, .3), it would be red,
-            # because now our class is .1 above its nearest competitor
+            slide = load_slide_ext(slide_path)
 
-            attention = torch.where(
-                topk.indices[..., 0] == pos_idx,
-                gradcam_2d[..., pos_idx] / gradcam_2d.max(),
-                (
-                    others := gradcam_2d[
-                        ..., list(set(range(len(categories))) - {pos_idx})
-                    ]
-                    .max(-1)
-                    .values
+            for ax, (pos_idx, category) in zip(axs[1, :], enumerate(categories)):
+                ax: Axes
+                topk = scores_2d.topk(2)
+                category_support = torch.where(
+                    # To get the "positiveness",
+                    # it checks whether the "hot" class has the highest score for each pixel
+                    topk.indices[..., 0] == pos_idx,
+                    # Then, if the hot class has the highest score,
+                    # it assigns a positive value based on its difference from the second highest score
+                    scores_2d[..., pos_idx] - topk.values[..., 1],
+                    # Likewise, if it has NOT a negative value based on the difference of that class' score to the highest one
+                    scores_2d[..., pos_idx] - topk.values[..., 0],
                 )
-                / others.max(),
-            )
 
-            score_im = plt.get_cmap("RdBu")(
-                -category_support * attention / attention.max() / 2 + 0.5
-            )
+                # So, if we have a pixel with scores (.4, .4, .2) and would want to get the heat value for the first class,
+                # we would get a neutral color, because it is matched with the second class
+                # But if our scores were (.4, .3, .3), it would be red,
+                # because now our class is .1 above its nearest competitor
 
-            score_im[..., -1] = attention > 0
+                attention = torch.where(
+                    topk.indices[..., 0] == pos_idx,
+                    gradcam_2d[..., pos_idx] / gradcam_2d.max(),
+                    (
+                        others := gradcam_2d[
+                            ..., list(set(range(len(categories))) - {pos_idx})
+                        ]
+                        .max(-1)
+                        .values
+                    )
+                    / others.max(),
+                )
 
-            ax.imshow(score_im)
-            ax.set_title(f"{category} {preds[0,pos_idx]:1.2f}")
+                score_im = plt.get_cmap("RdBu")(
+                    -category_support * attention / attention.max() / 2 + 0.5
+                )
 
-            Image.fromarray(np.uint8(score_im * 255)).resize(
-                np.array(score_im.shape[:2][::-1]) * 8, resample=Image.NEAREST
-            ).save(
-                slide_output_dir
-                / f"scores-{h5_path.stem}--score_{category}={preds[0][pos_idx]:0.2f}.png"
-            )
+                score_im[..., -1] = attention > 0
 
-            get_n_toptiles(
-                slide=slide,
-                category=category,
-                stride=stride,
-                output_dir=slide_output_dir,
-                scores=scores[:, pos_idx],
-                coords=coords,
-                n=n_toptiles,
-            )
+                ax.imshow(score_im)
+                ax.set_title(f"{category} {preds[0,pos_idx]:1.2f}")
 
-        if overview:
-            thumb = show_thumb(
-                slide=slide,
-                thumb_ax=axs[0, 0],
-                attention=attention,
-            )
-            Image.fromarray(thumb).save(slide_output_dir / f"thumbnail-{h5_path.stem}.png")
+                Image.fromarray(np.uint8(score_im * 255)).resize(
+                    np.array(score_im.shape[:2][::-1]) * 8, resample=Image.NEAREST
+                ).save(
+                    slide_output_dir
+                    / f"scores-{h5_path.stem}--score_{category}={preds[0][pos_idx]:0.2f}.png"
+                )
 
-            for ax in axs.ravel():
-                ax.axis("off")
+                get_n_toptiles(
+                    slide=slide,
+                    category=category,
+                    stride=stride,
+                    output_dir=slide_output_dir,
+                    scores=scores[:, pos_idx],
+                    coords=coords,
+                    n=n_toptiles,
+                    target_microns = target_microns, 
+                )
 
-            fig.savefig(slide_output_dir / f"overview-{h5_path.stem}.png")
-            plt.close(fig)
+            if overview:
+                thumb = show_thumb(
+                    slide=slide,
+                    thumb_ax=axs[0, 0],
+                    attention=attention,
+                    target_microns = target_microns, 
+                )
+                Image.fromarray(thumb).save(slide_output_dir / f"thumbnail-{h5_path.stem}.png")
+
+                for ax in axs.ravel():
+                    ax.axis("off")
+
+                fig.savefig(slide_output_dir / f"overview-{h5_path.stem}.png")
+                plt.close(fig)
 
 
 if __name__ == "__main__":
@@ -304,6 +309,14 @@ if __name__ == "__main__":
         default=True,
         required=False,
         help="Generate final overview image",
+    )
+    parser.add_argument(
+        "--target-microns",
+        type=int,
+        default=256,
+        dest = target_microns,
+        required=False,
+        help="Target microns, 256 by default",
     )
     args = parser.parse_args()
     main(**vars(args))
