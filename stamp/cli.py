@@ -214,7 +214,8 @@ def run_cli(args: argparse.Namespace):
                  model_path=Path(c.model_path),
                  output_dir=Path(c.output_dir),
                  n_toptiles=int(c.n_toptiles),
-                 overview=c.overview)
+                 overview=c.overview),
+                 target_microns=int(cfg.preprocessing.microns)
         case _:
             raise ConfigurationError(f"Unknown command {args.command}")
 

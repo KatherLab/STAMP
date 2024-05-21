@@ -65,10 +65,10 @@ def vals_to_im(
     return im
 
 
-def show_thumb(slide, thumb_ax: Axes, attention: Tensor) -> None:
+def show_thumb(slide, thumb_ax: Axes, attention: Tensor, target_microns: int = 256) -> None:
     mpp = float(slide.properties[openslide.PROPERTY_NAME_MPP_X])
     dims_um = np.array(slide.dimensions) * mpp
-    thumb = slide.get_thumbnail(np.round(dims_um * 8 / 256).astype(int))
+    thumb = slide.get_thumbnail(np.round(dims_um * 8 / target_microns).astype(int))
     thumb_ax.imshow(np.array(thumb)[: attention.shape[0] * 8, : attention.shape[1] * 8])
     return np.array(thumb)[: attention.shape[0] * 8, : attention.shape[1] * 8]
 
@@ -95,6 +95,7 @@ def get_n_toptiles(
     scores: Tensor,
     stride: int,
     n: int = 8,
+    target_microns: int = 256,
 ) -> None:
     slide_mpp = float(slide.properties[openslide.PROPERTY_NAME_MPP_X])
 
@@ -103,7 +104,7 @@ def get_n_toptiles(
     # determine the scaling factor between heatmap and original slide
     # 256 microns edge length by default, with 224px = ~1.14 MPP (± 10x magnification)
     feature_downsample_mpp = (
-        256 / stride
+        target_microns / stride
     )  # NOTE: stride here only makes sense if the tiles were NON-OVERLAPPING
     scaling_factor = feature_downsample_mpp / slide_mpp
 
@@ -140,6 +141,7 @@ def main(
     output_dir: Path,
     n_toptiles: int = 8,
     overview: bool = True,
+    target_microns: int = 256,
 ) -> None:
     learn = load_learner(model_path)
     learn.model.eval()
@@ -236,6 +238,7 @@ def main(
                 scores=scores[:, pos_idx],
                 coords=coords,
                 n=n_toptiles,
+                target_microns = target_microns, 
             )
 
         if overview:
@@ -243,6 +246,7 @@ def main(
                 slide=slide,
                 thumb_ax=axs[0, 0],
                 attention=attention,
+                target_microns = target_microns, 
             )
             Image.fromarray(thumb).save(slide_output_dir / f"thumbnail-{h5_path.stem}.png")
 
@@ -304,6 +308,14 @@ if __name__ == "__main__":
         default=True,
         required=False,
         help="Generate final overview image",
+    )
+    parser.add_argument(
+        "--target-microns",
+        type=int,
+        default=256,
+        dest = target_microns,
+        required=False,
+        help="Target microns, 256 by default",
     )
     args = parser.parse_args()
     main(**vars(args))
