@@ -282,6 +282,8 @@ def categorical_crossval_(
     with open(output_path/'info.json', 'w') as f:
         json.dump(info, f)
 
+    all_patient_preds = pd.DataFrame()
+
     for fold, (train_idxs, test_idxs) in enumerate(folds):
         fold_path = output_path/f'fold-{fold}'
         if (preds_csv := fold_path/'patient-preds.csv').exists():
@@ -303,6 +305,14 @@ def categorical_crossval_(
             test_df=fold_test_df, learn=learn,
             target_label=target_label, cat_labels=cat_labels, cont_labels=cont_labels)
         patient_preds_df.to_csv(preds_csv, index=False)
+
+
+        # Append the patient predictions from this fold to the list
+        patient_preds_df['fold'] = fold
+        all_patient_preds = all_patient_preds._append(patient_preds_df, ignore_index=True)
+
+    all_patient_preds = all_patient_preds.sort_values(all_patient_preds.columns[1], ascending=False)
+    all_patient_preds.to_csv(output_path/'patient-preds-all.csv', index=False)
 
 
 def _crossval_train(
