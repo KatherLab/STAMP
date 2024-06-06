@@ -30,6 +30,7 @@ def train(
     n_epoch: int = 32,
     patience: int = 8,
     path: Optional[Path] = None,
+    cores: int = 8,
 ) -> Learner:
     """Train a MLP on image features.
 
@@ -39,6 +40,11 @@ def train(
         add_features:  An (encoder, targets) pair for each additional input.
         valid_idxs:  Indices of the datasets to use for validation.
     """
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    if device.type == "cuda":
+        # allow for usage of TensorFloat32 as internal dtype for matmul on modern NVIDIA GPUs
+        torch.set_float32_matmul_precision("high")
+
     target_enc, targs = targets
     train_ds = make_dataset(
         bags=bags[~valid_idxs],
@@ -55,43 +61,56 @@ def train(
             (enc, vals[valid_idxs])
             for enc, vals in add_features],
         bag_size=None)
-
+    
     # build dataloaders
+    batch_size = 64
     train_dl = DataLoader(
-        train_ds, batch_size=64, shuffle=True, num_workers=1, drop_last=True)
+        train_ds, batch_size=batch_size, shuffle=True, num_workers=cores,
+        drop_last=len(train_ds) > batch_size,
+        device=device, pin_memory=device.type == "cuda"
+    )
     valid_dl = DataLoader(
-        valid_ds, batch_size=1, shuffle=False, num_workers=1)
+        valid_ds, batch_size=1, shuffle=False, num_workers=cores,
+        device=device, pin_memory=device.type == "cuda"
+    )
     batch = train_dl.one_batch()
-    feature_dim=batch[0].shape[-1]
+    feature_dim = batch[0].shape[-1]
+
     # for binary classification num_classes=2
-    model = ViT(num_classes=len(target_enc.categories_[0]), input_dim=feature_dim) # Transformer(num_classes=2)
-    model.to(torch.device('cuda' if torch.cuda.is_available() else 'cpu')) #
+    model = ViT(
+        num_classes=len(target_enc.categories_[0]), input_dim=feature_dim,
+        dim=512, depth=2, heads=8, mlp_dim=512, dropout=.0
+    ) # maybe increase mlp_dim? Not necessary 4*dim, but maybe a bit?
+    model.to(device)
+    print(f"Model: {model}", end=" ")
+    print(f"[Parameters: {sum(p.numel() for p in model.parameters() if p.requires_grad)}]")
 
-    # weigh inversely to class occurances
+    # weigh inversely to class occurrences
     counts = pd.Series(targs[~valid_idxs]).value_counts()
-
     weight = counts.sum() / counts
     weight /= weight.sum()
     # reorder according to vocab
     weight = torch.tensor(
-        list(map(weight.get, target_enc.categories_[0])), dtype=torch.float32)
+        list(map(weight.get, target_enc.categories_[0])), dtype=torch.float32, device=device)
     loss_func = nn.CrossEntropyLoss(weight=weight)
 
-    dls = DataLoaders(train_dl, valid_dl, device=torch.device('cuda' if torch.cuda.is_available() else 'cpu')) #
-    learn = Learner(dls, model, loss_func=loss_func,
-                    metrics=[RocAuc()], path=path)
+    dls = DataLoaders(train_dl, valid_dl, device=device)
+    learn = Learner(
+        dls,
+        model,
+        loss_func=loss_func,
+        metrics=[RocAuc()],
+        path=path,
+    )#.to_bf16()
 
     cbs = [
-        SaveModelCallback(fname=f'best_valid'),
-        EarlyStoppingCallback(monitor='roc_auc_score',
-                             min_delta=0.01, patience=patience),
-        CSVLogger()
+        SaveModelCallback(monitor='valid_loss', fname=f'best_valid'),
+        EarlyStoppingCallback(monitor='valid_loss', patience=patience),
+        CSVLogger(),
         # MixedPrecision(amp_mode=AMPMode.BF16)
-        ]
-    # allow for usage of TensorFloat32 as internal dtype for matmul on modern NVIDIA GPUs
-    torch.set_float32_matmul_precision("high")
+    ]
 
-    learn.fit_one_cycle(n_epoch=n_epoch, lr_max=1e-4, cbs=cbs)
+    learn.fit_one_cycle(n_epoch=n_epoch, lr_max=1e-4, wd=1e-6, cbs=cbs)
 
     return learn
 

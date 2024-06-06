@@ -283,6 +283,7 @@ def categorical_crossval_(
         json.dump(info, f)
 
     for fold, (train_idxs, test_idxs) in enumerate(folds):
+        print(f"\nFold: {fold+1}/{n_splits}")
         fold_path = output_path/f'fold-{fold}'
         if (preds_csv := fold_path/'patient-preds.csv').exists():
             print(f'{preds_csv} already exists!  Skipping...')
