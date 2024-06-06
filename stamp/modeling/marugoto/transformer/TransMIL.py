@@ -8,6 +8,7 @@ import torch.nn.functional as F
 from einops import repeat
 
 
+
 class RMSNorm(nn.Module):
     def __init__(self, dim):
         super().__init__()
@@ -34,6 +35,43 @@ class FeedForward(nn.Module):
         return self.mlp(x)
 
 
+# class Attention(nn.Module):
+#     def __init__(self, dim, heads=8, dim_head=512 // 8, norm_layer=nn.LayerNorm, dropout=0.):
+#         super().__init__()
+#         inner_dim = dim_head * heads
+#         project_out = heads != 1 or dim_head != dim
+
+#         self.heads = heads
+#         self.scale = dim_head ** -0.5
+
+#         self.norm = norm_layer(dim)
+
+#         self.to_qkv = nn.Linear(dim, inner_dim * 3, bias=False)
+#         self.to_out = nn.Sequential(
+#             nn.Linear(inner_dim, dim),
+#             nn.Dropout(dropout)
+#         ) if project_out else nn.Identity()
+
+#     def forward(self, x, mask=None):
+#         x = self.norm(x)
+
+#         qkv = self.to_qkv(x).chunk(3, dim=-1)
+#         q, k, v = map(lambda t: rearrange(t, 'b n (h d) -> b h n d', h=self.heads), qkv)
+#         dots = (q @ k.mT) * self.scale
+
+#         if mask is not None:
+#             mask_value = torch.finfo(dots.dtype).min
+#             dots.masked_fill_(mask, mask_value)
+
+#         # improve numerical stability of softmax
+#         dots = dots - torch.amax(dots, dim=-1, keepdim=True)
+#         attn = F.softmax(dots, dim=-1)
+
+#         out = attn @ v
+#         out = rearrange(out, 'b h n d -> b n (h d)')
+#         return self.to_out(out), attn
+
+
 class Attention(nn.Module):
     def __init__(self, dim, heads=8, dim_head=512 // 8, norm_layer=nn.LayerNorm, dropout=0.):
         super().__init__()
@@ -42,7 +80,6 @@ class Attention(nn.Module):
 
         self.norm = norm_layer(dim)
         self.mhsa = nn.MultiheadAttention(dim, heads, dropout, batch_first=True)
-
 
     def forward(self, x, mask=None):
         if mask is not None:
@@ -73,8 +110,7 @@ class Transformer(nn.Module):
         return self.norm(x)
 
 
-
-class ViT(nn.Module):
+class TransMIL(nn.Module):
     def __init__(self, *, 
         num_classes: int, input_dim: int = 768, dim: int = 512,
         depth: int = 2, heads: int = 8, dim_head: int = 64, mlp_dim: int = 2048,
@@ -83,8 +119,6 @@ class ViT(nn.Module):
         super().__init__()
         assert pool in {'cls', 'mean'}, 'pool type must be either cls (cls token) or mean (mean pooling)'
         self.cls_token = nn.Parameter(torch.randn(dim))
-
-
 
         self.fc = nn.Sequential(nn.Linear(input_dim, dim, bias=True), nn.GELU())
         self.dropout = nn.Dropout(emb_dropout)

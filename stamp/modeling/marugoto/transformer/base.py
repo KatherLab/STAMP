@@ -12,7 +12,7 @@ import pandas as pd
 import numpy as np
 
 from .data import make_dataset, SKLearnEncoder
-from .ViT import ViT
+from .TransMIL import TransMIL
 
 
 __all__ = ['train', 'deploy']
@@ -30,6 +30,7 @@ def train(
     n_epoch: int = 32,
     patience: int = 8,
     path: Optional[Path] = None,
+    batch_size: int = 64,
     cores: int = 8,
 ) -> Learner:
     """Train a MLP on image features.
@@ -63,7 +64,6 @@ def train(
         bag_size=None)
     
     # build dataloaders
-    batch_size = 64
     train_dl = DataLoader(
         train_ds, batch_size=batch_size, shuffle=True, num_workers=cores,
         drop_last=len(train_ds) > batch_size,
@@ -77,10 +77,13 @@ def train(
     feature_dim = batch[0].shape[-1]
 
     # for binary classification num_classes=2
-    model = ViT(
+    model = TransMIL(
         num_classes=len(target_enc.categories_[0]), input_dim=feature_dim,
         dim=512, depth=2, heads=8, mlp_dim=512, dropout=.0
-    ) # maybe increase mlp_dim? Not necessary 4*dim, but maybe a bit?
+    )
+    # TODO:
+    # maybe increase mlp_dim? Not necessary 4*dim, but maybe a bit?
+    # maybe add at least some dropout?
     model.to(device)
     print(f"Model: {model}", end=" ")
     print(f"[Parameters: {sum(p.numel() for p in model.parameters() if p.requires_grad)}]")
