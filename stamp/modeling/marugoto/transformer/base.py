@@ -7,7 +7,7 @@ from torch import nn
 import torch.nn.functional as F
 from fastai.vision.all import (
     Learner, DataLoader, DataLoaders, RocAuc,
-    SaveModelCallback, CSVLogger, EarlyStoppingCallback)
+    SaveModelCallback, CSVLogger, EarlyStoppingCallback, MixedPrecision, AMPMode)
 import pandas as pd
 import numpy as np
 
@@ -28,7 +28,7 @@ def train(
     add_features: Iterable[Tuple[SKLearnEncoder, Sequence[Any]]] = [],
     valid_idxs: np.ndarray,
     n_epoch: int = 32,
-    patience: int = 16,
+    patience: int = 8,
     path: Optional[Path] = None,
 ) -> Learner:
     """Train a MLP on image features.
@@ -85,7 +85,11 @@ def train(
         SaveModelCallback(fname=f'best_valid'),
         EarlyStoppingCallback(monitor='roc_auc_score',
                              min_delta=0.01, patience=patience),
-        CSVLogger()]
+        CSVLogger()
+        # MixedPrecision(amp_mode=AMPMode.BF16)
+        ]
+    # allow for usage of TensorFloat32 as internal dtype for matmul on modern NVIDIA GPUs
+    torch.set_float32_matmul_precision("high")
 
     learn.fit_one_cycle(n_epoch=n_epoch, lr_max=1e-4, cbs=cbs)
 
