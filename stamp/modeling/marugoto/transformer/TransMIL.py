@@ -84,7 +84,7 @@ class Attention(nn.Module):
             mask = mask.repeat(self.heads, 1, 1)
 
         x = self.norm(x)        
-        attn_output, attn_output_weights = self.mhsa(x, x, x, attn_mask=mask)
+        attn_output, _ = self.mhsa(x, x, x, need_weights=False, attn_mask=mask)
         return attn_output
 
 
