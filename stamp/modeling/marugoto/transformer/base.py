@@ -1,6 +1,6 @@
 from typing import Any, Iterable, Optional, Sequence, Tuple, TypeVar
 from pathlib import Path
-import os
+from functools import partial
 
 import torch
 from torch import nn
@@ -12,6 +12,7 @@ from fastai.vision.all import (
 )
 import pandas as pd
 import numpy as np
+import matplotlib.pyplot as plt
 
 from .data import make_dataset, SKLearnEncoder
 from .TransMIL import TransMIL
@@ -34,6 +35,7 @@ def train(
     path: Optional[Path] = None,
     batch_size: int = 64,
     cores: int = 8,
+    plot: bool = False
 ) -> Learner:
     """Train a MLP on image features.
 
@@ -103,14 +105,11 @@ def train(
 
     dls = DataLoaders(train_dl, valid_dl, device=device)
 
-    opt = torch.optim.AdamW(model.parameters())
-    opt_func = OptimWrapper(opt=opt)
-
     learn = Learner(
         dls,
         model,
         loss_func=loss_func,
-        opt_func=opt_func,
+        opt_func = partial(OptimWrapper, opt=torch.optim.AdamW),
         metrics=[RocAuc()],
         path=path,
     )#.to_bf16()
@@ -121,8 +120,20 @@ def train(
         CSVLogger(),
         # MixedPrecision(amp_mode=AMPMode.BF16)
     ]
-    
     learn.fit_one_cycle(n_epoch=n_epoch, reset_opt=True, lr_max=1e-4, wd=1e-2, cbs=cbs)
+    
+    # Plot training and validation losses as well as learning rate schedule
+    if plot:
+        path_plots = path / "plots"
+        path_plots.mkdir(parents=True, exist_ok=True)
+
+        learn.recorder.plot_loss()
+        plt.savefig(path_plots / 'losses_plot.png')
+        plt.close()
+
+        learn.recorder.plot_sched()
+        plt.savefig(path_plots / 'lr_scheduler.png')
+        plt.close()
 
     return learn
 
