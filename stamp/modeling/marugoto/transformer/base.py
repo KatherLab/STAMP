@@ -7,7 +7,9 @@ from torch import nn
 import torch.nn.functional as F
 from fastai.vision.all import (
     Learner, DataLoader, DataLoaders, RocAuc,
-    SaveModelCallback, CSVLogger, EarlyStoppingCallback, MixedPrecision, AMPMode)
+    SaveModelCallback, CSVLogger, EarlyStoppingCallback,
+    MixedPrecision, AMPMode, OptimWrapper
+)
 import pandas as pd
 import numpy as np
 
@@ -100,10 +102,15 @@ def train(
     loss_func = nn.CrossEntropyLoss(weight=weight)
 
     dls = DataLoaders(train_dl, valid_dl, device=device)
+
+    opt = torch.optim.AdamW(model.parameters())
+    opt_func = OptimWrapper(opt=opt)
+
     learn = Learner(
         dls,
         model,
         loss_func=loss_func,
+        opt_func=opt_func,
         metrics=[RocAuc()],
         path=path,
     )#.to_bf16()
@@ -114,8 +121,8 @@ def train(
         CSVLogger(),
         # MixedPrecision(amp_mode=AMPMode.BF16)
     ]
-
-    learn.fit_one_cycle(n_epoch=n_epoch, lr_max=1e-4, wd=1e-6, cbs=cbs)
+    
+    learn.fit_one_cycle(n_epoch=n_epoch, reset_opt=True, lr_max=1e-4, wd=1e-2, cbs=cbs)
 
     return learn
 

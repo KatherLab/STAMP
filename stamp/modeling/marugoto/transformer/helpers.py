@@ -1,7 +1,7 @@
 from datetime import datetime
 import json
+import os
 from pathlib import Path
-from pyexpat import features
 from typing import Iterable, Optional, Sequence, Union
 
 import numpy as np
@@ -116,6 +116,7 @@ def train_categorical_model_(
         add_features=add_features,
         valid_idxs=df.PATIENT.isin(valid_patients).values,
         path=output_path,
+        cores=min(os.cpu_count() // 4, 1)
     )
 
     # save some additional information to the learner to make deployment easier
@@ -337,7 +338,9 @@ def _crossval_train(
         targets=(target_enc, fold_df[target_label].values),
         add_features=add_features,
         valid_idxs=fold_df.PATIENT.isin(valid_patients),
-        path=fold_path)
+        path=fold_path,
+        cores=min(os.cpu_count() // 4, 1)
+    )
     learn.target_label = target_label
     learn.cat_labels, learn.cont_labels = cat_labels, cont_labels
 
