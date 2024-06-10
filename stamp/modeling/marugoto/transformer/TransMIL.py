@@ -76,8 +76,6 @@ class Attention(nn.Module):
     def __init__(self, dim, heads=8, dim_head=512 // 8, norm_layer=nn.LayerNorm, dropout=0.):
         super().__init__()
         self.heads = heads
-        self.scale = dim_head ** -0.5
-
         self.norm = norm_layer(dim)
         self.mhsa = nn.MultiheadAttention(dim, heads, dropout, batch_first=True)
 
@@ -132,27 +130,31 @@ class TransMIL(nn.Module):
 
     def forward(self, x, lens):
         # remove unnecessary padding
-        max_idx = torch.amax(lens)
-        x = x[:, :max_idx]
+        # (deactivated for now, since the memory usage fluctuates more and is overall bigger)
+        # x = x[:, :torch.max(lens)].contiguous()
         b, n, d = x.shape
 
         # map input sequence to latent space of TransMIL
         x = self.dropout(self.fc(x))
 
-        cls_tokens = repeat(self.cls_token, 'd -> b 1 d', b=b)
-        x = torch.cat((cls_tokens, x), dim=1)
-        lens = lens + 1 # account for cls token
+        add_cls = self.pool == 'cls'
+        if add_cls:
+            cls_tokens = repeat(self.cls_token, 'd -> b 1 d', b=b)
+            x = torch.cat((cls_tokens, x), dim=1)
+            lens = lens + 1 # account for cls token
 
         # mask indicating zero padded feature vectors
+        # (deactivated for now, since it seems to use more memory than without)
         mask = None
-        if torch.amin(lens) != torch.amax(lens):
-            mask = torch.arange(0, torch.max(lens), dtype=torch.int32, device=x.device).repeat(b, 1) < lens[..., None]
-            mask = ~mask[:, None, :].repeat(1, (n + 1), 1)
+        if torch.amin(lens) != torch.amax(lens) and False:
+            mask = torch.arange(0, n + add_cls, dtype=torch.int32, device=x.device).repeat(b, 1) < lens[..., None]
+            mask = (~mask[:, None, :]).repeat(1, (n + add_cls), 1) # shape: (B, L, L)
+            # mask = (~mask[:, None, :]).expand(-1, (n + add_cls), -1)
 
         x = self.transformer(x, mask)
 
         if mask is not None and self.pool == 'mean':
-            x = torch.cumsum(x, dim=1)[torch.arange(b), lens-1]
+            x = torch.cumsum(x, dim=1)[torch.arange(b), lens - 1]
             x = x / lens[..., None]
         else:
             x = x.mean(dim=1) if self.pool == 'mean' else x[:, 0]

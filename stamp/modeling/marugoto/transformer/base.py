@@ -84,6 +84,8 @@ def train(
     # TODO:
     # maybe increase mlp_dim? Not necessary 4*dim, but maybe a bit?
     # maybe add at least some dropout?
+    
+    # model = torch.compile(model)
     model.to(device)
     print(f"Model: {model}", end=" ")
     print(f"[Parameters: {sum(p.numel() for p in model.parameters() if p.requires_grad)}]")
