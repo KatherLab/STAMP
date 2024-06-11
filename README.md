@@ -1,5 +1,9 @@
 [![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/from-whole-slide-image-to-biomarker/classification-on-tcga)](https://paperswithcode.com/sota/classification-on-tcga?p=from-whole-slide-image-to-biomarker)
 
+
+> [!Important]
+> STAMP v1.1.0 now uses PyTorchs FlashAttentionV2 implementation, which significantly improves memory efficiency when training, allowing you to use larger batch sizes and more tiles per patient. **Important:** The drawback is that you *cannot* deploy a saved model from STAMP version <= 1.0.3 with this or later versions. It is therefore recommended to only update to the latest version of STAMP when starting new experiments. Additionally, the optimizer has been updated from Adam to AdamW.
+
 > [!Important]
 > STAMP v1.0.3 now has built-in support for the [UNI Feature extractor](https://www.nature.com/articles/s41591-024-02857-3). Using it will require a Hugging Face account with granted access to the UNI model. For details on fair use, licensing and accessing the UNI model weights, refer to the [UNI GitHub repository](https://www.github.com/mahmoodlab/UNI.git). Note that the installation instructions within the [STAMP protocol paper](https://arxiv.org/abs/2312.10944v1) refer to v1.0.1 of the software, and that v1.0.3 has updated installation steps, see below. The README file will always contain the most up-to-date installation instructions.
 
