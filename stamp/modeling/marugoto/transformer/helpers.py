@@ -35,8 +35,8 @@ def safe_load_learner(model_path):
     except ModuleNotFoundError as e:
         if e.name == "stamp.modeling.marugoto.transformer.ViT":
             raise IncompatibleVersionError(
-                "The model checkpoint is incompatible with the current version of STAMP (>= 1.0.4)."
-                "Please use STAMP version <=1.0.3 to deploy this checkpoint."
+                "The model checkpoint is incompatible with the current version of STAMP (>= 1.1.0). "
+                "Please use STAMP version <= 1.0.3 to deploy this checkpoint."
             ) from e
         else:
             raise
