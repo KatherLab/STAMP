@@ -23,6 +23,25 @@ __all__ = [
 PathLike = Union[str, Path]
 
 
+class IncompatibleVersionError(Exception):
+    """Exception raised for loading a model with an incompatible version."""
+    pass
+
+
+def safe_load_learner(model_path):
+    try:
+        learn = load_learner(model_path)
+        return learn
+    except ModuleNotFoundError as e:
+        if e.name == "stamp.modeling.marugoto.transformer.ViT":
+            raise IncompatibleVersionError(
+                "The model checkpoint is incompatible with the current version of STAMP (>= 1.0.4)."
+                "Please use STAMP version <=1.0.3 to deploy this checkpoint."
+            ) from e
+        else:
+            raise
+
+
 def train_categorical_model_(
     clini_table: PathLike,
     slide_table: PathLike,
@@ -116,7 +135,7 @@ def train_categorical_model_(
         add_features=add_features,
         valid_idxs=df.PATIENT.isin(valid_patients).values,
         path=output_path,
-        cores=max(os.cpu_count() // 4, 1)
+        cores=max(1, os.cpu_count() // 4)
     )
 
     # save some additional information to the learner to make deployment easier
@@ -181,7 +200,8 @@ def deploy_categorical_model_(
         print(f'{preds_csv} already exists!  Skipping...')
         return
 
-    learn = load_learner(model_path)
+
+    learn = safe_load_learner(model_path)
     target_enc = get_target_enc(learn)
     categories = target_enc.categories_[0]
 
@@ -290,7 +310,7 @@ def categorical_crossval_(
             print(f'{preds_csv} already exists!  Skipping...')
             continue
         elif (fold_path/'export.pkl').exists():
-            learn = load_learner(fold_path/'export.pkl')
+            learn = safe_load_learner(fold_path/'export.pkl')
         else:
             fold_train_df = df.iloc[train_idxs]
             learn = _crossval_train(
@@ -339,7 +359,7 @@ def _crossval_train(
         add_features=add_features,
         valid_idxs=fold_df.PATIENT.isin(valid_patients),
         path=fold_path,
-        cores=max(os.cpu_count() // 4, 1)
+        cores=max(1, os.cpu_count() // 4)
     )
     learn.target_label = target_label
     learn.cat_labels, learn.cont_labels = cat_labels, cont_labels
