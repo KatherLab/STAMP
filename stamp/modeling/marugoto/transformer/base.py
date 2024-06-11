@@ -1,18 +1,21 @@
 from typing import Any, Iterable, Optional, Sequence, Tuple, TypeVar
 from pathlib import Path
-import os
+from functools import partial
 
 import torch
 from torch import nn
 import torch.nn.functional as F
 from fastai.vision.all import (
     Learner, DataLoader, DataLoaders, RocAuc,
-    SaveModelCallback, CSVLogger, EarlyStoppingCallback)
+    SaveModelCallback, CSVLogger, EarlyStoppingCallback,
+    MixedPrecision, AMPMode, OptimWrapper
+)
 import pandas as pd
 import numpy as np
+import matplotlib.pyplot as plt
 
 from .data import make_dataset, SKLearnEncoder
-from .ViT import ViT
+from .TransMIL import TransMIL
 
 
 __all__ = ['train', 'deploy']
@@ -28,8 +31,11 @@ def train(
     add_features: Iterable[Tuple[SKLearnEncoder, Sequence[Any]]] = [],
     valid_idxs: np.ndarray,
     n_epoch: int = 32,
-    patience: int = 16,
+    patience: int = 8,
     path: Optional[Path] = None,
+    batch_size: int = 64,
+    cores: int = 8,
+    plot: bool = False
 ) -> Learner:
     """Train a MLP on image features.
 
@@ -39,6 +45,11 @@ def train(
         add_features:  An (encoder, targets) pair for each additional input.
         valid_idxs:  Indices of the datasets to use for validation.
     """
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    if device.type == "cuda":
+        # allow for usage of TensorFloat32 as internal dtype for matmul on modern NVIDIA GPUs
+        torch.set_float32_matmul_precision("high")
+
     target_enc, targs = targets
     train_ds = make_dataset(
         bags=bags[~valid_idxs],
@@ -55,39 +66,74 @@ def train(
             (enc, vals[valid_idxs])
             for enc, vals in add_features],
         bag_size=None)
-
+    
     # build dataloaders
     train_dl = DataLoader(
-        train_ds, batch_size=64, shuffle=True, num_workers=1, drop_last=True)
+        train_ds, batch_size=batch_size, shuffle=True, num_workers=cores,
+        drop_last=len(train_ds) > batch_size,
+        device=device, pin_memory=device.type == "cuda"
+    )
     valid_dl = DataLoader(
-        valid_ds, batch_size=1, shuffle=False, num_workers=1)
+        valid_ds, batch_size=1, shuffle=False, num_workers=cores,
+        device=device, pin_memory=device.type == "cuda"
+    )
     batch = train_dl.one_batch()
-    feature_dim=batch[0].shape[-1]
+    feature_dim = batch[0].shape[-1]
+
     # for binary classification num_classes=2
-    model = ViT(num_classes=len(target_enc.categories_[0]), input_dim=feature_dim) # Transformer(num_classes=2)
-    model.to(torch.device('cuda' if torch.cuda.is_available() else 'cpu')) #
+    model = TransMIL(
+        num_classes=len(target_enc.categories_[0]), input_dim=feature_dim,
+        dim=512, depth=2, heads=8, mlp_dim=512, dropout=.0
+    )
+    # TODO:
+    # maybe increase mlp_dim? Not necessary 4*dim, but maybe a bit?
+    # maybe add at least some dropout?
+    
+    # model = torch.compile(model)
+    model.to(device)
+    print(f"Model: {model}", end=" ")
+    print(f"[Parameters: {sum(p.numel() for p in model.parameters() if p.requires_grad)}]")
 
-    # weigh inversely to class occurances
+    # weigh inversely to class occurrences
     counts = pd.Series(targs[~valid_idxs]).value_counts()
-
     weight = counts.sum() / counts
     weight /= weight.sum()
     # reorder according to vocab
     weight = torch.tensor(
-        list(map(weight.get, target_enc.categories_[0])), dtype=torch.float32)
+        list(map(weight.get, target_enc.categories_[0])), dtype=torch.float32, device=device)
     loss_func = nn.CrossEntropyLoss(weight=weight)
 
-    dls = DataLoaders(train_dl, valid_dl, device=torch.device('cuda' if torch.cuda.is_available() else 'cpu')) #
-    learn = Learner(dls, model, loss_func=loss_func,
-                    metrics=[RocAuc()], path=path)
+    dls = DataLoaders(train_dl, valid_dl, device=device)
+
+    learn = Learner(
+        dls,
+        model,
+        loss_func=loss_func,
+        opt_func = partial(OptimWrapper, opt=torch.optim.AdamW),
+        metrics=[RocAuc()],
+        path=path,
+    )#.to_bf16()
 
     cbs = [
-        SaveModelCallback(fname=f'best_valid'),
-        EarlyStoppingCallback(monitor='roc_auc_score',
-                             min_delta=0.01, patience=patience),
-        CSVLogger()]
+        SaveModelCallback(monitor='valid_loss', fname=f'best_valid'),
+        EarlyStoppingCallback(monitor='valid_loss', patience=patience),
+        CSVLogger(),
+        # MixedPrecision(amp_mode=AMPMode.BF16)
+    ]
+    learn.fit_one_cycle(n_epoch=n_epoch, reset_opt=True, lr_max=1e-4, wd=1e-2, cbs=cbs)
+    
+    # Plot training and validation losses as well as learning rate schedule
+    if plot:
+        path_plots = path / "plots"
+        path_plots.mkdir(parents=True, exist_ok=True)
 
-    learn.fit_one_cycle(n_epoch=n_epoch, lr_max=1e-4, cbs=cbs)
+        learn.recorder.plot_loss()
+        plt.savefig(path_plots / 'losses_plot.png')
+        plt.close()
+
+        learn.recorder.plot_sched()
+        plt.savefig(path_plots / 'lr_scheduler.png')
+        plt.close()
 
     return learn
 
