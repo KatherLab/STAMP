@@ -1,4 +1,5 @@
 from omegaconf import OmegaConf, DictConfig
+from omegaconf.listconfig import ListConfig
 import argparse
 from pathlib import Path
 import os
@@ -14,6 +15,25 @@ STAMP_FACTORY_SETTINGS = Path(__file__).with_name("config.yaml")
 class ConfigurationError(Exception):
     pass
 
+def check_path_exists(path):
+    directories = path.split(os.path.sep)
+    current_path = os.path.sep
+    for directory in directories:
+        current_path = os.path.join(current_path, directory)
+        if not os.path.exists(current_path):
+            return False, directory
+    return True, None
+
+
+def check_and_handle_path(path, path_key, prefix):
+    exists, directory = check_path_exists(path)
+    if not exists:
+        print(f"From input path: '{path}'")
+        print(f"Directory '{directory}' does not exist.")
+        print(f"Check the input path of '{path_key}' from the '{prefix}' section.")
+        raise SystemExit(f"Stopping {prefix} due to faulty user input...")
+
+
 def _config_has_key(cfg: DictConfig, key: str):
     try:
         for k in key.split("."):
@@ -24,12 +44,27 @@ def _config_has_key(cfg: DictConfig, key: str):
         return False
     return True
 
-def require_configs(cfg: DictConfig, keys: Iterable[str], prefix: Optional[str] = None):
-    prefix = f"{prefix}." if prefix else ""
-    keys = [f"{prefix}{k}" for k in keys]
+def require_configs(cfg: DictConfig, keys: Iterable[str], prefix: Optional[str] = None,
+                    paths_to_check: Iterable[str] = []):
+    keys = [f"{prefix}.{k}" for k in keys]
     missing = [k for k in keys if not _config_has_key(cfg, k)]
     if len(missing) > 0:
         raise ConfigurationError(f"Missing required configuration keys: {missing}")
+
+    # Check if paths exist
+    for path_key in paths_to_check:
+        try:
+            #for all but modeling.statistics
+            path = cfg[prefix][path_key]
+        except:
+            #for modeling.statistics, handling the pred_csvs
+            path = OmegaConf.select(cfg, f"{prefix}.{path_key}")
+        if isinstance(path, ListConfig):
+            for p in path:
+                check_and_handle_path(p, path_key, prefix)
+        else:
+            check_and_handle_path(path, path_key, prefix)
+
 
 def create_config_file(config_file: Optional[Path]):
     """Create a new config file at the specified path (by copying the default config file)."""
@@ -108,7 +143,8 @@ def run_cli(args: argparse.Namespace):
             require_configs(
                 cfg,
                 ["output_dir", "wsi_dir", "cache_dir", "microns", "cores", "norm", "del_slide", "only_feature_extraction", "device", "feat_extractor"],
-                prefix="preprocessing"
+                prefix="preprocessing",
+                paths_to_check=["wsi_dir"]
             )
             c = cfg.preprocessing
             # Some checks
@@ -142,8 +178,9 @@ def run_cli(args: argparse.Namespace):
         case "train":
             require_configs(
                 cfg,
-                ["output_dir", "feature_dir", "target_label", "cat_labels", "cont_labels"],
-                prefix="modeling"
+                ["clini_table", "slide_table", "output_dir", "feature_dir", "target_label", "cat_labels", "cont_labels"],
+                prefix="modeling",
+                paths_to_check=["clini_table", "slide_table", "feature_dir"]
             )
             c = cfg.modeling
             from .modeling.marugoto.transformer.helpers import train_categorical_model_
@@ -158,8 +195,9 @@ def run_cli(args: argparse.Namespace):
         case "crossval":
             require_configs(
                 cfg,
-                ["output_dir", "feature_dir", "target_label", "cat_labels", "cont_labels", "n_splits"], # this one requires the n_splits key!
-                prefix="modeling"
+                ["clini_table", "slide_table", "output_dir", "feature_dir", "target_label", "cat_labels", "cont_labels", "n_splits"], # this one requires the n_splits key!
+                prefix="modeling",
+                paths_to_check=["clini_table", "slide_table", "feature_dir"]
             )
             c = cfg.modeling
             from .modeling.marugoto.transformer.helpers import categorical_crossval_
@@ -175,8 +213,9 @@ def run_cli(args: argparse.Namespace):
         case "deploy":
             require_configs(
                 cfg,
-                ["output_dir", "deploy_feature_dir", "target_label", "cat_labels", "cont_labels", "model_path"], # this one requires the model_path key!
-                prefix="modeling"
+                ["clini_table", "slide_table", "output_dir", "deploy_feature_dir", "target_label", "cat_labels", "cont_labels", "model_path"], # this one requires the model_path key!
+                prefix="modeling",
+                paths_to_check=["clini_table", "slide_table", "deploy_feature_dir"]
             )
             c = cfg.modeling
             from .modeling.marugoto.transformer.helpers import deploy_categorical_model_
@@ -188,11 +227,14 @@ def run_cli(args: argparse.Namespace):
                                       cat_labels=c.cat_labels,
                                       cont_labels=c.cont_labels,
                                       model_path=Path(c.model_path))
+            print("Successfully deployed models")
         case "statistics":
             require_configs(
                 cfg,
                 ["pred_csvs", "target_label", "true_class", "output_dir"],
-                prefix="modeling.statistics")
+                prefix="modeling.statistics",
+                paths_to_check=["pred_csvs"]
+            )
             from .modeling.statistics import compute_stats
             c = cfg.modeling.statistics
             if isinstance(c.pred_csvs,str):
@@ -201,11 +243,14 @@ def run_cli(args: argparse.Namespace):
                           target_label=c.target_label,
                           true_class=c.true_class,
                           output_dir=Path(c.output_dir))
+            print("Successfully calculated statistics")
         case "heatmaps":
             require_configs(
                 cfg,
-                ["feature_dir","wsi_dir","model_path","output_dir", "n_toptiles"], 
-                prefix="heatmaps")
+                ["feature_dir","wsi_dir","model_path","output_dir", "n_toptiles", "overview"], 
+                prefix="heatmaps",
+                paths_to_check=["feature_dir","wsi_dir","model_path"]
+            )
             c = cfg.heatmaps
             from .heatmaps.__main__ import main
             main(slide_name=str(c.slide_name),
@@ -215,6 +260,7 @@ def run_cli(args: argparse.Namespace):
                  output_dir=Path(c.output_dir),
                  n_toptiles=int(c.n_toptiles),
                  overview=c.overview)
+            print("Successfully produced heatmaps")
         case _:
             raise ConfigurationError(f"Unknown command {args.command}")
 
