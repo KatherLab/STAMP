@@ -35,7 +35,7 @@ def load_slide(slide: openslide.OpenSlide, target_mpp: float = 256/224, cores: i
         for i in range(steps):  # row
             for j in range(steps):  # column
                 future = executor.submit(
-                    _load_tile, slide, (stride*(j, i)), stride, tile_target_size)
+                    _load_tile, slide, (stride*(j, i)), stride, tuple(tile_target_size))
                 future_coords[future] = (i, j)
 
         # write the loaded tiles into an image as soon as they are loaded
