@@ -7,7 +7,7 @@ allow-direct-references = true
 
 [project]
 name = "stamp"
-version = "1.1.0"
+version = "1.1.1"
 authors = [
   { name="Omar El Nahhas", email="omar.el_nahhas@tu-dresden.de" },
   { name="Marko van Treeck", email="markovantreeck@gmail.com" },
@@ -48,8 +48,8 @@ dependencies = [
 "stamp" = "stamp.cli:main"
 
 [project.urls]
-"Homepage" = "https://github.com/Avic3nna/STAMP"
-"Bug Tracker" = "https://github.com/Avic3nna/STAMP/issues"
+"Homepage" = "https://github.com/KatherLab/STAMP"
+"Bug Tracker" = "https://github.com/KatherLab/STAMP/issues"
 
 [tool.hatch.build]
 include = [
