@@ -28,9 +28,9 @@ class IncompatibleVersionError(Exception):
     pass
 
 
-def safe_load_learner(model_path):
+def safe_load_learner(model_path, use_cpu):    
     try:
-        learn = load_learner(model_path)
+        learn = load_learner(model_path, cpu=use_cpu) # if False will use GPU instead
         return learn
     except ModuleNotFoundError as e:
         if e.name == "stamp.modeling.marugoto.transformer.ViT":
@@ -193,6 +193,14 @@ def deploy_categorical_model_(
         model_path:  Path of the model to deploy.
         output_path:  File to save model in.
     """
+    use_cpu=True
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    if device.type == "cuda":
+        # allow for usage of TensorFloat32 as internal dtype for matmul on modern NVIDIA GPUs
+        torch.set_float32_matmul_precision("medium")
+    
+    use_cpu= (device.type == "cpu") # True or False
+    
     feature_dir = Path(feature_dir)
     model_path = Path(model_path)
     output_path = Path(output_path)
@@ -201,7 +209,7 @@ def deploy_categorical_model_(
         return
 
 
-    learn = safe_load_learner(model_path)
+    learn = safe_load_learner(model_path, use_cpu=use_cpu)
     target_enc = get_target_enc(learn)
     categories = target_enc.categories_[0]
 
@@ -211,7 +219,7 @@ def deploy_categorical_model_(
 
     test_df = get_cohort_df(clini_table, slide_table, feature_dir, target_label, categories)
 
-    patient_preds_df = deploy(test_df=test_df, learn=learn, target_label=target_label)
+    patient_preds_df = deploy(test_df=test_df, learn=learn, target_label=target_label, device=device)
     output_path.mkdir(parents=True, exist_ok=True)
     patient_preds_df.to_csv(preds_csv, index=False)
 

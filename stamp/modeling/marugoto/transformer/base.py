@@ -48,7 +48,7 @@ def train(
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     if device.type == "cuda":
         # allow for usage of TensorFloat32 as internal dtype for matmul on modern NVIDIA GPUs
-        torch.set_float32_matmul_precision("high")
+        torch.set_float32_matmul_precision("medium")
 
     target_enc, targs = targets
     train_ds = make_dataset(
@@ -142,6 +142,7 @@ def deploy(
     test_df: pd.DataFrame, learn: Learner, *,
     target_label: Optional[str] = None,
     cat_labels: Optional[Sequence[str]] = None, cont_labels: Optional[Sequence[str]] = None,
+    device: str = 'cpu'
 ) -> pd.DataFrame:
     assert test_df.PATIENT.nunique() == len(test_df), 'duplicate patients!'
     #assert (len(add_label)
@@ -168,7 +169,8 @@ def deploy(
         bag_size=None)
 
     test_dl = DataLoader(
-        test_ds, batch_size=1, shuffle=False, num_workers=1)
+        test_ds, batch_size=1, shuffle=False, num_workers=1,
+        device=device, pin_memory=device.type == "cuda")
 
     #removed softmax in forward, but add here to get 0-1 probabilities
     patient_preds, patient_targs = learn.get_preds(dl=test_dl, act=nn.Softmax(dim=1))
