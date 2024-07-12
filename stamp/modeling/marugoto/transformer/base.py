@@ -48,7 +48,7 @@ def train(
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     if device.type == "cuda":
         # allow for usage of TensorFloat32 as internal dtype for matmul on modern NVIDIA GPUs
-        torch.set_float32_matmul_precision("high")
+        torch.set_float32_matmul_precision("medium")
 
     target_enc, targs = targets
     train_ds = make_dataset(
