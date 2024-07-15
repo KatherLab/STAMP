@@ -142,7 +142,7 @@ def deploy(
     test_df: pd.DataFrame, learn: Learner, *,
     target_label: Optional[str] = None,
     cat_labels: Optional[Sequence[str]] = None, cont_labels: Optional[Sequence[str]] = None,
-    device: str = 'cpu'
+    device: torch.device = torch.device('cpu')
 ) -> pd.DataFrame:
     assert test_df.PATIENT.nunique() == len(test_df), 'duplicate patients!'
     #assert (len(add_label)
