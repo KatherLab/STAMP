@@ -249,6 +249,11 @@ def categorical_crossval_(
     output_path = Path(output_path)
     output_path.mkdir(exist_ok=True, parents=True)
 
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    if device.type == "cuda":
+        # allow for usage of TensorFloat32 as internal dtype for matmul on modern NVIDIA GPUs
+        torch.set_float32_matmul_precision("high")
+
     # just a big fat object to dump all kinds of info into for later reference
     # not used during actual training
     info = {
@@ -331,7 +336,8 @@ def categorical_crossval_(
         fold_test_df.drop(columns='slide_path').to_csv(fold_path/'test.csv', index=False)
         patient_preds_df = deploy(
             test_df=fold_test_df, learn=learn,
-            target_label=target_label, cat_labels=cat_labels, cont_labels=cont_labels)
+            target_label=target_label, cat_labels=cat_labels, 
+            cont_labels=cont_labels, device=device)
         patient_preds_df.to_csv(preds_csv, index=False)
 
 
