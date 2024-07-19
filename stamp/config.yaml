@@ -17,6 +17,7 @@ preprocessing:
   only_feature_extraction: false # Only perform feature extraction (intermediate images (background rejected, [normalized]) have to exist)
   cores: 8 # CPU cores to use
   device: cuda:0 # device to run feature extraction on (cpu, cuda, cuda:0, etc.)
+  preload_wsi: true # Preload the whole-slide image into temporary directory (helpful in case the slides are accessed over network)
 
 modeling:
   clini_table: # Path to clini_table file (.xlsx or .csv)
