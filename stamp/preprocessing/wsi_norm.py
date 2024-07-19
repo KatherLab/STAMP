@@ -41,6 +41,8 @@ def lock_file(slide_path: Path):
         Path(f"{slide_path}.lock").touch()
     except PermissionError:
         pass # No write permissions for wsi directory
+    except OSError:
+        pass # No write permissions for wsi directory
     try:
         yield
     finally:
@@ -51,6 +53,9 @@ def test_wsidir_write_permissions(wsi_dir: Path):
         testfile = wsi_dir/f"test_{str(os.getpid())}.tmp"
         Path(testfile).touch()
     except PermissionError:
+        logging.warning("No write permissions for wsi directory! If multiple stamp processes are running "
+                        "in parallel, the final summary may show an incorrect number of slides processed.")
+    except OSError:
         logging.warning("No write permissions for wsi directory! If multiple stamp processes are running "
                         "in parallel, the final summary may show an incorrect number of slides processed.")
     finally:
