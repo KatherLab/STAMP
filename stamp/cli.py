@@ -173,7 +173,8 @@ def run_cli(args: argparse.Namespace):
                 only_feature_extraction=c.only_feature_extraction,
                 keep_dir_structure=c.keep_dir_structure if 'keep_dir_structure' in c else False,
                 device=c.device,
-                normalization_template=normalization_template_path
+                normalization_template=normalization_template_path,
+                preload_wsi=c.preload_wsi if 'preload_wsi' in c else False
             )
         case "train":
             require_configs(

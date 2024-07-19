@@ -11,6 +11,7 @@ from pathlib import Path
 from contextlib import contextmanager
 import logging
 import os
+import shutil
 import openslide
 from tqdm import tqdm
 import PIL
@@ -19,6 +20,7 @@ import time
 from datetime import timedelta
 from pathlib import Path
 from random import shuffle
+import tempfile
 import torch
 from typing import Optional
 from .helpers import stainNorm_Macenko
@@ -41,6 +43,8 @@ def lock_file(slide_path: Path):
         Path(f"{slide_path}.lock").touch()
     except PermissionError:
         pass # No write permissions for wsi directory
+    except OSError:
+        pass # No write permissions for wsi directory
     try:
         yield
     finally:
@@ -51,6 +55,9 @@ def test_wsidir_write_permissions(wsi_dir: Path):
         testfile = wsi_dir/f"test_{str(os.getpid())}.tmp"
         Path(testfile).touch()
     except PermissionError:
+        logging.warning("No write permissions for wsi directory! If multiple stamp processes are running "
+                        "in parallel, the final summary may show an incorrect number of slides processed.")
+    except OSError:
         logging.warning("No write permissions for wsi directory! If multiple stamp processes are running "
                         "in parallel, the final summary may show an incorrect number of slides processed.")
     finally:
@@ -67,7 +74,7 @@ def save_image(image, path: Path):
 def preprocess(output_dir: Path, wsi_dir: Path, model_path: Path, cache_dir: Path, norm: bool,
                del_slide: bool, only_feature_extraction: bool, cache: bool = True, cores: int = 8,
                target_microns: int = 256, patch_size: int = 224, keep_dir_structure: bool = False,
-               device: str = "cuda", normalization_template: Path = None, feat_extractor: str = "ctp"):
+               device: str = "cuda", normalization_template: Path = None, feat_extractor: str = "ctp", preload_wsi: bool = False):
     # Clean up potentially old leftover .lock files
     for lockfile in wsi_dir.glob("**/*.lock"):
         if time.time() - os.path.getmtime(lockfile) > 20:
@@ -169,7 +176,12 @@ def preprocess(output_dir: Path, wsi_dir: Path, model_path: Path, cache_dir: Pat
                     print(f"Loaded {img_name}, {len(canny_norm_patch_list)}/{total} tiles remain")
                 else:
                     try:
-                        slide = openslide.OpenSlide(slide_url)
+                        if preload_wsi:
+                            slide_url_tmp = tempfile.NamedTemporaryFile(delete=False)
+                            shutil.copy(slide_url, slide_url_tmp.name)
+                            slide = openslide.OpenSlide(slide_url_tmp.name)
+                        else:
+                            slide = openslide.OpenSlide(slide_url)
                     except openslide.lowlevel.OpenSlideUnsupportedFormatError:
                         logging.error("Unsupported format for slide, continuing...")
                         error_slides.append(slide_name)
@@ -235,6 +247,9 @@ def preprocess(output_dir: Path, wsi_dir: Path, model_path: Path, cache_dir: Pat
                         print("Deleting slide from local folder...")
                         if os.path.exists(slide_url):
                             os.remove(slide_url)
+                    
+                    if preload_wsi:
+                        os.remove(slide_url_tmp.name)
 
                 print(f"\nExtracting {model_name} features from slide...")
                 start_time = time.time()
