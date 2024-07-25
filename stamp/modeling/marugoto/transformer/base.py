@@ -159,7 +159,7 @@ def deploy(
         cat_enc = learn.dls.dataset._datasets[-2]._datasets[0].encode
         add_features.append((cat_enc, test_df[cat_labels].values))
     if cont_labels:
-        cont_enc = learn.dls.dataset._datasets[-2]._datasets[1].encode
+        cont_enc = learn.dls.dataset._datasets[-2]._datasets[-1].encode
         add_features.append((cont_enc, test_df[cont_labels].values))
 
     test_ds = make_dataset(
