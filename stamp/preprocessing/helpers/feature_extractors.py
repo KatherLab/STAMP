@@ -153,9 +153,11 @@ def extract_features_(
     dtype = next(model.parameters()).dtype
 
     feats = []
-    for batch in tqdm(dl, leave=False):
-        feats.append(
-            model(batch.type(dtype).to(device)).half().cpu().detach())
+    with torch.inference_mode():
+        for batch in tqdm(dl, leave=False):
+            feats.append(
+                model(batch.type(dtype).to(device)).half().cpu().detach()
+            )
 
     with h5py.File(f'{outdir}.h5', 'w') as f:
         f['coords'] = coords
