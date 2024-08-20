@@ -2,24 +2,23 @@
 """Calculate statistics for deployments on categorical targets."""
 
 from pathlib import Path
+
 import pandas as pd
-from sklearn import metrics
 import scipy.stats as st
+from sklearn import metrics
+
+__author__ = "Marko van Treeck"
+__copyright__ = "Copyright 2022, Kather Lab"
+__license__ = "MIT"
+__version__ = "0.1.0"
+__maintainer__ = "Marko van Treeck"
+__email__ = "mvantreeck@ukaachen.de"
 
 
-__author__ = 'Marko van Treeck'
-__copyright__ = 'Copyright 2022, Kather Lab'
-__license__ = 'MIT'
-__version__ = '0.1.0'
-__maintainer__ = 'Marko van Treeck'
-__email__ = 'mvantreeck@ukaachen.de'
+__all__ = ["categorical", "aggregate_categorical_stats", "categorical_aggregated_"]
 
 
-__all__ = ['categorical', 'aggregate_categorical_stats',
-           'categorical_aggregated_']
-
-
-score_labels = ['roc_auc_score', 'average_precision_score', 'p_value', 'count']
+score_labels = ["roc_auc_score", "average_precision_score", "p_value", "count"]
 
 
 def categorical(preds_df: pd.DataFrame, target_label: str) -> pd.DataFrame:
@@ -30,22 +29,24 @@ def categorical(preds_df: pd.DataFrame, target_label: str) -> pd.DataFrame:
     """
     categories = preds_df[target_label].unique()
     y_true = preds_df[target_label]
-    y_pred = preds_df[[f'{target_label}_{cat}' for cat in categories]].map(float).values
+    y_pred = preds_df[[f"{target_label}_{cat}" for cat in categories]].map(float).values
 
     stats_df = pd.DataFrame(index=categories)
 
     # class counts
-    stats_df['count'] = y_true.value_counts()
+    stats_df["count"] = y_true.value_counts()
 
     # roc_auc
-    stats_df['roc_auc_score'] = [
+    stats_df["roc_auc_score"] = [
         metrics.roc_auc_score(y_true == cat, y_pred[:, i])
-        for i, cat in enumerate(categories)]
+        for i, cat in enumerate(categories)
+    ]
 
     # average_precision
-    stats_df['average_precision_score'] = [
+    stats_df["average_precision_score"] = [
         metrics.average_precision_score(y_true == cat, y_pred[:, i])
-        for i, cat in enumerate(categories)]
+        for i, cat in enumerate(categories)
+    ]
 
     # p values
     p_values = []
@@ -53,7 +54,7 @@ def categorical(preds_df: pd.DataFrame, target_label: str) -> pd.DataFrame:
         pos_scores = y_pred[:, i][y_true == cat]
         neg_scores = y_pred[:, i][y_true != cat]
         p_values.append(st.ttest_ind(pos_scores, neg_scores).pvalue)
-    stats_df['p_value'] = p_values
+    stats_df["p_value"] = p_values
 
     assert set(score_labels) & set(stats_df.columns) == set(score_labels)
 
@@ -62,18 +63,19 @@ def categorical(preds_df: pd.DataFrame, target_label: str) -> pd.DataFrame:
 
 def aggregate_categorical_stats(df) -> pd.DataFrame:
     stats = {}
-    for cat, data in df.groupby('level_1'):
-        scores_df = data[['roc_auc_score', 'average_precision_score']]
+    for cat, data in df.groupby("level_1"):
+        scores_df = data[["roc_auc_score", "average_precision_score"]]
         means, sems = scores_df.mean(), scores_df.sem()
-        l, h = st.t.interval(.95, df=len(
-            scores_df)-1, loc=means, scale=sems)
-        cat_stats_df = pd.DataFrame.from_dict(
-            {'mean': means, '95%_low': l, '95%_high': h}).transpose().unstack()
-        cat_stats_df[('count', 'sum')] = data['count'].sum()
+        l, h = st.t.interval(0.95, df=len(scores_df) - 1, loc=means, scale=sems)
+        cat_stats_df = (
+            pd.DataFrame.from_dict({"mean": means, "95%_low": l, "95%_high": h})
+            .transpose()
+            .unstack()
+        )
+        cat_stats_df[("count", "sum")] = data["count"].sum()
         stats[cat] = cat_stats_df
 
-
-    return pd.DataFrame.from_dict(stats, orient='index')
+    return pd.DataFrame.from_dict(stats, orient="index")
 
 
 def categorical_aggregated_(preds_csvs, outpath: str, target_label: str) -> None:
@@ -90,15 +92,16 @@ def categorical_aggregated_(preds_csvs, outpath: str, target_label: str) -> None
     """
     outpath = Path(outpath)
     preds_dfs = {
-        Path(p).parent.name: categorical(
-            pd.read_csv(p, dtype=str), target_label)
-        for p in preds_csvs}
+        Path(p).parent.name: categorical(pd.read_csv(p, dtype=str), target_label)
+        for p in preds_csvs
+    }
     preds_df = pd.concat(preds_dfs).sort_index()
-    preds_df.to_csv(outpath/f'{target_label}-categorical-stats-individual.csv')
+    preds_df.to_csv(outpath / f"{target_label}-categorical-stats-individual.csv")
     stats_df = aggregate_categorical_stats(preds_df.reset_index())
-    stats_df.to_csv(outpath/f'{target_label}-categorical-stats-aggregated.csv')
+    stats_df.to_csv(outpath / f"{target_label}-categorical-stats-aggregated.csv")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     from fire import Fire
+
     Fire(categorical_aggregated_)

@@ -45,7 +45,7 @@ def plot_single_decorated_roc_curve(
         threshold_cmap=threshold_cmap,
     )
     style_auc(ax)
-    ax.set_title(title+f'\nAUROC = {auc:.2f} [{l:.2f}-{h:.2f}]')
+    ax.set_title(title + f"\nAUROC = {auc:.2f} [{l:.2f}-{h:.2f}]")
 
 
 def auc_str(auc: float, l: Optional[float], h: Optional[float]) -> str:
@@ -94,8 +94,8 @@ def plot_multiple_decorated_roc_curves(
 
     # calculate confidence intervals and print title
     aucs = [x.auc for x in tpas]
-    mean_auc=np.mean(aucs)
-    if not n_bootstrap_samples:    
+    mean_auc = np.mean(aucs)
+    if not n_bootstrap_samples:
         l, h = st.t.interval(0.95, len(aucs) - 1, loc=np.mean(aucs), scale=st.sem(aucs))
 
     # limit conf bounds to [0,1] in case of low sample numbers
@@ -219,8 +219,8 @@ def plot_bootstrapped_roc_curve(
         lower = np.quantile(interp_rocs, 0.025, axis=0)
         upper = np.quantile(interp_rocs, 0.975, axis=0)
         ax.fill_between(interp_fpr, lower, upper, alpha=0.5)
-        h=np.quantile(bootstrap_aucs, 0.975)
-        l=np.quantile(bootstrap_aucs, 0.025)
+        h = np.quantile(bootstrap_aucs, 0.975)
+        l = np.quantile(bootstrap_aucs, 0.025)
 
     fpr, tpr, thresh = roc_curve(y_true, y_score)
     auc = roc_auc_score(y_true, y_score)
@@ -232,7 +232,7 @@ def plot_bootstrapped_roc_curve(
         tpr,
         np.clip(thresh, 0, 1),
         label=f"AUC = {auc:0.2f}",
-        threshold_cmap=threshold_cmap
+        threshold_cmap=threshold_cmap,
     )
     return auc, l, h
 

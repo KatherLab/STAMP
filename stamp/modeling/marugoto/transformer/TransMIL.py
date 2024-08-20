@@ -3,24 +3,23 @@ In parts from https://github.com/lucidrains/vit-pytorch/blob/main/vit_pytorch/vi
 """
 
 import torch
-from torch import nn
 import torch.nn.functional as F
 from einops import repeat
-
+from torch import nn
 
 
 class RMSNorm(nn.Module):
     def __init__(self, dim):
         super().__init__()
-        self.scale = dim ** 0.5
+        self.scale = dim**0.5
         self.gamma = nn.Parameter(torch.ones(dim))
 
     def forward(self, x):
-        return F.normalize(x, dim = -1) * self.scale * self.gamma
+        return F.normalize(x, dim=-1) * self.scale * self.gamma
 
 
 class FeedForward(nn.Module):
-    def __init__(self, dim, hidden_dim, norm_layer=nn.LayerNorm, dropout=0.):
+    def __init__(self, dim, hidden_dim, norm_layer=nn.LayerNorm, dropout=0.0):
         super().__init__()
         self.mlp = nn.Sequential(
             norm_layer(dim),
@@ -28,7 +27,7 @@ class FeedForward(nn.Module):
             nn.GELU(),
             nn.Dropout(dropout),
             nn.Linear(hidden_dim, dim),
-            nn.Dropout(dropout)
+            nn.Dropout(dropout),
         )
 
     def forward(self, x):
@@ -73,7 +72,9 @@ class FeedForward(nn.Module):
 
 
 class Attention(nn.Module):
-    def __init__(self, dim, heads=8, dim_head=512 // 8, norm_layer=nn.LayerNorm, dropout=0.):
+    def __init__(
+        self, dim, heads=8, dim_head=512 // 8, norm_layer=nn.LayerNorm, dropout=0.0
+    ):
         super().__init__()
         self.heads = heads
         self.norm = norm_layer(dim)
@@ -83,21 +84,35 @@ class Attention(nn.Module):
         if mask is not None:
             mask = mask.repeat(self.heads, 1, 1)
 
-        x = self.norm(x)        
+        x = self.norm(x)
         attn_output, _ = self.mhsa(x, x, x, need_weights=False, attn_mask=mask)
         return attn_output
 
 
 class Transformer(nn.Module):
-    def __init__(self, dim, depth, heads, dim_head, mlp_dim, norm_layer=nn.LayerNorm, dropout=0.):
+    def __init__(
+        self, dim, depth, heads, dim_head, mlp_dim, norm_layer=nn.LayerNorm, dropout=0.0
+    ):
         super().__init__()
         self.depth = depth
         self.layers = nn.ModuleList([])
         for _ in range(depth):
-            self.layers.append(nn.ModuleList([
-                Attention(dim, heads=heads, dim_head=dim_head, norm_layer=norm_layer, dropout=dropout),
-                FeedForward(dim, mlp_dim, norm_layer=norm_layer, dropout=dropout)
-            ]))
+            self.layers.append(
+                nn.ModuleList(
+                    [
+                        Attention(
+                            dim,
+                            heads=heads,
+                            dim_head=dim_head,
+                            norm_layer=norm_layer,
+                            dropout=dropout,
+                        ),
+                        FeedForward(
+                            dim, mlp_dim, norm_layer=norm_layer, dropout=dropout
+                        ),
+                    ]
+                )
+            )
         self.norm = norm_layer(dim)
 
     def forward(self, x, mask=None):
@@ -109,24 +124,36 @@ class Transformer(nn.Module):
 
 
 class TransMIL(nn.Module):
-    def __init__(self, *, 
-        num_classes: int, input_dim: int = 768, dim: int = 512,
-        depth: int = 2, heads: int = 8, dim_head: int = 64, mlp_dim: int = 2048,
-        pool: str ='cls', dropout: int = 0., emb_dropout: int = 0.
+    def __init__(
+        self,
+        *,
+        num_classes: int,
+        input_dim: int = 768,
+        dim: int = 512,
+        depth: int = 2,
+        heads: int = 8,
+        dim_head: int = 64,
+        mlp_dim: int = 2048,
+        pool: str = "cls",
+        dropout: int = 0.0,
+        emb_dropout: int = 0.0,
     ):
         super().__init__()
-        assert pool in {'cls', 'mean'}, 'pool type must be either cls (cls token) or mean (mean pooling)'
+        assert pool in {
+            "cls",
+            "mean",
+        }, "pool type must be either cls (cls token) or mean (mean pooling)"
         self.cls_token = nn.Parameter(torch.randn(dim))
 
         self.fc = nn.Sequential(nn.Linear(input_dim, dim, bias=True), nn.GELU())
         self.dropout = nn.Dropout(emb_dropout)
 
-        self.transformer = Transformer(dim, depth, heads, dim_head, mlp_dim, nn.LayerNorm, dropout)
+        self.transformer = Transformer(
+            dim, depth, heads, dim_head, mlp_dim, nn.LayerNorm, dropout
+        )
 
         self.pool = pool
-        self.mlp_head = nn.Sequential(
-            nn.Linear(dim, num_classes)
-        )
+        self.mlp_head = nn.Sequential(nn.Linear(dim, num_classes))
 
     def forward(self, x, lens):
         # remove unnecessary padding
@@ -137,26 +164,31 @@ class TransMIL(nn.Module):
         # map input sequence to latent space of TransMIL
         x = self.dropout(self.fc(x))
 
-        add_cls = self.pool == 'cls'
+        add_cls = self.pool == "cls"
         if add_cls:
-            cls_tokens = repeat(self.cls_token, 'd -> b 1 d', b=b)
+            cls_tokens = repeat(self.cls_token, "d -> b 1 d", b=b)
             x = torch.cat((cls_tokens, x), dim=1)
-            lens = lens + 1 # account for cls token
+            lens = lens + 1  # account for cls token
 
         # mask indicating zero padded feature vectors
         # (deactivated for now, since it seems to use more memory than without)
         mask = None
         if torch.amin(lens) != torch.amax(lens) and False:
-            mask = torch.arange(0, n + add_cls, dtype=torch.int32, device=x.device).repeat(b, 1) < lens[..., None]
-            mask = (~mask[:, None, :]).repeat(1, (n + add_cls), 1) # shape: (B, L, L)
+            mask = (
+                torch.arange(0, n + add_cls, dtype=torch.int32, device=x.device).repeat(
+                    b, 1
+                )
+                < lens[..., None]
+            )
+            mask = (~mask[:, None, :]).repeat(1, (n + add_cls), 1)  # shape: (B, L, L)
             # mask = (~mask[:, None, :]).expand(-1, (n + add_cls), -1)
 
         x = self.transformer(x, mask)
 
-        if mask is not None and self.pool == 'mean':
+        if mask is not None and self.pool == "mean":
             x = torch.cumsum(x, dim=1)[torch.arange(b), lens - 1]
             x = x / lens[..., None]
         else:
-            x = x.mean(dim=1) if self.pool == 'mean' else x[:, 0]
-        
+            x = x.mean(dim=1) if self.pool == "mean" else x[:, 0]
+
         return self.mlp_head(x)

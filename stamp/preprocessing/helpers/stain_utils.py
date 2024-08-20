@@ -8,16 +8,18 @@ Use with python via e.g https://anaconda.org/conda-forge/python-spams
 
 from __future__ import division
 
-import numpy as np
+import logging
+import time
+
 import cv2 as cv
+
 # import spams
 import matplotlib.pyplot as plt
+import numpy as np
 from numba import njit
-import time
-import logging
-
 
 ##########################################
+
 
 def read_image(path):
     """
@@ -42,7 +44,7 @@ def show_colors(C):
             plt.plot([0, 1], [n - 1 - i, n - 1 - i], c=C[i] / 255, linewidth=20)
         else:
             plt.plot([0, 1], [n - 1 - i, n - 1 - i], c=C[i], linewidth=20)
-        plt.axis('off')
+        plt.axis("off")
         plt.axis([0, 1, -1, n])
 
 
@@ -58,9 +60,9 @@ def show(image, now=True, fig_size=(10, 10)):
     image = image.astype(np.float32)
     m, M = image.min(), image.max()
     if fig_size != None:
-        plt.rcParams['figure.figsize'] = (fig_size[0], fig_size[1])
-    plt.imshow((image - m) / (M - m), cmap='gray')
-    plt.axis('off')
+        plt.rcParams["figure.figsize"] = (fig_size[0], fig_size[1])
+    plt.imshow((image - m) / (M - m), cmap="gray")
+    plt.axis("off")
     if now == True:
         plt.show()
 
@@ -104,7 +106,7 @@ def patch_grid(ims, width=5, sub_sample=None, rand=False, save_name=None):
         idx = np.random.choice(range(N), sub_sample, replace=False)
         stack = ims[idx]
     height = np.ceil(float(N) / width).astype(np.uint16)
-    plt.rcParams['figure.figsize'] = (18, (18 / width) * height)
+    plt.rcParams["figure.figsize"] = (18, (18 / width) * height)
     plt.figure()
     for i in range(N):
         plt.subplot(height, width, i + 1)
@@ -116,6 +118,7 @@ def patch_grid(ims, width=5, sub_sample=None, rand=False, save_name=None):
 
 
 ######################################
+
 
 def standardize_brightness(I):
     """
@@ -133,7 +136,7 @@ def remove_zeros(I):
     :param I: uint8 array
     :return:
     """
-    mask = (I == 0)
+    mask = I == 0
     I[mask] = 1
     return I
 
@@ -175,7 +178,7 @@ def notwhite_mask(I, thresh=0.8):
     """
     I_LAB = cv.cvtColor(I, cv.COLOR_RGB2LAB)
     L = I_LAB[:, :, 0] / 255.0
-    return (L < thresh)
+    return L < thresh
 
 
 def sign(x):
@@ -192,15 +195,18 @@ def sign(x):
         return 0
 
 
-
 @njit
-def transform_return(source_concentrations, stain_matrix_target, maxC_target, maxC_source):
-    source_concentrations *= (maxC_target / maxC_source)
+def transform_return(
+    source_concentrations, stain_matrix_target, maxC_target, maxC_source
+):
+    source_concentrations *= maxC_target / maxC_source
     # return (255 * np.exp(-1 * np.dot(source_concentrations, stain_matrix_target).reshape(I_shape))).astype(
     #     np.uint8)
-    return (255 * np.exp(-1 * np.dot(source_concentrations, stain_matrix_target))).astype( #removed reshape, should be right format already
-        np.uint8)
-
+    return (
+        255 * np.exp(-1 * np.dot(source_concentrations, stain_matrix_target))
+    ).astype(  # removed reshape, should be right format already
+        np.uint8
+    )
 
 
 def get_concentrations_target(I, stain_matrix, lamda=0.01):
@@ -212,19 +218,20 @@ def get_concentrations_target(I, stain_matrix, lamda=0.01):
     """
     OD = RGB_to_OD(I).reshape((-1, 3))
     try:
-        #limited Lasso to 1 thread, instead of taking all available threads (-1 default)
+        # limited Lasso to 1 thread, instead of taking all available threads (-1 default)
         temp, _, _, _ = np.linalg.lstsq(stain_matrix.T, OD.T, rcond=None)
-        temp=temp.T
+        temp = temp.T
     except Exception as e:
         print(e)
         temp = None
     return temp
 
+
 # def _get_concentrations_source_patch(patch, stain_matrix, patch_list, order_list, idx, lamda=0.01):
 #     OD = RGB_to_OD(patch).reshape((-1, 3)) #.astype('float32') #change from float64 to float32, half memory
 
 #     try:
-#         temp = spams.lasso(OD.T, D=stain_matrix.T, mode=2, lambda1=lamda, pos=True).toarray().T 
+#         temp = spams.lasso(OD.T, D=stain_matrix.T, mode=2, lambda1=lamda, pos=True).toarray().T
 #     except Exception as e:
 #         print(e)
 #         temp = None
@@ -238,10 +245,12 @@ def get_concentrations_target(I, stain_matrix, lamda=0.01):
 #     return temp
 
 
-from concurrent import futures
-from tqdm import tqdm
-from typing import Dict, Tuple
 import os
+from concurrent import futures
+from typing import Dict, Tuple
+
+from tqdm import tqdm
+
 
 def get_concentrations_source(I, I_shape, stain_matrix, rejection_list, lamda=0.01):
     """
@@ -260,58 +269,68 @@ def get_concentrations_source(I, I_shape, stain_matrix, rejection_list, lamda=0.
     # H W N is Height Width N-channels of the extracted patch
     # n_rows is the number of patches for each column and n_cols is the number of patches for each row
 
-    if True: #(I_shape[0] + I_shape[1]) > (224*2): #bigger than 30k edge pixels combined, i.e. 15k x 15k
-        #x = 500 # 2 for largest possible blocks
-        x=(I_shape[0]//224)*(I_shape[1]//224)
-        #print(f'Splitting WSI into {x*x} for normalisation...')
+    if (
+        True
+    ):  # (I_shape[0] + I_shape[1]) > (224*2): #bigger than 30k edge pixels combined, i.e. 15k x 15k
+        # x = 500 # 2 for largest possible blocks
+        x = (I_shape[0] // 224) * (I_shape[1] // 224)
+        # print(f'Splitting WSI into {x*x} for normalisation...')
         print(f"Normalising {np.sum(~rejection_list)} tiles...")
         # print("Going into RGB->OD and spams Lasso function...")
-        patches_shape = (224, 224) #(I_shape[0]//x, I_shape[1]//x)
+        patches_shape = (224, 224)  # (I_shape[0]//x, I_shape[1]//x)
         # patches = []
 
-        patch_list =[]
+        patch_list = []
         begin_time_list = []
-	    #changed maximum threads from 32 to os.cpu_count()
+        # changed maximum threads from 32 to os.cpu_count()
         if os.cpu_count() > 8:
             cores = 8
         else:
             cores = os.cpu_count()
-        with futures.ThreadPoolExecutor(cores) as executor: #os.cpu_count()
+        with futures.ThreadPoolExecutor(cores) as executor:  # os.cpu_count()
             future_coords: Dict[futures.Future, int] = {}
-            i_range = range(I_shape[0]//patches_shape[0])
-            j_range = range(I_shape[1]//patches_shape[1])
+            i_range = range(I_shape[0] // patches_shape[0])
+            j_range = range(I_shape[1] // patches_shape[1])
             for i in i_range:
-                for j in j_range:          
-                    patch = I[i*len(j_range) + j] #I[(i*patches_shape[0]):(i*patches_shape[0]+patches_shape[0]), (j*patches_shape[1]):(j*patches_shape[1]+patches_shape[1])]
-                    #if rejected, just skip the patch
-                    if not rejection_list[i*len(j_range) + j]:
+                for j in j_range:
+                    patch = I[
+                        i * len(j_range) + j
+                    ]  # I[(i*patches_shape[0]):(i*patches_shape[0]+patches_shape[0]), (j*patches_shape[1]):(j*patches_shape[1]+patches_shape[1])]
+                    # if rejected, just skip the patch
+                    if not rejection_list[i * len(j_range) + j]:
                         future = executor.submit(
-                            get_concentrations_target, patch, stain_matrix)
-                        #print(f'Submitted patch #{2*i+j} into thread...')
+                            get_concentrations_target, patch, stain_matrix
+                        )
+                        # print(f'Submitted patch #{2*i+j} into thread...')
                         begin_time_list.append(time.time())
-                        future_coords[future] = i*len(j_range) + j # index 0 - 3. (0,0) = 0, (0,1) = 1, (1,0) = 2, (1,1) = 3
+                        future_coords[future] = (
+                            i * len(j_range) + j
+                        )  # index 0 - 3. (0,0) = 0, (0,1) = 1, (1,0) = 2, (1,1) = 3
 
-            #patch_list = np.zeros((x*x, I_shape[0]//x*I_shape[1]//x, 2), dtype=np.float64)
-            patch_list = np.zeros((x, 224*224, 2), dtype=np.float64)
-            for tile_future in tqdm(futures.as_completed(future_coords), total=np.sum(~rejection_list), desc='Normalising tiles', leave=False):
+            # patch_list = np.zeros((x*x, I_shape[0]//x*I_shape[1]//x, 2), dtype=np.float64)
+            patch_list = np.zeros((x, 224 * 224, 2), dtype=np.float64)
+            for tile_future in tqdm(
+                futures.as_completed(future_coords),
+                total=np.sum(~rejection_list),
+                desc="Normalising tiles",
+                leave=False,
+            ):
                 i = future_coords[tile_future]
-                #print(f'Received normalised patch #{i} from thread in {time.time()-begin_time_list[i]} seconds')
+                # print(f'Received normalised patch #{i} from thread in {time.time()-begin_time_list[i]} seconds')
                 patch = tile_future.result()
                 patch_list[i] = patch
-        
+
         del I
 
-        return patch_list #len(patches_shapes_list)
-    
+        return patch_list  # len(patches_shapes_list)
+
     else:
-        print('Normalising WSI as a whole...')
-        split=False
+        print("Normalising WSI as a whole...")
+        split = False
         begin = time.time()
         print("Going into RGB->OD and spams Lasso function...")
         temp = get_concentrations_target(I, stain_matrix)
         end = time.time()
         print(f"Finished RGB->OD and spams Lasso function: {end-begin}")
 
-        return None #temp, None, None, split
-
-
+        return None  # temp, None, None, split

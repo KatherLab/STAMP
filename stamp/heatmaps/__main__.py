@@ -163,12 +163,16 @@ def main(
         preds, gradcam = gradcam_per_category(
             learn=learn, feats=feats, categories=categories
         )
-        gradcam_2d = vals_to_im(gradcam.permute(-1, -2), torch.div(coords, stride, rounding_mode='floor')).detach()
+        gradcam_2d = vals_to_im(
+            gradcam.permute(-1, -2), torch.div(coords, stride, rounding_mode="floor")
+        ).detach()
 
         scores = torch.softmax(
             learn.model(feats.unsqueeze(-2), torch.ones((len(feats)))), dim=1
         )
-        scores_2d = vals_to_im(scores, torch.div(coords, stride, rounding_mode='floor')).detach()
+        scores_2d = vals_to_im(
+            scores, torch.div(coords, stride, rounding_mode="floor")
+        ).detach()
         fig, axs = plt.subplots(nrows=2, ncols=max(2, len(categories)), figsize=(12, 8))
 
         show_class_map(
@@ -220,7 +224,7 @@ def main(
 
             ax.imshow(score_im)
             ax.set_title(f"{category} {preds[0,pos_idx]:1.2f}")
-            target_size=np.array(score_im.shape[:2][::-1]) * 8
+            target_size = np.array(score_im.shape[:2][::-1]) * 8
             # latest PIL requires shape to be a tuple (), not array []
             Image.fromarray(np.uint8(score_im * 255)).resize(
                 tuple(target_size), resample=Image.NEAREST
@@ -245,7 +249,9 @@ def main(
                 thumb_ax=axs[0, 0],
                 attention=attention,
             )
-            Image.fromarray(thumb).save(slide_output_dir / f"thumbnail-{h5_path.stem}.png")
+            Image.fromarray(thumb).save(
+                slide_output_dir / f"thumbnail-{h5_path.stem}.png"
+            )
 
             for ax in axs.ravel():
                 ax.axis("off")
