@@ -177,9 +177,18 @@ def preprocess(output_dir: Path, wsi_dir: Path, model_path: Path, cache_dir: Pat
                 else:
                     try:
                         if preload_wsi:
-                            slide_url_tmp = tempfile.NamedTemporaryFile(delete=False)
-                            shutil.copy(slide_url, slide_url_tmp.name)
-                            slide = openslide.OpenSlide(slide_url_tmp.name)
+                            slide_tmp_dir = Path(tempfile.mkdtemp())
+                            slide_tmp_file = slide_tmp_dir / slide_url.name
+
+                            shutil.copy(slide_url, slide_tmp_file)
+                            
+                            # Some slide formats (.mrsx) come with an additional directory which needs to be transferred as well    
+                            slide_folder_name = slide_url.with_suffix('')
+                            if slide_folder_name.is_dir():
+                                slide_folder_tmp = slide_tmp_dir / slide_folder_name.name
+                                shutil.copytree(slide_folder_name, slide_folder_tmp)
+
+                            slide = openslide.OpenSlide(slide_tmp_file)
                         else:
                             slide = openslide.OpenSlide(slide_url)
                     except openslide.lowlevel.OpenSlideUnsupportedFormatError:
@@ -249,7 +258,7 @@ def preprocess(output_dir: Path, wsi_dir: Path, model_path: Path, cache_dir: Pat
                             os.remove(slide_url)
                     
                     if preload_wsi:
-                        os.remove(slide_url_tmp.name)
+                        shutil.rmtree(slide_tmp_dir)
 
                 print(f"\nExtracting {model_name} features from slide...")
                 start_time = time.time()
