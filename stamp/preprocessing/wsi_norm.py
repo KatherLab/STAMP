@@ -175,90 +175,88 @@ def preprocess(output_dir: Path, wsi_dir: Path, model_path: Path, cache_dir: Pat
                     canny_norm_patch_list, coords_list, total = process_slide_jpg(slide_jpg)
                     print(f"Loaded {img_name}, {len(canny_norm_patch_list)}/{total} tiles remain")
                 else:
-                    try:
-                        if preload_wsi:
-                            slide_tmp_dir = Path(tempfile.mkdtemp())
-                            slide_tmp_file = slide_tmp_dir / slide_url.name
+                    with tempfile.TemporaryDirectory() as temp_dir:
+                        try:
+                            if preload_wsi:
+                                slide_tmp_dir = Path(temp_dir)
+                                slide_tmp_file = slide_tmp_dir / slide_url.name
 
-                            shutil.copy(slide_url, slide_tmp_file)
+                                shutil.copy(slide_url, slide_tmp_file)
+                                
+                                # Some slide formats (.mrsx) come with an additional directory which needs to be transferred as well    
+                                slide_folder_name = slide_url.with_suffix('')
+                                if slide_folder_name.is_dir():
+                                    slide_folder_tmp = slide_tmp_dir / slide_folder_name.name
+                                    shutil.copytree(slide_folder_name, slide_folder_tmp)
+
+                                slide = openslide.OpenSlide(slide_tmp_file)
+                            else:
+                                slide = openslide.OpenSlide(slide_url)
+                        except openslide.lowlevel.OpenSlideUnsupportedFormatError:
+                            logging.error("Unsupported format for slide, continuing...")
+                            error_slides.append(slide_name)
+                            continue
+                        except Exception as e:
+                            logging.error(f"Failed loading slide, continuing... Error: {e}")
+                            error_slides.append(slide_name)
+                            continue
+
+                        start_time = time.time()
+                        try:
+                            slide_array = load_slide(slide=slide, target_mpp=target_mpp, cores=cores)
+                        except MPPExtractionError:
+                            if del_slide:
+                                logging.error("MPP missing in slide metadata, deleting slide and continuing...")
+                                if os.path.exists(slide_url):
+                                    os.remove(slide_url)
+                            else:
+                                logging.error("MPP missing in slide metadata, continuing...")
+                            error_slides.append(slide_name)
+                            continue
+                        except openslide.lowlevel.OpenSlideError as e:
+                            print("")
+                            logging.error(f"Failed loading slide, continuing... Error: {e}")
+                            error_slides.append(slide_name)
+                            continue
+
+                        # Remove .SVS from memory
+                        del slide                    
+                        print(f"\nLoaded slide: {time.time() - start_time:.2f} seconds")
+                        print(f"\nSize of WSI: {slide_array.shape}")
                             
-                            # Some slide formats (.mrsx) come with an additional directory which needs to be transferred as well    
-                            slide_folder_name = slide_url.with_suffix('')
-                            if slide_folder_name.is_dir():
-                                slide_folder_tmp = slide_tmp_dir / slide_folder_name.name
-                                shutil.copytree(slide_folder_name, slide_folder_tmp)
+                        if cache:
+                            # Save raw .svs jpg
+                            raw_image = PIL.Image.fromarray(slide_array)
+                            save_image(raw_image, slide_cache_dir/"slide.jpg")
 
-                            slide = openslide.OpenSlide(slide_tmp_file)
+                        #Do edge detection here and reject unnecessary tiles BEFORE normalisation
+                        bg_reject_array, rejected_tile_array, patch_shapes = reject_background(img=slide_array, patch_size=patch_shape, step=step_size, cores=cores)
+
+                        start_time = time.time()
+                        # Pass raw slide_array for getting the initial concentrations, bg_reject_array for actual normalisation
+                        if norm:
+                            print(f"Normalising slide...")
+                            canny_img, img_norm_wsi_jpg, canny_norm_patch_list, coords_list = normalizer.transform(slide_array, bg_reject_array, 
+                                                                                                                rejected_tile_array, patch_shapes, cores=cores)
+                            print(f"\nNormalised slide: {time.time() - start_time:.2f} seconds")
+                            if cache:
+                                save_image(img_norm_wsi_jpg, slide_cache_dir/"norm_slide.jpg")
                         else:
-                            slide = openslide.OpenSlide(slide_url)
-                    except openslide.lowlevel.OpenSlideUnsupportedFormatError:
-                        logging.error("Unsupported format for slide, continuing...")
-                        error_slides.append(slide_name)
-                        continue
-                    except Exception as e:
-                        logging.error(f"Failed loading slide, continuing... Error: {e}")
-                        error_slides.append(slide_name)
-                        continue
+                            canny_img, canny_norm_patch_list, coords_list = get_raw_tile_list(slide_array.shape, bg_reject_array,
+                                                                                            rejected_tile_array, patch_shapes)
 
-                    start_time = time.time()
-                    try:
-                        slide_array = load_slide(slide=slide, target_mpp=target_mpp, cores=cores)
-                    except MPPExtractionError:
+                        if cache:
+                            print("Saving Canny background rejected image...")
+                            save_image(canny_img, slide_cache_dir/"canny_slide.jpg")
+
+                        # Remove original slide jpg from memory
+                        del slide_array
+                        
+                        # Optionally remove the original slide from harddrive
                         if del_slide:
-                            logging.error("MPP missing in slide metadata, deleting slide and continuing...")
+                            print("Deleting slide from local folder...")
                             if os.path.exists(slide_url):
                                 os.remove(slide_url)
-                        else:
-                            logging.error("MPP missing in slide metadata, continuing...")
-                        error_slides.append(slide_name)
-                        continue
-                    except openslide.lowlevel.OpenSlideError as e:
-                        print("")
-                        logging.error(f"Failed loading slide, continuing... Error: {e}")
-                        error_slides.append(slide_name)
-                        continue
-
-                    # Remove .SVS from memory
-                    del slide                    
-                    print(f"\nLoaded slide: {time.time() - start_time:.2f} seconds")
-                    print(f"\nSize of WSI: {slide_array.shape}")
-                        
-                    if cache:
-                        # Save raw .svs jpg
-                        raw_image = PIL.Image.fromarray(slide_array)
-                        save_image(raw_image, slide_cache_dir/"slide.jpg")
-
-                    #Do edge detection here and reject unnecessary tiles BEFORE normalisation
-                    bg_reject_array, rejected_tile_array, patch_shapes = reject_background(img=slide_array, patch_size=patch_shape, step=step_size, cores=cores)
-
-                    start_time = time.time()
-                    # Pass raw slide_array for getting the initial concentrations, bg_reject_array for actual normalisation
-                    if norm:
-                        print(f"Normalising slide...")
-                        canny_img, img_norm_wsi_jpg, canny_norm_patch_list, coords_list = normalizer.transform(slide_array, bg_reject_array, 
-                                                                                                            rejected_tile_array, patch_shapes, cores=cores)
-                        print(f"\nNormalised slide: {time.time() - start_time:.2f} seconds")
-                        if cache:
-                            save_image(img_norm_wsi_jpg, slide_cache_dir/"norm_slide.jpg")
-                    else:
-                        canny_img, canny_norm_patch_list, coords_list = get_raw_tile_list(slide_array.shape, bg_reject_array,
-                                                                                        rejected_tile_array, patch_shapes)
-
-                    if cache:
-                        print("Saving Canny background rejected image...")
-                        save_image(canny_img, slide_cache_dir/"canny_slide.jpg")
-
-                    # Remove original slide jpg from memory
-                    del slide_array
-                    
-                    # Optionally remove the original slide from harddrive
-                    if del_slide:
-                        print("Deleting slide from local folder...")
-                        if os.path.exists(slide_url):
-                            os.remove(slide_url)
-                    
-                    if preload_wsi:
-                        shutil.rmtree(slide_tmp_dir)
 
                 print(f"\nExtracting {model_name} features from slide...")
                 start_time = time.time()
