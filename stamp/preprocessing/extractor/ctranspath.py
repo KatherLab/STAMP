@@ -1,3 +1,72 @@
+import hashlib
+import os
+from pathlib import Path
+
+import gdown
+import torch
+import torch.nn as nn
+from torchvision.transforms import v2
+
+from stamp.preprocessing.extractor import Extractor
+
+
+def file_digest(file: str | Path) -> str:
+    with open(file, "rb") as fp:
+        return hashlib.file_digest(fp, "sha256").hexdigest()
+
+
+# Try and determine cache dir automatically
+if "STAMP_RESOURCES_DIR" in os.environ:
+    stamp_resources_dir = Path(os.environ["STAMP_RESOURCES_DIR"])
+elif "XDG_CACHE_DIR" in os.environ:
+    stamp_resources_dir = Path(os.environ["XDG_CACHE_DIR"]) / "stamp"
+elif "XDG_HOME_DIR" in os.environ:
+    stamp_resources_dir = Path(os.environ["XDG_HOME_DIR"]) / ".cache" / "stamp"
+elif "HOME" in os.environ:
+    stamp_resources_dir = Path(os.environ["HOME"]) / ".cache" / "stamp"
+else:
+    raise RuntimeError(
+        "could not determine stamp cache dir. Please set the `STAMP_RESOURCES_DIR` environment variable."
+    )
+
+
+def ctranspath(model_path: Path | None = None) -> Extractor:
+    model_path = model_path or stamp_resources_dir / "ctranspath.pth"
+    if not model_path.exists():
+        model_path.parent.mkdir(parents=True, exist_ok=True)
+        gdown.download(
+            "https://drive.google.com/u/0/uc?id=1DoDx_70_TLj98gTf6YTXnu4tFhsFocDX&export=download",
+            str(model_path),
+        )
+
+    digest = file_digest(model_path)
+    assert (
+        digest == "7c998680060c8743551a412583fac689db43cec07053b72dfec6dcd810113539"
+    ), f"The digest of the downloaded checkpoint ({model_path}) did not match the expected value."
+
+    model = swin_tiny_patch4_window7_224(embed_layer=ConvStem, pretrained=False)
+    model.head = nn.Identity()
+
+    ctranspath = torch.load(model_path, weights_only=False)
+    model.load_state_dict(ctranspath["model"], strict=True)
+
+    transform = v2.Compose(
+        [
+            v2.Resize(224),
+            v2.CenterCrop(224),
+            v2.ToImage(),
+            v2.ToDtype(torch.float32, scale=True),
+            v2.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
+        ]
+    )
+
+    return Extractor(
+        model=model,
+        transform=transform,
+        identifier=f"xiyuewang-ctranspath-{digest[:8]}",
+    )
+
+
 """
 -----> Swin Transformer
 Mostly copy-paste from timm library.
@@ -17,15 +86,14 @@ model.load_state_dict(td['model'], strict=True)
 
 import collections.abc
 import math
-import sys
-from copy import deepcopy
+import warnings
 from itertools import repeat
 from typing import Optional
 
 import torch
 import torch.nn as nn
 import torch.utils.checkpoint as checkpoint
-from torch import _assert
+from torch import Tensor, _assert
 from torch.nn.init import _calculate_fan_in_and_fan_out
 
 
@@ -115,7 +183,7 @@ def variance_scaling_(tensor, scale=1.0, mode="fan_in", distribution="normal"):
     elif mode == "fan_avg":
         denom = (fan_in + fan_out) / 2
 
-    variance = scale / denom
+    variance = scale / denom  # type: ignore
 
     if distribution == "truncated_normal":
         # constant is stddev of standard normal truncated to (-2, 2)
@@ -244,7 +312,7 @@ class DropPath(nn.Module):
         self.scale_by_keep = scale_by_keep
 
     def forward(self, x):
-        return drop_path(x, self.drop_prob, self.training, self.scale_by_keep)
+        return drop_path(x, self.drop_prob, self.training, self.scale_by_keep)  # type: ignore
 
 
 class PatchEmbed(nn.Module):
@@ -264,24 +332,24 @@ class PatchEmbed(nn.Module):
         patch_size = to_2tuple(patch_size)
         self.img_size = img_size
         self.patch_size = patch_size
-        self.grid_size = (img_size[0] // patch_size[0], img_size[1] // patch_size[1])
+        self.grid_size = (img_size[0] // patch_size[0], img_size[1] // patch_size[1])  # type: ignore
         self.num_patches = self.grid_size[0] * self.grid_size[1]
         self.flatten = flatten
 
         self.proj = nn.Conv2d(
-            in_chans, embed_dim, kernel_size=patch_size, stride=patch_size
+            in_chans, embed_dim, kernel_size=patch_size, stride=patch_size  # type: ignore
         )
         self.norm = norm_layer(embed_dim) if norm_layer else nn.Identity()
 
     def forward(self, x):
         B, C, H, W = x.shape
         _assert(
-            H == self.img_size[0],
-            f"Input image height ({H}) doesn't match model ({self.img_size[0]}).",
+            H == self.img_size[0],  # type: ignore
+            f"Input image height ({H}) doesn't match model ({self.img_size[0]}).",  # type: ignore
         )
         _assert(
-            W == self.img_size[1],
-            f"Input image width ({W}) doesn't match model ({self.img_size[1]}).",
+            W == self.img_size[1],  # type: ignore
+            f"Input image width ({W}) doesn't match model ({self.img_size[1]}).",  # type: ignore
         )
         x = self.proj(x)
         if self.flatten:
@@ -308,9 +376,9 @@ class Mlp(nn.Module):
 
         self.fc1 = nn.Linear(in_features, hidden_features)
         self.act = act_layer()
-        self.drop1 = nn.Dropout(drop_probs[0])
+        self.drop1 = nn.Dropout(drop_probs[0])  # type: ignore
         self.fc2 = nn.Linear(hidden_features, out_features)
-        self.drop2 = nn.Dropout(drop_probs[1])
+        self.drop2 = nn.Dropout(drop_probs[1])  # type: ignore
 
     def forward(self, x):
         x = self.fc1(x)
@@ -342,7 +410,7 @@ class ConvStem(nn.Module):
         patch_size = to_2tuple(patch_size)
         self.img_size = img_size
         self.patch_size = patch_size
-        self.grid_size = (img_size[0] // patch_size[0], img_size[1] // patch_size[1])
+        self.grid_size = (img_size[0] // patch_size[0], img_size[1] // patch_size[1])  # type: ignore
         self.num_patches = self.grid_size[0] * self.grid_size[1]
         self.flatten = flatten
 
@@ -371,8 +439,8 @@ class ConvStem(nn.Module):
     def forward(self, x):
         B, C, H, W = x.shape
         assert (
-            H == self.img_size[0] and W == self.img_size[1]
-        ), f"Input image size ({H}*{W}) doesn't match model ({self.img_size[0]}*{self.img_size[1]})."
+            H == self.img_size[0] and W == self.img_size[1]  # type: ignore
+        ), f"Input image size ({H}*{W}) doesn't match model ({self.img_size[0]}*{self.img_size[1]})."  # type: ignore
         x = self.proj(x)
         if self.flatten:
             x = x.flatten(2).transpose(1, 2)  # BCHW -> BNC
@@ -758,7 +826,7 @@ class BasicLayer(nn.Module):
 
     def forward(self, x):
         for blk in self.blocks:
-            if not torch.jit.is_scripting() and self.use_checkpoint:
+            if not torch.jit.is_scripting() and self.use_checkpoint:  # type: ignore
                 x = checkpoint.checkpoint(blk, x)
             else:
                 x = blk(x)
@@ -872,7 +940,7 @@ class SwinTransformer(nn.Module):
                     qkv_bias=qkv_bias,
                     drop=drop_rate,
                     attn_drop=attn_drop_rate,
-                    drop_path=dpr[sum(depths[:i_layer]) : sum(depths[: i_layer + 1])],
+                    drop_path=dpr[sum(depths[:i_layer]) : sum(depths[: i_layer + 1])],  # type: ignore
                     norm_layer=norm_layer,
                     downsample=(
                         PatchMerging if (i_layer < self.num_layers - 1) else None
@@ -898,11 +966,11 @@ class SwinTransformer(nn.Module):
         else:
             self.apply(_init_vit_weights)
 
-    @torch.jit.ignore
+    @torch.jit.ignore  # type: ignore
     def no_weight_decay(self):
         return {"absolute_pos_embed"}
 
-    @torch.jit.ignore
+    @torch.jit.ignore  # type: ignore
     def no_weight_decay_keywords(self):
         return {"relative_position_bias_table"}
 
