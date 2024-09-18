@@ -2,12 +2,12 @@
 
 
 > [!Important]
-> STAMP v1.1.0 now uses PyTorch's FlashAttentionV2 implementation, which substantially improves memory efficiency when training. With this update, you *cannot* deploy a saved model from STAMP version ≤ 1.0.3 with this or subsequent versions. Therefore, it is recommended to only update to the latest version of STAMP when starting new experiments. Additionally, the optimizer has been updated from Adam to AdamW. Lastly, STAMP has built-in support for the [UNI Feature extractor](https://www.nature.com/articles/s41591-024-02857-3). Using it will require a Hugging Face account with granted access to the UNI model. For details on fair use, licensing and accessing the UNI model weights, refer to the [UNI GitHub repository](https://www.github.com/mahmoodlab/UNI.git). Note that the installation instructions and results within the [STAMP protocol paper](https://arxiv.org/abs/2312.10944v1) refer to v1.0.3 of the software. The README file will always contain the most up-to-date installation instructions.
+> STAMP v1.1.0 now uses PyTorch's FlashAttentionV2 implementation, which substantially improves memory efficiency when training. With this update, you *cannot* deploy a saved model from STAMP version ≤ 1.0.3 with this or subsequent versions. Therefore, it is recommended to only update to the latest version of STAMP when starting new experiments. Additionally, the optimizer has been updated from Adam to AdamW. Lastly, STAMP has built-in support for the [UNI Feature extractor](https://www.nature.com/articles/s41591-024-02857-3). Using it will require a Hugging Face account with granted access to the UNI model. For details on fair use, licensing and accessing the UNI model weights, refer to the [UNI GitHub repository](https://www.github.com/mahmoodlab/UNI.git). Note that the installation instructions and results within the STAMP [Nature Protocols paper](https://www.nature.com/articles/s41596-024-01047-2) refer to v1.0.3 of the software. The README file will always contain the most up-to-date installation instructions.
 
 # STAMP protocol <img src="docs/STAMP_logo.svg" width="250px" align="right" />
-A protocol for Solid Tumor Associative Modeling in Pathology. This repository contains the accompanying code for the steps described in the [preprint](https://arxiv.org/abs/2312.10944v1): 
+A protocol for Solid Tumor Associative Modeling in Pathology. This repository contains the accompanying code for the steps described in the [Nature Protocols paper](https://www.nature.com/articles/s41596-024-01047-2): 
 
->From Whole Slide Image to Biomarker Prediction: A Protocol for End-to-End Deep Learning in Computational Pathology 
+>From whole-slide image to biomarker prediction: end-to-end weakly supervised deep learning in computational pathology 
 
 The code can be executed either in a local environment, or in a containerized environment (preferred in clusters).
 
@@ -90,15 +90,19 @@ stamp heatmaps   # generate heatmaps
 
 ## Reference
 
-If you find our work useful in your research or if you use parts of this code please consider citing our [preprint](https://arxiv.org/abs/2312.10944v1):
+If you find our work useful in your research or if you use parts of this code please consider citing our [Nature Protocols publication](https://www.nature.com/articles/s41596-024-01047-2):
 
 ```
-@misc{nahhas2023wholeslide,
-      title={From Whole-slide Image to Biomarker Prediction: A Protocol for End-to-End Deep Learning in Computational Pathology}, 
-      author={Omar S. M. El Nahhas and Marko van Treeck and Georg Wölflein and Michaela Unger and Marta Ligero and Tim Lenz and Sophia J. Wagner and Katherine J. Hewitt and Firas Khader and Sebastian Foersch and Daniel Truhn and Jakob Nikolas Kather},
-      year={2023},
-      eprint={2312.10944},
-      archivePrefix={arXiv},
-      primaryClass={cs.CV}
+@Article{ElNahhas2024,
+author={El Nahhas, Omar S. M. and van Treeck, Marko and W{\"o}lflein, Georg and Unger, Michaela and Ligero, Marta and Lenz, Tim and Wagner, Sophia J. and Hewitt, Katherine J. and Khader, Firas and Foersch, Sebastian and Truhn, Daniel and Kather, Jakob Nikolas},
+title={From whole-slide image to biomarker prediction: end-to-end weakly supervised deep learning in computational pathology},
+journal={Nature Protocols},
+year={2024},
+month={Sep},
+day={16},
+issn={1750-2799},
+doi={10.1038/s41596-024-01047-2},
+url={https://doi.org/10.1038/s41596-024-01047-2}
 }
+
 ```
