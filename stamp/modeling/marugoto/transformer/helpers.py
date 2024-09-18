@@ -53,9 +53,9 @@ def train_categorical_model_(
     output_path: PathLike,
     *,
     target_label: str,
-    cat_labels: Sequence[str] = [],
-    cont_labels: Sequence[str] = [],
-    categories: Optional[Iterable[str]] = None,
+    cat_labels: Sequence[str] | None = None,
+    cont_labels: Sequence[str] | None = None,
+    categories: Iterable[str] | None = None,
 ) -> None:
     """Train a categorical model on a cohort's tile's features.
 
@@ -71,6 +71,8 @@ def train_categorical_model_(
     feature_dir = Path(feature_dir)
     output_path = Path(output_path)
     output_path.mkdir(exist_ok=True, parents=True)
+    cat_labels = cat_labels or []
+    cont_labels = cont_labels or []
 
     # just a big fat object to dump all kinds of info into for later reference
     # not used during actual training

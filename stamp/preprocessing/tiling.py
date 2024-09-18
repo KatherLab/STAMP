@@ -100,7 +100,7 @@ def tiles_with_cache(
         # this will ensure that our cache zips will always be consistent.
         tmp_cache_file_path = cache_file_path.with_suffix(".tmp")
         try:
-            with ZipFile(tmp_cache_file_path, "x") as zip:
+            with ZipFile(tmp_cache_file_path, "w") as zip:
                 with zip.open("tiler_params.json", "w") as tiler_params_json_fp:
                     tiler_params_json_fp.write(json.dumps(tiler_params).encode())
 
@@ -118,12 +118,10 @@ def tiles_with_cache(
                         tile.image.save(tile_zip_fp, format="jpeg")
 
                     yield tile
-        except FileExistsError:
-            # Some other process has already opened the the tmpfile; skip!
-            logger.debug(f"{slide_path}")
-        except Exception:
+        except Exception as e:
             logger.exception(f"error while processing {slide_path}")
             tmp_cache_file_path.unlink(missing_ok=True)
+            raise e
         else:  # no exception
             # We have written the entire file, time to rename it to its final name.
             tmp_cache_file_path.rename(cache_file_path)
@@ -248,7 +246,7 @@ def supertiles(
     if slide_mpp is None:
         raise MPPExtractionError()
 
-    # We calculate the `supertile_slide_px`` such that they can hold a whole number of tiles
+    # We calculate the `supertile_slide_px` such that they can hold a whole number of tiles
     # which, before scaling down, is still less than `max_supertile_slide_px`
     max_supertile_um = max_supertile_size_slide_px * slide_mpp
     len_of_supertile_in_tiles = max(int(max_supertile_um // tile_size_um), 1)

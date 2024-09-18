@@ -7,6 +7,9 @@ from pathlib import Path
 from typing import Iterator, Literal, assert_never
 
 import h5py
+import numpy as np
+import numpy.typing as npt
+import openslide
 import torch
 from PIL import Image
 from torch import Tensor
@@ -19,8 +22,11 @@ from stamp.preprocessing.tiling import (
     Microns,
     SlidePixels,
     TilePixels,
+    get_slide_mpp,
     tiles_with_cache,
 )
+
+# %%
 
 supported_extensions = {
     ".svs",
@@ -100,7 +106,7 @@ def extract_(
         | Extractor
     ),
     tile_size_px: TilePixels = TilePixels(224),
-    tile_size_um: Microns = Microns(256),
+    tile_size_um: Microns = Microns(256.0),
     max_workers: int = 32,
     device: DeviceLikeType = "cuda" if torch.cuda.is_available() else "cpu",
 ) -> None:
@@ -126,10 +132,8 @@ def extract_(
 
     logger.info(f"Using extractor {extractor.identifier}")
 
-    output_dir.mkdir(exist_ok=True)
-    output_dir = output_dir / extractor_id
-    output_dir.mkdir(exist_ok=True)
     cache_dir.mkdir(exist_ok=True)
+    feat_output_dir = output_dir / extractor_id
 
     for slide_path in (
         progress := tqdm(
@@ -143,15 +147,17 @@ def extract_(
         progress.set_description(str(slide_path.relative_to(wsi_dir)))
         logger.debug(f"processing {slide_path}")
 
-        feature_output_path = output_dir / slide_path.relative_to(wsi_dir).with_suffix(
-            ".h5"
-        )
+        feature_output_path = feat_output_dir / slide_path.relative_to(
+            wsi_dir
+        ).with_suffix(".h5")
         tmp_feature_output_path = feature_output_path.with_suffix(".tmp")
         if feature_output_path.exists() or tmp_feature_output_path.exists():
             logger.debug(
                 f"skipping {slide_path} because {feature_output_path.exists()=} or {tmp_feature_output_path.exists()}"
             )
             continue
+
+        feature_output_path.parent.mkdir(parents=True, exist_ok=True)
 
         ds = TileDataset(
             slide_path=slide_path,
@@ -172,14 +178,16 @@ def extract_(
             xs_um.append(xs.float())
             ys_um.append(ys.float())
 
+        coords = torch.stack([torch.concat(xs_um), torch.concat(ys_um)], dim=1).numpy()
+
         try:
             # Save the file under an intermediate name to prevent half-written files
             with h5py.File(tmp_feature_output_path, "w") as h5_fp:
-                h5_fp["coords"] = torch.stack(
-                    [torch.concat(xs_um), torch.concat(ys_um)], dim=1
-                ).numpy()
+                h5_fp["coords"] = coords
                 h5_fp["feats"] = torch.concat(feats).numpy()
+
                 h5_fp.attrs["extractor"] = extractor_id
+                h5_fp.attrs["tile_size_um"] = tile_size_um
         except Exception:
             logger.exception(f"error while writing {tmp_feature_output_path}")
             tmp_feature_output_path.unlink(missing_ok=True)
@@ -187,3 +195,47 @@ def extract_(
             # We have written the entire file, time to rename it to its final name.
             tmp_feature_output_path.rename(feature_output_path)
             logger.debug(f"saving to {feature_output_path}")
+
+        # Save rejection thumbnail
+        thumbnail_path = (
+            output_dir
+            / "thumbnails"
+            / slide_path.relative_to(wsi_dir).with_suffix(".jpg")
+        )
+        thumbnail_path.parent.mkdir(exist_ok=True, parents=True)
+        get_rejection_thumb(
+            openslide.OpenSlide(str(slide_path)),
+            size=(512, 512),
+            coords_um=coords,
+            tile_size_um=tile_size_um,
+        ).convert("RGB").save(thumbnail_path)
+
+
+def get_rejection_thumb(
+    slide: openslide.OpenSlide,
+    *,
+    size: tuple[int, int],
+    coords_um: npt.NDArray,
+    tile_size_um: Microns,
+) -> Image.Image:
+    """Creates a thumbnail of the slide"""
+
+    inclusion_map = np.zeros(
+        np.uint32(
+            np.ceil(np.array(slide.dimensions) * get_slide_mpp(slide) / tile_size_um)
+        ),
+        dtype=bool,
+    )
+
+    for y, x in np.uint32(np.round(coords_um / tile_size_um)):
+        inclusion_map[y, x] = True
+
+    thumb = slide.get_thumbnail(size).convert("RGBA")
+    discarded_im = Image.fromarray(
+        np.where(
+            inclusion_map.transpose()[:, :, None], [0, 0, 0, 0], [255, 0, 0, 128]
+        ).astype(np.uint8)
+    ).resize(thumb.size, resample=Image.Resampling.NEAREST)
+
+    thumb.paste(discarded_im, mask=discarded_im)
+    return thumb

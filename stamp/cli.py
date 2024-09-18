@@ -1,80 +1,33 @@
 import argparse
 import logging
-import os
 import shutil
 import sys
-from collections.abc import Iterable
 from pathlib import Path
 from typing import Optional, assert_never
 
-from omegaconf import DictConfig, OmegaConf
-from omegaconf.listconfig import ListConfig
+from omegaconf import OmegaConf
+
+from stamp.config import Config
 
 DEFAULT_CONFIG_FILE = Path("config.yaml")
 STAMP_FACTORY_SETTINGS = Path(__file__).with_name("config.yaml")
+
+# Set up the logger
+logger = logging.getLogger("stamp")
+logger.setLevel(logging.DEBUG)
+formatter = logging.Formatter("%(asctime)s\t%(levelname)s\t%(message)s")
+
+stream_handler = logging.StreamHandler(sys.stderr)
+stream_handler.setLevel(logging.INFO)
+stream_handler.setFormatter(formatter)
+logger.addHandler(stream_handler)
 
 
 class ConfigurationError(Exception):
     pass
 
 
-def check_path_exists(path):
-    directories = path.split(os.path.sep)
-    current_path = os.path.sep
-    for directory in directories:
-        current_path = os.path.join(current_path, directory)
-        if not os.path.exists(current_path):
-            return False, directory
-    return True, None
-
-
-def check_and_handle_path(path, path_key, prefix):
-    exists, directory = check_path_exists(path)
-    if not exists:
-        print(f"From input path: '{path}'")
-        print(f"Directory '{directory}' does not exist.")
-        print(f"Check the input path of '{path_key}' from the '{prefix}' section.")
-        raise SystemExit(f"Stopping {prefix} due to faulty user input...")
-
-
-def _config_has_key(cfg: DictConfig, key: str):
-    try:
-        for k in key.split("."):
-            cfg = cfg[k]
-        if cfg is None:
-            return False
-    except KeyError:
-        return False
-    return True
-
-
-def require_configs(
-    cfg: DictConfig,
-    keys: Iterable[str],
-    prefix: Optional[str] = None,
-    paths_to_check: Iterable[str] = [],
-) -> None:
-    keys = [f"{prefix}.{k}" for k in keys]
-    missing = [k for k in keys if not _config_has_key(cfg, k)]
-    if len(missing) > 0:
-        raise ConfigurationError(f"Missing required configuration keys: {missing}")
-
-    # Check if paths exist
-    for path_key in paths_to_check:
-        try:
-            # for all but modeling.statistics
-            path = cfg[prefix][path_key]
-        except:
-            # for modeling.statistics, handling the pred_csvs
-            path = OmegaConf.select(cfg, f"{prefix}.{path_key}")
-        if isinstance(path, ListConfig):
-            for p in path:
-                check_and_handle_path(p, path_key, prefix)
-        else:
-            check_and_handle_path(path, path_key, prefix)
-
-
-def create_config_file(config_file: Optional[Path]):
+def create_config_file(config_file: Path | None) -> Path:
     """Create a new config file at the specified path (by copying the default config file)."""
     config_file = config_file or DEFAULT_CONFIG_FILE
     # Locate original config file
@@ -82,9 +35,16 @@ def create_config_file(config_file: Optional[Path]):
         raise ConfigurationError(
             f"Default STAMP config file not found at {STAMP_FACTORY_SETTINGS}"
         )
-    # Copy original config file
-    shutil.copy(STAMP_FACTORY_SETTINGS, config_file)
-    print(f"Created new config file at {config_file.absolute()}")
+    if not config_file.exists():
+        # Copy original config file
+        shutil.copy(STAMP_FACTORY_SETTINGS, config_file)
+        logger.info(f"Created new config file at {config_file.absolute()}")
+    else:
+        logger.info(
+            f"Refusing to overwrite existing config file at {config_file.absolute()}"
+        )
+
+    return config_file
 
 
 def resolve_config_file_path(config_file: Optional[Path]) -> Path:
@@ -109,16 +69,6 @@ def resolve_config_file_path(config_file: Optional[Path]) -> Path:
 
 
 def run_cli(args: argparse.Namespace) -> None:
-    # Set up the logger
-    logger = logging.getLogger("stamp")
-    logger.setLevel(logging.DEBUG)
-    formatter = logging.Formatter("%(asctime)s\t%(levelname)s\t%(message)s")
-
-    stream_handler = logging.StreamHandler(sys.stderr)
-    stream_handler.setLevel(logging.INFO)
-    stream_handler.setFormatter(formatter)
-    logger.addHandler(stream_handler)
-
     # Handle init command
     if args.command == "init":
         create_config_file(args.config)
@@ -126,166 +76,40 @@ def run_cli(args: argparse.Namespace) -> None:
 
     # Load YAML configuration
     config_file_path = resolve_config_file_path(args.config)
-    cfg = OmegaConf.load(config_file_path)
-    assert isinstance(cfg, DictConfig), "expected config to be a dict, not a list"
+    config = Config.model_validate(OmegaConf.load(config_file_path))
 
     match args.command:
         case "init":
             assert_never("this case should be handled above")
         case "config":
-            print(OmegaConf.to_yaml(cfg, resolve=True))
+            print(OmegaConf.to_yaml(config.model_dump(mode="json"), resolve=True))
         case "preprocess":
-            require_configs(
-                cfg,
-                [
-                    "output_dir",
-                    "wsi_dir",
-                    "cache_dir",
-                    "microns",
-                    "cores",
-                    "device",
-                    "feat_extractor",
-                ],
-                prefix="preprocessing",
-                paths_to_check=["wsi_dir"],
-            )
-            c = cfg.preprocessing
+            from stamp.preprocessing.extract import extract_
 
-            Path(c.output_dir).mkdir(exist_ok=True, parents=True)
-            file_handler = logging.FileHandler(Path(c.output_dir) / "logfile.log")
-            file_handler.setLevel(logging.DEBUG)
-            file_handler.setFormatter(formatter)
-            logger.addHandler(file_handler)
-
-            from stamp.preprocessing.extract import Microns, TilePixels, extract_
-
-            extract_(
-                wsi_dir=Path(c.wsi_dir),
-                output_dir=Path(c.output_dir),
-                cache_dir=Path(c.cache_dir),
-                extractor=c.feat_extractor,
-                tile_size_px=TilePixels(224),
-                tile_size_um=Microns(c.microns),
-                max_workers=c.cores,
-                device=c.device,
-            )
+            add_file_handle(logger, output_dir=config.preprocessing.output_dir)
+            extract_(**vars(config.preprocessing))
         case "train":
-            require_configs(
-                cfg,
-                [
-                    "clini_table",
-                    "slide_table",
-                    "output_dir",
-                    "feature_dir",
-                    "target_label",
-                    "cat_labels",
-                    "cont_labels",
-                ],
-                prefix="modeling",
-                paths_to_check=["clini_table", "slide_table", "feature_dir"],
-            )
-            c = cfg.modeling
-
-            Path(c.output_dir).mkdir(exist_ok=True, parents=True)
-            file_handler = logging.FileHandler(Path(c.output_dir) / "logfile.log")
-            file_handler.setLevel(logging.INFO)
-            file_handler.setFormatter(formatter)
-            logger.addHandler(file_handler)
-
             from .modeling.marugoto.transformer.helpers import train_categorical_model_
 
-            train_categorical_model_(
-                clini_table=Path(c.clini_table),
-                slide_table=Path(c.slide_table),
-                feature_dir=Path(c.feature_dir),
-                output_path=Path(c.output_dir),
-                target_label=c.target_label,
-                cat_labels=c.cat_labels,
-                cont_labels=c.cont_labels,
-                categories=c.categories,
-            )
+            add_file_handle(logger, output_dir=config.training.output_dir)
+            train_categorical_model_(**vars(config.training))
         case "crossval":
-            require_configs(
-                cfg,
-                [
-                    "clini_table",
-                    "slide_table",
-                    "output_dir",
-                    "feature_dir",
-                    "target_label",
-                    "cat_labels",
-                    "cont_labels",
-                    "n_splits",
-                ],  # this one requires the n_splits key!
-                prefix="modeling",
-                paths_to_check=["clini_table", "slide_table", "feature_dir"],
-            )
-            c = cfg.modeling
-
-            Path(c.output_dir).mkdir(exist_ok=True, parents=True)
-            file_handler = logging.FileHandler(Path(c.output_dir) / "logfile.log")
-            file_handler.setLevel(logging.INFO)
-            file_handler.setFormatter(formatter)
-            logger.addHandler(file_handler)
-
             from .modeling.marugoto.transformer.helpers import categorical_crossval_
 
-            categorical_crossval_(
-                clini_table=Path(c.clini_table),
-                slide_table=Path(c.slide_table),
-                feature_dir=Path(c.feature_dir),
-                output_path=Path(c.output_dir),
-                target_label=c.target_label,
-                cat_labels=c.cat_labels,
-                cont_labels=c.cont_labels,
-                categories=c.categories,
-                n_splits=c.n_splits,
-            )
+            add_file_handle(logger, output_dir=config.crossval.output_dir)
+            categorical_crossval_(**vars(config.crossval))
         case "deploy":
-            require_configs(
-                cfg,
-                [
-                    "clini_table",
-                    "slide_table",
-                    "output_dir",
-                    "deploy_feature_dir",
-                    "target_label",
-                    "cat_labels",
-                    "cont_labels",
-                    "model_path",
-                ],  # this one requires the model_path key!
-                prefix="modeling",
-                paths_to_check=["clini_table", "slide_table", "deploy_feature_dir"],
-            )
-            c = cfg.modeling
-
-            Path(c.output_dir).mkdir(exist_ok=True, parents=True)
-            file_handler = logging.FileHandler(Path(c.output_dir) / "logfile.log")
-            file_handler.setLevel(logging.INFO)
-            file_handler.setFormatter(formatter)
-            logger.addHandler(file_handler)
-
             from .modeling.marugoto.transformer.helpers import deploy_categorical_model_
 
-            deploy_categorical_model_(
-                clini_table=Path(c.clini_table),
-                slide_table=Path(c.slide_table),
-                feature_dir=Path(c.deploy_feature_dir),
-                output_path=Path(c.output_dir),
-                target_label=c.target_label,
-                cat_labels=c.cat_labels,
-                cont_labels=c.cont_labels,
-                model_path=Path(c.model_path),
-            )
-            print("Successfully deployed models")
+            add_file_handle(logger, output_dir=config.deploy.output_dir)
+            deploy_categorical_model_(**vars(config.deploy))
         case "statistics":
             require_configs(
-                cfg,
+                config,
                 ["pred_csvs", "target_label", "true_class", "output_dir"],
                 prefix="modeling.statistics",
                 paths_to_check=["pred_csvs"],
             )
-            c = cfg.modeling.statistics
 
             Path(c.output_dir).mkdir(exist_ok=True, parents=True)
             file_handler = logging.FileHandler(Path(c.output_dir) / "logfile.log")
@@ -306,7 +130,7 @@ def run_cli(args: argparse.Namespace) -> None:
             print("Successfully calculated statistics")
         case "heatmaps":
             require_configs(
-                cfg,
+                config,
                 [
                     "feature_dir",
                     "wsi_dir",
@@ -318,7 +142,6 @@ def run_cli(args: argparse.Namespace) -> None:
                 prefix="heatmaps",
                 paths_to_check=["feature_dir", "wsi_dir", "model_path"],
             )
-            c = cfg.heatmaps
 
             Path(c.output_dir).mkdir(exist_ok=True, parents=True)
             file_handler = logging.FileHandler(c.output_dir)
@@ -340,6 +163,18 @@ def run_cli(args: argparse.Namespace) -> None:
             print("Successfully produced heatmaps")
         case _:
             raise ConfigurationError(f"Unknown command {args.command}")
+
+
+def add_file_handle(logger: logging.Logger, *, output_dir: Path) -> None:
+    output_dir.mkdir(exist_ok=True, parents=True)
+
+    file_handler = logging.FileHandler(output_dir / "logfile.log")
+    file_handler.setLevel(logging.DEBUG)
+
+    formatter = logging.Formatter("%(asctime)s\t%(levelname)s\t%(message)s")
+    file_handler.setFormatter(formatter)
+
+    logger.addHandler(file_handler)
 
 
 def main() -> None:

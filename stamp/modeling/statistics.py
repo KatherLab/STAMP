@@ -1,11 +1,11 @@
 import argparse
-import os
 import sys
 from pathlib import Path
 from typing import Sequence
 
 import pandas as pd
 from matplotlib import pyplot as plt
+from pydantic import BaseModel, Field
 
 from .marugoto.stats.categorical import categorical_aggregated_
 from .marugoto.visualizations.prc import (
@@ -87,9 +87,16 @@ def read_table(file) -> pd.DataFrame:
         return pd.read_csv(file)
 
 
+class StatsConfig(BaseModel):
+    preds_csvs: Sequence[Path]
+    target_label: str = Field(pattern="^[a-zA-Z]+$")
+    true_class: str
+    output_dir: Path
+
+
 def compute_stats(
     pred_csvs: Sequence[Path], target_label: str, true_class: str, output_dir: Path
-):
+) -> None:
     # read all the patient preds
     # and transform their true / preds columns into np arrays
     preds_dfs = [

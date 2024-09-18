@@ -8,15 +8,16 @@ preprocessing:
   output_dir: # Path to save features to
   wsi_dir: # Path of where the whole-slide images are.
   cache_dir: # Directory to cache data (speeds up consequent runs with different feature extractors)
-  microns: 256 # tile length in micrometers
+  tile_size_um: 256 # tile length in micrometers
+  tile_size_px: 224 # tile length in pixels
   feat_extractor: ctranspath # Feature extractor to use. Possible values: "ctranspath", "mahmood-uni", "mahmood-conch"
-  cores: 8 # CPU cores to use
+  max_workers: 8 # CPU cores to use
   device: cuda:0 # device to run feature extraction on (cpu, cuda, cuda:0, etc.)
 
 modeling:
   clini_table: # Path to clini_table file (.xlsx or .csv)
   slide_table: # Path to slide_table file (.xlsx or .csv)
-  feature_dir: ${preprocessing.output_dir}/STAMP_macenko_xiyuewang-ctranspath-7c998680 # Path to feature directory
+  feature_dir: # Path to feature directory
   output_dir: # Path to output directory
   target_label: # Target label. No spaces allowed! Format clinical table accordingly
   categories: [] # Categories (list), leave empty to automatically infer based on unique values in the target_label column
