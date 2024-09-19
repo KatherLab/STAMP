@@ -2,6 +2,7 @@ import hashlib
 import json
 import logging
 import re
+import xml.dom.minidom as minidom
 from collections.abc import Iterator
 from concurrent import futures
 from dataclasses import dataclass
@@ -122,9 +123,9 @@ def tiles_with_cache(
             logger.exception(f"error while processing {slide_path}")
             tmp_cache_file_path.unlink(missing_ok=True)
             raise e
-        else:  # no exception
-            # We have written the entire file, time to rename it to its final name.
-            tmp_cache_file_path.rename(cache_file_path)
+
+        # We have written the entire file, time to rename it to its final name.
+        tmp_cache_file_path.rename(cache_file_path)
 
 
 def tiles_with_tissue(
@@ -361,13 +362,15 @@ def extract_mpp_from_comments(slide: openslide.OpenSlide) -> float | None:
         return None
 
 
-def extract_mpp_from_metadata(slide: openslide.OpenSlide) -> float:
-    import xml.dom.minidom as minidom
-
-    xml_path = slide.properties["tiff.ImageDescription"]
-    doc = minidom.parseString(xml_path)
-    collection = doc.documentElement
-    images = collection.getElementsByTagName("Image")
-    pixels = images[0].getElementsByTagName("Pixels")
-    mpp = float(pixels[0].getAttribute("PhysicalSizeX"))
+def extract_mpp_from_metadata(slide: openslide.OpenSlide) -> float | None:
+    try:
+        xml_path = slide.properties["tiff.ImageDescription"]
+        doc = minidom.parseString(xml_path)
+        collection = doc.documentElement
+        images = collection.getElementsByTagName("Image")
+        pixels = images[0].getElementsByTagName("Pixels")
+        mpp = float(pixels[0].getAttribute("PhysicalSizeX"))
+    except Exception as e:
+        logger.exception("failed to extract MPP from image description")
+        return None
     return mpp

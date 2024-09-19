@@ -20,6 +20,7 @@ from tqdm import tqdm
 from stamp.preprocessing.extractor import Extractor
 from stamp.preprocessing.tiling import (
     Microns,
+    MPPExtractionError,
     SlidePixels,
     TilePixels,
     get_slide_mpp,
@@ -77,6 +78,12 @@ class TileDataset(IterableDataset):
         self.tile_size_px = tile_size_px
         self.max_supertile_size_slide_px = max_supertile_size_slide_px
         self.max_workers = max_workers
+
+        # Already check if we can extract the MPP here.
+        # We don't want to kill our dataloader later,
+        # because that leads to _a lot_ of error messages which are difficult to read
+        if get_slide_mpp(openslide.OpenSlide(slide_path)) is None:
+            raise MPPExtractionError()
 
     def __iter__(self) -> Iterator[tuple[Tensor, Microns, Microns]]:
         return (
@@ -153,32 +160,52 @@ def extract_(
         tmp_feature_output_path = feature_output_path.with_suffix(".tmp")
         if feature_output_path.exists() or tmp_feature_output_path.exists():
             logger.debug(
-                f"skipping {slide_path} because {feature_output_path.exists()=} or {tmp_feature_output_path.exists()}"
+                f"skipping {slide_path} because {feature_output_path.exists()=} or {tmp_feature_output_path.exists()=}"
             )
             continue
 
         feature_output_path.parent.mkdir(parents=True, exist_ok=True)
 
-        ds = TileDataset(
-            slide_path=slide_path,
-            cache_dir=cache_dir,
-            transform=extractor.transform,
-            tile_size_um=tile_size_um,
-            tile_size_px=tile_size_px,
-            max_supertile_size_slide_px=SlidePixels(2**10),
-            max_workers=max_workers,
-        )
-        # Parallelism is implemented in the dataset iterator already, so one worker is enough!
-        dl = DataLoader(ds, batch_size=64, num_workers=1, drop_last=False)
+        try:
+            ds = TileDataset(
+                slide_path=slide_path,
+                cache_dir=cache_dir,
+                transform=extractor.transform,
+                tile_size_um=tile_size_um,
+                tile_size_px=tile_size_px,
+                max_supertile_size_slide_px=SlidePixels(2**10),
+                max_workers=max_workers,
+            )
+            # Parallelism is implemented in the dataset iterator already, so one worker is enough!
+            dl = DataLoader(ds, batch_size=64, num_workers=1, drop_last=False)
 
-        feats, xs_um, ys_um = [], [], []
-        for tiles, xs, ys in tqdm(dl, leave=False):
-            with torch.inference_mode():
-                feats.append(model(tiles.to(device)).detach().half().cpu())
-            xs_um.append(xs.float())
-            ys_um.append(ys.float())
+            feats, xs_um, ys_um = [], [], []
+            for tiles, xs, ys in tqdm(dl, leave=False):
+                with torch.inference_mode():
+                    feats.append(model(tiles.to(device)).detach().half().cpu())
+                xs_um.append(xs.float())
+                ys_um.append(ys.float())
+        except Exception as e:
+            logger.exception(f"error while extracting features from {slide_path}")
+            continue
+
+        if len(feats) == 0:
+            logger.info(f"no tiles found in {slide_path}, skipping")
+            continue
 
         coords = torch.stack([torch.concat(xs_um), torch.concat(ys_um)], dim=1).numpy()
+
+        # Save rejection thumbnail
+        thumbnail_path = feat_output_dir / slide_path.relative_to(wsi_dir).with_suffix(
+            ".jpg"
+        )
+        thumbnail_path.parent.mkdir(exist_ok=True, parents=True)
+        get_rejection_thumb(
+            openslide.OpenSlide(str(slide_path)),
+            size=(512, 512),
+            coords_um=coords,
+            tile_size_um=tile_size_um,
+        ).convert("RGB").save(thumbnail_path)
 
         try:
             # Save the file under an intermediate name to prevent half-written files
@@ -191,24 +218,10 @@ def extract_(
         except Exception:
             logger.exception(f"error while writing {tmp_feature_output_path}")
             tmp_feature_output_path.unlink(missing_ok=True)
-        else:  # no exception
-            # We have written the entire file, time to rename it to its final name.
-            tmp_feature_output_path.rename(feature_output_path)
-            logger.debug(f"saving to {feature_output_path}")
+            continue
 
-        # Save rejection thumbnail
-        thumbnail_path = (
-            output_dir
-            / "thumbnails"
-            / slide_path.relative_to(wsi_dir).with_suffix(".jpg")
-        )
-        thumbnail_path.parent.mkdir(exist_ok=True, parents=True)
-        get_rejection_thumb(
-            openslide.OpenSlide(str(slide_path)),
-            size=(512, 512),
-            coords_um=coords,
-            tile_size_um=tile_size_um,
-        ).convert("RGB").save(thumbnail_path)
+        tmp_feature_output_path.rename(feature_output_path)
+        logger.debug(f"saved features to {feature_output_path}")
 
 
 def get_rejection_thumb(

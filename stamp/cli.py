@@ -7,7 +7,7 @@ from typing import Optional, assert_never
 
 from omegaconf import OmegaConf
 
-from stamp.config import Config
+from stamp.config import StampConfig
 
 DEFAULT_CONFIG_FILE = Path("config.yaml")
 STAMP_FACTORY_SETTINGS = Path(__file__).with_name("config.yaml")
@@ -76,7 +76,7 @@ def run_cli(args: argparse.Namespace) -> None:
 
     # Load YAML configuration
     config_file_path = resolve_config_file_path(args.config)
-    config = Config.model_validate(OmegaConf.load(config_file_path))
+    config = StampConfig.model_validate(OmegaConf.load(config_file_path))
 
     match args.command:
         case "init":

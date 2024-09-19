@@ -1,7 +1,7 @@
 # %%
 from pathlib import Path
 
-from pydantic import BaseModel, Field
+from pydantic import AliasChoices, BaseModel, Field
 
 
 class TrainConfig(BaseModel):
@@ -9,7 +9,7 @@ class TrainConfig(BaseModel):
     slide_table: Path
     feature_dir: Path
     output_dir: Path
-    target_label: str = Field(pattern="^[a-zA-Z]+$")
+    target_label: str = Field(pattern="^[a-zA-Z0-9_]+$")
     categories: list[str] | None = None
     cat_labels: list[str] | None = None
     cont_labels: list[str] | None = None
@@ -23,8 +23,13 @@ class DeploymentConfig(BaseModel):
     clini_table: Path
     slide_table: Path
     output_dir: Path
-    deploy_feature_dir: Path
-    target_label: str = Field(pattern="^[a-zA-Z]+$")
+    feature_dir: Path = Field(
+        validation_alias=AliasChoices("feature_dir", "default_feature_dir")
+    )
+    target_label: str = Field(pattern="^[a-zA-Z0-9_]+$")
     cat_labels: list[str] | None = None
     cont_labels: list[str] | None = None
-    checkpoint_path: Path = Field(alias="model_path")
+    # We can't have things called `model_` in pydantic, so let's call it `checkpoint_path` instead
+    checkpoint_path: Path = Field(
+        validation_alias=AliasChoices("model_path", "checkpoint_path")
+    )

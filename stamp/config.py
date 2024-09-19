@@ -4,7 +4,7 @@ from stamp.modeling.config import CrossvalConfig, DeploymentConfig, TrainConfig
 from stamp.preprocessing.config import PreprocessingConfig
 
 
-class Config(BaseModel):
+class StampConfig(BaseModel):
     preprocessing: PreprocessingConfig | None
 
     # All three are read from the "modeling" field
