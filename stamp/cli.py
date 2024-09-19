@@ -86,23 +86,35 @@ def run_cli(args: argparse.Namespace) -> None:
         case "preprocess":
             from stamp.preprocessing.extract import extract_
 
+            if config.preprocessing is None:
+                raise ValueError("no preprocessing configuration supplied")
+
             add_file_handle(logger, output_dir=config.preprocessing.output_dir)
             extract_(**vars(config.preprocessing))
         case "train":
             from .modeling.marugoto.transformer.helpers import train_categorical_model_
+
+            if config.training is None:
+                raise ValueError("no training configuration supplied")
 
             add_file_handle(logger, output_dir=config.training.output_dir)
             train_categorical_model_(**vars(config.training))
         case "crossval":
             from .modeling.marugoto.transformer.helpers import categorical_crossval_
 
+            if config.crossval is None:
+                raise ValueError("no crossval configuration supplied")
+
             add_file_handle(logger, output_dir=config.crossval.output_dir)
             categorical_crossval_(**vars(config.crossval))
         case "deploy":
             from .modeling.marugoto.transformer.helpers import deploy_categorical_model_
 
-            add_file_handle(logger, output_dir=config.deploy.output_dir)
-            deploy_categorical_model_(**vars(config.deploy))
+            if config.deployment is None:
+                raise ValueError("no deployment configuration supplied")
+
+            add_file_handle(logger, output_dir=config.deployment.output_dir)
+            deploy_categorical_model_(**vars(config.deployment))
         case "statistics":
             require_configs(
                 config,

@@ -47,10 +47,10 @@ def safe_load_learner(model_path, use_cpu):
 
 
 def train_categorical_model_(
-    clini_table: PathLike,
-    slide_table: PathLike,
-    feature_dir: PathLike,
-    output_path: PathLike,
+    clini_table: Path,
+    slide_table: Path,
+    feature_dir: Path,
+    output_dir: Path,
     *,
     target_label: str,
     cat_labels: Sequence[str] | None = None,
@@ -68,9 +68,7 @@ def train_categorical_model_(
         feature_dir:  Path containing the features.
         output_path:  File to save model in.
     """
-    feature_dir = Path(feature_dir)
-    output_path = Path(output_path)
-    output_path.mkdir(exist_ok=True, parents=True)
+    output_dir.mkdir(exist_ok=True, parents=True)
     cat_labels = cat_labels or []
     cont_labels = cont_labels or []
 
@@ -86,11 +84,11 @@ def train_categorical_model_(
         "target_label": str(target_label),
         "cat_labels": [str(c) for c in cat_labels],
         "cont_labels": [str(c) for c in cont_labels],
-        "output_path": str(output_path.absolute()),
+        "output_path": str(output_dir.absolute()),
         "datetime": datetime.now().astimezone().isoformat(),
     }
 
-    model_path = output_path / "export.pkl"
+    model_path = output_dir / "export.pkl"
     if model_path.exists():
         print(f"{model_path} already exists. Skipping...")
         return
@@ -133,8 +131,8 @@ def train_categorical_model_(
     )
     train_df = df[df.PATIENT.isin(train_patients)]
     valid_df = df[df.PATIENT.isin(valid_patients)]
-    train_df.drop(columns="slide_path").to_csv(output_path / "train.csv", index=False)
-    valid_df.drop(columns="slide_path").to_csv(output_path / "valid.csv", index=False)
+    train_df.drop(columns="slide_path").to_csv(output_dir / "train.csv", index=False)
+    valid_df.drop(columns="slide_path").to_csv(output_dir / "valid.csv", index=False)
 
     info["class distribution"]["training"] = {  # type: ignore
         k: int(v) for k, v in train_df[target_label].value_counts().items()
@@ -143,7 +141,7 @@ def train_categorical_model_(
         k: int(v) for k, v in valid_df[target_label].value_counts().items()
     }
 
-    with open(output_path / "info.json", "w") as f:
+    with open(output_dir / "info.json", "w") as f:
         json.dump(info, f)
 
     target_enc = OneHotEncoder(sparse_output=False).fit(categories.reshape(-1, 1))
@@ -163,7 +161,7 @@ def train_categorical_model_(
         targets=(target_enc, df[target_label].values),
         add_features=add_features,
         valid_idxs=df.PATIENT.isin(valid_patients).values,
-        path=output_path,
+        path=output_dir,
         cores=max(1, os.cpu_count() // 4),
     )
 
@@ -203,11 +201,11 @@ def _make_cont_enc(df, conts) -> SKLearnEncoder:
 
 
 def deploy_categorical_model_(
-    clini_table: PathLike,
-    slide_table: PathLike,
-    feature_dir: PathLike,
-    model_path: PathLike,
-    output_path: PathLike,
+    clini_table: Path,
+    slide_table: Path,
+    feature_dir: Path,
+    checkpoint_path: Path,
+    output_dir: Path,
     *,
     target_label: Optional[str] = None,
     cat_labels: Optional[str] = None,
@@ -231,14 +229,11 @@ def deploy_categorical_model_(
 
     use_cpu = device.type == "cpu"  # True or False
 
-    feature_dir = Path(feature_dir)
-    model_path = Path(model_path)
-    output_path = Path(output_path)
-    if (preds_csv := output_path / "patient-preds.csv").exists():
+    if (preds_csv := output_dir / "patient-preds.csv").exists():
         print(f"{preds_csv} already exists!  Skipping...")
         return
 
-    learn = safe_load_learner(model_path, use_cpu=use_cpu)
+    learn = safe_load_learner(checkpoint_path, use_cpu=use_cpu)
     target_enc = get_target_enc(learn)
     categories = target_enc.categories_[0]
 
@@ -253,15 +248,15 @@ def deploy_categorical_model_(
     patient_preds_df = deploy(
         test_df=test_df, learn=learn, target_label=target_label, device=device
     )
-    output_path.mkdir(parents=True, exist_ok=True)
+    output_dir.mkdir(parents=True, exist_ok=True)
     patient_preds_df.to_csv(preds_csv, index=False)
 
 
 def categorical_crossval_(
-    clini_table: PathLike,
-    slide_table: PathLike,
-    feature_dir: PathLike,
-    output_path: PathLike,
+    clini_table: Path,
+    slide_table: Path,
+    feature_dir: Path,
+    output_dir: Path,
     *,
     target_label: str,
     cat_labels: Sequence[str] = [],
@@ -282,8 +277,8 @@ def categorical_crossval_(
             clini table if none given (e.g. '["MSIH", "nonMSIH"]').
     """
     feature_dir = Path(feature_dir)
-    output_path = Path(output_path)
-    output_path.mkdir(exist_ok=True, parents=True)
+    output_dir = Path(output_dir)
+    output_dir.mkdir(exist_ok=True, parents=True)
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     if device.type == "cuda":
@@ -300,7 +295,7 @@ def categorical_crossval_(
         "target_label": str(target_label),
         "cat_labels": [str(c) for c in cat_labels],
         "cont_labels": [str(c) for c in cont_labels],
-        "output_path": str(output_path.absolute()),
+        "output_path": str(output_dir.absolute()),
         "n_splits": n_splits,
         "datetime": datetime.now().astimezone().isoformat(),
     }
@@ -346,7 +341,7 @@ def categorical_crossval_(
 
     target_enc = OneHotEncoder(sparse_output=False).fit(categories.reshape(-1, 1))
 
-    if (fold_path := output_path / "folds.pt").exists():
+    if (fold_path := output_dir / "folds.pt").exists():
         folds = torch.load(fold_path)
     else:
         # added shuffling with seed 1337
@@ -363,12 +358,12 @@ def categorical_crossval_(
         for fold in range(n_splits)
     ]
 
-    with open(output_path / "info.json", "w") as f:
+    with open(output_dir / "info.json", "w") as f:
         json.dump(info, f)
 
     for fold, (train_idxs, test_idxs) in enumerate(folds):
         print(f"\nFold: {fold+1}/{n_splits}")
-        fold_path = output_path / f"fold-{fold}"
+        fold_path = output_dir / f"fold-{fold}"
         if (preds_csv := fold_path / "patient-preds.csv").exists():
             print(f"{preds_csv} already exists!  Skipping...")
             continue

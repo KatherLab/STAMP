@@ -158,9 +158,9 @@ def extract_(
             wsi_dir
         ).with_suffix(".h5")
         tmp_feature_output_path = feature_output_path.with_suffix(".tmp")
-        if feature_output_path.exists() or tmp_feature_output_path.exists():
+        if feature_output_path.exists():
             logger.debug(
-                f"skipping {slide_path} because {feature_output_path.exists()=} or {tmp_feature_output_path.exists()=}"
+                f"skipping {slide_path} because {feature_output_path} already exists"
             )
             continue
 
@@ -195,18 +195,6 @@ def extract_(
 
         coords = torch.stack([torch.concat(xs_um), torch.concat(ys_um)], dim=1).numpy()
 
-        # Save rejection thumbnail
-        thumbnail_path = feat_output_dir / slide_path.relative_to(wsi_dir).with_suffix(
-            ".jpg"
-        )
-        thumbnail_path.parent.mkdir(exist_ok=True, parents=True)
-        get_rejection_thumb(
-            openslide.OpenSlide(str(slide_path)),
-            size=(512, 512),
-            coords_um=coords,
-            tile_size_um=tile_size_um,
-        ).convert("RGB").save(thumbnail_path)
-
         try:
             # Save the file under an intermediate name to prevent half-written files
             with h5py.File(tmp_feature_output_path, "w") as h5_fp:
@@ -222,6 +210,18 @@ def extract_(
 
         tmp_feature_output_path.rename(feature_output_path)
         logger.debug(f"saved features to {feature_output_path}")
+
+        # Save rejection thumbnail
+        thumbnail_path = feat_output_dir / slide_path.relative_to(wsi_dir).with_suffix(
+            ".jpg"
+        )
+        thumbnail_path.parent.mkdir(exist_ok=True, parents=True)
+        get_rejection_thumb(
+            openslide.OpenSlide(str(slide_path)),
+            size=(512, 512),
+            coords_um=coords,
+            tile_size_um=tile_size_um,
+        ).convert("RGB").save(thumbnail_path)
 
 
 def get_rejection_thumb(
