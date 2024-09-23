@@ -68,6 +68,7 @@ class TileDataset(IterableDataset):
         tile_size_px: TilePixels,
         max_supertile_size_slide_px: SlidePixels,
         max_workers: int,
+        brightness_cutoff: int | None,
     ) -> None:
         self.slide_path = slide_path
         self.cache_dir = cache_dir
@@ -76,6 +77,7 @@ class TileDataset(IterableDataset):
         self.tile_size_px = tile_size_px
         self.max_supertile_size_slide_px = max_supertile_size_slide_px
         self.max_workers = max_workers
+        self.brightness_cutoff = brightness_cutoff
 
         # Already check if we can extract the MPP here.
         # We don't want to kill our dataloader later,
@@ -93,6 +95,7 @@ class TileDataset(IterableDataset):
                 tile_size_px=self.tile_size_px,
                 max_supertile_size_slide_px=self.max_supertile_size_slide_px,
                 max_workers=self.max_workers,
+                brightness_cutoff=self.brightness_cutoff,
             )
         )
 
@@ -114,6 +117,7 @@ def extract_(
     tile_size_um: Microns = Microns(256.0),
     max_workers: int = 32,
     device: DeviceLikeType = "cuda" if torch.cuda.is_available() else "cpu",
+    brightness_cutoff: int | None,
 ) -> None:
     if extractor == "ctranspath":
         from stamp.preprocessing.extractor.ctranspath import ctranspath
@@ -173,6 +177,7 @@ def extract_(
                 tile_size_px=tile_size_px,
                 max_supertile_size_slide_px=SlidePixels(2**10),
                 max_workers=max_workers,
+                brightness_cutoff=brightness_cutoff,
             )
             # Parallelism is implemented in the dataset iterator already, so one worker is enough!
             dl = DataLoader(ds, batch_size=64, num_workers=1, drop_last=False)
@@ -238,7 +243,7 @@ def get_rejection_thumb(
         dtype=bool,
     )
 
-    for y, x in np.uint32(np.round(coords_um / tile_size_um)):
+    for y, x in np.round(coords_um / tile_size_um).astype(np.uint32):
         inclusion_map[y, x] = True
 
     thumb = slide.get_thumbnail(size).convert("RGBA")

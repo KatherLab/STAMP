@@ -20,3 +20,4 @@ class PreprocessingConfig(BaseModel, arbitrary_types_allowed=True):
     )
     max_workers: int = Field(8, validation_alias=AliasChoices("max_workers", "cores"))
     device: DeviceLikeType = "cpu"
+    brightness_cutoff: int | None = Field(240, ge=0, le=255)

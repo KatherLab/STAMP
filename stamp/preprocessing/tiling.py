@@ -60,6 +60,7 @@ def tiles_with_cache(
     tile_size_px: TilePixels,
     max_supertile_size_slide_px: SlidePixels,
     max_workers: int,
+    brightness_cutoff: int | None,
 ) -> Iterator[Tile[Microns]]:
     """Iterates over the tiles in a WSI, using or saving a cached version if applicable"""
 
@@ -71,6 +72,7 @@ def tiles_with_cache(
             tile_size_px=tile_size_px,
             max_supertile_size_slide_px=max_supertile_size_slide_px,
             max_workers=max_workers,
+            brightness_cutoff=brightness_cutoff,
         )
         return
 
@@ -79,6 +81,7 @@ def tiles_with_cache(
         "tile_size_um": tile_size_um,
         "tile_size_px": tile_size_px,
         "max_supertile_size_slide_px": max_supertile_size_slide_px,
+        "brightness_cutoff": brightness_cutoff,
         "code_sha256": code_hash,
     }
     tiler_params_hash = hashlib.sha256(
@@ -111,6 +114,7 @@ def tiles_with_cache(
                     tile_size_px=tile_size_px,
                     max_supertile_size_slide_px=max_supertile_size_slide_px,
                     max_workers=max_workers,
+                    brightness_cutoff=brightness_cutoff,
                 ):
                     with zip.open(
                         f"tile_({float(tile.coordinates.x)}, {float(tile.coordinates.y)}).jpg",
@@ -135,6 +139,7 @@ def tiles_with_tissue(
     tile_size_px: TilePixels,
     max_supertile_size_slide_px: SlidePixels,
     max_workers: int,
+    brightness_cutoff: int | None,
 ) -> Iterator[Tile[Microns]]:
     """Yields all tiels from a WSI which (probably) show tissue"""
     for tile in tiles(
@@ -143,6 +148,7 @@ def tiles_with_tissue(
         tile_size_px=tile_size_px,
         max_supertile_size_slide_px=max_supertile_size_slide_px,
         max_workers=max_workers,
+        brightness_cutoff=brightness_cutoff,
     ):
         if has_enough_texture(tile.image):
             yield tile
@@ -155,6 +161,7 @@ def tiles(
     tile_size_px: TilePixels,
     max_supertile_size_slide_px: SlidePixels,
     max_workers: int,
+    brightness_cutoff: int | None,
 ) -> Iterator[Tile[Microns]]:
     """Yields tiles, excluding background.
 
@@ -170,6 +177,7 @@ def tiles(
         tile_size_px=tile_size_px,
         max_supertile_size_slide_px=max_supertile_size_slide_px,
         max_workers=max_workers,
+        brightness_cutoff=brightness_cutoff,
     ):
         assert supertile.size[0] == supertile.size[1], "supertile needs to be square"
         assert (
@@ -199,7 +207,9 @@ def tiles(
 
 
 def foreground_coords(
-    slide: openslide.OpenSlide, tile_size_slide_px: SlidePixels
+    slide: openslide.OpenSlide,
+    tile_size_slide_px: SlidePixels,
+    brightness_cutoff: int | None,
 ) -> Iterator[XYCoords[SlidePixels]]:
     """Yields coordinates of tiles which aren't too bright and thus probably not background"""
     supertile_thumb_size = np.ceil(
@@ -211,7 +221,9 @@ def foreground_coords(
         .resize(tuple(supertile_thumb_size))
         .convert("I")
     )
-    is_foreground = thumb_grayscale < 240
+    is_foreground = (
+        thumb_grayscale < brightness_cutoff if brightness_cutoff is not None else True
+    )
 
     for y_slide_px in range(0, slide.dimensions[1], tile_size_slide_px):
         for x_slide_px in range(0, slide.dimensions[0], tile_size_slide_px):
@@ -242,6 +254,7 @@ def supertiles(
     tile_size_px: TilePixels,
     max_supertile_size_slide_px: SlidePixels,
     max_workers: int,
+    brightness_cutoff: int | None,
 ) -> Iterator[Tile[Microns]]:
     slide_mpp = get_slide_mpp(slide)
     if slide_mpp is None:
@@ -261,7 +274,9 @@ def supertiles(
     with futures.ThreadPoolExecutor(max_workers) as executor:
         futs = []
         for coords_slide_px in foreground_coords(
-            slide=slide, tile_size_slide_px=supertile_size_slide_px
+            slide=slide,
+            tile_size_slide_px=supertile_size_slide_px,
+            brightness_cutoff=brightness_cutoff,
         ):
             future = executor.submit(
                 lambda x_slide_px, y_slide_px: Tile(
@@ -303,6 +318,9 @@ class TilerParams(TypedDict):
     tile_size_px: TilePixels
     """Length of each tile in pixels"""
     max_supertile_size_slide_px: SlidePixels
+
+    brightness_cutoff: int | None
+    """Tiles with an average brightness larger than this get rejected"""
 
     code_sha256: str
     """The hash of this file at the time of extraction"""

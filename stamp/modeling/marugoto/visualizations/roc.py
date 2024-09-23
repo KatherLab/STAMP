@@ -7,9 +7,9 @@ import numpy.typing as npt
 import pandas as pd
 import scipy.stats as st
 from matplotlib import pyplot as plt
+from matplotlib.axes import Axes
 from matplotlib.collections import LineCollection
 from matplotlib.colors import Colormap
-from matplotlib.axes import Axes
 from sklearn.metrics import roc_auc_score, roc_curve
 from tqdm import trange
 
@@ -127,7 +127,7 @@ def split_preds_into_groups(
         subgroup_preds = preds_df[preds_df.PATIENT.isin(subgroup_patients)]
         y_true = subgroup_preds[target_label] == true_label
         y_pred = pd.to_numeric(subgroup_preds[f"{target_label}_{true_label}"])
-        groups[subgroup] = (y_true.values, y_pred.values)   # type: ignore
+        groups[subgroup] = (y_true.values, y_pred.values)  # type: ignore
 
     return groups
 

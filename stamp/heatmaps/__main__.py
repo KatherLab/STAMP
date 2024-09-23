@@ -15,23 +15,12 @@ from matplotlib.axes import Axes
 from matplotlib.patches import Patch
 from PIL import Image
 from torch import Tensor
+from functorch.dim import dims
 
 from stamp.preprocessing.extract import supported_extensions
 from stamp.preprocessing.tiling import get_slide_mpp
 
 logger = logging.getLogger("stamp")
-
-
-def load_slide_ext(wsi_dir: Path) -> openslide.AbstractSlide:
-    # Check if any supported extension matches the file
-    if wsi_dir.suffix not in supported_extensions:
-        raise FileNotFoundError(
-            f"No supported slide file found for slide {wsi_dir.name} in provided directory {wsi_dir.parent}\
-                                 \nOnly support for: {supported_extensions}"
-        )
-    else:
-        return openslide.open_slide(wsi_dir)
-
 
 def get_stride(coords: Tensor) -> float:
     xs = coords[:, 0].unique(sorted=True)
@@ -56,7 +45,7 @@ def gradcam_per_category(
 def vals_to_im(
     scores: Float[Tensor, "n_tiles *d_feats"],
     norm_coords: Int[Tensor, "n_tiles *d_feats"],
-) -> Float[Tensor, "i j *d_feats"]:
+):
     """Arranges scores in a 2d grid according to coordinates"""
     size = norm_coords.max(0).values.flip(0) + 1
     im = torch.zeros((*size, *scores.shape[1:]))
@@ -180,7 +169,7 @@ def heatmaps_(
         )
         gradcam_2d = vals_to_im(
             gradcam.permute(-1, -2),
-            torch.div(coords, stride, rounding_mode="floor").long(),
+            (coords // stride).long(),
         ).detach()
 
         scores = torch.softmax(
