@@ -340,8 +340,11 @@ def tiles_from_cache_file(cache_file_path: Path) -> Iterator[Tile]:
                 )
 
 
-def get_slide_mpp(slide: openslide.OpenSlide) -> float | None:
+def get_slide_mpp(slide: openslide.AbstractSlide | Path) -> float | None:
     """Returns the Microns per Slide Pixel of the WSI, or None if none could be found."""
+    if isinstance(slide, Path):
+        slide = openslide.open_slide(slide)
+
     if openslide.PROPERTY_NAME_MPP_X in slide.properties:
         return float(slide.properties[openslide.PROPERTY_NAME_MPP_X])
     elif slide_mpp := extract_mpp_from_comments(slide):
@@ -352,7 +355,7 @@ def get_slide_mpp(slide: openslide.OpenSlide) -> float | None:
         return None
 
 
-def extract_mpp_from_comments(slide: openslide.OpenSlide) -> float | None:
+def extract_mpp_from_comments(slide: openslide.AbstractSlide) -> float | None:
     slide_properties = slide.properties.get("openslide.comment", default="")
     pattern = r"<PixelSizeMicrons>(.*?)</PixelSizeMicrons>"
     match = re.search(pattern, slide_properties)
@@ -362,7 +365,7 @@ def extract_mpp_from_comments(slide: openslide.OpenSlide) -> float | None:
         return None
 
 
-def extract_mpp_from_metadata(slide: openslide.OpenSlide) -> float | None:
+def extract_mpp_from_metadata(slide: openslide.AbstractSlide) -> float | None:
     try:
         xml_path = slide.properties["tiff.ImageDescription"]
         doc = minidom.parseString(xml_path)

@@ -1,7 +1,7 @@
 import argparse
 import sys
 from pathlib import Path
-from typing import Sequence
+from typing import NewType, Sequence
 
 import pandas as pd
 from matplotlib import pyplot as plt
@@ -88,13 +88,16 @@ def read_table(file) -> pd.DataFrame:
 
 
 class StatsConfig(BaseModel):
-    preds_csvs: Sequence[Path]
-    target_label: str = Field(pattern="^[a-zA-Z]+$")
-    true_class: str
+    pred_csvs: list[Path]
+    target_label: str = Field(pattern="^[a-zA-Z0-9_]+$")
+    true_class: str = Field(pattern=".+")
     output_dir: Path
 
 
-def compute_stats(
+Inches = NewType("Inches", float)
+
+
+def compute_stats_(
     pred_csvs: Sequence[Path], target_label: str, true_class: str, output_dir: Path
 ) -> None:
     # read all the patient preds
@@ -105,7 +108,7 @@ def compute_stats(
     y_trues = [df[target_label] == true_class for df in preds_dfs]
     y_preds = [pd.to_numeric(df[f"{target_label}_{true_class}"]) for df in preds_dfs]
     n_bootstrap_samples = 1000
-    figure_width = 3.8  # inches
+    figure_width = Inches(3.8)
     threshold_cmap = plt.get_cmap()
 
     roc_curve_figure_aspect_ratio = 1.08
@@ -173,7 +176,7 @@ def compute_stats(
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Create a ROC Curve.")
     args = add_roc_curve_args(parser).parse_args()
-    compute_stats(
+    compute_stats_(
         pred_csvs=args.pred_csvs,
         target_label=args.target_label,
         true_class=args.true_class,

@@ -27,8 +27,6 @@ from stamp.preprocessing.tiling import (
     tiles_with_cache,
 )
 
-# %%
-
 supported_extensions = {
     ".svs",
     ".tif",

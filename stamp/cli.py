@@ -8,6 +8,7 @@ from typing import Optional, assert_never
 from omegaconf import OmegaConf
 
 from stamp.config import StampConfig
+from stamp.modeling.config import CrossvalConfig, DeploymentConfig, TrainConfig
 
 DEFAULT_CONFIG_FILE = Path("config.yaml")
 STAMP_FACTORY_SETTINGS = Path(__file__).with_name("config.yaml")
@@ -94,7 +95,8 @@ def run_cli(args: argparse.Namespace) -> None:
         case "train":
             from .modeling.marugoto.transformer.helpers import train_categorical_model_
 
-            if config.training is None:
+            # if config.training is None:   #TODO uncomment this once we have deprecated old config options
+            if not isinstance(config.training, TrainConfig):
                 raise ValueError("no training configuration supplied")
 
             add_file_handle(logger, output_dir=config.training.output_dir)
@@ -102,7 +104,8 @@ def run_cli(args: argparse.Namespace) -> None:
         case "crossval":
             from .modeling.marugoto.transformer.helpers import categorical_crossval_
 
-            if config.crossval is None:
+            # if config.crossval is None:   #TODO uncomment this once we have deprecated old config options
+            if not isinstance(config.crossval, CrossvalConfig):
                 raise ValueError("no crossval configuration supplied")
 
             add_file_handle(logger, output_dir=config.crossval.output_dir)
@@ -110,71 +113,32 @@ def run_cli(args: argparse.Namespace) -> None:
         case "deploy":
             from .modeling.marugoto.transformer.helpers import deploy_categorical_model_
 
-            if config.deployment is None:
+            # if config.deployment is None: #TODO uncomment this once we have deprecated old config options
+            if not isinstance(config.deployment, DeploymentConfig):
                 raise ValueError("no deployment configuration supplied")
 
             add_file_handle(logger, output_dir=config.deployment.output_dir)
             deploy_categorical_model_(**vars(config.deployment))
         case "statistics":
-            require_configs(
-                config,
-                ["pred_csvs", "target_label", "true_class", "output_dir"],
-                prefix="modeling.statistics",
-                paths_to_check=["pred_csvs"],
-            )
+            from .modeling.statistics import compute_stats_
 
-            Path(c.output_dir).mkdir(exist_ok=True, parents=True)
-            file_handler = logging.FileHandler(Path(c.output_dir) / "logfile.log")
-            file_handler.setLevel(logging.INFO)
-            file_handler.setFormatter(formatter)
-            logger.addHandler(file_handler)
+            if config.statistics is None:
+                raise ValueError("no statistics configuration supplied")
 
-            if isinstance(c.pred_csvs, str):
-                c.pred_csvs = [c.pred_csvs]
-            from .modeling.statistics import compute_stats
+            add_file_handle(logger, output_dir=config.statistics.output_dir)
 
-            compute_stats(
-                pred_csvs=[Path(x) for x in c.pred_csvs],
-                target_label=c.target_label,
-                true_class=c.true_class,
-                output_dir=Path(c.output_dir),
-            )
-            print("Successfully calculated statistics")
+            compute_stats_(**vars(config.statistics))
         case "heatmaps":
-            require_configs(
-                config,
-                [
-                    "feature_dir",
-                    "wsi_dir",
-                    "model_path",
-                    "output_dir",
-                    "n_toptiles",
-                    "overview",
-                ],
-                prefix="heatmaps",
-                paths_to_check=["feature_dir", "wsi_dir", "model_path"],
-            )
+            from stamp.heatmaps.__main__ import heatmaps_
 
-            Path(c.output_dir).mkdir(exist_ok=True, parents=True)
-            file_handler = logging.FileHandler(c.output_dir)
-            file_handler.setLevel(logging.INFO)
-            file_handler.setFormatter(formatter)
-            logger.addHandler(file_handler)
+            if config.heatmaps is None:
+                raise ValueError("no heatmaps configuration supplied")
 
-            from .heatmaps.__main__ import main
+            add_file_handle(logger, output_dir=config.heatmaps.output_dir)
 
-            main(
-                slide_name=str(c.slide_name),
-                feature_dir=Path(c.feature_dir),
-                wsi_dir=Path(c.wsi_dir),
-                model_path=Path(c.model_path),
-                output_dir=Path(c.output_dir),
-                n_toptiles=int(c.n_toptiles),
-                overview=c.overview,
-            )
-            print("Successfully produced heatmaps")
+            heatmaps_(**vars(config.heatmaps))
         case _:
-            raise ConfigurationError(f"Unknown command {args.command}")
+            assert_never("the argparser should only allow valid commands")
 
 
 def add_file_handle(logger: logging.Logger, *, output_dir: Path) -> None:

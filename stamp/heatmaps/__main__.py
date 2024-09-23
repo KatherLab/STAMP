@@ -1,6 +1,8 @@
 import argparse
+import logging
 from collections.abc import Collection
 from pathlib import Path
+from typing import cast
 
 import h5py
 import matplotlib.pyplot as plt
@@ -14,7 +16,10 @@ from matplotlib.patches import Patch
 from PIL import Image
 from torch import Tensor
 
-from stamp.preprocessing.helpers.common import supported_extensions
+from stamp.preprocessing.extract import supported_extensions
+from stamp.preprocessing.tiling import get_slide_mpp
+
+logger = logging.getLogger("stamp")
 
 
 def load_slide_ext(wsi_dir: Path) -> openslide.OpenSlide:
@@ -28,7 +33,7 @@ def load_slide_ext(wsi_dir: Path) -> openslide.OpenSlide:
         return openslide.open_slide(wsi_dir)
 
 
-def get_stride(coords: Tensor) -> int:
+def get_stride(coords: Tensor) -> float:
     xs = coords[:, 0].unique(sorted=True)
     stride = (xs[1:] - xs[:-1]).min()
     return stride
@@ -88,90 +93,101 @@ def show_class_map(
 
 
 def get_n_toptiles(
-    slide,
+    slide: openslide.AbstractSlide,
+    *,
     category: str,
     output_dir: Path,
-    coords: Tensor,
+    # TODO which unit are these in?
     scores: Tensor,
+    coords: Tensor,
     stride: int,
     n: int = 8,
 ) -> None:
-    slide_mpp = float(slide.properties[openslide.PROPERTY_NAME_MPP_X])
+    return  # TODO update to work for non-omar-pixel slides
+    # slide_mpp = get_slide_mpp(slide)
+    # assert slide_mpp is not None, "unable to determine slide MPP"
 
-    (output_dir / f"toptiles_{category}").mkdir(exist_ok=True, parents=True)
+    # (output_dir / f"toptiles_{category}").mkdir(exist_ok=True, parents=True)
 
-    # determine the scaling factor between heatmap and original slide
-    # 256 microns edge length by default, with 224px = ~1.14 MPP (± 10x magnification)
-    feature_downsample_mpp = (
-        256 / stride
-    )  # NOTE: stride here only makes sense if the tiles were NON-OVERLAPPING
-    scaling_factor = feature_downsample_mpp / slide_mpp
+    # # determine the scaling factor between heatmap and original slide
+    # # 256 microns edge length by default, with 224px = ~1.14 MPP
+    # feature_downsample_mpp = (
+    #     256 / stride
+    # )  # NOTE: stride here only makes sense if the tiles were NON-OVERLAPPING
+    # scaling_factor = feature_downsample_mpp / slide_mpp
 
-    top_score = scores.topk(n)
+    # top_score = scores.topk(n)
 
-    # OPTIONAL: if the score is not larger than 0.5, it's indecisive on directionality
-    # then add [top_score.values > 0.5]
-    top_coords_downscaled = coords[top_score.indices]
-    top_coords_original = np.uint(top_coords_downscaled * scaling_factor)
+    # # OPTIONAL: if the score is not larger than 0.5, it's indecisive on directionality
+    # # then add [top_score.values > 0.5]
+    # top_coords_downscaled = coords[top_score.indices]
+    # top_coords_original = np.uint(top_coords_downscaled * scaling_factor)
 
-    # NOTE: target size (stride, stride) only works for NON-OVERLAPPING tiles
-    # that were extracted in previous steps.
-    for score_idx, pos in enumerate(top_coords_original):
-        tile = (
-            slide.read_region(
-                (pos[0], pos[1]),
-                0,
-                (np.uint(stride * scaling_factor), np.uint(stride * scaling_factor)),
-            )
-            .convert("RGB")
-            .resize((stride, stride))
-        )
-        tile.save(
-            (output_dir / f"toptiles_{category}")
-            / f"score_{top_score.values[score_idx]:.2f}_toptiles_{category}_{(pos[0], pos[1])}.jpg"
-        )
+    # # NOTE: target size (stride, stride) only works for NON-OVERLAPPING tiles
+    # # that were extracted in previous steps.
+    # for score_idx, pos in enumerate(top_coords_original):
+    #     tile = (
+    #         slide.read_region(
+    #             (pos[0], pos[1]),
+    #             0,
+    #             (np.uint(stride * scaling_factor), np.uint(stride * scaling_factor)),
+    #         )
+    #         .convert("RGB")
+    #         .resize((stride, stride))
+    #     )
+    #     tile.save(
+    #         output_dir
+    #         / f"toptiles_{category}"
+    #         / f"score_{top_score.values[score_idx]:.2f}_toptiles_{category}_{(pos[0], pos[1])}.jpg"
+    #     )
 
 
-def main(
-    slide_name: str,
+def heatmaps_(
+    *,
     feature_dir: Path,
     wsi_dir: Path,
-    model_path: Path,
+    checkpoint_path: Path,
     output_dir: Path,
     n_toptiles: int = 8,
     overview: bool = True,
 ) -> None:
-    learn = load_learner(model_path)
+    learn = load_learner(checkpoint_path)
     learn.model.eval()
     categories: Collection[str] = learn.dls.train.dataset._datasets[
         -1
     ].encode.categories_[0]
 
-    # for h5_path in feature_dir.glob(f"**/{slide_name}.h5"):
-    for slide_path in wsi_dir.glob(f"**/{slide_name}.*"):
-        h5_path = feature_dir / slide_path.with_suffix(".h5").name
+    for wsi_path in (
+        p for ext in supported_extensions for p in wsi_dir.glob(f"**/*{ext}")
+    ):
+        h5_path = feature_dir / wsi_path.with_suffix(".h5").name
+
+        if not h5_path.exists():
+            logger.info(f"could not find matching h5 file at {h5_path}. Skipping...")
+            continue
+
         slide_output_dir = output_dir / h5_path.stem
         slide_output_dir.mkdir(exist_ok=True, parents=True)
-        print(f"Creating heatmaps for {slide_path.name}...")
+        logger.info(f"creating heatmaps for {wsi_path.name}")
         with h5py.File(h5_path) as h5:
             feats = torch.tensor(h5["feats"][:]).float()
-            coords = torch.tensor(h5["coords"][:], dtype=torch.int)
+            coords = torch.tensor(h5["coords"][:])
 
-        # stride is 224 using normal operations
-        stride = get_stride(coords)
+            stride = cast(float, h5.attrs.get("tile_size_um", get_stride(coords)))
 
         preds, gradcam = gradcam_per_category(
             learn=learn, feats=feats, categories=categories
         )
         gradcam_2d = vals_to_im(
-            gradcam.permute(-1, -2), torch.div(coords, stride, rounding_mode="floor")
+            gradcam.permute(-1, -2),
+            torch.div(coords, stride, rounding_mode="floor").long(),
         ).detach()
 
         scores = torch.softmax(
             learn.model(feats.unsqueeze(-2), torch.ones((len(feats)))), dim=1
         )
         scores_2d = vals_to_im(
-            scores, torch.div(coords, stride, rounding_mode="floor")
+            scores, torch.div(coords, stride, rounding_mode="floor").long()
         ).detach()
         fig, axs = plt.subplots(nrows=2, ncols=max(2, len(categories)), figsize=(12, 8))
 
@@ -182,19 +198,16 @@ def main(
             categories=categories,
         )
 
-        slide = load_slide_ext(slide_path)
+        slide = openslide.open_slide(wsi_path)
 
         for ax, (pos_idx, category) in zip(axs[1, :], enumerate(categories)):
             ax: Axes
             topk = scores_2d.topk(2)
+            # Calculate the distance of the "hot" class
+            # to the class with the highest score apart from the hot class
             category_support = torch.where(
-                # To get the "positiveness",
-                # it checks whether the "hot" class has the highest score for each pixel
                 topk.indices[..., 0] == pos_idx,
-                # Then, if the hot class has the highest score,
-                # it assigns a positive value based on its difference from the second highest score
                 scores_2d[..., pos_idx] - topk.values[..., 1],
-                # Likewise, if it has NOT a negative value based on the difference of that class' score to the highest one
                 scores_2d[..., pos_idx] - topk.values[..., 0],
             )
 
@@ -313,4 +326,4 @@ if __name__ == "__main__":
         help="Generate final overview image",
     )
     args = parser.parse_args()
-    main(**vars(args))
+    heatmaps_(**vars(args))
