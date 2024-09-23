@@ -231,8 +231,6 @@ def plot_precision_recall_curves_(
         true_label:  The positive class for the precision-recall.
         outpath:  Path to save the `.svg` to.
     """
-    from pathlib import Path
-
     import pandas as pd
 
     pred_dfs = [pd.read_csv(p, dtype=str) for p in pred_csvs]

@@ -22,7 +22,7 @@ from stamp.preprocessing.tiling import get_slide_mpp
 logger = logging.getLogger("stamp")
 
 
-def load_slide_ext(wsi_dir: Path) -> openslide.OpenSlide:
+def load_slide_ext(wsi_dir: Path) -> openslide.AbstractSlide:
     # Check if any supported extension matches the file
     if wsi_dir.suffix not in supported_extensions:
         raise FileNotFoundError(
@@ -70,8 +70,8 @@ def vals_to_im(
     return im
 
 
-def show_thumb(slide, thumb_ax: Axes, attention: Tensor) -> None:
-    mpp = float(slide.properties[openslide.PROPERTY_NAME_MPP_X])
+def show_thumb(slide, thumb_ax: Axes, attention: Tensor) -> np.ndarray:
+    mpp = get_slide_mpp(slide)
     dims_um = np.array(slide.dimensions) * mpp
     thumb = slide.get_thumbnail(np.round(dims_um * 8 / 256).astype(int))
     thumb_ax.imshow(np.array(thumb)[: attention.shape[0] * 8, : attention.shape[1] * 8])

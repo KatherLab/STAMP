@@ -9,6 +9,7 @@ import scipy.stats as st
 from matplotlib import pyplot as plt
 from matplotlib.collections import LineCollection
 from matplotlib.colors import Colormap
+from matplotlib.axes import Axes
 from sklearn.metrics import roc_auc_score, roc_curve
 from tqdm import trange
 
@@ -20,14 +21,14 @@ all = [
 
 
 def plot_single_decorated_roc_curve(
-    ax: plt.Axes,
+    ax: Axes,
     y_true: npt.NDArray[np.bool_],
     y_pred: npt.NDArray[np.float_],
     *,
     title: Optional[str] = None,
     n_bootstrap_samples: Optional[int] = None,
     threshold_cmap: Optional[Colormap] = None,
-) -> plt.Axes:
+) -> Axes:
     """Plots a single ROC curve.
 
     Args:
@@ -45,14 +46,16 @@ def plot_single_decorated_roc_curve(
         threshold_cmap=threshold_cmap,
     )
     style_auc(ax)
-    ax.set_title(title + f"\nAUROC = {auc:.2f} [{l:.2f}-{h:.2f}]")
+    ax.set_title(f"{title}\nAUROC = {auc:.2f} [{l:.2f}-{h:.2f}]")
+
+    return ax
 
 
 def auc_str(auc: float, l: Optional[float], h: Optional[float]) -> str:
     return f"AUC = {auc:0.2f} [{l:0.2f}-{h:0.2f}]"
 
 
-def style_auc(ax: plt.Axes) -> None:
+def style_auc(ax: Axes) -> None:
     ax.plot([0, 1], [0, 1], "r--")
     ax.set_aspect("equal")
     ax.set_xlabel("False Positive Rate")
@@ -64,13 +67,13 @@ TPA = namedtuple("TPA", ["true", "pred", "auc"])
 
 
 def plot_multiple_decorated_roc_curves(
-    ax: plt.Axes,
+    ax: Axes,
     y_trues: Sequence[npt.NDArray[np.bool_]],
     y_scores: Sequence[npt.NDArray[np.float_]],
     *,
     title: Optional[str] = None,
     n_bootstrap_samples: Optional[int] = None,
-):
+) -> None:
     """Plots a family of ROC curves.
 
     Args:
@@ -94,7 +97,7 @@ def plot_multiple_decorated_roc_curves(
 
     # calculate confidence intervals and print title
     aucs = [x.auc for x in tpas]
-    mean_auc = np.mean(aucs)
+    mean_auc = np.mean(aucs).item()
     if not n_bootstrap_samples:
         l, h = st.t.interval(0.95, len(aucs) - 1, loc=np.mean(aucs), scale=st.sem(aucs))
 
@@ -124,13 +127,13 @@ def split_preds_into_groups(
         subgroup_preds = preds_df[preds_df.PATIENT.isin(subgroup_patients)]
         y_true = subgroup_preds[target_label] == true_label
         y_pred = pd.to_numeric(subgroup_preds[f"{target_label}_{true_label}"])
-        groups[subgroup] = (y_true.values, y_pred.values)
+        groups[subgroup] = (y_true.values, y_pred.values)   # type: ignore
 
     return groups
 
 
 def plot_decorated_rocs_for_subtypes(
-    ax: plt.Axes,
+    ax: Axes,
     groups: Mapping[str, Tuple[npt.NDArray[np.bool_], npt.NDArray[np.float_]]],
     *,
     target_label: str,
@@ -173,7 +176,7 @@ def plot_decorated_rocs_for_subtypes(
 
 
 def plot_bootstrapped_roc_curve(
-    ax: plt.Axes,
+    ax: Axes,
     y_true: npt.NDArray[np.bool_],
     y_score: npt.NDArray[np.float_],
     label: Optional[str],
@@ -238,7 +241,7 @@ def plot_bootstrapped_roc_curve(
 
 
 def plot_curve(
-    ax: plt.Axes,
+    ax: Axes,
     x: npt.NDArray[np.float_],
     y: npt.NDArray[np.float_],
     thresh: npt.NDArray[np.float_],
@@ -249,7 +252,7 @@ def plot_curve(
     if threshold_cmap is not None:
         points = np.array([x, y]).transpose().reshape(-1, 1, 2)
         segments = np.concatenate([points[:-1], points[1:]], axis=1)
-        lc = LineCollection(segments, cmap=threshold_cmap, label=label)
+        lc = LineCollection(segments.tolist(), cmap=threshold_cmap, label=label)
         lc.set_array(thresh)
         ax.add_collection(lc)
         ax.set_xlim(-0.05, 1.05)
