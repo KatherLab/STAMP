@@ -9,7 +9,7 @@ from stamp.preprocessing.config import PreprocessingConfig
 
 
 class StampConfig(BaseModel):
-    preprocessing: PreprocessingConfig | None
+    preprocessing: PreprocessingConfig | None = None
 
     # All three are read from the "modeling" field
     # TODO all these `Any`s and `union_mode`s are only necessary to catch half-defined aliases
