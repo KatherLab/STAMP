@@ -206,7 +206,8 @@ def extract_(
                 h5_fp["feats"] = torch.concat(feats).numpy()
 
                 h5_fp.attrs["extractor"] = extractor_id
-                h5_fp.attrs["tile_size_um"] = tile_size_um
+                h5_fp.attrs["unit"] = "um"
+                h5_fp.attrs["tile_size"] = tile_size_um
         except Exception:
             logger.exception(f"error while writing {tmp_feature_output_path}")
             tmp_feature_output_path.unlink(missing_ok=True)
