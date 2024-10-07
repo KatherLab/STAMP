@@ -28,6 +28,7 @@ from stamp.preprocessing.tiling import (
 )
 
 supported_extensions = {
+    ".czi",
     ".svs",
     ".tif",
     ".vms",
