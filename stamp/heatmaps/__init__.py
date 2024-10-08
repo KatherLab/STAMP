@@ -1,0 +1,268 @@
+import argparse
+import logging
+from collections.abc import Collection
+from pathlib import Path
+from typing import cast
+
+import h5py
+import matplotlib.pyplot as plt
+import numpy as np
+import openslide
+import torch
+from fastai.vision.learner import Learner, load_learner
+from jaxtyping import Float, Int
+from matplotlib.axes import Axes
+from matplotlib.patches import Patch
+from PIL import Image
+from torch import Tensor
+from torch.func import jacrev  # pyright: ignore[reportPrivateImportUsage]
+
+from stamp.preprocessing.extract import supported_extensions
+from stamp.preprocessing.tiling import get_slide_mpp
+
+logger = logging.getLogger("stamp")
+
+
+def get_stride(coords: Tensor) -> float:
+    xs = coords[:, 0].unique(sorted=True)
+    stride = (xs[1:] - xs[:-1]).min()
+    return stride
+
+
+def gradcam_per_category(learn: Learner, feats: Tensor) -> Tensor:
+    tile, feat = -2, -1  # feats dimensions
+
+    return (
+        (
+            feats
+            * jacrev(
+                lambda x: torch.softmax(
+                    learn.model(x.unsqueeze(0), torch.tensor([x.shape[tile]])),
+                    dim=1,
+                ).squeeze(0)
+            )(feats)
+        )
+        .mean(feat)
+        .abs()
+    )
+
+
+def vals_to_im(
+    scores: Float[Tensor, "n_tiles *d_feats"],
+    norm_coords: Int[Tensor, "n_tiles *d_feats"],
+):
+    """Arranges scores in a 2d grid according to coordinates"""
+    size = norm_coords.max(0).values.flip(0) + 1
+    im = torch.zeros((*size.tolist(), *scores.shape[1:]))
+
+    flattened_im = im.flatten(end_dim=1)
+    flattened_coords = norm_coords[:, 1] * im.shape[1] + norm_coords[:, 0]
+    flattened_im[flattened_coords] = scores
+
+    im = flattened_im.reshape_as(im)
+
+    return im
+
+
+def show_thumb(slide, thumb_ax: Axes, attention: Tensor) -> np.ndarray:
+    mpp = get_slide_mpp(slide)
+    dims_um = np.array(slide.dimensions) * mpp
+    thumb = slide.get_thumbnail(np.round(dims_um * 8 / 256).astype(int))
+    thumb_ax.imshow(np.array(thumb)[: attention.shape[0] * 8, : attention.shape[1] * 8])
+    return np.array(thumb)[: attention.shape[0] * 8, : attention.shape[1] * 8]
+
+
+def show_class_map(
+    class_ax: Axes, top_score_indices: Tensor, gradcam_2d, categories: Collection[str]
+) -> None:
+    cmap = plt.get_cmap("Pastel1")
+    classes = cast(np.ndarray, cmap(top_score_indices))
+    classes[..., -1] = (gradcam_2d.sum(-1) > 0).detach().cpu() * 1.0
+    class_ax.imshow(classes)
+    class_ax.legend(
+        handles=[
+            Patch(facecolor=cmap(i), label=cat) for i, cat in enumerate(categories)
+        ]
+    )
+
+
+# TODO update to work for non-omar-pixel slides
+# def get_n_toptiles(
+#     slide: openslide.AbstractSlide,
+#     *,
+#     category: str,
+#     output_dir: Path,
+#     # TODO which unit are these in?
+#     scores: Tensor,
+#     coords: Tensor,
+#     stride: int,
+#     n: int = 8,
+# ) -> None:
+#     slide_mpp = get_slide_mpp(slide)
+#     assert slide_mpp is not None, "unable to determine slide MPP"
+
+#     (output_dir / f"toptiles_{category}").mkdir(exist_ok=True, parents=True)
+
+#     # determine the scaling factor between heatmap and original slide
+#     # 256 microns edge length by default, with 224px = ~1.14 MPP
+#     feature_downsample_mpp = (
+#         256 / stride
+#     )  # NOTE: stride here only makes sense if the tiles were NON-OVERLAPPING
+#     scaling_factor = feature_downsample_mpp / slide_mpp
+
+#     top_score = scores.topk(n)
+
+#     # OPTIONAL: if the score is not larger than 0.5, it's indecisive on directionality
+#     # then add [top_score.values > 0.5]
+#     top_coords_downscaled = coords[top_score.indices]
+#     top_coords_original = np.uint(top_coords_downscaled * scaling_factor)
+
+#     # NOTE: target size (stride, stride) only works for NON-OVERLAPPING tiles
+#     # that were extracted in previous steps.
+#     for score_idx, pos in enumerate(top_coords_original):
+#         tile = (
+#             slide.read_region(
+#                 (pos[0], pos[1]),
+#                 0,
+#                 (np.uint(stride * scaling_factor), np.uint(stride * scaling_factor)),
+#             )
+#             .convert("RGB")
+#             .resize((stride, stride))
+#         )
+#         tile.save(
+#             output_dir
+#             / f"toptiles_{category}"
+#             / f"score_{top_score.values[score_idx]:.2f}_toptiles_{category}_{(pos[0], pos[1])}.jpg"
+#         )
+
+
+def heatmaps_(
+    *,
+    feature_dir: Path,
+    wsi_dir: Path,
+    checkpoint_path: Path,
+    output_dir: Path,
+    overview: bool = True,
+) -> None:
+    learn = load_learner(checkpoint_path)
+    learn.model.eval()
+    categories: Collection[str] = learn.dls.train.dataset._datasets[
+        -1
+    ].encode.categories_[0]
+
+    for wsi_path in (
+        p for ext in supported_extensions for p in wsi_dir.glob(f"**/*{ext}")
+    ):
+        h5_path = feature_dir / wsi_path.with_suffix(".h5").name
+
+        if not h5_path.exists():
+            logger.info(f"could not find matching h5 file at {h5_path}. Skipping...")
+            continue
+
+        slide_output_dir = output_dir / h5_path.stem
+        slide_output_dir.mkdir(exist_ok=True, parents=True)
+        logger.info(f"creating heatmaps for {wsi_path.name}")
+        with h5py.File(h5_path) as h5:
+            feats = torch.tensor(
+                h5["feats"][:]  # pyright: ignore[reportIndexIssue]
+            ).float()
+            coords = torch.tensor(h5["coords"][:])  # pyright: ignore[reportIndexIssue]
+
+            stride = cast(float, h5.attrs.get("tile_size", get_stride(coords)))
+
+        preds = torch.softmax(
+            learn.model(feats.unsqueeze(0), torch.tensor([feats.shape[-2]])),
+            dim=1,
+        ).squeeze(0)
+
+        gradcam = gradcam_per_category(
+            learn=learn,
+            feats=feats,
+        )
+        gradcam_2d = vals_to_im(
+            gradcam.permute(-1, -2),
+            (coords // stride).long(),
+        ).detach()
+
+        scores = torch.softmax(
+            learn.model(feats.unsqueeze(-2), torch.ones((len(feats)))), dim=1
+        )
+        scores_2d = vals_to_im(
+            scores, torch.div(coords, stride, rounding_mode="floor").long()
+        ).detach()
+        fig, axs = plt.subplots(nrows=2, ncols=max(2, len(categories)), figsize=(12, 8))
+
+        show_class_map(
+            class_ax=axs[0, 1],
+            top_score_indices=scores_2d.topk(2).indices[:, :, 0],
+            gradcam_2d=gradcam_2d,
+            categories=categories,
+        )
+
+        slide = openslide.open_slide(wsi_path)
+
+        for ax, (pos_idx, category) in zip(axs[1, :], enumerate(categories)):
+            ax: Axes
+            topk = scores_2d.topk(2)
+            # Calculate the distance of the "hot" class
+            # to the class with the highest score apart from the hot class
+            category_support = torch.where(
+                topk.indices[..., 0] == pos_idx,
+                scores_2d[..., pos_idx] - topk.values[..., 1],
+                scores_2d[..., pos_idx] - topk.values[..., 0],
+            )
+
+            # So, if we have a pixel with scores (.4, .4, .2) and would want to get the heat value for the first class,
+            # we would get a neutral color, because it is matched with the second class
+            # But if our scores were (.4, .3, .3), it would be red,
+            # because now our class is .1 above its nearest competitor
+
+            attention = torch.where(
+                topk.indices[..., 0] == pos_idx,
+                gradcam_2d[..., pos_idx] / gradcam_2d.max(),
+                (
+                    others := gradcam_2d[
+                        ..., list(set(range(len(categories))) - {pos_idx})
+                    ]
+                    .max(-1)
+                    .values
+                )
+                / others.max(),
+            )
+
+            score_im = cast(
+                np.ndarray,
+                plt.get_cmap("RdBu")(
+                    -category_support * attention / attention.max() / 2 + 0.5
+                ),
+            )
+
+            score_im[..., -1] = attention > 0
+
+            ax.imshow(score_im)
+            ax.set_title(f"{category} {preds[pos_idx]:1.2f}")
+            target_size = np.array(score_im.shape[:2][::-1]) * 8
+            # latest PIL requires shape to be a tuple (), not array []
+            Image.fromarray(np.uint8(score_im * 255)).resize(
+                tuple(target_size), resample=Image.Resampling.NEAREST
+            ).save(
+                slide_output_dir
+                / f"scores-{h5_path.stem}--score_{category}={preds[pos_idx]:0.2f}.png"
+            )
+
+        if overview:
+
+            thumb = show_thumb(
+                slide=slide,
+                thumb_ax=axs[0, 0],
+                attention=attention,  # pyright: ignore[reportPossiblyUnboundVariable]
+            )
+            Image.fromarray(thumb).save(
+                slide_output_dir / f"thumbnail-{h5_path.stem}.png"
+            )
+
+            for ax in axs.ravel():
+                ax.axis("off")
+
+            fig.savefig(slide_output_dir / f"overview-{h5_path.stem}.png")
+            plt.close(fig)

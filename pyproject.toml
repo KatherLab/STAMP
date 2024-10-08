@@ -45,7 +45,7 @@ dependencies = [
 ]
 
 [project.scripts]
-"stamp" = "stamp.cli:main"
+"stamp" = "stamp.__main__:main"
 
 [project.urls]
 "Homepage" = "https://github.com/KatherLab/STAMP"

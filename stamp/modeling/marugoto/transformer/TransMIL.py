@@ -2,6 +2,8 @@
 In parts from https://github.com/lucidrains/vit-pytorch/blob/main/vit_pytorch/vit.py
 """
 
+from typing import Literal
+
 import torch
 import torch.nn.functional as F
 from einops import repeat
@@ -134,7 +136,7 @@ class TransMIL(nn.Module):
         heads: int = 8,
         dim_head: int = 64,
         mlp_dim: int = 2048,
-        pool: str = "cls",
+        pool: Literal["cls", "mean"] = "cls",
         dropout: int = 0.0,
         emb_dropout: int = 0.0,
     ):

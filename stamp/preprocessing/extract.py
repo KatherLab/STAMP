@@ -189,7 +189,7 @@ def extract_(
                     feats.append(model(tiles.to(device)).detach().half().cpu())
                 xs_um.append(xs.float())
                 ys_um.append(ys.float())
-        except Exception as e:
+        except Exception:
             logger.exception(f"error while extracting features from {slide_path}")
             continue
 
