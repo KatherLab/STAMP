@@ -112,7 +112,7 @@ def plot_bootstrapped_pr_curve(
 def plot_single_decorated_prc_curve(
     ax: plt.Axes,
     y_true: npt.NDArray[np.bool_],
-    y_pred: npt.NDArray[np.float_],
+    y_pred: npt.NDArray[np.float64],
     *,
     title: Optional[str] = None,
     n_bootstrap_samples: Optional[int] = None,
