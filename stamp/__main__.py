@@ -81,7 +81,7 @@ def run_cli(args: argparse.Namespace) -> None:
 
     match args.command:
         case "init":
-            assert_never("this case should be handled above")
+            assert_never("this case should be handled above")   # pyright: ignore[reportArgumentType]
         case "config":
             print(OmegaConf.to_yaml(config.model_dump(mode="json"), resolve=True))
         case "preprocess":
@@ -138,7 +138,7 @@ def run_cli(args: argparse.Namespace) -> None:
 
             heatmaps_(**vars(config.heatmaps))
         case _:
-            assert_never("the argparser should only allow valid commands")
+            assert_never("the argparser should only allow valid commands")  # pyright: ignore[reportArgumentType]
 
 
 def add_file_handle(logger: logging.Logger, *, output_dir: Path) -> None:
