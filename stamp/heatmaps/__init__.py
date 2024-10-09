@@ -142,7 +142,6 @@ def heatmaps_(
     wsi_dir: Path,
     checkpoint_path: Path,
     output_dir: Path,
-    overview: bool = True,
 ) -> None:
     learn = load_learner(checkpoint_path)
     learn.model.eval()
@@ -250,19 +249,16 @@ def heatmaps_(
                 / f"scores-{h5_path.stem}--score_{category}={preds[pos_idx]:0.2f}.png"
             )
 
-        if overview:
+        # Generate overview
+        thumb = show_thumb(
+            slide=slide,
+            thumb_ax=axs[0, 0],
+            attention=attention,  # pyright: ignore[reportPossiblyUnboundVariable]
+        )
+        Image.fromarray(thumb).save(slide_output_dir / f"thumbnail-{h5_path.stem}.png")
 
-            thumb = show_thumb(
-                slide=slide,
-                thumb_ax=axs[0, 0],
-                attention=attention,  # pyright: ignore[reportPossiblyUnboundVariable]
-            )
-            Image.fromarray(thumb).save(
-                slide_output_dir / f"thumbnail-{h5_path.stem}.png"
-            )
+        for ax in axs.ravel():
+            ax.axis("off")
 
-            for ax in axs.ravel():
-                ax.axis("off")
-
-            fig.savefig(slide_output_dir / f"overview-{h5_path.stem}.png")
-            plt.close(fig)
+        fig.savefig(slide_output_dir / f"overview-{h5_path.stem}.png")
+        plt.close(fig)

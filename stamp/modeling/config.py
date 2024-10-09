@@ -4,10 +4,11 @@ from pydantic import AliasChoices, BaseModel, Field
 
 
 class TrainConfig(BaseModel):
+    output_dir: Path
+
     clini_table: Path
     slide_table: Path
     feature_dir: Path
-    output_dir: Path
     target_label: str = Field(pattern="^[a-zA-Z0-9_]+$")
     categories: list[str] | None = None
     cat_labels: list[str] | None = None
@@ -19,9 +20,10 @@ class CrossvalConfig(TrainConfig):
 
 
 class DeploymentConfig(BaseModel):
+    output_dir: Path
+
     clini_table: Path
     slide_table: Path
-    output_dir: Path
     feature_dir: Path = Field(
         validation_alias=AliasChoices("feature_dir", "default_feature_dir")
     )

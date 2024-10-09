@@ -141,7 +141,9 @@ def run_cli(args: argparse.Namespace) -> None:
 
             heatmaps_(**vars(config.heatmaps))
         case _:
-            assert_never("the argparser should only allow valid commands")  # pyright: ignore[reportArgumentType]
+            assert_never(
+                "the argparser should only allow valid commands"  # pyright: ignore[reportArgumentType]
+            )
 
 
 def add_file_handle(logger: logging.Logger, *, output_dir: Path) -> None:

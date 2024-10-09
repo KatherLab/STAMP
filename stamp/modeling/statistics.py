@@ -88,10 +88,11 @@ def read_table(file) -> pd.DataFrame:
 
 
 class StatsConfig(BaseModel):
+    output_dir: Path
+
     pred_csvs: list[Path]
     target_label: str = Field(pattern="^[a-zA-Z0-9_]+$")
     true_class: str = Field(pattern=".+")
-    output_dir: Path
 
 
 Inches = NewType("Inches", float)
