@@ -1,66 +1,66 @@
-#preprocessing:
-#  output_dir: "/path/to/save/files/to"
-#  wsi_dir: "/path/containing/whole/slide/images/to/extract/features/from"
-#
-#  # Extractor to use for feature extractor.  Possible options are "ctranspath",
-#  # "mahmood-uni" and "mahmood-conch"
-#  extractor: "ctranspath"
-#
-#  # Device to run feature extraction on ("cpu", "cuda", "cuda:0", etc.)
-#  device: "cuda:0"
-#
-#  # Optional settings.  Uncomment as necessary.
-#
-#  # Having a cache dir will speed up extracting features multiple times,
-#  # e.g. with different feature extractors.  Optional.
-#  #cache_dir: "/path/to/save/cache/files/to"
-#
-#  # Tiler parameters.  The defaults work well for most domains and feature extractors.
-#  #tile_size_um: 256.0
-#  #tile_size_px: 224
-#
-#  # How many workers to use for tile extraction.  Should be less or equal to 
-#  # the number of cores of your system.
-#  #max_workers: 8
-#
-#  # Tiles with an average brightness of more than this value will be excluded
-#  # from feature extraction.
-#  #brightness_cutoff: 240
+preprocessing:
+  output_dir: "/path/to/save/files/to"
+  wsi_dir: "/path/containing/whole/slide/images/to/extract/features/from"
+
+  # Extractor to use for feature extractor.  Possible options are "ctranspath",
+  # "mahmood-uni" and "mahmood-conch"
+  extractor: "ctranspath"
+
+  # Device to run feature extraction on ("cpu", "cuda", "cuda:0", etc.)
+  device: "cuda:0"
+
+  # Optional settings:
+
+  # Having a cache dir will speed up extracting features multiple times,
+  # e.g. with different feature extractors.  Optional.
+  #cache_dir: "/path/to/save/cache/files/to"
+
+  # Tiler parameters.  The defaults work well for most domains and feature extractors.
+  #tile_size_um: 256.0
+  #tile_size_px: 224
+
+  # How many workers to use for tile extraction.  Should be less or equal to
+  # the number of cores of your system.
+  #max_workers: 8
+
+  # Tiles with an average brightness of more than this value will be excluded
+  # from feature extraction.
+  #brightness_cutoff: 240
 
 
-#training:
-#  output_dir: "/path/to/save/files/to"
-#
-#  # An excel (.xlsx) or CSV (.csv) table containing the clinical information of
-#  # patients.  Patients not present in this file will be ignored during training.
-#  # Has to contain at least two columns, one titled "PATIENT", containing a patient ID,
-#  # and a second column containing the categorical ground truths for that patient.
-#  clini_table: "/path/of/clini.csv"
-#
-#  # Directory the extracted features are saved in.
-#  feature_dir: "/path/your/extracted/features/are/stored/in"
-#
-#  # A table (.xlsx or .csv) relating every patient to their feature files.
-#  # The table must contain at least two columns, one titled "PATIENT",
-#  # containing the patient ID (matching those in the `clini_table`), and one
-#  # called "FILENAME", containing the feature file path relative to `feature_dir`.
-#  # Patient IDs not present in the clini table as well as non-existent feature
-#  # paths are ignored.
-#  slide_table: "/path/of/slide.csv"
-#
-#  # Name of the column from the clini table to train on.
-#  target_label: "KRAS"
-#
-#  # Optional settings:
-#
-#  # The categories occurring in the target label column of the clini table.
-#  # If unspecified, they will be inferred from the table itself.
-#  #categories: ["mutated", "wild type"]
+training:
+  output_dir: "/path/to/save/files/to"
+
+  # An excel (.xlsx) or CSV (.csv) table containing the clinical information of
+  # patients.  Patients not present in this file will be ignored during training.
+  # Has to contain at least two columns, one titled "PATIENT", containing a patient ID,
+  # and a second column containing the categorical ground truths for that patient.
+  clini_table: "/path/of/clini.csv"
+
+  # Directory the extracted features are saved in.
+  feature_dir: "/path/your/extracted/features/are/stored/in"
+
+  # A table (.xlsx or .csv) relating every patient to their feature files.
+  # The table must contain at least two columns, one titled "PATIENT",
+  # containing the patient ID (matching those in the `clini_table`), and one
+  # called "FILENAME", containing the feature file path relative to `feature_dir`.
+  # Patient IDs not present in the clini table as well as non-existent feature
+  # paths are ignored.
+  slide_table: "/path/of/slide.csv"
+
+  # Name of the column from the clini table to train on.
+  target_label: "KRAS"
+
+  # Optional settings:
+
+  # The categories occurring in the target label column of the clini table.
+  # If unspecified, they will be inferred from the table itself.
+  #categories: ["mutated", "wild type"]
 
 
-#crossval:
-#  output_dir: "/path/to/save/files/to"
-#
+crossval:
+  output_dir: "/path/to/save/files/to"
+
 #  # An excel (.xlsx) or CSV (.csv) table containing the clinical information of
 #  # patients.  Patients not present in this file will be ignored during training.
 #  # Has to contain at least two columns, one titled "PATIENT", containing a patient ID,
@@ -93,16 +93,16 @@
 
 #deployment:
 #  output_dir: "/path/to/save/files/to"
-# 
+#
 #  # An excel (.xlsx) or CSV (.csv) table containing the clinical information of
 #  # patients.  Patients not present in this file will be ignored during training.
 #  # Has to contain at least two columns, one titled "PATIENT", containing a patient ID,
 #  # and a second column containing the categorical ground truths for that patient.
 #  clini_table: "/path/of/clini.csv"
-# 
+#
 #  # Directory the extracted features are saved in.
 #  feature_dir: "/path/your/extracted/features/are/stored/in"
-# 
+#
 #  # A table (.xlsx or .csv) relating every patient to their feature files.
 #  # The table must contain at least two columns, one titled "PATIENT",
 #  # containing the patient ID (matching those in the `clini_table`), and one
@@ -110,17 +110,17 @@
 #  # Patient IDs not present in the clini table as well as non-existent feature
 #  # paths are ignored.
 #  slide_table: "/path/of/slide.csv"
-# 
+#
 #  # Name of the column from the clini to compare predictions to.
 #  target_label: "KRAS"
-# 
+#
 #  # Path of the trained model to deploy.
 #  checkpoint_path: "/path/to/export.pkl"
-
-
+#
+#
 #statistics:
 #  output_dir: "/path/to/save/files/to"
-# 
+#
 #  # Name of the target label.
 #  target_label: "KRAS"
 #
@@ -131,19 +131,23 @@
 #  # The patient predictions to generate the statistics from.
 #  # For a single deployment, it could look like this:
 #  pred_csvs:
-#  - "${deployment.output_dir}/patient-preds.csv"
+#  - "/path/to/patient-preds.csv"
 #
 #  # For a cross validation with five folds, it could look like this:
-#  pred_csvs:
-#  - "${crossval.output_dir}/fold-0/patient-preds.csv"
-#  - "${crossval.output_dir}/fold-1/patient-preds.csv"
-#  - "${crossval.output_dir}/fold-2/patient-preds.csv"
-#  - "${crossval.output_dir}/fold-3/patient-preds.csv"
-#  - "${crossval.output_dir}/fold-4/patient-preds.csv"
-
-heatmaps:
-  feature_dir: "/foo/bar"
-  wsi_dir: "/foo/bar"
-  checkpoint_path: "/path/to/export.pkl"
-  output_dir: "/path/to/save/files/to"
-  overview: true
+#  #pred_csvs:
+#  #- "/path/to/fold-0/patient-preds.csv"
+#  #- "/path/to/fold-1/patient-preds.csv"
+#  #- "/path/to/fold-2/patient-preds.csv"
+#  #- "/path/to/fold-3/patient-preds.csv"
+#  #- "/path/to/fold-4/patient-preds.csv"
+#
+#heatmaps:
+#  output_dir: "/path/to/save/files/to"
+#
+#  # Directory the extracted features are saved in.
+#  feature_dir: "/path/your/extracted/features/are/stored/in"
+#
+#  wsi_dir: "/path/containing/whole/slide/images/to/extract/features/from"
+#
+#  # Path of the model to generate the heatmaps with.
+#  checkpoint_path: "/path/to/export.pkl"

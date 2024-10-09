@@ -5,7 +5,7 @@ import sys
 from pathlib import Path
 from typing import Optional, assert_never
 
-from omegaconf import OmegaConf
+import yaml
 
 from stamp.config import StampConfig
 from stamp.modeling.config import CrossvalConfig, DeploymentConfig, TrainConfig
@@ -77,13 +77,16 @@ def run_cli(args: argparse.Namespace) -> None:
 
     # Load YAML configuration
     config_file_path = resolve_config_file_path(args.config)
-    config = StampConfig.model_validate(OmegaConf.load(config_file_path))
+    with open(config_file_path, "r") as config_yaml:
+        config = StampConfig.model_validate(yaml.safe_load(config_yaml))
 
     match args.command:
         case "init":
-            assert_never("this case should be handled above")   # pyright: ignore[reportArgumentType]
+            assert_never(
+                "this case should be handled above"  # pyright: ignore[reportArgumentType]
+            )
         case "config":
-            print(OmegaConf.to_yaml(config.model_dump(mode="json"), resolve=True))
+            print(yaml.dump(config.model_dump(mode="json")))
         case "preprocess":
             from stamp.preprocessing.extract import extract_
 
