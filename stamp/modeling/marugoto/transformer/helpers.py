@@ -35,6 +35,9 @@ class IncompatibleVersionError(Exception):
 def safe_load_learner(model_path, use_cpu):
     try:
         learn = load_learner(model_path, cpu=use_cpu)  # if False will use GPU instead
+        # Remove metrics!
+        # Otherwise, the model will fail if the deployment set doesn't cover all categories
+        learn.metrics = []
         return learn
     except ModuleNotFoundError as e:
         if e.name == "stamp.modeling.marugoto.transformer.ViT":
