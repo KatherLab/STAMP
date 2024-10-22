@@ -63,7 +63,7 @@ class TileDataset(IterableDataset):
     def __init__(
         self,
         slide_path: Path,
-        cache_dir: Path,
+        cache_dir: Path | None,
         transform: Callable[[Image.Image], torch.Tensor],
         tile_size_um: Microns,
         tile_size_px: TilePixels,
@@ -105,7 +105,7 @@ def extract_(
     *,
     wsi_dir: Path,
     output_dir: Path,
-    cache_dir: Path,
+    cache_dir: Path | None,
     extractor: (
         Literal[
             "ctranspath",
@@ -142,7 +142,8 @@ def extract_(
 
     logger.info(f"Using extractor {extractor.identifier}")
 
-    cache_dir.mkdir(exist_ok=True)
+    if cache_dir:
+        cache_dir.mkdir(exist_ok=True)
     feat_output_dir = output_dir / extractor_id
 
     for slide_path in (
