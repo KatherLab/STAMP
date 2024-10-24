@@ -1,6 +1,5 @@
-import argparse
 import logging
-from collections.abc import Collection
+from collections.abc import Collection, Iterable
 from pathlib import Path
 from typing import cast
 
@@ -142,6 +141,7 @@ def heatmaps_(
     wsi_dir: Path,
     checkpoint_path: Path,
     output_dir: Path,
+    slide_paths: Iterable[Path] | None = None,
 ) -> None:
     learn = load_learner(checkpoint_path)
     learn.model.eval()
@@ -149,9 +149,14 @@ def heatmaps_(
         -1
     ].encode.categories_[0]
 
-    for wsi_path in (
-        p for ext in supported_extensions for p in wsi_dir.glob(f"**/*{ext}")
-    ):
+    if slide_paths is not None:
+        wsis_to_process = (wsi_dir / slide for slide in slide_paths)
+    else:
+        wsis_to_process = (
+            p for ext in supported_extensions for p in wsi_dir.glob(f"**/*{ext}")
+        )
+
+    for wsi_path in wsis_to_process:
         h5_path = feature_dir / wsi_path.with_suffix(".h5").name
 
         if not h5_path.exists():

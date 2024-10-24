@@ -28,36 +28,6 @@ preprocessing:
   #brightness_cutoff: 240
 
 
-training:
-  output_dir: "/path/to/save/files/to"
-
-  # An excel (.xlsx) or CSV (.csv) table containing the clinical information of
-  # patients.  Patients not present in this file will be ignored during training.
-  # Has to contain at least two columns, one titled "PATIENT", containing a patient ID,
-  # and a second column containing the categorical ground truths for that patient.
-  clini_table: "/path/of/clini.csv"
-
-  # Directory the extracted features are saved in.
-  feature_dir: "/path/your/extracted/features/are/stored/in"
-
-  # A table (.xlsx or .csv) relating every patient to their feature files.
-  # The table must contain at least two columns, one titled "PATIENT",
-  # containing the patient ID (matching those in the `clini_table`), and one
-  # called "FILENAME", containing the feature file path relative to `feature_dir`.
-  # Patient IDs not present in the clini table as well as non-existent feature
-  # paths are ignored.
-  slide_table: "/path/of/slide.csv"
-
-  # Name of the column from the clini table to train on.
-  target_label: "KRAS"
-
-  # Optional settings:
-
-  # The categories occurring in the target label column of the clini table.
-  # If unspecified, they will be inferred from the table itself.
-  #categories: ["mutated", "wild type"]
-
-
 crossval:
   output_dir: "/path/to/save/files/to"
 
@@ -87,8 +57,38 @@ crossval:
   # If unspecified, they will be inferred from the table itself.
   #categories: ["mutated", "wild type"]
 
-  # Number of folds to split the data into for cross validation
+  # Number of folds to split the data into for cross-validation
   #n_splits: 5
+
+
+training:
+  output_dir: "/path/to/save/files/to"
+
+  # An excel (.xlsx) or CSV (.csv) table containing the clinical information of
+  # patients.  Patients not present in this file will be ignored during training.
+  # Has to contain at least two columns, one titled "PATIENT", containing a patient ID,
+  # and a second column containing the categorical ground truths for that patient.
+  clini_table: "/path/of/clini.csv"
+
+  # Directory the extracted features are saved in.
+  feature_dir: "/path/your/extracted/features/are/stored/in"
+
+  # A table (.xlsx or .csv) relating every patient to their feature files.
+  # The table must contain at least two columns, one titled "PATIENT",
+  # containing the patient ID (matching those in the `clini_table`), and one
+  # called "FILENAME", containing the feature file path relative to `feature_dir`.
+  # Patient IDs not present in the clini table as well as non-existent feature
+  # paths are ignored.
+  slide_table: "/path/of/slide.csv"
+
+  # Name of the column from the clini table to train on.
+  target_label: "KRAS"
+
+  # Optional settings:
+
+  # The categories occurring in the target label column of the clini table.
+  # If unspecified, they will be inferred from the table itself.
+  #categories: ["mutated", "wild type"]
 
 
 deployment:
@@ -133,7 +133,7 @@ statistics:
   pred_csvs:
   - "/path/to/patient-preds.csv"
 
-  # For a cross validation with five folds, it could look like this:
+  # For a cross-validation with five folds, it could look like this:
   #pred_csvs:
   #- "/path/to/fold-0/patient-preds.csv"
   #- "/path/to/fold-1/patient-preds.csv"
@@ -151,3 +151,10 @@ heatmaps:
 
   # Path of the model to generate the heatmaps with.
   checkpoint_path: "/path/to/export.pkl"
+
+  # Slides to generate the heatmaps for.
+  # The slide paths have to be specified relative to `wsi_dir`.
+  # If not specified, stamp will generate heatmaps for all slides in `wsi_dir`.
+  #slides:
+  #- slide1.svs
+  #- slide2.mrxs

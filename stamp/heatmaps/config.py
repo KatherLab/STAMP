@@ -11,3 +11,5 @@ class HeatmapConfig(BaseModel):
     checkpoint_path: Path = Field(
         validation_alias=AliasChoices("checkpoint_path", "model_path")
     )
+
+    slides: list[Path] | None = None
