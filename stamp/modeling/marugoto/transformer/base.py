@@ -8,13 +8,11 @@ import pandas as pd
 import torch
 import torch.nn.functional as F
 from fastai.vision.all import (
-    AMPMode,
     CSVLogger,
     DataLoader,
     DataLoaders,
     EarlyStoppingCallback,
     Learner,
-    MixedPrecision,
     OptimWrapper,
     RocAuc,
     SaveModelCallback,
@@ -137,7 +135,7 @@ def train(
     )  # .to_bf16()
 
     cbs = [
-        SaveModelCallback(monitor="valid_loss", fname=f"best_valid"),
+        SaveModelCallback(monitor="valid_loss", fname="best_valid"),
         EarlyStoppingCallback(monitor="valid_loss", patience=patience),
         CSVLogger(),
         # MixedPrecision(amp_mode=AMPMode.BF16)

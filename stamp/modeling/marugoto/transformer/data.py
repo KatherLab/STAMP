@@ -66,30 +66,6 @@ class ZipDataset(Dataset):
         return ds
 
 
-@dataclass
-class EncodedDataset(Dataset):
-    encode: Any
-    dtype = None
-
-    def __getitem__(self, i: int) -> Any:
-        encoded = torch.tensor(
-            self.encode.transform(np.array(self.data[i]).reshape(1, -1)),
-            dtype=self.dtype,
-        )
-        return encoded
-
-    def __len__(self) -> int:
-        return len(self.data)
-
-    def new(self, data: Sequence[Any] = tuple()) -> "EncodedDataset":
-        """Create a dataset with the same encoding but different data."""
-        return EncodedDataset(self.encode, data)
-
-    def new_empty(self) -> "EncodedDataset":
-        """Create an empty dataset."""
-        return self.new()
-
-
 class MapDataset(Dataset):
     def __init__(
         self, func: Callable, *datasets: Sequence[Any], strict: bool = True

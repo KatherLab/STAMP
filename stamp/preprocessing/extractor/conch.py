@@ -25,5 +25,7 @@ def conch() -> Extractor:
     )
 
     return Extractor(
-        model=StampConchModel(model), transform=preprocess, identifier="mahmood-conch"  # type: ignore
+        model=StampConchModel(model),
+        transform=preprocess,
+        identifier="mahmood-conch",  # type: ignore
     )

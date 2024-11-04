@@ -46,17 +46,13 @@ def plot_bootstrapped_pr_curve(
         A tuple containing the AUPRC and the confidence interval (if calculated).
     """
     assert len(y_true) == len(y_pred), "Length of y_true and y_pred does not match."
-    conf_range = None
-    l = None
-    h = None
+    conf_range, lower, upper = None, None, None
 
     if n_bootstrap_samples:
         rng = np.random.default_rng()
         interp_recall = np.linspace(0, 1, num=1000)
         interp_prcs = np.full((n_bootstrap_samples, len(interp_recall)), np.nan)
-        bootstrap_auprcs = (
-            []
-        )  # Initialize to collect AUPRC values for bootstrapped samples
+        bootstrap_auprcs = []  # Initialize to collect AUPRC values for bootstrapped samples
 
         for i in trange(
             n_bootstrap_samples, desc="Bootstrapping PRC curves", leave=False
@@ -87,8 +83,8 @@ def plot_bootstrapped_pr_curve(
     # Calculate the confidence intervals for each threshold
     lower = np.nanpercentile(interp_prcs, 2.5, axis=0)
     upper = np.nanpercentile(interp_prcs, 97.5, axis=0)
-    h = np.quantile(bootstrap_auprcs, 0.975)
-    l = np.quantile(bootstrap_auprcs, 0.025)
+    upper = np.quantile(bootstrap_auprcs, 0.975)
+    lower = np.quantile(bootstrap_auprcs, 0.025)
     conf_range = (
         np.quantile(bootstrap_auprcs, 0.975) - np.quantile(bootstrap_auprcs, 0.025)
     ) / 2
@@ -103,7 +99,7 @@ def plot_bootstrapped_pr_curve(
 
     ax.set_xlabel("Recall")
     ax.set_ylabel("Precision")
-    ax.set_title(title + f"\nAUPRC = {auprc_value:.2f} [{l:.2f}-{h:.2f}]")
+    ax.set_title(title + f"\nAUPRC = {auprc_value:.2f} [{lower:.2f}-{upper:.2f}]")
     ax.legend()
 
     return auprc_value, conf_range
@@ -203,21 +199,23 @@ def plot_precision_recall_curves(
 
     # calculate confidence intervals and print title
     aucs = [x.auc for x in tpas]
-    l, h = st.t.interval(0.95, len(aucs) - 1, loc=np.mean(aucs), scale=st.sem(aucs))
+    lower, upper = st.t.interval(
+        0.95, len(aucs) - 1, loc=np.mean(aucs), scale=st.sem(aucs)
+    )
 
     # limit conf bounds to [0,1] in case of low sample numbers
-    l = max(0, l)
-    h = min(1, h)
+    lower = max(0, lower)
+    upper = min(1, upper)
 
     # conf_range = (h-l)/2
-    auc_str = f"PRC = {np.mean(aucs):0.2f} [{l:0.2f}-{h:0.2f}]"
+    auc_str = f"PRC = {np.mean(aucs):0.2f} [{lower:0.2f}-{upper:0.2f}]"
 
     if title:
         ax.set_title(f"{title}\n{auc_str}")
     else:
         ax.set_title(auc_str)
 
-    return l, h
+    return lower, upper
 
 
 def plot_precision_recall_curves_(

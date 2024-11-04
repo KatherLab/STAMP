@@ -3,7 +3,6 @@ In parts from https://github.com/lucidrains/vit-pytorch/blob/main/vit_pytorch/vi
 """
 
 import torch
-import torch.nn.functional as F
 from einops import repeat
 from torch import nn
 

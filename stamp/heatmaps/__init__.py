@@ -9,7 +9,6 @@ import numpy as np
 import openslide
 import torch
 from fastai.vision.learner import Learner, load_learner
-from jaxtyping import Float, Int
 from matplotlib.axes import Axes
 from matplotlib.patches import Patch
 from PIL import Image
@@ -47,8 +46,8 @@ def gradcam_per_category(learn: Learner, feats: Tensor) -> Tensor:
 
 
 def vals_to_im(
-    scores: Float[Tensor, "n_tiles *d_feats"],
-    norm_coords: Int[Tensor, "n_tiles *d_feats"],
+    scores: Tensor,  # [n_tiles *d_feats]
+    norm_coords: Tensor,  # "n_tiles *d_feats",
 ):
     """Arranges scores in a 2d grid according to coordinates"""
     size = norm_coords.max(0).values.flip(0) + 1

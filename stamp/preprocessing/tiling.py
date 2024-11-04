@@ -391,7 +391,7 @@ def extract_mpp_from_metadata(slide: openslide.AbstractSlide) -> float | None:
         images = collection.getElementsByTagName("Image")
         pixels = images[0].getElementsByTagName("Pixels")
         mpp = float(pixels[0].getAttribute("PhysicalSizeX"))
-    except Exception as e:
+    except Exception:
         logger.exception("failed to extract MPP from image description")
         return None
     return mpp
