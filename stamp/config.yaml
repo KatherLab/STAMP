@@ -155,6 +155,10 @@ heatmaps:
   # Slides to generate the heatmaps for.
   # The slide paths have to be specified relative to `wsi_dir`.
   # If not specified, stamp will generate heatmaps for all slides in `wsi_dir`.
-  #slides:
+  #slide_paths:
   #- slide1.svs
   #- slide2.mrxs
+
+  # The number of top- and bottom-scoring tiles to extract
+  #topk: 5
+  #bottomk: 5

@@ -12,4 +12,7 @@ class HeatmapConfig(BaseModel):
         validation_alias=AliasChoices("checkpoint_path", "model_path")
     )
 
-    slides: list[Path] | None = None
+    slide_paths: list[Path] | None = None
+
+    topk: int = 0
+    bottomk: int = 0

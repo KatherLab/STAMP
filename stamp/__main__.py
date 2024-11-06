@@ -54,14 +54,9 @@ def resolve_config_file_path(config_file: Optional[Path]) -> Path:
         if DEFAULT_CONFIG_FILE.exists():
             config_file = DEFAULT_CONFIG_FILE
         else:
-            config_file = STAMP_FACTORY_SETTINGS
-            print(
-                f"Falling back to default STAMP config file because {DEFAULT_CONFIG_FILE.absolute()} does not exist"
+            raise ConfigurationError(
+                f"Default STAMP config file not found at {config_file}"
             )
-            if not config_file.exists():
-                raise ConfigurationError(
-                    f"Default STAMP config file not found at {config_file}"
-                )
     if not config_file.exists():
         raise ConfigurationError(
             f"Config file {Path(config_file).absolute()} not found (run `stamp init` to create the config file or use the `--config` flag to specify a different config file)"
