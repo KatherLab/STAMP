@@ -266,7 +266,7 @@ def run_cli(args: argparse.Namespace):
 
 def main() -> None:
     parser = argparse.ArgumentParser(prog="stamp", description="STAMP: Solid Tumor Associative Modeling in Pathology")
-    parser.add_argument("--config", "-c", type=Path, default=None, help=f"Path to config file (if unspecified, defaults to {DEFAULT_CONFIG_FILE.absolute()} or the default STAMP config file shipped with the package if {DEFAULT_CONFIG_FILE.absolute()} does not exist)")
+    parser.add_argument("--config", "-c", type=Path, default=None, help=f"Path to config file. Note that the --config option must be supplied before any of the subcommands. If unspecified, defaults to {DEFAULT_CONFIG_FILE.absolute()} or the default STAMP config file shipped with the package if {DEFAULT_CONFIG_FILE.absolute()} does not exist.")
 
     commands = parser.add_subparsers(dest="command")
     commands.add_parser("init", help="Create a new STAMP configuration file at the path specified by --config")
