@@ -16,8 +16,6 @@ def file_digest(file: str | Path) -> str:
         return hashlib.file_digest(fp, "sha256").hexdigest()
 
 
-# %%
-
 stamp_resources_dir = (
     Path(os.environ.get("XDG_CACHE_HOME") or (Path.home() / ".cache")) / "stamp"
 )
@@ -30,11 +28,11 @@ embed_sizes = {
 }
 
 
-def get_dino_bloom(modelpath: Path, modelname: str = "dinov2_vits14") -> nn.Module:
+def get_dino_bloom(model_path: Path, modelname: str = "dinov2_vits14") -> nn.Module:
     # load the original DINOv2 model with the correct architecture and parameters.
     model = torch.hub.load("facebookresearch/dinov2", modelname)
     # load finetuned weights
-    pretrained = torch.load(modelpath, map_location=torch.device("cpu"))
+    pretrained = torch.load(model_path, map_location=torch.device("cpu"))
     # make correct state dict for loading
     new_state_dict = {}
     for key, value in pretrained["teacher"].items():
@@ -56,19 +54,18 @@ def dino_bloom() -> Extractor:
     model_file = stamp_resources_dir / "dinobloom-s.pth"
 
     if not model_file.exists():
-        try:
-            tmp_model_file = model_file.with_suffix(".tmp")
-            urllib.request.urlretrieve(
-                "https://zenodo.org/records/10908163/files/DinoBloom-S.pth",
-                tmp_model_file,
-            )
-            assert (
-                file_digest(tmp_model_file)
-                == "c2f7990b003e89bcece80e379fb8fe0ba2ec392ce19b286e8a294abd99568e44"
-            ), "unexpected model weights"
-        finally:
-            # Only rename on successful download
-            tmp_model_file.rename(model_file)
+        tmp_model_file = model_file.with_suffix(".tmp")
+        urllib.request.urlretrieve(
+            "https://zenodo.org/records/10908163/files/DinoBloom-S.pth",
+            tmp_model_file,
+        )
+        assert (
+            file_digest(tmp_model_file)
+            == "c2f7990b003e89bcece80e379fb8fe0ba2ec392ce19b286e8a294abd99568e44"
+        ), "unexpected model weights"
+
+        # Only rename on successful download
+        tmp_model_file.rename(model_file)
 
     return Extractor(
         model=get_dino_bloom(model_file),
