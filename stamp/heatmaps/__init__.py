@@ -160,9 +160,7 @@ def heatmaps_(
         gradcam = gradcam_per_category(
             learn=learn,
             feats=feats,
-        ).permute(
-            -1, -2
-        )  # shape: [tile, category]
+        ).permute(-1, -2)  # shape: [tile, category]
         gradcam_2d = vals_to_im(
             gradcam,
             coords_norm,
@@ -241,9 +239,7 @@ def heatmaps_(
             for score, index in zip(*category_score.topk(topk)):
                 (
                     slide.read_region(
-                        tuple(
-                            coords_tile_slide_px[index]
-                        ),  # pyright: ignore[reportArgumentType]
+                        tuple(coords_tile_slide_px[index]),  # pyright: ignore[reportArgumentType]
                         0,
                         (tile_size_slide_px, tile_size_slide_px),
                     )
@@ -256,9 +252,7 @@ def heatmaps_(
             for score, index in zip(*(-category_score).topk(bottomk)):
                 (
                     slide.read_region(
-                        tuple(
-                            coords_tile_slide_px[index]
-                        ),  # pyright: ignore[reportArgumentType]
+                        tuple(coords_tile_slide_px[index]),  # pyright: ignore[reportArgumentType]
                         0,
                         (tile_size_slide_px, tile_size_slide_px),
                     )
@@ -274,7 +268,8 @@ def heatmaps_(
             slide=slide,
             thumb_ax=axs[0, 0],
             attention=vals_to_im(
-                attention, coords_norm  # pyright: ignore[reportPossiblyUnboundVariable]
+                attention,
+                coords_norm,  # pyright: ignore[reportPossiblyUnboundVariable]
             ),
         )
         Image.fromarray(thumb).save(slide_output_dir / f"thumbnail-{h5_path.stem}.png")

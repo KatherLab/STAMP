@@ -1,19 +1,18 @@
-import hashlib
 import collections.abc
+import hashlib
 import math
+import os
 import warnings
 from itertools import repeat
-from typing import Optional
-
-import torch.utils.checkpoint as checkpoint
-from torch import _assert
-from torch.nn.init import _calculate_fan_in_and_fan_out
-import os
 from pathlib import Path
+from typing import Optional
 
 import gdown
 import torch
 import torch.nn as nn
+import torch.utils.checkpoint as checkpoint
+from torch import _assert
+from torch.nn.init import _calculate_fan_in_and_fan_out
 from torchvision.transforms import v2
 
 from stamp.preprocessing.extractor import Extractor
