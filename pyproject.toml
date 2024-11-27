@@ -42,6 +42,12 @@ dependencies = [
     "UNI@git+https://github.com/mahmoodlab/UNI.git#egg=f8f32c60a1d86805fdcb7317673c45318dac4806",
 ]
 
+[project.optional-dependencies]
+accelerate = ["xformers>=0.0.28.post3"]
+
+[tool.uv]
+default-groups = ["accelerate"]
+
 [project.scripts]
 "stamp" = "stamp.__main__:main"
 
