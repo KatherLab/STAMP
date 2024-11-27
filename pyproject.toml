@@ -7,14 +7,14 @@ allow-direct-references = true
 
 [project]
 name = "stamp"
-version = "1.2.0"
+version = "1.3.0"
 authors = [
-    { name="Omar El Nahhas", email="omar.el_nahhas@tu-dresden.de" },
-    { name="Marko van Treeck", email="markovantreeck@gmail.com" },
-    { name="Georg Wölflein", email="georgw7777@gmail.com" },
-    { name="Tim Lenz", email="tim.lenz@tu-dresden.de" },
-    { name="Laura Žigutytė", email="laura.zigutyte@tu-dresden.de" },
-    { name="Cornelius Kummer", email="cornelius.kummer@tu-dresden.de" },
+    { name = "Omar El Nahhas", email = "omar.el_nahhas@tu-dresden.de" },
+    { name = "Marko van Treeck", email = "markovantreeck@gmail.com" },
+    { name = "Georg Wölflein", email = "georgw7777@gmail.com" },
+    { name = "Tim Lenz", email = "tim.lenz@tu-dresden.de" },
+    { name = "Laura Žigutytė", email = "laura.zigutyte@tu-dresden.de" },
+    { name = "Cornelius Kummer", email = "cornelius.kummer@tu-dresden.de" },
 ]
 description = "A protocol for Solid Tumor Associative Modeling in Pathology"
 readme = "README.md"
@@ -50,6 +50,4 @@ dependencies = [
 "Bug Tracker" = "https://github.com/KatherLab/STAMP/issues"
 
 [tool.hatch.build]
-include = [
-    "stamp/**/*"
-]
+include = ["stamp/**/*"]

@@ -15,8 +15,8 @@ class PreprocessingConfig(BaseModel, arbitrary_types_allowed=True):
         Microns(256.0), validation_alias=AliasChoices("tile_size_um", "microns")
     )
     tile_size_px: TilePixels = TilePixels(224)
-    extractor: Literal["ctranspath", "mahmood-uni", "mahmood-conch"] = Field(
-        validation_alias=AliasChoices("extractor", "feat_extractor")
+    extractor: Literal["ctranspath", "mahmood-uni", "mahmood-conch", "dino-bloom"] = (
+        Field(validation_alias=AliasChoices("extractor", "feat_extractor"))
     )
     max_workers: int = Field(8, validation_alias=AliasChoices("max_workers", "cores"))
     device: DeviceLikeType = "cpu"

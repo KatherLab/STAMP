@@ -111,6 +111,7 @@ def extract_(
             "ctranspath",
             "mahmood-conch",
             "mahmood-uni",
+            "dino-bloom",
         ]
         | Extractor
     ),
@@ -132,6 +133,10 @@ def extract_(
         from stamp.preprocessing.extractor.uni import uni
 
         extractor = uni()
+    elif extractor == "dino-bloom":
+        from stamp.preprocessing.extractor.dinobloom import dino_bloom
+
+        extractor = dino_bloom()
     elif isinstance(extractor, Extractor):
         extractor = extractor
     else:
