@@ -23,19 +23,9 @@ def file_digest(file: str | Path) -> str:
         return hashlib.file_digest(fp, "sha256").hexdigest()
 
 
-# Try and determine cache dir automatically
-if "STAMP_RESOURCES_DIR" in os.environ:
-    stamp_resources_dir = Path(os.environ["STAMP_RESOURCES_DIR"])
-elif "XDG_CACHE_DIR" in os.environ:
-    stamp_resources_dir = Path(os.environ["XDG_CACHE_DIR"]) / "stamp"
-elif "XDG_HOME_DIR" in os.environ:
-    stamp_resources_dir = Path(os.environ["XDG_HOME_DIR"]) / ".cache" / "stamp"
-elif "HOME" in os.environ:
-    stamp_resources_dir = Path(os.environ["HOME"]) / ".cache" / "stamp"
-else:
-    raise RuntimeError(
-        "could not determine stamp cache dir. Please set the `STAMP_RESOURCES_DIR` environment variable."
-    )
+stamp_resources_dir = (
+    Path(os.environ.get("XDG_CACHE_HOME") or (Path.home() / ".cache")) / "stamp"
+)
 
 
 def ctranspath(model_path: Path | None = None) -> Extractor:
