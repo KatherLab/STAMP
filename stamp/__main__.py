@@ -91,7 +91,7 @@ def run_cli(args: argparse.Namespace) -> None:
             add_file_handle(logger, output_dir=config.preprocessing.output_dir)
             extract_(**vars(config.preprocessing))
         case "train":
-            from .modeling.marugoto.transformer.helpers import train_categorical_model_
+            from stamp.modeling.transformer.helpers import train_categorical_model_
 
             # if config.training is None:   #TODO uncomment this once we have deprecated old config options
             if not isinstance(config.training, TrainConfig):
@@ -100,7 +100,7 @@ def run_cli(args: argparse.Namespace) -> None:
             add_file_handle(logger, output_dir=config.training.output_dir)
             train_categorical_model_(**vars(config.training))
         case "crossval":
-            from .modeling.marugoto.transformer.helpers import categorical_crossval_
+            from stamp.modeling.transformer.helpers import categorical_crossval_
 
             # if config.crossval is None:   #TODO uncomment this once we have deprecated old config options
             if not isinstance(config.crossval, CrossvalConfig):
@@ -109,7 +109,7 @@ def run_cli(args: argparse.Namespace) -> None:
             add_file_handle(logger, output_dir=config.crossval.output_dir)
             categorical_crossval_(**vars(config.crossval))
         case "deploy":
-            from .modeling.marugoto.transformer.helpers import deploy_categorical_model_
+            from stamp.modeling.transformer.helpers import deploy_categorical_model_
 
             # if config.deployment is None: #TODO uncomment this once we have deprecated old config options
             if not isinstance(config.deployment, DeploymentConfig):
@@ -118,7 +118,7 @@ def run_cli(args: argparse.Namespace) -> None:
             add_file_handle(logger, output_dir=config.deployment.output_dir)
             deploy_categorical_model_(**vars(config.deployment))
         case "statistics":
-            from .modeling.statistics import compute_stats_
+            from stamp.modeling.statistics import compute_stats_
 
             if config.statistics is None:
                 raise ValueError("no statistics configuration supplied")

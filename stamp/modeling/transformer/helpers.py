@@ -2,8 +2,9 @@ import json
 import os
 from datetime import datetime
 from pathlib import Path
-from typing import Iterable, Optional, Sequence, Union
+from typing import Iterable, Optional, Sequence, Union, cast
 
+from fastai.learner import Learner
 import numpy as np
 import pandas as pd
 import torch
@@ -42,7 +43,7 @@ def safe_load_learner(model_path, use_cpu):
     except ModuleNotFoundError as e:
         if e.name == "stamp.modeling.marugoto.transformer.ViT":
             raise IncompatibleVersionError(
-                "The model checkpoint is incompatible with the current version of STAMP (>= 1.1.0). "
+                "The model checkpoint is incompatible with the current version of STAMP. "
                 "Please use STAMP version <= 1.0.3 to deploy this checkpoint."
             ) from e
         else:
@@ -165,12 +166,13 @@ def train_categorical_model_(
         add_features=add_features,
         valid_idxs=df.PATIENT.isin(valid_patients).values,
         path=output_dir,
-        cores=max(1, os.cpu_count() // 4),
+        cores=max(1, (os.cpu_count() or 0) // 4),
     )
 
     # save some additional information to the learner to make deployment easier
-    learn.target_label = target_label
-    learn.cat_labels, learn.cont_labels = cat_labels, cont_labels
+    learn.target_label = target_label  # pyright: ignore[reportAttributeAccessIssue]
+    learn.cat_labels = cat_labels  # pyright: ignore[reportAttributeAccessIssue]
+    learn.cont_labels = cont_labels  # pyright: ignore[reportAttributeAccessIssue]
 
     learn.export()
 
@@ -224,23 +226,20 @@ def deploy_categorical_model_(
         model_path:  Path of the model to deploy.
         output_path:  File to save model in.
     """
-    use_cpu = True
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     if device.type == "cuda":
         # allow for usage of TensorFloat32 as internal dtype for matmul on modern NVIDIA GPUs
         torch.set_float32_matmul_precision("high")
 
-    use_cpu = device.type == "cpu"  # True or False
-
     if (preds_csv := output_dir / "patient-preds.csv").exists():
         print(f"{preds_csv} already exists!  Skipping...")
         return
 
-    learn = safe_load_learner(checkpoint_path, use_cpu=use_cpu)
+    learn = safe_load_learner(checkpoint_path, use_cpu=(device.type == "cpu"))
     target_enc = get_target_enc(learn)
     categories = target_enc.categories_[0]
 
-    target_label = target_label or learn.target_label
+    target_label = target_label or cast(str, learn.target_label)
     cat_labels = cat_labels or learn.cat_labels
     cont_labels = cont_labels or learn.cont_labels
 
@@ -370,7 +369,9 @@ def categorical_crossval_(
             print(f"{preds_csv} already exists!  Skipping...")
             continue
         elif (fold_path / "export.pkl").exists():
-            learn = safe_load_learner(fold_path / "export.pkl")
+            learn = safe_load_learner(
+                fold_path / "export.pkl", use_cpu=(device.type == "cpu")
+            )
         else:
             fold_train_df = df.iloc[train_idxs]
             learn = _crossval_train(
@@ -402,7 +403,7 @@ def categorical_crossval_(
 
 def _crossval_train(
     *, fold_path, fold_df, fold, info, target_label, target_enc, cat_labels, cont_labels
-):
+) -> Learner:
     """Helper function for training the folds."""
     assert fold_df.PATIENT.nunique() == len(fold_df)
     fold_path.mkdir(exist_ok=True, parents=True)
@@ -442,9 +443,10 @@ def _crossval_train(
         add_features=add_features,
         valid_idxs=fold_df.PATIENT.isin(valid_patients),
         path=fold_path,
-        cores=max(1, os.cpu_count() // 4),
+        cores=max(1, (os.cpu_count() or 0) // 4),
     )
-    learn.target_label = target_label
-    learn.cat_labels, learn.cont_labels = cat_labels, cont_labels
+    learn.target_label = target_label  # pyright: ignore[reportAttributeAccessIssue]
+    learn.cat_labels = cat_labels  # pyright: ignore[reportAttributeAccessIssue]
+    learn.cont_labels = cont_labels  # pyright: ignore[reportAttributeAccessIssue]
 
     return learn

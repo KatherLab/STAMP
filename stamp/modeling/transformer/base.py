@@ -20,7 +20,7 @@ from fastai.vision.all import (
 from torch import nn
 
 from .data import SKLearnEncoder, make_dataset
-from .TransMIL import TransMIL
+from .transmil import TransMIL
 
 __all__ = ["train", "deploy"]
 

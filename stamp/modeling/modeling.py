@@ -1,7 +1,7 @@
 import argparse
 from pathlib import Path
 
-from .marugoto.transformer.helpers import (
+from stamp.modeling.transformer.helpers import (
     categorical_crossval_,
     deploy_categorical_model_,
     train_categorical_model_,

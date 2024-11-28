@@ -8,7 +8,7 @@ from torch import nn
 
 
 class FeedForward(nn.Module):
-    def __init__(self, dim, hidden_dim, norm_layer=nn.LayerNorm, dropout=0.0):
+    def __init__(self, dim, hidden_dim, norm_layer=nn.LayerNorm, dropout=0.0) -> None:
         super().__init__()
         self.mlp = nn.Sequential(
             norm_layer(dim),
@@ -26,7 +26,7 @@ class FeedForward(nn.Module):
 class Attention(nn.Module):
     def __init__(
         self, dim, heads=8, dim_head=512 // 8, norm_layer=nn.LayerNorm, dropout=0.0
-    ):
+    ) -> None:
         super().__init__()
         self.heads = heads
         self.norm = norm_layer(dim)
@@ -44,7 +44,7 @@ class Attention(nn.Module):
 class Transformer(nn.Module):
     def __init__(
         self, dim, depth, heads, dim_head, mlp_dim, norm_layer=nn.LayerNorm, dropout=0.0
-    ):
+    ) -> None:
         super().__init__()
         self.depth = depth
         self.layers = nn.ModuleList([])
@@ -67,8 +67,8 @@ class Transformer(nn.Module):
             )
         self.norm = norm_layer(dim)
 
-    def forward(self, x, mask=None):
-        for attn, ff in self.layers:
+    def forward(self, x, mask=None) -> torch.Tensor:
+        for attn, ff in self.layers:  # pyright: ignore[reportGeneralTypeIssues]
             x_attn = attn(x, mask=mask)
             x = x_attn + x
             x = ff(x) + x
@@ -86,8 +86,8 @@ class TransMIL(nn.Module):
         heads: int = 8,
         dim_head: int = 64,
         mlp_dim: int = 2048,
-        dropout: int = 0.0,
-        emb_dropout: int = 0.0,
+        dropout: float = 0.0,
+        emb_dropout: float = 0.0,
     ):
         super().__init__()
         self.cls_token = nn.Parameter(torch.randn(dim))
