@@ -3,6 +3,7 @@ import hashlib
 import os
 import urllib.request
 from pathlib import Path
+from typing import cast
 
 import torch
 from torch import nn
@@ -30,7 +31,7 @@ embed_sizes = {
 
 def get_dino_bloom(model_path: Path, modelname: str = "dinov2_vits14") -> nn.Module:
     # load the original DINOv2 model with the correct architecture and parameters.
-    model = torch.hub.load("facebookresearch/dinov2", modelname)
+    model = cast(nn.Module, torch.hub.load("facebookresearch/dinov2", modelname))
     # load finetuned weights
     pretrained = torch.load(model_path, map_location=torch.device("cpu"))
     # make correct state dict for loading

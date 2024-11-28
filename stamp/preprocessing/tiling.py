@@ -7,11 +7,12 @@ from collections.abc import Iterator
 from concurrent import futures
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Generic, NamedTuple, NewType, TypedDict, TypeVar
+from typing import Generic, NamedTuple, NewType, TypedDict, TypeVar, cast
 from zipfile import ZipFile
 
 import cv2
 import numpy as np
+import numpy.typing as npt
 import openslide
 from PIL import Image
 
@@ -222,7 +223,9 @@ def foreground_coords(
         .convert("I")
     )
     is_foreground = (
-        thumb_grayscale < brightness_cutoff if brightness_cutoff is not None else True
+        thumb_grayscale < brightness_cutoff
+        if brightness_cutoff is not None
+        else cast(npt.NDArray[np.bool_], np.full_like(thumb_grayscale, True))
     )
 
     for y_slide_px in range(0, slide.dimensions[1], tile_size_slide_px):

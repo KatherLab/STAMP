@@ -1,17 +1,17 @@
-import collections.abc
 import hashlib
 import math
 import os
 import warnings
+from collections.abc import Iterable
 from itertools import repeat
 from pathlib import Path
-from typing import Optional
+from typing import Optional, TypeVar, cast
 
 import gdown
 import torch
 import torch.nn as nn
 import torch.utils.checkpoint as checkpoint
-from torch import _assert
+from torch import Tensor, _assert
 from torch.nn.init import _calculate_fan_in_and_fan_out
 from torchvision.transforms import v2
 
@@ -83,16 +83,15 @@ model.load_state_dict(td['model'], strict=True)
 """
 
 
-def _ntuple(n):
-    def parse(x):
-        if isinstance(x, collections.abc.Iterable) and not isinstance(x, str):
-            return x
-        return tuple(repeat(x, n))
-
-    return parse
+T = TypeVar("T")
 
 
-to_2tuple = _ntuple(2)
+def to_2tuple(x: T | Iterable[T]) -> tuple[T, T]:
+    if isinstance(x, Iterable) and not isinstance(x, str):
+        t = tuple(x)
+        assert len(t) == 2
+        return t
+    return cast(tuple[T, T], tuple(repeat(x, 2)))
 
 
 def _no_grad_trunc_normal_(tensor, mean, std, a, b):
@@ -183,8 +182,9 @@ def variance_scaling_(tensor, scale=1.0, mode="fan_in", distribution="normal"):
         raise ValueError(f"invalid distribution {distribution}")
 
 
-def trunc_normal_(tensor, mean=0.0, std=1.0, a=-2.0, b=2.0):
-    # type: (Tensor, float, float, float, float) -> Tensor
+def trunc_normal_(
+    tensor: Tensor, mean: float = 0.0, std: float = 1.0, a: float = -2.0, b: float = 2.0
+) -> Tensor:
     return _no_grad_trunc_normal_(tensor, mean, std, a, b)
 
 
