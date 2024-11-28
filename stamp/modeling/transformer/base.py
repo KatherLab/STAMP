@@ -4,6 +4,7 @@ from typing import Any, Iterable, Optional, Sequence, Tuple, TypeVar
 
 import matplotlib.pyplot as plt
 import numpy as np
+import numpy.typing as npt
 import pandas as pd
 import torch
 import torch.nn.functional as F
@@ -30,7 +31,7 @@ T = TypeVar("T")
 
 def train(
     *,
-    bags: Sequence[Iterable[Path]],
+    bags: Sequence[npt.ndarray[Path]],
     targets: Tuple[SKLearnEncoder, np.ndarray],
     add_features: Iterable[Tuple[SKLearnEncoder, Sequence[Any]]] = [],
     valid_idxs: np.ndarray,

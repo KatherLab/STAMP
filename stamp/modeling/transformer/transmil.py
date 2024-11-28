@@ -2,13 +2,21 @@
 In parts from https://github.com/lucidrains/vit-pytorch/blob/main/vit_pytorch/vit.py
 """
 
+from collections.abc import Callable
+
 import torch
 from einops import repeat
 from torch import nn
 
 
 class FeedForward(nn.Module):
-    def __init__(self, dim, hidden_dim, norm_layer=nn.LayerNorm, dropout=0.0) -> None:
+    def __init__(
+        self,
+        dim: int,
+        hidden_dim: int,
+        norm_layer: Callable[[int], nn.Module] = nn.LayerNorm,
+        dropout: float = 0.0,
+    ) -> None:
         super().__init__()
         self.mlp = nn.Sequential(
             norm_layer(dim),
@@ -19,13 +27,18 @@ class FeedForward(nn.Module):
             nn.Dropout(dropout),
         )
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         return self.mlp(x)
 
 
 class Attention(nn.Module):
     def __init__(
-        self, dim, heads=8, dim_head=512 // 8, norm_layer=nn.LayerNorm, dropout=0.0
+        self,
+        dim: int,
+        heads: int = 8,
+        dim_head: int = 512 // 8,
+        norm_layer: Callable[[int], nn.Module] = nn.LayerNorm,
+        dropout: float = 0.0,
     ) -> None:
         super().__init__()
         self.heads = heads
@@ -43,7 +56,14 @@ class Attention(nn.Module):
 
 class Transformer(nn.Module):
     def __init__(
-        self, dim, depth, heads, dim_head, mlp_dim, norm_layer=nn.LayerNorm, dropout=0.0
+        self,
+        dim: int,
+        depth: int,
+        heads: int,
+        dim_head: int,
+        mlp_dim: int,
+        norm_layer: Callable[[int], nn.Module] = nn.LayerNorm,
+        dropout: float = 0.0,
     ) -> None:
         super().__init__()
         self.depth = depth
@@ -101,7 +121,7 @@ class TransMIL(nn.Module):
 
         self.mlp_head = nn.Sequential(nn.Linear(dim, num_classes))
 
-    def forward(self, x, lens):
+    def forward(self, x, lens) -> torch.Tensor:
         # remove unnecessary padding
         # (deactivated for now, since the memory usage fluctuates more and is overall bigger)
         # x = x[:, :torch.max(lens)].contiguous()
