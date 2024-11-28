@@ -45,9 +45,6 @@ dependencies = [
 [project.optional-dependencies]
 accelerate = ["xformers>=0.0.28.post3"]
 
-[tool.uv]
-default-groups = ["accelerate"]
-
 [project.scripts]
 "stamp" = "stamp.__main__:main"
 
