@@ -31,7 +31,7 @@ T = TypeVar("T")
 
 def train(
     *,
-    bags: Sequence[npt.ndarray[Path]],
+    bags: Sequence[npt.NDArray[Path]],
     targets: Tuple[SKLearnEncoder, np.ndarray],
     add_features: Iterable[Tuple[SKLearnEncoder, Sequence[Any]]] = [],
     valid_idxs: np.ndarray,
