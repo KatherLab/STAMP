@@ -1,6 +1,7 @@
+from collections.abc import Iterable, Sequence
 from functools import partial
 from pathlib import Path
-from typing import Any, Iterable, Optional, Sequence, Tuple, TypeVar
+from typing import Any, TypeVar, cast
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -20,8 +21,8 @@ from fastai.vision.all import (
 )
 from torch import nn
 
-from .data import SKLearnEncoder, make_dataset
-from .transmil import TransMIL
+from stamp.modeling.transformer.data import SKLearnEncoder, make_dataset
+from stamp.modeling.transformer.transmil import TransMIL
 
 __all__ = ["train", "deploy"]
 
@@ -31,16 +32,16 @@ T = TypeVar("T")
 
 def train(
     *,
-    bags: Sequence[npt.NDArray[Path]],
-    targets: Tuple[SKLearnEncoder, np.ndarray],
-    add_features: Iterable[Tuple[SKLearnEncoder, Sequence[Any]]] = [],
+    bags: Sequence[Sequence[Path]],
+    targets: tuple[SKLearnEncoder, np.ndarray],
+    add_features: Iterable[tuple[SKLearnEncoder, Sequence[Any]]] = [],
     valid_idxs: np.ndarray,
     n_epoch: int = 32,
     patience: int = 8,
-    path: Optional[Path] = None,
     batch_size: int = 64,
     cores: int = 8,
     plot: bool = False,
+    path: Path,
 ) -> Learner:
     """Train a MLP on image features.
 
@@ -57,16 +58,33 @@ def train(
 
     target_enc, targs = targets
     train_ds = make_dataset(
-        bags=bags[~valid_idxs],
-        targets=(target_enc, targs[~valid_idxs]),
-        add_features=[(enc, vals[~valid_idxs]) for enc, vals in add_features],
+        bags=bags[~valid_idxs],  # pyright: ignore[reportArgumentType,reportCallIssue]
+        targets=(
+            target_enc,
+            targs[~valid_idxs],  # pyright: ignore[reportArgumentType,reportCallIssue]
+        ),
+        add_features=[
+            (
+                enc,
+                vals[
+                    ~valid_idxs
+                ],  # pyright: ignore[reportArgumentType,reportCallIssue]
+            )
+            for enc, vals in add_features
+        ],
         bag_size=512,
     )
 
     valid_ds = make_dataset(
-        bags=bags[valid_idxs],
-        targets=(target_enc, targs[valid_idxs]),
-        add_features=[(enc, vals[valid_idxs]) for enc, vals in add_features],
+        bags=bags[valid_idxs],  # pyright: ignore[reportArgumentType,reportCallIssue]
+        targets=(target_enc, targs[valid_idxs]),  # pyright: ignore[reportArgumentType]
+        add_features=[
+            (
+                enc,
+                vals[valid_idxs],  # pyright: ignore[reportArgumentType,reportCallIssue]
+            )
+            for enc, vals in add_features
+        ],
         bag_size=None,
     )
 
@@ -89,6 +107,7 @@ def train(
         pin_memory=device.type == "cuda",
     )
     batch = train_dl.one_batch()
+    assert batch is not None
     feature_dim = batch[0].shape[-1]
 
     # for binary classification num_classes=2
@@ -130,7 +149,9 @@ def train(
         dls,
         model,
         loss_func=loss_func,
-        opt_func=partial(OptimWrapper, opt=torch.optim.AdamW),
+        opt_func=partial(
+            OptimWrapper, opt=torch.optim.AdamW
+        ),  # pyright: ignore[reportArgumentType]
         metrics=[RocAuc()],
         path=path,
     )  # .to_bf16()
@@ -163,9 +184,9 @@ def deploy(
     test_df: pd.DataFrame,
     learn: Learner,
     *,
-    target_label: Optional[str] = None,
-    cat_labels: Optional[Sequence[str]] = None,
-    cont_labels: Optional[Sequence[str]] = None,
+    target_label: str | None = None,
+    cat_labels: Sequence[str] | None = None,
+    cont_labels: Sequence[str] | None = None,
     device: torch.device = torch.device("cpu"),
 ) -> pd.DataFrame:
     assert test_df.PATIENT.nunique() == len(test_df), "duplicate patients!"
@@ -191,7 +212,10 @@ def deploy(
 
     test_ds = make_dataset(
         bags=test_df.slide_path.values,
-        targets=(target_enc, test_df[target_label].values),
+        targets=(
+            target_enc,
+            cast(Sequence, test_df[target_label].values),
+        ),
         add_features=add_features,
         bag_size=None,
     )
@@ -225,13 +249,15 @@ def deploy(
         [f"{target_label}_{cat}" for cat in categories]
     ].values
     patient_targs = target_enc.transform(
-        patient_preds_df[target_label].values.reshape(-1, 1)
+        cast(npt.NDArray, patient_preds_df[target_label].values).reshape(-1, 1)
     )
     patient_preds_df["loss"] = F.cross_entropy(
         torch.tensor(patient_preds), torch.tensor(patient_targs), reduction="none"
     )
 
-    patient_preds_df["pred"] = categories[patient_preds.argmax(1)]
+    patient_preds_df["pred"] = categories[
+        patient_preds.argmax(1)  # pyright: ignore[reportArgumentType]
+    ]
 
     # reorder dataframe and sort by loss (best predictions first)
     patient_preds_df = patient_preds_df[
@@ -243,6 +269,8 @@ def deploy(
             "loss",
         ]
     ]
-    patient_preds_df = patient_preds_df.sort_values(by="loss")
+    patient_preds_df = patient_preds_df.sort_values(
+        by="loss"
+    )  # pyright: ignore[reportCallIssue]
 
     return patient_preds_df
