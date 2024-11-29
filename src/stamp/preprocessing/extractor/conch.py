@@ -6,7 +6,8 @@ try:
     from conch.open_clip_custom import create_model_from_pretrained
 except ModuleNotFoundError as e:
     raise ModuleNotFoundError(
-        "conch module not found. You can install it using: `pip install git+https://github.com/Mahmoodlab/CONCH.git`"
+        "conch dependencies not installed."
+        " Please reinstall stamp using `pip install 'stamp[conch]'`"
     ) from e
 
 

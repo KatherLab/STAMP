@@ -9,6 +9,16 @@ from torch import Tensor
 
 from stamp.preprocessing.extractor import Extractor
 
+try:
+    import uni
+
+    uni
+except ModuleNotFoundError as e:
+    raise ModuleNotFoundError(
+        "uni dependencies not installed."
+        " Please reinstall stamp using `pip install 'stamp[uni]'`"
+    ) from e
+
 
 def uni(revision: str = "77ffbca1ee1cdcee6e87f6deebd2db8a5888c721") -> Extractor:
     model = timm.create_model(
