@@ -7,12 +7,12 @@ import pandas as pd
 from matplotlib import pyplot as plt
 from pydantic import BaseModel, Field
 
-from .marugoto.stats.categorical import categorical_aggregated_
-from .marugoto.visualizations.prc import (
+from stamp.statistics.categorical import categorical_aggregated_
+from stamp.statistics.prc import (
     plot_precision_recall_curves_,
     plot_single_decorated_prc_curve,
 )
-from .marugoto.visualizations.roc import (
+from stamp.statistics.roc import (
     plot_multiple_decorated_roc_curves,
     plot_single_decorated_roc_curve,
 )
