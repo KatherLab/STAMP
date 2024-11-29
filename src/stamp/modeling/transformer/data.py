@@ -1,11 +1,13 @@
 """Helper classes to manage pytorch data."""
 
+from collections.abc import Callable, Iterable, Sequence
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Callable, Iterable, Optional, Protocol, Sequence, Tuple, Union
+from typing import Any, Protocol
 
 import h5py
 import numpy as np
+import numpy.typing as npt
 import pandas as pd
 import torch
 from torch.utils.data import Dataset
@@ -19,7 +21,7 @@ __license__ = "MIT"
 
 class MapDataset(Dataset):
     def __init__(
-        self, func: Callable, *datasets: Sequence[Any], strict: bool = True
+        self, func: Callable, *datasets: Sequence, strict: bool = True
     ) -> None:
         """A dataset mapping over a function over other datasets.
 
@@ -32,10 +34,16 @@ class MapDataset(Dataset):
                 dataset's length.
         """
         if strict:
-            assert all(len(ds) == len(datasets[0]) for ds in datasets)
-            self._len = len(datasets[0])
+            assert all(
+                len(ds) == len(datasets[0])  # pyright: ignore[reportArgumentType]
+                for ds in datasets
+            ), "datasets have differing lengths"
+            self._len = len(datasets[0])  # pyright: ignore[reportArgumentType]
         elif datasets:
-            self._len = min(len(ds) for ds in datasets)
+            self._len = min(
+                len(ds)
+                for ds in datasets  # pyright: ignore[reportArgumentType]
+            )
         else:
             self._len = 0
 
@@ -58,11 +66,11 @@ class SKLearnEncoder(Protocol):
 
     categories_: Sequence[Sequence[str]]
 
-    def transform(x: Sequence[Sequence[Any]]): ...
+    def transform(self, x: npt.NDArray): ...
 
 
 class EncodedDataset(MapDataset):
-    def __init__(self, encode: SKLearnEncoder, values: Sequence[Any]):
+    def __init__(self, encode: SKLearnEncoder, values: Sequence) -> None:
         """A dataset which first encodes its input data.
 
         This class is can be useful with classes such as fastai, where the
@@ -93,7 +101,7 @@ class BagDataset(Dataset):
     F, where N is the number of instances and F the number of features per
     instance.
     """
-    bag_size: Optional[int] = None
+    bag_size: int | None = None
     """The number of instances in each bag.
 
     For bags containing more instances, a random sample of `bag_size`
@@ -104,12 +112,14 @@ class BagDataset(Dataset):
     def __len__(self):
         return len(self.bags)
 
-    def __getitem__(self, index: int) -> Tuple[torch.Tensor, int]:
+    def __getitem__(self, index: int) -> tuple[torch.Tensor, int]:
         # collect all the features
         feats = []
         for bag_file in self.bags[index]:
             with h5py.File(bag_file, "r") as f:
-                feats.append(torch.from_numpy(f["feats"][:]))
+                feats.append(
+                    torch.from_numpy(f["feats"][:])  # pyright: ignore[reportIndexIssue]
+                )
         feats = torch.concat(feats).float()
 
         # sample a subset, if required
@@ -121,7 +131,7 @@ class BagDataset(Dataset):
 
 def _to_fixed_size_bag(
     bag: torch.Tensor, bag_size: int = 512
-) -> Tuple[torch.Tensor, int]:
+) -> tuple[torch.Tensor, int]:
     # get up to bag_size elements
     bag_idxs = torch.randperm(bag.shape[0])[:bag_size]
     bag_samples = bag[bag_idxs]
@@ -139,9 +149,9 @@ def _to_fixed_size_bag(
 def make_dataset(
     *,
     bags: Sequence[Iterable[Path]],
-    targets: Tuple[SKLearnEncoder, Sequence[Any]],
-    add_features: Optional[Iterable[Tuple[Any, Sequence[Any]]]] = None,
-    bag_size: Optional[int] = None,
+    targets: tuple[SKLearnEncoder, Sequence[Any]],
+    add_features: Iterable[tuple[Any, Sequence[Any]]] | None = None,
+    bag_size: int | None = None,
 ) -> MapDataset:
     if add_features:
         return _make_multi_input_dataset(
@@ -162,14 +172,14 @@ def _make_basic_dataset(
     bags: Sequence[Iterable[Path]],
     target_enc: SKLearnEncoder,
     targs: Sequence[Any],
-    bag_size: Optional[int] = None,
+    bag_size: int | None = None,
 ) -> MapDataset:
     assert len(bags) == len(targs), "number of bags and ground truths does not match!"
 
     ds = MapDataset(
         zip_bag_targ,
-        BagDataset(bags, bag_size=bag_size),
-        EncodedDataset(target_enc, targs),
+        BagDataset(bags, bag_size=bag_size),  # pyright: ignore[reportArgumentType]
+        EncodedDataset(target_enc, targs),  # pyright: ignore[reportArgumentType]
     )
 
     return ds
@@ -187,9 +197,9 @@ def zip_bag_targ(bag, targets):
 def _make_multi_input_dataset(
     *,
     bags: Sequence[Iterable[Path]],
-    targets: Tuple[SKLearnEncoder, Sequence[Any]],
-    add_features: Iterable[Tuple[Any, Sequence[Any]]],
-    bag_size: Optional[int] = None,
+    targets: tuple[SKLearnEncoder, Sequence[Any]],
+    add_features: Iterable[tuple[Any, Sequence[Any]]],
+    bag_size: int | None = None,
 ) -> MapDataset:
     target_enc, targs = targets
     assert len(bags) == len(targs), "number of bags and ground truths does not match!"
@@ -201,16 +211,20 @@ def _make_multi_input_dataset(
     bag_ds = BagDataset(bags, bag_size=bag_size)
 
     add_ds = MapDataset(
-        _splat_concat, *[EncodedDataset(enc, vals) for enc, vals in add_features]
+        _splat_concat,
+        *[
+            EncodedDataset(enc, vals)  # pyright: ignore[reportArgumentType]
+            for enc, vals in add_features
+        ],
     )
 
     targ_ds = EncodedDataset(target_enc, targs)
 
     ds = MapDataset(
         _attach_add_to_bag_and_zip_with_targ,
-        bag_ds,
-        add_ds,
-        targ_ds,
+        bag_ds,  # pyright: ignore[reportArgumentType]
+        add_ds,  # pyright: ignore[reportArgumentType]
+        targ_ds,  # pyright: ignore[reportArgumentType]
     )
 
     return ds
@@ -235,9 +249,9 @@ def _attach_add_to_bag_and_zip_with_targ(bag, add, targ):
 
 
 def get_cohort_df(
-    clini_table: Union[Path, str],
-    slide_table: Union[Path, str],
-    feature_dir: Union[Path, str],
+    clini_table: Path,
+    slide_table: Path,
+    feature_dir: Path,
     target_label: str,
     categories: Iterable[str],
 ) -> pd.DataFrame:
@@ -270,11 +284,14 @@ def get_cohort_df(
 
     df = clini_df.merge(slide_df, on="PATIENT")
     # remove uninteresting
-    df = df[df[target_label].isin(categories)]
+    df = df[df[target_label].isin(categories)]  # pyright: ignore[reportArgumentType]
     # remove slides we don't have
     h5s = set(feature_dir.glob("*.h5"))
     assert h5s, f"no features found in {feature_dir}!"
-    h5_df = pd.DataFrame(h5s, columns=["slide_path"])
+    h5_df = pd.DataFrame(
+        h5s,
+        columns=["slide_path"],  # pyright: ignore[reportArgumentType]
+    )
     h5_df["FILENAME"] = h5_df.slide_path.map(lambda p: p.stem)
     df = df.merge(h5_df, on="FILENAME")
 
