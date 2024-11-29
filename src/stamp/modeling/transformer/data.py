@@ -14,6 +14,10 @@ from torch.utils.data import Dataset
 
 __all__ = ["BagDataset", "make_dataset", "get_cohort_df"]
 
+__author__ = "Marko van Treeck"
+__copyright__ = "Copyright (C) 2022-2024 Marko van Treeck"
+__license__ = "MIT"
+
 
 class ZipDataset(Dataset):
     # TODO Upgrade typing to PEP 646 once Python 3.11 hits

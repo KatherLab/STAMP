@@ -17,6 +17,10 @@ from torchvision.transforms import v2
 
 from stamp.preprocessing.extractor import Extractor
 
+__author__ = "Marko van Treeck"
+__copyright__ = "Copyright (C) 2022-2024 Marko van Treeck"
+__license__ = "MIT"
+
 
 def file_digest(file: str | Path) -> str:
     with open(file, "rb") as fp:

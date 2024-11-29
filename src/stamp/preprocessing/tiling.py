@@ -16,6 +16,11 @@ import numpy.typing as npt
 import openslide
 from PIL import Image
 
+__author__ = "Marko van Treeck"
+__copyright__ = "Copyright (C) 2022-2024 Marko van Treeck"
+__license__ = "MIT"
+
+
 logger = logging.getLogger("stamp")
 
 # Digest of _this_ file, used for unambiguously identifying the tiling procedure.

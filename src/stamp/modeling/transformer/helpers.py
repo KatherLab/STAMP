@@ -4,10 +4,10 @@ from datetime import datetime
 from pathlib import Path
 from typing import Iterable, Optional, Sequence, Union, cast
 
-from fastai.learner import Learner
 import numpy as np
 import pandas as pd
 import torch
+from fastai.learner import Learner
 from fastai.vision.learner import load_learner
 from sklearn.impute import SimpleImputer
 from sklearn.model_selection import StratifiedKFold, train_test_split
@@ -22,6 +22,10 @@ __all__ = [
     "deploy_categorical_model_",
     "categorical_crossval_",
 ]
+
+__author__ = "Marko van Treeck"
+__copyright__ = "Copyright (C) 2022-2024 Marko van Treeck"
+__license__ = "MIT"
 
 
 PathLike = Union[str, Path]

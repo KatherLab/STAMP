@@ -8,11 +8,8 @@ import scipy.stats as st
 from sklearn import metrics
 
 __author__ = "Marko van Treeck"
-__copyright__ = "Copyright 2022, Kather Lab"
+__copyright__ = "Copyright (C) 2022-2024 Marko van Treeck"
 __license__ = "MIT"
-__version__ = "0.1.0"
-__maintainer__ = "Marko van Treeck"
-__email__ = "mvantreeck@ukaachen.de"
 
 
 __all__ = ["categorical", "aggregate_categorical_stats", "categorical_aggregated_"]

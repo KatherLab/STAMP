@@ -17,6 +17,10 @@ from stamp.statistics.roc import (
     plot_single_decorated_roc_curve,
 )
 
+__author__ = "Marko van Treeck"
+__copyright__ = "Copyright (C) 2022-2024 Marko van Treeck"
+__license__ = "MIT"
+
 
 def add_roc_curve_args(parser: argparse.ArgumentParser) -> argparse.ArgumentParser:
     parser.add_argument(

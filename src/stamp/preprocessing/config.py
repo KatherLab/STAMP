@@ -6,6 +6,10 @@ from torch._prims_common import DeviceLikeType
 
 from stamp.preprocessing.tiling import Microns, TilePixels
 
+__author__ = "Marko van Treeck"
+__copyright__ = "Copyright (C) 2022-2024 Marko van Treeck"
+__license__ = "MIT"
+
 
 class PreprocessingConfig(BaseModel, arbitrary_types_allowed=True):
     output_dir: Path

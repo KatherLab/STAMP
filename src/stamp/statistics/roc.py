@@ -12,6 +12,11 @@ from matplotlib.colors import Colormap
 from sklearn.metrics import roc_auc_score, roc_curve
 from tqdm import trange
 
+__author__ = "Marko van Treeck"
+__copyright__ = "Copyright (C) 2022-2024 Marko van Treeck"
+__license__ = "MIT"
+
+
 all = [
     "plot_roc_curve",
     "plot_roc_curves",

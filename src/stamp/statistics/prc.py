@@ -10,6 +10,11 @@ from scipy.interpolate import interp1d
 from sklearn.metrics import auc, average_precision_score, precision_recall_curve
 from tqdm import trange
 
+__author__ = "Marko van Treeck"
+__copyright__ = "Copyright (C) 2022-2024 Marko van Treeck"
+__license__ = "MIT"
+
+
 all = [
     "plot_precision_recall_curve",
     "plot_precision_recall_curves",
