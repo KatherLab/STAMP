@@ -1,7 +1,5 @@
 """Helper classes to manage pytorch data."""
 
-import itertools
-import warnings
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Callable, Iterable, Optional, Protocol, Sequence, Tuple, Union
@@ -17,57 +15,6 @@ __all__ = ["BagDataset", "make_dataset", "get_cohort_df"]
 __author__ = "Marko van Treeck"
 __copyright__ = "Copyright (C) 2022-2024 Marko van Treeck"
 __license__ = "MIT"
-
-
-class ZipDataset(Dataset):
-    # TODO Upgrade typing to PEP 646 once Python 3.11 hits
-    def __init__(
-        self, *datasets: Dataset, strict: bool = True, flatten: bool = True
-    ) -> None:
-        """A dataset zipping multiple other datasets together.
-
-        Args:
-            datasets:  The datasets to zip together.
-            strict:  Enforce the datasets to have the same length.  If
-                false, then all datasets will be truncated to the shortest
-                dataset's length.
-            flatten:  Whether to combine the datasets into a single list.
-
-        `flatten` can be used to control how the `ZipDataset`'s items will
-        be combined:  Assume the `ZipDataset` consists of two subdatasets,
-        each with scalar elements.  Then when using the `ZipDataset` with a
-        Dataloader which loads the items in batches of size 64, then if
-        `flatten` is true, the output will have the shape 64x2, while if
-        `flatten` is false, it will have shape 64x2x1.
-        """
-        warnings.warn("ZipDataset will be deprecated soon", DeprecationWarning)
-        if strict:
-            assert all(len(ds) == len(datasets[0]) for ds in datasets)
-            self._len = len(datasets[0])
-        else:
-            self._len = min(len(ds) for ds in datasets)
-        self._datasets = datasets
-        self.flatten = flatten
-
-    def __len__(self) -> int:
-        return self._len
-
-    def __getitem__(self, index: int) -> Any:
-        if self.flatten:
-            return tuple(
-                itertools.chain.from_iterable(ds[index] for ds in self._datasets)
-            )
-        else:
-            return tuple(
-                itertools.chain.from_iterable([ds[index]] for ds in self._datasets)
-            )
-
-    def new_empty(self) -> "ZipDataset":
-        new_dss = [
-            ds.new_empty() if hasattr(ds, "new_empty") else ds for ds in self._datasets
-        ]
-        ds = ZipDataset(*new_dss, strict=False)
-        return ds
 
 
 class MapDataset(Dataset):
