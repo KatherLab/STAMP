@@ -57,7 +57,5 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.metadata]
+# Required for referencing specific git commits
 allow-direct-references = true
-
-[tool.hatch.build]
-include = ["stamp/**/*"]
