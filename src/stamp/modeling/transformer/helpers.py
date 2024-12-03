@@ -48,10 +48,15 @@ def safe_load_learner(model_path, use_cpu):
         if e.name == "stamp.modeling.marugoto.transformer.ViT":
             raise IncompatibleVersionError(
                 "The model checkpoint is incompatible with the current version of STAMP. "
-                "Please use STAMP version <= 1.0.3 to deploy this checkpoint."
+                "Please use stamp<=1.0.3 to deploy this checkpoint."
+            ) from e
+        elif e.name == "stamp.modeling.marugoto.transformer.TransMIL":
+            raise IncompatibleVersionError(
+                "The model checkpoint is incompatible with the current version of STAMP. "
+                "Please use stamp>1.0.3,<1.3.0 to deploy this checkpoint."
             ) from e
         else:
-            raise
+            raise e from e
 
 
 def train_categorical_model_(
