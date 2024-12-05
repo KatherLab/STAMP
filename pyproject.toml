@@ -11,7 +11,7 @@ authors = [
 ]
 description = "A protocol for Solid Tumor Associative Modeling in Pathology"
 readme = "README.md"
-requires-python = ">=3.10,<3.13" # <3.13 because of fastai
+requires-python = ">=3.10"
 
 classifiers = [
     "Programming Language :: Python :: 3",
@@ -21,9 +21,9 @@ classifiers = [
 
 dependencies = [
     "einops>=0.8.0",
-    "fastai>=2.7.18",
     "h5py>=3.12.1",
     "huggingface-hub>=0.26.2",
+    "lightning>=2.4.0",
     "matplotlib>=3.9.2",
     "opencv-python>=4.10.0.84",
     "openpyxl>=3.1.5",
@@ -36,14 +36,21 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-ctranspath = ["gdown>=5.2.0"]
+ctranspath = [
+    "gdown>=5.2.0",
+    "torchvision>=0.20.1",
+]
 uni = [
+    "timm>=0.9.8",
     "UNI@git+https://github.com/mahmoodlab/UNI.git#egg=f8f32c60a1d86805fdcb7317673c45318dac4806",
 ]
 conch = [
     "conch@git+https://github.com/Mahmoodlab/CONCH.git#egg=02d6ac59cc20874bff0f581de258c2b257f69a84",
 ]
-dinobloom = ["xformers>=0.0.28.post3"]
+dinobloom = [
+    "torchvision>=0.20.1",
+    "xformers>=0.0.28.post3",
+]
 all = ["stamp[ctranspath,uni,conch,dinobloom]"]
 
 [project.scripts]
@@ -52,6 +59,14 @@ all = ["stamp[ctranspath,uni,conch,dinobloom]"]
 [project.urls]
 "Homepage" = "https://github.com/KatherLab/STAMP"
 "Bug Tracker" = "https://github.com/KatherLab/STAMP/issues"
+
+[dependency-groups]
+dev = [
+    "ipykernel>=6.29.5",
+    "pyright>=1.1.389",
+    "pytest>=8.3.4",
+    "ruff>=0.8.1",
+]
 
 [build-system]
 requires = ["hatchling"]
