@@ -8,7 +8,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 import openslide
 import torch
-from fastai.vision.learner import Learner, load_learner
+
+# from fastai.vision.learner import Learner, load_learner
+Learner = "Learner"  # Fixme when removing fastai
 from matplotlib.axes import Axes
 from matplotlib.patches import Patch
 from PIL import Image

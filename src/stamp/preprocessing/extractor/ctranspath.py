@@ -34,13 +34,13 @@ def file_digest(file: str | Path) -> str:
         return hashlib.file_digest(fp, "sha256").hexdigest()
 
 
-stamp_resources_dir = (
+stamp_cache_dir = (
     Path(os.environ.get("XDG_CACHE_HOME") or (Path.home() / ".cache")) / "stamp"
 )
 
 
 def ctranspath(model_path: Path | None = None) -> Extractor:
-    model_path = model_path or stamp_resources_dir / "ctranspath.pth"
+    model_path = model_path or stamp_cache_dir / "ctranspath.pth"
     if not model_path.exists():
         model_path.parent.mkdir(parents=True, exist_ok=True)
         gdown.download(

@@ -1,6 +1,10 @@
+import os
 from pathlib import Path
 
-from pydantic import AliasChoices, BaseModel, Field
+import torch
+from pydantic import BaseModel, Field
+
+from stamp.modeling.data import PandasLabel
 
 
 class TrainConfig(BaseModel):
@@ -9,10 +13,22 @@ class TrainConfig(BaseModel):
     clini_table: Path
     slide_table: Path
     feature_dir: Path
-    target_label: str = Field(pattern="^[a-zA-Z0-9_]+$")
+
+    ground_truth_label: PandasLabel
     categories: list[str] | None = None
-    cat_labels: list[str] | None = Field(default_factory=list)
-    cont_labels: list[str] | None = Field(default_factory=list)
+
+    patient_label: PandasLabel = "PATIENT"
+    filename_label: PandasLabel = "FILENAME"
+
+    # Dataset and -loader parameters
+    bag_size: int = 512
+    num_workers: int = min(os.cpu_count() or 1, 16)
+
+    # Training paramenters
+    batch_size: int = 64
+    max_epochs: int = 64
+    patience: int = 16
+    accelerator: str = "gpu" if torch.cuda.is_available() else "cpu"
 
 
 class CrossvalConfig(TrainConfig):
@@ -22,15 +38,14 @@ class CrossvalConfig(TrainConfig):
 class DeploymentConfig(BaseModel):
     output_dir: Path
 
-    clini_table: Path
+    checkpoint_path: Path
+    clini_table: Path | None = None
     slide_table: Path
-    feature_dir: Path = Field(
-        validation_alias=AliasChoices("feature_dir", "default_feature_dir")
-    )
-    target_label: str = Field(pattern="^[a-zA-Z0-9_]+$")
-    cat_labels: list[str] | None = Field(default_factory=list)
-    cont_labels: list[str] | None = Field(default_factory=list)
-    # We can't have things called `model_` in pydantic, so let's call it `checkpoint_path` instead
-    checkpoint_path: Path = Field(
-        validation_alias=AliasChoices("model_path", "checkpoint_path")
-    )
+    feature_dir: Path
+
+    ground_truth_label: PandasLabel | None = None
+    patient_label: PandasLabel = "PATIENT"
+    filename_label: PandasLabel = "FILENAME"
+
+    num_workers: int = min(os.cpu_count() or 1, 16)
+    accelerator: str = "gpu" if torch.cuda.is_available() else "cpu"

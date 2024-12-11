@@ -10,9 +10,7 @@ from torch import Tensor
 from stamp.preprocessing.extractor import Extractor
 
 try:
-    import uni
-
-    uni
+    import uni  # pyright: ignore[reportAssignmentType]
 except ModuleNotFoundError as e:
     raise ModuleNotFoundError(
         "uni dependencies not installed."

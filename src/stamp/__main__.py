@@ -3,14 +3,13 @@ import logging
 import shutil
 import sys
 from pathlib import Path
-from typing import Optional, assert_never
+from typing import assert_never
 
+import numpy as np
 import yaml
 
 from stamp.config import StampConfig
-from stamp.modeling.config import CrossvalConfig, DeploymentConfig, TrainConfig
 
-DEFAULT_CONFIG_FILE = Path("config.yaml")
 STAMP_FACTORY_SETTINGS = Path(__file__).with_name("config.yaml")
 
 # Set up the logger
@@ -24,18 +23,8 @@ stream_handler.setFormatter(formatter)
 logger.addHandler(stream_handler)
 
 
-class ConfigurationError(Exception):
-    pass
-
-
-def create_config_file(config_file: Path | None) -> Path:
+def _create_config_file(config_file: Path) -> None:
     """Create a new config file at the specified path (by copying the default config file)."""
-    config_file = config_file or DEFAULT_CONFIG_FILE
-    # Locate original config file
-    if not STAMP_FACTORY_SETTINGS.exists():
-        raise ConfigurationError(
-            f"Default STAMP config file not found at {STAMP_FACTORY_SETTINGS}"
-        )
     if not config_file.exists():
         # Copy original config file
         shutil.copy(STAMP_FACTORY_SETTINGS, config_file)
@@ -45,34 +34,15 @@ def create_config_file(config_file: Path | None) -> Path:
             f"Refusing to overwrite existing config file at {config_file.absolute()}"
         )
 
-    return config_file
-
-
-def resolve_config_file_path(config_file: Optional[Path]) -> Path:
-    """Resolve the path to the config file, falling back to the default config file if not specified."""
-    if config_file is None:
-        if DEFAULT_CONFIG_FILE.exists():
-            config_file = DEFAULT_CONFIG_FILE
-        else:
-            raise ConfigurationError(
-                f"Default STAMP config file not found at {config_file}"
-            )
-    if not config_file.exists():
-        raise ConfigurationError(
-            f"Config file {Path(config_file).absolute()} not found (run `stamp init` to create the config file or use the `--config` flag to specify a different config file)"
-        )
-    return config_file
-
 
 def run_cli(args: argparse.Namespace) -> None:
     # Handle init command
     if args.command == "init":
-        create_config_file(args.config)
+        _create_config_file(args.config)
         return
 
     # Load YAML configuration
-    config_file_path = resolve_config_file_path(args.config)
-    with open(config_file_path, "r") as config_yaml:
+    with open(args.config_file_path, "r") as config_yaml:
         config = StampConfig.model_validate(yaml.safe_load(config_yaml))
 
     match args.command:
@@ -80,68 +50,108 @@ def run_cli(args: argparse.Namespace) -> None:
             assert_never(
                 "this case should be handled above"  # pyright: ignore[reportArgumentType]
             )
+
         case "config":
             print(yaml.dump(config.model_dump(mode="json")))
+
         case "preprocess":
             from stamp.preprocessing.extract import extract_
 
             if config.preprocessing is None:
                 raise ValueError("no preprocessing configuration supplied")
 
-            add_file_handle(logger, output_dir=config.preprocessing.output_dir)
+            _add_file_handle_(logger, output_dir=config.preprocessing.output_dir)
             extract_(**vars(config.preprocessing))
-        case "train":
-            from stamp.modeling.transformer.helpers import train_categorical_model_
 
-            # if config.training is None:   #TODO uncomment this once we have deprecated old config options
-            if not isinstance(config.training, TrainConfig):
+        case "train":
+            from stamp.modeling.train import train_categorical_model_
+
+            if config.training is None:
                 raise ValueError("no training configuration supplied")
 
-            add_file_handle(logger, output_dir=config.training.output_dir)
-            train_categorical_model_(**vars(config.training))
-        case "crossval":
-            from stamp.modeling.transformer.helpers import categorical_crossval_
+            _add_file_handle_(logger, output_dir=config.training.output_dir)
+            # We pass every parameter explicitly so our type checker can do its work.
+            train_categorical_model_(
+                output_dir=config.training.output_dir,
+                clini_table=config.training.clini_table,
+                slide_table=config.training.slide_table,
+                feature_dir=config.training.feature_dir,
+                patient_label=config.training.patient_label,
+                ground_truth_label=config.training.ground_truth_label,
+                filename_label=config.training.filename_label,
+                categories=(
+                    np.array(config.training.categories)
+                    if config.training.categories is not None
+                    else None
+                ),
+                # Dataset and -loader parameters
+                bag_size=config.training.bag_size,
+                num_workers=config.training.num_workers,
+                # Training paramenters
+                batch_size=config.training.batch_size,
+                max_epochs=config.training.max_epochs,
+                patience=config.training.patience,
+                accelerator=config.training.accelerator,
+            )
 
-            # if config.crossval is None:   #TODO uncomment this once we have deprecated old config options
-            if not isinstance(config.crossval, CrossvalConfig):
-                raise ValueError("no crossval configuration supplied")
-
-            add_file_handle(logger, output_dir=config.crossval.output_dir)
-            categorical_crossval_(**vars(config.crossval))
         case "deploy":
-            from stamp.modeling.transformer.helpers import deploy_categorical_model_
+            from stamp.modeling.deploy import deploy_categorical_model_
 
-            # if config.deployment is None: #TODO uncomment this once we have deprecated old config options
-            if not isinstance(config.deployment, DeploymentConfig):
+            if config.deployment is None:
                 raise ValueError("no deployment configuration supplied")
 
-            add_file_handle(logger, output_dir=config.deployment.output_dir)
-            deploy_categorical_model_(**vars(config.deployment))
+            _add_file_handle_(logger, output_dir=config.deployment.output_dir)
+            deploy_categorical_model_(
+                output_dir=config.deployment.output_dir,
+                checkpoint_path=config.deployment.checkpoint_path,
+                clini_table=config.deployment.clini_table,
+                slide_table=config.deployment.slide_table,
+                feature_dir=config.deployment.feature_dir,
+                ground_truth_label=config.deployment.ground_truth_label,
+                patient_label=config.deployment.patient_label,
+                filename_label=config.deployment.filename_label,
+                num_workers=config.deployment.num_workers,
+                accelerator=config.deployment.accelerator,
+            )
+
+        case "crossval":
+            raise NotImplementedError()
+            from stamp.modeling.transformer.helpers import categorical_crossval_
+
+            if config.crossval is None:
+                raise ValueError("no crossval configuration supplied")
+
+            _add_file_handle_(logger, output_dir=config.crossval.output_dir)
+            categorical_crossval_(**vars(config.crossval))
+
         case "statistics":
+            raise NotImplementedError()
             from stamp.modeling.statistics import compute_stats_
 
             if config.statistics is None:
                 raise ValueError("no statistics configuration supplied")
 
-            add_file_handle(logger, output_dir=config.statistics.output_dir)
+            _add_file_handle_(logger, output_dir=config.statistics.output_dir)
 
             compute_stats_(**vars(config.statistics))
+
         case "heatmaps":
             from stamp.heatmaps import heatmaps_
 
             if config.heatmaps is None:
                 raise ValueError("no heatmaps configuration supplied")
 
-            add_file_handle(logger, output_dir=config.heatmaps.output_dir)
+            _add_file_handle_(logger, output_dir=config.heatmaps.output_dir)
 
             heatmaps_(**vars(config.heatmaps))
+
         case _:
-            assert_never(
-                "the argparser should only allow valid commands"  # pyright: ignore[reportArgumentType]
+            raise RuntimeError(
+                "unreachable: the argparser should only allow valid commands"
             )
 
 
-def add_file_handle(logger: logging.Logger, *, output_dir: Path) -> None:
+def _add_file_handle_(logger: logging.Logger, *, output_dir: Path) -> None:
     output_dir.mkdir(exist_ok=True, parents=True)
 
     file_handler = logging.FileHandler(output_dir / "logfile.log")
@@ -161,8 +171,9 @@ def main() -> None:
         "--config",
         "-c",
         type=Path,
-        default=None,
-        help=f"Path to config file (if unspecified, defaults to {DEFAULT_CONFIG_FILE.absolute()} or the default STAMP config file shipped with the package if {DEFAULT_CONFIG_FILE.absolute()} does not exist)",
+        dest="config_file_path",
+        default=Path("config.yaml"),
+        help="Path to config file. Default: config.yaml",
     )
 
     commands = parser.add_subparsers(dest="command")
@@ -197,8 +208,8 @@ def main() -> None:
     # Run the CLI
     try:
         run_cli(args)
-    except ConfigurationError as e:
-        print(e)
+    except Exception as e:
+        logger.exception(e)
         exit(1)
 
 

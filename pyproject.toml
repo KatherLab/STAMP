@@ -28,10 +28,13 @@ dependencies = [
     "opencv-python>=4.10.0.84",
     "openpyxl>=3.1.5",
     "openslide-python>=1.4.1",
+    "packaging>=24.2",
     "pandas>=2.2.3",
+    "pydantic>=2.10.3",
     "pyyaml>=6.0.2",
     "scikit-learn>=1.5.2",
     "torch>=2.5.1",
+    "torchmetrics>=1.6.0",
     "tqdm>=4.66.6",
 ]
 

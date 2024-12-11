@@ -123,7 +123,7 @@ def extract_(
     tile_size_px: TilePixels = TilePixels(224),
     tile_size_um: Microns = Microns(256.0),
     max_workers: int = 32,
-    device: DeviceLikeType = "cuda" if torch.cuda.is_available() else "cpu",
+    accelerator: DeviceLikeType = "cuda" if torch.cuda.is_available() else "cpu",
     brightness_cutoff: int | None,
 ) -> None:
     if extractor == "ctranspath":
@@ -147,7 +147,7 @@ def extract_(
     else:
         assert_never(extractor)  # This should be unreachable
 
-    model = extractor.model.to(device).eval()
+    model = extractor.model.to(accelerator).eval()
     extractor_id = f"{extractor.identifier}-{get_preprocessing_code_hash()[:8]}"
 
     logger.info(f"Using extractor {extractor.identifier}")
@@ -197,7 +197,7 @@ def extract_(
             feats, xs_um, ys_um = [], [], []
             for tiles, xs, ys in tqdm(dl, leave=False):
                 with torch.inference_mode():
-                    feats.append(model(tiles.to(device)).detach().half().cpu())
+                    feats.append(model(tiles.to(accelerator)).detach().half().cpu())
                 xs_um.append(xs.float())
                 ys_um.append(ys.float())
         except Exception:

@@ -17,7 +17,7 @@ def file_digest(file: str | Path) -> str:
         return hashlib.file_digest(fp, "sha256").hexdigest()
 
 
-stamp_resources_dir = (
+stamp_cache_dir = (
     Path(os.environ.get("XDG_CACHE_HOME") or (Path.home() / ".cache")) / "stamp"
 )
 
@@ -52,9 +52,10 @@ def get_dino_bloom(model_path: Path, modelname: str = "dinov2_vits14") -> nn.Mod
 
 
 def dino_bloom() -> Extractor:
-    model_file = stamp_resources_dir / "dinobloom-s.pth"
+    model_file = stamp_cache_dir / "dinobloom-s.pth"
 
     if not model_file.exists():
+        stamp_cache_dir.mkdir(exist_ok=True, parents=True)
         tmp_model_file = model_file.with_suffix(".tmp")
         urllib.request.urlretrieve(
             "https://zenodo.org/records/10908163/files/DinoBloom-S.pth",
