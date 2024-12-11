@@ -1,4 +1,3 @@
-# %%
 import logging
 from collections.abc import Mapping
 from pathlib import Path
@@ -109,6 +108,7 @@ def _predict(
     accelerator: str | Accelerator,
 ) -> Mapping[PatientId, torch.Tensor]:
     model = model.eval()
+    torch.set_float32_matmul_precision("medium")
 
     patients_used_for_training: set[PatientId] = set(model.train_patients) | set(
         model.valid_patients
@@ -128,7 +128,11 @@ def _predict(
         num_workers=num_workers,
     )
 
-    trainer = lightning.Trainer(accelerator=accelerator, logger=False)
+    trainer = lightning.Trainer(
+        accelerator=accelerator,
+        devices=1,  # Needs to be 1, otherwise half the predictions are missing for some reason
+        logger=False,
+    )
     predictions = torch.concat(
         cast(list[torch.Tensor], trainer.predict(model, test_dl))
     )

@@ -6,6 +6,7 @@ import lightning.pytorch
 import lightning.pytorch.accelerators
 import lightning.pytorch.accelerators.accelerator
 import numpy.typing as npt
+import torch
 from lightning.pytorch.accelerators.accelerator import Accelerator
 from lightning.pytorch.callbacks import EarlyStopping, ModelCheckpoint
 from lightning.pytorch.loggers import CSVLogger
@@ -172,6 +173,8 @@ def train_categorical_model_(
         slide_table=slide_table,
         feature_dir=feature_dir,
     )
+
+    torch.set_float32_matmul_precision("high")
 
     trainer = lightning.Trainer(
         default_root_dir=output_dir,

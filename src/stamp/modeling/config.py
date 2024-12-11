@@ -8,13 +8,17 @@ from stamp.modeling.data import PandasLabel
 
 
 class TrainConfig(BaseModel):
-    output_dir: Path
+    output_dir: Path = Field(description="The directory to save the results to")
 
-    clini_table: Path
-    slide_table: Path
-    feature_dir: Path
+    clini_table: Path = Field(description="Excel or CSV to read clinical data from")
+    slide_table: Path = Field(
+        description="Excel or CSV to read patient-slide associations from"
+    )
+    feature_dir: Path = Field(description="Directory containing feature files")
 
-    ground_truth_label: PandasLabel
+    ground_truth_label: PandasLabel = Field(
+        description="Name of categorical column in clinical table to train on"
+    )
     categories: list[str] | None = None
 
     patient_label: PandasLabel = "PATIENT"
