@@ -1,9 +1,10 @@
 """Lightning wrapper around the model"""
 
-from typing import NewType
+from typing import TypeAlias
 
 import lightning
 import numpy.typing as npt
+from jaxtyping import Float
 from packaging.version import Version
 from torch import Tensor, nn, optim
 from torchmetrics.classification import MulticlassAUROC
@@ -19,15 +20,16 @@ from stamp.modeling.data import (
 )
 from stamp.modeling.vision_transformer import VisionTransformer
 
-Losses = NewType("Losses", Tensor)
+Losses: TypeAlias = Float[Tensor, "batch loss"]
 
 
 class LitVisionTransformer(lightning.LightningModule):
+
     def __init__(
         self,
         *,
         categories: npt.NDArray[Category],
-        category_weights: Tensor,
+        category_weights: Float[Tensor, "category_weight"],  # noqa: F821
         dim_input: int,
         dim_model: int,
         dim_feedforward: int,
@@ -136,7 +138,7 @@ class LitVisionTransformer(lightning.LightningModule):
                 sync_dist=True,
             )
 
-        return Losses(loss)
+        return loss
 
     def training_step(
         self, batch: tuple[Bags, BagSizes, EncodedTargets], batch_idx: int
@@ -167,7 +169,7 @@ class LitVisionTransformer(lightning.LightningModule):
 
     def predict_step(
         self, batch: tuple[Bags, BagSizes, EncodedTargets], batch_idx: int
-    ) -> Tensor:
+    ) -> Float[Tensor, "batch logit"]:
         bags, _, _ = batch
         return self.model(bags)
 

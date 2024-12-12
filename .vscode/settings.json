@@ -7,5 +7,10 @@
     "python.analysis.inlayHints.functionReturnTypes": true,
     "python.analysis.inlayHints.pytestParameters": true,
     "python.analysis.inlayHints.variableTypes": true,
-    "editor.codeActionsOnSave": { "source.organizeImports": "always" }
+    "editor.codeActionsOnSave": {
+        "source.organizeImports": "always"
+    },
+    "ruff.lint.ignore": [
+        "F722", // otherwise jaxtyping annotations get flagged
+    ]
 }

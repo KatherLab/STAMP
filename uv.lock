@@ -759,6 +759,15 @@ wheels = [
 ]
 
 [[package]]
+name = "jaxtyping"
+version = "0.2.36"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/a6/cc/76e38d7d24e590d1a819c9b203b537e5c6416e1c1aebc8c25f598a00d474/jaxtyping-0.2.36.tar.gz", hash = "sha256:781ac44a3cf8982063d7ee48b5008ccfad7b13793bf878eb3058d5319aa08f0f", size = 45171 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/94/99/c83c6a97f4382caf1c9bfeeeca935d3eb1f479f711665aeadf4408048107/jaxtyping-0.2.36-py3-none-any.whl", hash = "sha256:b19bcbd4009df8734602203402483a4066ad2eb3382904432e370588e9c9707d", size = 55823 },
+]
+
+[[package]]
 name = "jedi"
 version = "0.19.2"
 source = { registry = "https://pypi.org/simple" }
@@ -2307,6 +2316,7 @@ dependencies = [
     { name = "einops" },
     { name = "h5py" },
     { name = "huggingface-hub" },
+    { name = "jaxtyping" },
     { name = "lightning" },
     { name = "matplotlib" },
     { name = "opencv-python" },
@@ -2362,6 +2372,7 @@ requires-dist = [
     { name = "gdown", marker = "extra == 'ctranspath'", specifier = ">=5.2.0" },
     { name = "h5py", specifier = ">=3.12.1" },
     { name = "huggingface-hub", specifier = ">=0.26.2" },
+    { name = "jaxtyping", specifier = ">=0.2.36" },
     { name = "lightning", specifier = ">=2.4.0" },
     { name = "matplotlib", specifier = ">=3.9.2" },
     { name = "opencv-python", specifier = ">=4.10.0.84" },

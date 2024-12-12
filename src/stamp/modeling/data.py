@@ -12,6 +12,7 @@ import numpy as np
 import numpy.typing as npt
 import pandas as pd
 import torch
+from jaxtyping import Float, Int
 from torch import Tensor
 from torch.utils.data import DataLoader, Dataset
 
@@ -40,14 +41,15 @@ FeaturePath = NewType("FeaturePath", Path)
 Category: TypeAlias = np.str_
 
 # One instance
-_Bag = NewType("_Bag", Tensor)
+_Bag: TypeAlias = Float[Tensor, "tile feature"]
 _BagSize: TypeAlias = int
-_EncodedTarget = NewType("_EncodedTarget", Tensor)
+_EncodedTarget: TypeAlias = Float[Tensor, "tile category_is_hot"]
+"""The ground truth, encoded numerically (currently: one-hot)"""
 
 # A batch of the above
-Bags = NewType("Bags", Tensor)
-BagSizes = NewType("BagSizes", Tensor)
-EncodedTargets = NewType("EncodedTargets", Tensor)
+Bags: TypeAlias = Float[Tensor, "batch tile feature"]
+BagSizes: TypeAlias = Int[Tensor, "batch size"]
+EncodedTargets: TypeAlias = Float[Tensor, "batch tile category_is_hot"]
 """The ground truth, encoded numerically (currently: one-hot)"""
 
 PandasLabel: TypeAlias = str
@@ -59,7 +61,7 @@ class PatientData:
 
     _ = KW_ONLY
     ground_truth: GroundTruth | None
-    feature_files: set[FeaturePath | BinaryIO]
+    feature_files: Iterable[FeaturePath | BinaryIO]
 
 
 def dataloader_from_patient_data(
@@ -105,8 +107,7 @@ class BagDataset(Dataset[tuple[_Bag, _BagSize, _EncodedTarget]]):
 
     _: KW_ONLY
     bags: Sequence[Iterable[FeaturePath | BinaryIO]]
-    """
-    The `.h5` files containing the bags.
+    """The `.h5` files containing the bags.
 
     Each bag consists of the features taken from one or multiple h5 files.
     Each of the h5 files needs to have a dataset called `feats` of shape N x F,
@@ -114,21 +115,16 @@ class BagDataset(Dataset[tuple[_Bag, _BagSize, _EncodedTarget]]):
     """
 
     bag_size: _BagSize | None = None
-    """
-    The number of instances in each bag.
+    """The number of instances in each bag.
 
     For bags containing more instances,
     a random sample of `bag_size` instances will be drawn.
     Smaller bags are padded with zeros.
     If `bag_size` is None, all the samples will be used.
     """
-    ground_truths: Tensor
-    """
-    The ground truth for each bag.
 
-    If this is a tensor, its values are used without further processing.
-    Otherwise, the values will be indexed according to categories.
-    """
+    ground_truths: Float[Tensor, "index category_is_hot"]
+    """The ground truth for each bag, one-hot encoded."""
 
     def __post_init__(self) -> None:
         if len(self.bags) != len(self.ground_truths):
@@ -153,19 +149,17 @@ class BagDataset(Dataset[tuple[_Bag, _BagSize, _EncodedTarget]]):
         if self.bag_size:
             return (
                 *_to_fixed_size_bag(feats, bag_size=self.bag_size),
-                _EncodedTarget(self.ground_truths[index].float()),
+                self.ground_truths[index].float(),
             )
         else:
             return (
-                _Bag(feats),
-                _BagSize(len(feats)),
-                _EncodedTarget(self.ground_truths[index].float()),
+                feats,
+                len(feats),
+                self.ground_truths[index].float(),
             )
 
 
-def _to_fixed_size_bag(
-    bag: Tensor, bag_size: _BagSize = _BagSize(512)
-) -> tuple[_Bag, _BagSize]:
+def _to_fixed_size_bag(bag: _Bag, bag_size: _BagSize = 512) -> tuple[_Bag, _BagSize]:
     """Samples a fixed-size bag of tiles from an arbitrary one.
 
     If the original bag did not have enough tiles,
@@ -177,13 +171,13 @@ def _to_fixed_size_bag(
     bag_samples = bag[bag_idxs]
 
     # zero-pad if we don't have enough samples
-    zero_padded = torch.cat(
+    zero_padded_bag = torch.cat(
         (
             bag_samples,
             torch.zeros(bag_size - bag_samples.shape[0], bag_samples.shape[1]),
         )
     )
-    return _Bag(zero_padded), _BagSize(min(bag_size, len(bag)))
+    return zero_padded_bag, min(bag_size, len(bag))
 
 
 def patient_to_ground_truth_from_clini_table_(

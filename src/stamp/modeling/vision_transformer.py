@@ -8,7 +8,8 @@ from typing import Iterable, cast
 
 import torch
 from einops import repeat
-from torch import nn
+from jaxtyping import Float
+from torch import Tensor, nn
 
 
 def feed_forward(
@@ -38,7 +39,9 @@ class SelfAttention(nn.Module):
         self.norm = nn.LayerNorm(dim)
         self.mhsa = nn.MultiheadAttention(dim, heads, dropout, batch_first=True)
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
+    def forward(
+        self, x: Float[Tensor, "batch sequence feature"]
+    ) -> Float[Tensor, "batch sequence feature"]:
         x = self.norm(x)
         attn_output, _ = self.mhsa(x, x, x, need_weights=False)
         return attn_output
@@ -76,7 +79,9 @@ class Transformer(nn.Module):
 
         self.norm = nn.LayerNorm(dim)
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
+    def forward(
+        self, x: Float[Tensor, "batch sequence feature"]
+    ) -> Float[Tensor, "batch sequence feature"]:
         for attn, ff in cast(Iterable[tuple[nn.Module, nn.Module]], self.layers):
             x_attn = attn(x)
             x = x_attn + x
@@ -115,7 +120,9 @@ class VisionTransformer(nn.Module):
 
         self.mlp_head = nn.Sequential(nn.Linear(dim_model, dim_output))
 
-    def forward(self, bags: torch.Tensor) -> torch.Tensor:
+    def forward(
+        self, bags: Float[Tensor, "batch tile feature"]
+    ) -> Float[Tensor, "batch logit"]:
         batch_size, _n_tiles, _n_features = bags.shape
 
         # map input sequence to latent space of TransMIL
