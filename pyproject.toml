@@ -45,10 +45,10 @@ ctranspath = [
 ]
 uni = [
     "timm>=0.9.8",
-    "UNI@git+https://github.com/mahmoodlab/UNI.git#egg=f8f32c60a1d86805fdcb7317673c45318dac4806",
+    "uni",
 ]
 conch = [
-    "conch@git+https://github.com/Mahmoodlab/CONCH.git#egg=02d6ac59cc20874bff0f581de258c2b257f69a84",
+    "conch",
 ]
 dinobloom = [
     "torchvision>=0.20.1",
@@ -75,6 +75,6 @@ dev = [
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
-[tool.hatch.metadata]
-# Required for referencing specific git commits
-allow-direct-references = true
+[tool.uv.sources]
+uni = { git = "https://github.com/mahmoodlab/UNI.git", rev = "f8f32c60a1d86805fdcb7317673c45318dac4806" }
+conch = { git = "https://github.com/Mahmoodlab/CONCH.git", rev = "02d6ac59cc20874bff0f581de258c2b257f69a84" }

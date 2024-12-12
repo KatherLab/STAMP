@@ -6,6 +6,7 @@ import lightning
 import numpy.typing as npt
 from packaging.version import Version
 from torch import Tensor, nn, optim
+from torchmetrics.classification import MulticlassAUROC
 
 import stamp
 from stamp.modeling.data import (
@@ -83,6 +84,8 @@ class LitVisionTransformer(lightning.LightningModule):
                 "Please upgrade stamp to a compatible version."
             )
 
+        self.valid_auroc = MulticlassAUROC(len(categories))
+
         # Used during deployment
         self.ground_truth_label = ground_truth_label
         self.categories = categories
@@ -113,7 +116,25 @@ class LitVisionTransformer(lightning.LightningModule):
             logits, targets, weight=self.class_weights.type_as(logits)
         )
 
-        self.log(f"{step_name}_loss", loss)
+        self.log(
+            f"{step_name}_loss",
+            loss,
+            on_step=False,
+            on_epoch=True,
+            prog_bar=True,
+            sync_dist=True,
+        )
+
+        if step_name == "valid":
+            # TODO this is a bit ugly, we'd like to have `_step` without special cases
+            self.valid_auroc.update(logits, targets.argmax(-1))
+            self.log(
+                f"{step_name}_auroc",
+                self.valid_auroc,
+                on_step=False,
+                on_epoch=True,
+                sync_dist=True,
+            )
 
         return Losses(loss)
 
