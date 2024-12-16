@@ -1,6 +1,6 @@
 [project]
 name = "stamp"
-version = "2.0.0-dev0"
+version = "2.0.0-dev1"
 authors = [
     { name = "Omar El Nahhas", email = "omar.el_nahhas@tu-dresden.de" },
     { name = "Marko van Treeck", email = "markovantreeck@gmail.com" },
@@ -20,6 +20,7 @@ classifiers = [
 ]
 
 dependencies = [
+    "beartype>=0.19.0",
     "einops>=0.8.0",
     "h5py>=3.12.1",
     "huggingface-hub>=0.26.2",
@@ -28,6 +29,7 @@ dependencies = [
     "matplotlib>=3.9.2",
     "opencv-python>=4.10.0.84",
     "openpyxl>=3.1.5",
+    "openslide-bin>=4.0.0.6",
     "openslide-python>=1.4.1",
     "packaging>=24.2",
     "pandas>=2.2.3",
@@ -55,7 +57,6 @@ dinobloom = [
     "torchvision>=0.20.1",
     "xformers>=0.0.28.post3",
 ]
-all = ["stamp[ctranspath,uni,conch,dinobloom]"]
 
 [project.scripts]
 "stamp" = "stamp.__main__:main"

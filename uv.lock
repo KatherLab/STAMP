@@ -157,6 +157,15 @@ wheels = [
 ]
 
 [[package]]
+name = "beartype"
+version = "0.19.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/6f/e1/00515b97afa3993b4a314e4bc168fbde0917fd5845435cb6f16a19770746/beartype-0.19.0.tar.gz", hash = "sha256:de42dfc1ba5c3710fde6c3002e3bd2cad236ed4d2aabe876345ab0b4234a6573", size = 1294480 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/64/69/f6db6e4cb2fe2f887dead40b76caa91af4844cb647dd2c7223bb010aa416/beartype-0.19.0-py3-none-any.whl", hash = "sha256:33b2694eda0daf052eb2aff623ed9a8a586703bbf0a90bbc475a83bbf427f699", size = 1039760 },
+]
+
+[[package]]
 name = "beautifulsoup4"
 version = "4.12.3"
 source = { registry = "https://pypi.org/simple" }
@@ -1381,6 +1390,18 @@ wheels = [
 ]
 
 [[package]]
+name = "openslide-bin"
+version = "4.0.0.6"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/03/79/9f57b339d1726b30254e33afdb698526b0f057a2e184042a0c00e710947d/openslide-bin-4.0.0.6.tar.gz", hash = "sha256:baca4a590cb15c8685f1ee1905d496bb0a23468b969f7066a2126c24c9e9ef39", size = 17817045 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/6f/cb/90e884978a3999c1deb90e487678eb7143551f3262c58ee5bd20bd8b010e/openslide_bin-4.0.0.6-py3-none-macosx_11_0_universal2.whl", hash = "sha256:f9c4ed0da275202dce531b163d92e1b860d215e779e7620fdd0dd92b7c40764b", size = 5325878 },
+    { url = "https://files.pythonhosted.org/packages/dc/6d/dc29cda9f75001f589b6830aaeeb5a06026b88ab5088f731af74aeef4665/openslide_bin-4.0.0.6-py3-none-manylinux_2_28_aarch64.whl", hash = "sha256:43af7aabab7aa6d7c21573736de8b59ccf2f4078f0ae26da70d86005d2ee662b", size = 4206967 },
+    { url = "https://files.pythonhosted.org/packages/b8/04/6f8d4ed4167bd63dfe43085a9f0ecfc18a3e51fc9e99ef631005e90abcf1/openslide_bin-4.0.0.6-py3-none-manylinux_2_28_x86_64.whl", hash = "sha256:0bc2e6d624781b0ba24d2ef3d8623fd52de7645520911539e1279d599212ecb0", size = 4300039 },
+    { url = "https://files.pythonhosted.org/packages/9b/13/67272c5a1f83720188f3b0c3b9e6c045c60b841b68c5404524624bc4db83/openslide_bin-4.0.0.6-py3-none-win_amd64.whl", hash = "sha256:d9bb0659bce0384f6f961aa64c0cfdb882c8dacd6f4fbfaf84895e06fe571f40", size = 4169544 },
+]
+
+[[package]]
 name = "openslide-python"
 version = "1.4.1"
 source = { registry = "https://pypi.org/simple" }
@@ -2310,9 +2331,10 @@ wheels = [
 
 [[package]]
 name = "stamp"
-version = "2.0.0.dev0"
+version = "2.0.0.dev1"
 source = { editable = "." }
 dependencies = [
+    { name = "beartype" },
     { name = "einops" },
     { name = "h5py" },
     { name = "huggingface-hub" },
@@ -2321,6 +2343,7 @@ dependencies = [
     { name = "matplotlib" },
     { name = "opencv-python" },
     { name = "openpyxl" },
+    { name = "openslide-bin" },
     { name = "openslide-python" },
     { name = "packaging" },
     { name = "pandas" },
@@ -2333,14 +2356,6 @@ dependencies = [
 ]
 
 [package.optional-dependencies]
-all = [
-    { name = "conch" },
-    { name = "gdown" },
-    { name = "timm" },
-    { name = "torchvision" },
-    { name = "uni" },
-    { name = "xformers" },
-]
 conch = [
     { name = "conch" },
 ]
@@ -2367,6 +2382,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
+    { name = "beartype", specifier = ">=0.19.0" },
     { name = "conch", marker = "extra == 'conch'", git = "https://github.com/Mahmoodlab/CONCH.git?rev=02d6ac59cc20874bff0f581de258c2b257f69a84" },
     { name = "einops", specifier = ">=0.8.0" },
     { name = "gdown", marker = "extra == 'ctranspath'", specifier = ">=5.2.0" },
@@ -2377,13 +2393,13 @@ requires-dist = [
     { name = "matplotlib", specifier = ">=3.9.2" },
     { name = "opencv-python", specifier = ">=4.10.0.84" },
     { name = "openpyxl", specifier = ">=3.1.5" },
+    { name = "openslide-bin", specifier = ">=4.0.0.6" },
     { name = "openslide-python", specifier = ">=1.4.1" },
     { name = "packaging", specifier = ">=24.2" },
     { name = "pandas", specifier = ">=2.2.3" },
     { name = "pydantic", specifier = ">=2.10.3" },
     { name = "pyyaml", specifier = ">=6.0.2" },
     { name = "scikit-learn", specifier = ">=1.5.2" },
-    { name = "stamp", extras = ["ctranspath", "uni", "conch", "dinobloom"], marker = "extra == 'all'" },
     { name = "timm", marker = "extra == 'uni'", specifier = ">=0.9.8" },
     { name = "torch", specifier = ">=2.5.1" },
     { name = "torchmetrics", specifier = ">=1.6.0" },
