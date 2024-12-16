@@ -21,7 +21,7 @@ __copyright__ = "Copyright (C) 2022-2024 Marko van Treeck"
 __license__ = "MIT"
 
 
-logger = logging.getLogger("stamp")
+_logger = logging.getLogger("stamp")
 
 # Digest of _this_ file, used for unambiguously identifying the tiling procedure.
 # As a consequence, all details pertaining to tiling should be limited to _this_ file.
@@ -38,23 +38,23 @@ SlidePixels = NewType("SlidePixels", int)
 TilePixels = NewType("TilePixels", int)
 """Pixels on the Tile"""
 
-Unit = TypeVar("Unit")
+_Unit = TypeVar("_Unit")
 
 
 @dataclass
-class XYCoords(Generic[Unit]):
-    x: Unit
-    y: Unit
+class _XYCoords(Generic[_Unit]):
+    x: _Unit
+    y: _Unit
 
 
-class Tile(NamedTuple, Generic[Unit]):
+class _Tile(NamedTuple, Generic[_Unit]):
     """A tile with associated metadata"""
 
     image: Image.Image
     """The actual image data"""
-    coordinates: XYCoords[Unit]
+    coordinates: _XYCoords[_Unit]
     """Position from the top-left corner of the WSI scan"""
-    size: Unit
+    size: _Unit
     """Length of the tile's sides"""
 
 
@@ -67,12 +67,12 @@ def tiles_with_cache(
     max_supertile_size_slide_px: SlidePixels,
     max_workers: int,
     brightness_cutoff: int | None,
-) -> Iterator[Tile[Microns]]:
+) -> Iterator[_Tile[Microns]]:
     """Iterates over the tiles in a WSI, using or saving a cached version if applicable"""
 
     if cache_dir is None:
         # If we have no cache dir, fall back to normal tile extraction.
-        yield from tiles_with_tissue(
+        yield from _tiles_with_tissue(
             slide=openslide.OpenSlide(slide_path),
             tile_size_um=tile_size_um,
             tile_size_px=tile_size_px,
@@ -82,7 +82,7 @@ def tiles_with_cache(
         )
         return
 
-    tiler_params: TilerParams = {
+    tiler_params: _TilerParams = {
         "slide_path": str(slide_path),
         "tile_size_um": tile_size_um,
         "tile_size_px": tile_size_px,
@@ -100,7 +100,7 @@ def tiles_with_cache(
         # If we have a cached version of the tiles
         # which were extracted with the same params / code,
         # we will use those.
-        yield from tiles_from_cache_file(cache_file_path)
+        yield from _tiles_from_cache_file(cache_file_path)
 
     else:
         # Extract the features and save them to a cache file for later retreival.
@@ -114,7 +114,7 @@ def tiles_with_cache(
                 with zip.open("tiler_params.json", "w") as tiler_params_json_fp:
                     tiler_params_json_fp.write(json.dumps(tiler_params).encode())
 
-                for tile in tiles_with_tissue(
+                for tile in _tiles_with_tissue(
                     openslide.OpenSlide(slide_path),
                     tile_size_um=tile_size_um,
                     tile_size_px=tile_size_px,
@@ -130,7 +130,7 @@ def tiles_with_cache(
 
                     yield tile
         except Exception as e:
-            logger.exception(f"error while processing {slide_path}")
+            _logger.exception(f"error while processing {slide_path}")
             tmp_cache_file_path.unlink(missing_ok=True)
             raise e
 
@@ -138,7 +138,7 @@ def tiles_with_cache(
         tmp_cache_file_path.rename(cache_file_path)
 
 
-def tiles_with_tissue(
+def _tiles_with_tissue(
     slide: openslide.OpenSlide,
     *,
     tile_size_um: Microns,
@@ -146,9 +146,9 @@ def tiles_with_tissue(
     max_supertile_size_slide_px: SlidePixels,
     max_workers: int,
     brightness_cutoff: int | None,
-) -> Iterator[Tile[Microns]]:
+) -> Iterator[_Tile[Microns]]:
     """Yields all tiels from a WSI which (probably) show tissue"""
-    for tile in tiles(
+    for tile in _tiles(
         slide=slide,
         tile_size_um=tile_size_um,
         tile_size_px=tile_size_px,
@@ -156,11 +156,11 @@ def tiles_with_tissue(
         max_workers=max_workers,
         brightness_cutoff=brightness_cutoff,
     ):
-        if has_enough_texture(tile.image):
+        if _has_enough_texture(tile.image):
             yield tile
 
 
-def tiles(
+def _tiles(
     slide: openslide.OpenSlide,
     *,
     tile_size_um: Microns,
@@ -168,7 +168,7 @@ def tiles(
     max_supertile_size_slide_px: SlidePixels,
     max_workers: int,
     brightness_cutoff: int | None,
-) -> Iterator[Tile[Microns]]:
+) -> Iterator[_Tile[Microns]]:
     """Yields tiles, excluding background.
 
     Some background may still be included,
@@ -177,7 +177,7 @@ def tiles(
     # With openslide extracting medium-sized tiles is faster
     # than extracting very small or large tiles.
     # We thus first extract these larger "supertiles".
-    for supertile, supertile_coords_um, supertile_size_um in supertiles(
+    for supertile, supertile_coords_um, supertile_size_um in _supertiles(
         slide=slide,
         tile_size_um=tile_size_um,
         tile_size_px=tile_size_px,
@@ -202,9 +202,9 @@ def tiles(
                         (y + 1) * tile_size_px,
                     )
                 )
-                yield Tile(
+                yield _Tile(
                     image=tile,
-                    coordinates=XYCoords(
+                    coordinates=_XYCoords(
                         x=Microns(supertile_coords_um.x + x * tile_size_um),
                         y=Microns(supertile_coords_um.y + y * tile_size_um),
                     ),
@@ -212,11 +212,11 @@ def tiles(
                 )
 
 
-def foreground_coords(
+def _foreground_coords(
     slide: openslide.OpenSlide,
     tile_size_slide_px: SlidePixels,
     brightness_cutoff: int | None,
-) -> Iterator[XYCoords[SlidePixels]]:
+) -> Iterator[_XYCoords[SlidePixels]]:
     """Yields coordinates of tiles which aren't too bright and thus probably not background"""
     supertile_thumb_size = np.ceil(
         np.array(slide.dimensions) / tile_size_slide_px
@@ -238,24 +238,24 @@ def foreground_coords(
             if is_foreground[
                 y_slide_px // tile_size_slide_px, x_slide_px // tile_size_slide_px
             ]:
-                yield XYCoords(SlidePixels(x_slide_px), SlidePixels(y_slide_px))
+                yield _XYCoords(SlidePixels(x_slide_px), SlidePixels(y_slide_px))
 
 
-def has_enough_texture(tile: Image.Image) -> bool:
+def _has_enough_texture(tile: Image.Image) -> bool:
     """`True` if the image has a bunch of edges,
     i.e. if the image is likely to contain tissue"""
     # L mode converts the image to grayscale with values from 0...255
     tile_grayscale = tile.convert("L")
     # hardcoded thresholds
     edges = cv2.Canny(np.array(tile_grayscale), 40, 100)
-    edge_score = np.mean(edges) / 255
+    edge_score = np.array(edges).mean() / 255
 
     # if "at least two precent of our image are edges",
     # we deem it to have enough texture
     return bool(edge_score > 0.02)
 
 
-def supertiles(
+def _supertiles(
     slide: openslide.OpenSlide,
     *,
     tile_size_um: Microns,
@@ -263,7 +263,7 @@ def supertiles(
     max_supertile_size_slide_px: SlidePixels,
     max_workers: int,
     brightness_cutoff: int | None,
-) -> Iterator[Tile[Microns]]:
+) -> Iterator[_Tile[Microns]]:
     slide_mpp = get_slide_mpp(slide)
     if slide_mpp is None:
         raise MPPExtractionError()
@@ -281,13 +281,13 @@ def supertiles(
 
     with futures.ThreadPoolExecutor(max_workers) as executor:
         futs = []
-        for coords_slide_px in foreground_coords(
+        for coords_slide_px in _foreground_coords(
             slide=slide,
             tile_size_slide_px=supertile_size_slide_px,
             brightness_cutoff=brightness_cutoff,
         ):
             future = executor.submit(
-                lambda x_slide_px, y_slide_px: Tile(
+                lambda x_slide_px, y_slide_px: _Tile(
                     image=slide.read_region(
                         (x_slide_px, y_slide_px),
                         0,
@@ -295,7 +295,7 @@ def supertiles(
                     )
                     .resize((supertile_size_tile_px, supertile_size_tile_px))
                     .convert("RGB"),
-                    coordinates=XYCoords(
+                    coordinates=_XYCoords(
                         x=Microns(x_slide_px * slide_mpp),
                         y=Microns(y_slide_px * slide_mpp),
                     ),
@@ -316,7 +316,7 @@ class MPPExtractionError(Exception):
     pass
 
 
-class TilerParams(TypedDict):
+class _TilerParams(TypedDict):
     """The parameters used during tiling / background rejection"""
 
     slide_path: str
@@ -337,15 +337,7 @@ class TilerParams(TypedDict):
     # the cache also gets invalidated
 
 
-def get_cache_file_tiler_params(cache_file_path: Path) -> TilerParams | None:
-    with ZipFile(cache_file_path, "r") as zip_fp:
-        if "tiler_params.json" in zip_fp.namelist():
-            return json.loads(zip_fp.read("tiler_params.json").decode())
-        else:
-            return None
-
-
-def tiles_from_cache_file(cache_file_path: Path) -> Iterator[Tile]:
+def _tiles_from_cache_file(cache_file_path: Path) -> Iterator[_Tile]:
     with ZipFile(cache_file_path, "r") as zip_fp:
         tiler_params = json.loads(zip_fp.read("tiler_params.json").decode())
 
@@ -359,9 +351,9 @@ def tiles_from_cache_file(cache_file_path: Path) -> Iterator[Tile]:
             x_um, y_um = Microns(float(x_um_str)), Microns(float(y_um_str))
 
             with zip_fp.open(name, "r") as tile_fp:
-                yield Tile(
+                yield _Tile(
                     image=Image.open(tile_fp),
-                    coordinates=XYCoords(x_um, y_um),
+                    coordinates=_XYCoords(x_um, y_um),
                     size=tiler_params["tile_size_um"],
                 )
 
@@ -373,15 +365,15 @@ def get_slide_mpp(slide: openslide.AbstractSlide | Path) -> float | None:
 
     if openslide.PROPERTY_NAME_MPP_X in slide.properties:
         return float(slide.properties[openslide.PROPERTY_NAME_MPP_X])
-    elif slide_mpp := extract_mpp_from_comments(slide):
+    elif slide_mpp := _extract_mpp_from_comments(slide):
         return slide_mpp
-    elif slide_mpp := extract_mpp_from_metadata(slide):
+    elif slide_mpp := _extract_mpp_from_metadata(slide):
         return slide_mpp
     else:
         return None
 
 
-def extract_mpp_from_comments(slide: openslide.AbstractSlide) -> float | None:
+def _extract_mpp_from_comments(slide: openslide.AbstractSlide) -> float | None:
     slide_properties = slide.properties.get("openslide.comment", default="")
     pattern = r"<PixelSizeMicrons>(.*?)</PixelSizeMicrons>"
     match = re.search(pattern, slide_properties)
@@ -391,7 +383,7 @@ def extract_mpp_from_comments(slide: openslide.AbstractSlide) -> float | None:
         return None
 
 
-def extract_mpp_from_metadata(slide: openslide.AbstractSlide) -> float | None:
+def _extract_mpp_from_metadata(slide: openslide.AbstractSlide) -> float | None:
     try:
         xml_path = slide.properties["tiff.ImageDescription"]
         doc = minidom.parseString(xml_path)
@@ -400,6 +392,6 @@ def extract_mpp_from_metadata(slide: openslide.AbstractSlide) -> float | None:
         pixels = images[0].getElementsByTagName("Pixels")
         mpp = float(pixels[0].getAttribute("PhysicalSizeX"))
     except Exception:
-        logger.exception("failed to extract MPP from image description")
+        _logger.exception("failed to extract MPP from image description")
         return None
     return mpp

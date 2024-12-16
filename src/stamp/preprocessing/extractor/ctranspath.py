@@ -29,18 +29,18 @@ __copyright__ = "Copyright (C) 2022-2024 Marko van Treeck"
 __license__ = "MIT"
 
 
-def file_digest(file: str | Path) -> str:
+def _file_digest(file: str | Path) -> str:
     with open(file, "rb") as fp:
         return hashlib.file_digest(fp, "sha256").hexdigest()
 
 
-stamp_cache_dir = (
+_stamp_cache_dir = (
     Path(os.environ.get("XDG_CACHE_HOME") or (Path.home() / ".cache")) / "stamp"
 )
 
 
 def ctranspath(model_path: Path | None = None) -> Extractor:
-    model_path = model_path or stamp_cache_dir / "ctranspath.pth"
+    model_path = model_path or _stamp_cache_dir / "ctranspath.pth"
     if not model_path.exists():
         model_path.parent.mkdir(parents=True, exist_ok=True)
         gdown.download(
@@ -48,12 +48,12 @@ def ctranspath(model_path: Path | None = None) -> Extractor:
             str(model_path),
         )
 
-    digest = file_digest(model_path)
+    digest = _file_digest(model_path)
     assert (
         digest == "7c998680060c8743551a412583fac689db43cec07053b72dfec6dcd810113539"
     ), f"The digest of the downloaded checkpoint ({model_path}) did not match the expected value."
 
-    model = swin_tiny_patch4_window7_224(embed_layer=ConvStem, pretrained=False)
+    model = _swin_tiny_patch4_window7_224(embed_layer=_ConvStem, pretrained=False)
     model.head = nn.Identity()
 
     ctranspath = torch.load(model_path, weights_only=False)
@@ -94,15 +94,15 @@ model.load_state_dict(td['model'], strict=True)
 """
 
 
-T = TypeVar("T")
+_T = TypeVar("_T")
 
 
-def to_2tuple(x: T | Iterable[T]) -> tuple[T, T]:
+def _to_2tuple(x: _T | Iterable[_T]) -> tuple[_T, _T]:
     if isinstance(x, Iterable) and not isinstance(x, str):
         t = tuple(x)
         assert len(t) == 2
         return t
-    return cast(tuple[T, T], tuple(repeat(x, 2)))
+    return cast(tuple[_T, _T], tuple(repeat(x, 2)))
 
 
 def _no_grad_trunc_normal_(tensor, mean, std, a, b):
@@ -143,7 +143,7 @@ def _no_grad_trunc_normal_(tensor, mean, std, a, b):
         return tensor
 
 
-def trunc_normal_tf_(tensor, mean=0.0, std=1.0, a=-2.0, b=2.0):
+def _trunc_normal_tf_(tensor, mean=0.0, std=1.0, a=-2.0, b=2.0):
     # type: (Tensor, float, float, float, float) -> Tensor
     r"""Fills the input Tensor with values drawn from a truncated
     normal distribution. The values are effectively drawn from the
@@ -170,7 +170,7 @@ def trunc_normal_tf_(tensor, mean=0.0, std=1.0, a=-2.0, b=2.0):
     return tensor
 
 
-def variance_scaling_(tensor, scale=1.0, mode="fan_in", distribution="normal"):
+def _variance_scaling_(tensor, scale=1.0, mode="fan_in", distribution="normal"):
     fan_in, fan_out = _calculate_fan_in_and_fan_out(tensor)
     if mode == "fan_in":
         denom = fan_in
@@ -183,7 +183,7 @@ def variance_scaling_(tensor, scale=1.0, mode="fan_in", distribution="normal"):
 
     if distribution == "truncated_normal":
         # constant is stddev of standard normal truncated to (-2, 2)
-        trunc_normal_tf_(tensor, std=math.sqrt(variance) / 0.87962566103423978)
+        _trunc_normal_tf_(tensor, std=math.sqrt(variance) / 0.87962566103423978)
     elif distribution == "normal":
         tensor.normal_(std=math.sqrt(variance))
     elif distribution == "uniform":
@@ -193,14 +193,14 @@ def variance_scaling_(tensor, scale=1.0, mode="fan_in", distribution="normal"):
         raise ValueError(f"invalid distribution {distribution}")
 
 
-def trunc_normal_(
+def _trunc_normal_(
     tensor: Tensor, mean: float = 0.0, std: float = 1.0, a: float = -2.0, b: float = 2.0
 ) -> Tensor:
     return _no_grad_trunc_normal_(tensor, mean, std, a, b)
 
 
-def lecun_normal_(tensor):
-    variance_scaling_(tensor, mode="fan_in", distribution="truncated_normal")
+def _lecun_normal_(tensor):
+    _variance_scaling_(tensor, mode="fan_in", distribution="truncated_normal")
 
 
 def _init_vit_weights(
@@ -216,7 +216,7 @@ def _init_vit_weights(
             nn.init.zeros_(module.weight)
             nn.init.constant_(module.bias, head_bias)
         elif name.startswith("pre_logits"):
-            lecun_normal_(module.weight)
+            _lecun_normal_(module.weight)
             nn.init.zeros_(module.bias)
         else:
             if jax_impl:
@@ -227,12 +227,12 @@ def _init_vit_weights(
                     else:
                         nn.init.zeros_(module.bias)
             else:
-                trunc_normal_(module.weight, std=0.02)
+                _trunc_normal_(module.weight, std=0.02)
                 if module.bias is not None:
                     nn.init.zeros_(module.bias)
     elif jax_impl and isinstance(module, nn.Conv2d):
         # NOTE conv was left to pytorch default in my original init
-        lecun_normal_(module.weight)
+        _lecun_normal_(module.weight)
         if module.bias is not None:
             nn.init.zeros_(module.bias)
     elif isinstance(module, (nn.LayerNorm, nn.GroupNorm, nn.BatchNorm2d)):
@@ -240,7 +240,7 @@ def _init_vit_weights(
         nn.init.ones_(module.weight)
 
 
-def window_partition(x, window_size: int):
+def _window_partition(x, window_size: int):
     """
     Args:
         x: (B, H, W, C)
@@ -257,7 +257,7 @@ def window_partition(x, window_size: int):
     return windows
 
 
-def window_reverse(windows, window_size: int, H: int, W: int):
+def _window_reverse(windows, window_size: int, H: int, W: int):
     """
     Args:
         windows: (num_windows*B, window_size, window_size, C)
@@ -276,7 +276,7 @@ def window_reverse(windows, window_size: int, H: int, W: int):
     return x
 
 
-def drop_path(
+def _drop_path(
     x, drop_prob: float = 0.0, training: bool = False, scale_by_keep: bool = True
 ):
     """Drop paths (Stochastic Depth) per sample (when applied in main path of residual blocks).
@@ -300,19 +300,19 @@ def drop_path(
     return x * random_tensor
 
 
-class DropPath(nn.Module):
+class _DropPath(nn.Module):
     """Drop paths (Stochastic Depth) per sample  (when applied in main path of residual blocks)."""
 
     def __init__(self, drop_prob=None, scale_by_keep=True):
-        super(DropPath, self).__init__()
+        super(_DropPath, self).__init__()
         self.drop_prob = drop_prob
         self.scale_by_keep = scale_by_keep
 
     def forward(self, x):
-        return drop_path(x, self.drop_prob, self.training, self.scale_by_keep)  # type: ignore
+        return _drop_path(x, self.drop_prob, self.training, self.scale_by_keep)  # type: ignore
 
 
-class PatchEmbed(nn.Module):
+class _PatchEmbed(nn.Module):
     """2D Image to Patch Embedding"""
 
     def __init__(
@@ -325,8 +325,8 @@ class PatchEmbed(nn.Module):
         flatten=True,
     ):
         super().__init__()
-        img_size = to_2tuple(img_size)
-        patch_size = to_2tuple(patch_size)
+        img_size = _to_2tuple(img_size)
+        patch_size = _to_2tuple(patch_size)
         self.img_size = img_size
         self.patch_size = patch_size
         self.grid_size = (img_size[0] // patch_size[0], img_size[1] // patch_size[1])  # type: ignore
@@ -358,7 +358,7 @@ class PatchEmbed(nn.Module):
         return x
 
 
-class Mlp(nn.Module):
+class _Mlp(nn.Module):
     """MLP as used in Vision Transformer, MLP-Mixer and related networks"""
 
     def __init__(
@@ -372,7 +372,7 @@ class Mlp(nn.Module):
         super().__init__()
         out_features = out_features or in_features
         hidden_features = hidden_features or in_features
-        drop_probs = to_2tuple(drop)
+        drop_probs = _to_2tuple(drop)
 
         self.fc1 = nn.Linear(in_features, hidden_features)
         self.act = act_layer()
@@ -389,7 +389,7 @@ class Mlp(nn.Module):
         return x
 
 
-class ConvStem(nn.Module):
+class _ConvStem(nn.Module):
     """Convolutional embedding layer proposed in the ctranspath paper"""
 
     def __init__(
@@ -406,8 +406,8 @@ class ConvStem(nn.Module):
         assert patch_size == 4
         assert embed_dim % 8 == 0
 
-        img_size = to_2tuple(img_size)
-        patch_size = to_2tuple(patch_size)
+        img_size = _to_2tuple(img_size)
+        patch_size = _to_2tuple(patch_size)
         self.img_size = img_size
         self.patch_size = patch_size
         self.grid_size = (img_size[0] // patch_size[0], img_size[1] // patch_size[1])  # type: ignore
@@ -448,7 +448,7 @@ class ConvStem(nn.Module):
         return x
 
 
-class WindowAttention(nn.Module):
+class _WindowAttention(nn.Module):
     r"""Window based multi-head self attention (W-MSA) module with relative position bias.
     It supports both of shifted and non-shifted window.
 
@@ -501,7 +501,7 @@ class WindowAttention(nn.Module):
         self.proj = nn.Linear(dim, dim)
         self.proj_drop = nn.Dropout(proj_drop)
 
-        trunc_normal_(self.relative_position_bias_table, std=0.02)
+        _trunc_normal_(self.relative_position_bias_table, std=0.02)
         self.softmax = nn.Softmax(dim=-1)
 
     def forward(self, x, mask: Optional[torch.Tensor] = None):
@@ -551,7 +551,7 @@ class WindowAttention(nn.Module):
         return x
 
 
-class SwinTransformerBlock(nn.Module):
+class _SwinTransformerBlock(nn.Module):
     r"""Swin Transformer Block.
 
     Args:
@@ -600,19 +600,19 @@ class SwinTransformerBlock(nn.Module):
         ), "shift_size must in 0-window_size"
 
         self.norm1 = norm_layer(dim)
-        self.attn = WindowAttention(
+        self.attn = _WindowAttention(
             dim,
-            window_size=to_2tuple(self.window_size),
+            window_size=_to_2tuple(self.window_size),
             num_heads=num_heads,
             qkv_bias=qkv_bias,
             attn_drop=attn_drop,
             proj_drop=drop,
         )
 
-        self.drop_path = DropPath(drop_path) if drop_path > 0.0 else nn.Identity()
+        self.drop_path = _DropPath(drop_path) if drop_path > 0.0 else nn.Identity()
         self.norm2 = norm_layer(dim)
         mlp_hidden_dim = int(dim * mlp_ratio)
-        self.mlp = Mlp(
+        self.mlp = _Mlp(
             in_features=dim,
             hidden_features=mlp_hidden_dim,
             act_layer=act_layer,
@@ -639,7 +639,7 @@ class SwinTransformerBlock(nn.Module):
                     img_mask[:, h, w, :] = cnt
                     cnt += 1
 
-            mask_windows = window_partition(
+            mask_windows = _window_partition(
                 img_mask, self.window_size
             )  # nW, window_size, window_size, 1
             mask_windows = mask_windows.view(-1, self.window_size * self.window_size)
@@ -670,7 +670,7 @@ class SwinTransformerBlock(nn.Module):
             shifted_x = x
 
         # partition windows
-        x_windows = window_partition(
+        x_windows = _window_partition(
             shifted_x, self.window_size
         )  # nW*B, window_size, window_size, C
         x_windows = x_windows.view(
@@ -684,7 +684,7 @@ class SwinTransformerBlock(nn.Module):
 
         # merge windows
         attn_windows = attn_windows.view(-1, self.window_size, self.window_size, C)
-        shifted_x = window_reverse(attn_windows, self.window_size, H, W)  # B H' W' C
+        shifted_x = _window_reverse(attn_windows, self.window_size, H, W)  # B H' W' C
 
         # reverse cyclic shift
         if self.shift_size > 0:
@@ -702,7 +702,7 @@ class SwinTransformerBlock(nn.Module):
         return x
 
 
-class PatchMerging(nn.Module):
+class _PatchMerging(nn.Module):
     r"""Patch Merging Layer.
 
     Args:
@@ -751,7 +751,7 @@ class PatchMerging(nn.Module):
         return flops
 
 
-class BasicLayer(nn.Module):
+class _BasicLayer(nn.Module):
     """A basic Swin Transformer layer for one stage.
 
     Args:
@@ -795,7 +795,7 @@ class BasicLayer(nn.Module):
         # build blocks
         self.blocks = nn.ModuleList(
             [
-                SwinTransformerBlock(
+                _SwinTransformerBlock(
                     dim=dim,
                     input_resolution=input_resolution,
                     num_heads=num_heads,
@@ -836,7 +836,7 @@ class BasicLayer(nn.Module):
         return f"dim={self.dim}, input_resolution={self.input_resolution}, depth={self.depth}"
 
 
-class SwinTransformer(nn.Module):
+class _SwinTransformer(nn.Module):
     r"""Swin Transformer
         A PyTorch impl of : `Swin Transformer: Hierarchical Vision Transformer using Shifted Windows`  -
           https://arxiv.org/pdf/2103.14030
@@ -879,7 +879,7 @@ class SwinTransformer(nn.Module):
         norm_layer=nn.LayerNorm,
         ape=False,
         patch_norm=True,
-        embed_layer=PatchEmbed,
+        embed_layer=_PatchEmbed,
         use_checkpoint=False,
         weight_init="",
         **kwargs,
@@ -910,7 +910,7 @@ class SwinTransformer(nn.Module):
             self.absolute_pos_embed = nn.Parameter(
                 torch.zeros(1, num_patches, embed_dim)
             )
-            trunc_normal_(self.absolute_pos_embed, std=0.02)
+            _trunc_normal_(self.absolute_pos_embed, std=0.02)
         else:
             self.absolute_pos_embed = None
 
@@ -925,7 +925,7 @@ class SwinTransformer(nn.Module):
         layers = []
         for i_layer in range(self.num_layers):
             layers += [
-                BasicLayer(
+                _BasicLayer(
                     dim=int(embed_dim * 2**i_layer),
                     input_resolution=(
                         self.patch_grid[0] // (2**i_layer),
@@ -941,7 +941,7 @@ class SwinTransformer(nn.Module):
                     drop_path=dpr[sum(depths[:i_layer]) : sum(depths[: i_layer + 1])],  # type: ignore
                     norm_layer=norm_layer,
                     downsample=(
-                        PatchMerging if (i_layer < self.num_layers - 1) else None
+                        _PatchMerging if (i_layer < self.num_layers - 1) else None
                     ),
                     use_checkpoint=use_checkpoint,
                 )
@@ -1000,130 +1000,14 @@ class SwinTransformer(nn.Module):
         return x
 
 
-def swin_base_patch4_window12_384(pretrained=False, **kwargs):
-    model = SwinTransformer(
-        patch_size=4,
-        window_size=12,
-        embed_dim=128,
-        depths=(2, 2, 18, 2),
-        num_heads=(4, 8, 16, 32),
-        **kwargs,
-    )
-    return model
-
-
-def swin_base_patch4_window7_224(embed_layer, pretrained=False, **kwargs):
-    model = SwinTransformer(
-        embed_layer=embed_layer,
-        patch_size=4,
-        window_size=7,
-        embed_dim=128,
-        depths=(2, 2, 18, 2),
-        num_heads=(4, 8, 16, 32),
-        **kwargs,
-    )
-    return model
-
-
-def swin_large_patch4_window12_384(embed_layer, pretrained=False, **kwargs):
-    model = SwinTransformer(
-        embed_layer=embed_layer,
-        patch_size=4,
-        window_size=12,
-        embed_dim=192,
-        depths=(2, 2, 18, 2),
-        num_heads=(6, 12, 24, 48),
-        **kwargs,
-    )
-    return model
-
-
-def swin_large_patch4_window7_224(embed_layer, pretrained=False, **kwargs):
-    model = SwinTransformer(
-        embed_layer=embed_layer,
-        patch_size=4,
-        window_size=7,
-        embed_dim=192,
-        depths=(2, 2, 18, 2),
-        num_heads=(6, 12, 24, 48),
-        **kwargs,
-    )
-    return model
-
-
-def swin_small_patch4_window7_224(embed_layer, pretrained=False, **kwargs):
-    model = SwinTransformer(
-        embed_layer=embed_layer,
-        patch_size=4,
-        window_size=7,
-        embed_dim=96,
-        depths=(2, 2, 18, 2),
-        num_heads=(3, 6, 12, 24),
-        **kwargs,
-    )
-    return model
-
-
-def swin_tiny_patch4_window7_224(embed_layer, pretrained=False, **kwargs):
-    model = SwinTransformer(
+def _swin_tiny_patch4_window7_224(embed_layer, pretrained=False, **kwargs):
+    model = _SwinTransformer(
         embed_layer=embed_layer,
         patch_size=4,
         window_size=7,
         embed_dim=96,
         depths=(2, 2, 6, 2),
         num_heads=(3, 6, 12, 24),
-        **kwargs,
-    )
-    return model
-
-
-def swin_base_patch4_window12_384_in22k(embed_layer, pretrained=False, **kwargs):
-    model = SwinTransformer(
-        embed_layer=embed_layer,
-        patch_size=4,
-        window_size=12,
-        embed_dim=128,
-        depths=(2, 2, 18, 2),
-        num_heads=(4, 8, 16, 32),
-        **kwargs,
-    )
-    return model
-
-
-def swin_base_patch4_window7_224_in22k(embed_layer, pretrained=False, **kwargs):
-    model = SwinTransformer(
-        embed_layer=embed_layer,
-        patch_size=4,
-        window_size=7,
-        embed_dim=128,
-        depths=(2, 2, 18, 2),
-        num_heads=(4, 8, 16, 32),
-        **kwargs,
-    )
-    return model
-
-
-def swin_large_patch4_window12_384_in22k(embed_layer, pretrained=False, **kwargs):
-    model = SwinTransformer(
-        embed_layer=embed_layer,
-        patch_size=4,
-        window_size=12,
-        embed_dim=192,
-        depths=(2, 2, 18, 2),
-        num_heads=(6, 12, 24, 48),
-        **kwargs,
-    )
-    return model
-
-
-def swin_large_patch4_window7_224_in22k(embed_layer, pretrained=False, **kwargs):
-    model = SwinTransformer(
-        embed_layer=embed_layer,
-        patch_size=4,
-        window_size=7,
-        embed_dim=192,
-        depths=(2, 2, 18, 2),
-        num_heads=(6, 12, 24, 48),
         **kwargs,
     )
     return model

@@ -51,7 +51,7 @@ logger = logging.getLogger("stamp")
 
 
 @cache
-def get_preprocessing_code_hash() -> str:
+def _get_preprocessing_code_hash() -> str:
     """The hash of the entire preprocessing codebase.
 
     It is used to assure that features extracted with different versions of this code base
@@ -64,7 +64,7 @@ def get_preprocessing_code_hash() -> str:
     return hasher.hexdigest()
 
 
-class TileDataset(IterableDataset):
+class _TileDataset(IterableDataset):
     def __init__(
         self,
         slide_path: Path,
@@ -148,7 +148,7 @@ def extract_(
         assert_never(extractor)  # This should be unreachable
 
     model = extractor.model.to(accelerator).eval()
-    extractor_id = f"{extractor.identifier}-{get_preprocessing_code_hash()[:8]}"
+    extractor_id = f"{extractor.identifier}-{_get_preprocessing_code_hash()[:8]}"
 
     logger.info(f"Using extractor {extractor.identifier}")
 
@@ -181,7 +181,7 @@ def extract_(
         feature_output_path.parent.mkdir(parents=True, exist_ok=True)
 
         try:
-            ds = TileDataset(
+            ds = _TileDataset(
                 slide_path=slide_path,
                 cache_dir=cache_dir,
                 transform=extractor.transform,
@@ -232,7 +232,7 @@ def extract_(
             ".jpg"
         )
         thumbnail_path.parent.mkdir(exist_ok=True, parents=True)
-        get_rejection_thumb(
+        _get_rejection_thumb(
             openslide.OpenSlide(str(slide_path)),
             size=(512, 512),
             coords_um=coords,
@@ -240,7 +240,7 @@ def extract_(
         ).convert("RGB").save(thumbnail_path)
 
 
-def get_rejection_thumb(
+def _get_rejection_thumb(
     slide: openslide.OpenSlide,
     *,
     size: tuple[int, int],

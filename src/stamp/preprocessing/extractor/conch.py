@@ -11,7 +11,7 @@ except ModuleNotFoundError as e:
     ) from e
 
 
-class StampConchModel(torch.nn.Module):
+class _StampConchModel(torch.nn.Module):
     def __init__(self, model) -> None:
         super().__init__()
         self.model = model
@@ -26,7 +26,7 @@ def conch() -> Extractor:
     )
 
     return Extractor(
-        model=StampConchModel(model),
+        model=_StampConchModel(model),
         transform=preprocess,
         identifier="mahmood-conch",  # type: ignore
     )
