@@ -120,30 +120,35 @@ def extract_(
         ]
         | Extractor
     ),
-    tile_size_px: TilePixels = TilePixels(224),
-    tile_size_um: Microns = Microns(256.0),
-    max_workers: int = 32,
-    accelerator: DeviceLikeType = "cuda" if torch.cuda.is_available() else "cpu",
+    tile_size_px: TilePixels,
+    tile_size_um: Microns,
+    max_workers: int,
+    accelerator: DeviceLikeType,
     brightness_cutoff: int | None,
 ) -> None:
     if extractor == "ctranspath":
         from stamp.preprocessing.extractor.ctranspath import ctranspath
 
         extractor = ctranspath()
+
     elif extractor == "mahmood-conch":
         from stamp.preprocessing.extractor.conch import conch
 
         extractor = conch()
+
     elif extractor == "mahmood-uni":
         from stamp.preprocessing.extractor.uni import uni
 
         extractor = uni()
+
     elif extractor == "dino-bloom":
         from stamp.preprocessing.extractor.dinobloom import dino_bloom
 
         extractor = dino_bloom()
+
     elif isinstance(extractor, Extractor):
         extractor = extractor
+
     else:
         assert_never(extractor)  # This should be unreachable
 
@@ -153,7 +158,8 @@ def extract_(
     logger.info(f"Using extractor {extractor.identifier}")
 
     if cache_dir:
-        cache_dir.mkdir(exist_ok=True)
+        cache_dir.mkdir(parents=True, exist_ok=True)
+
     feat_output_dir = output_dir / extractor_id
 
     for slide_path in (

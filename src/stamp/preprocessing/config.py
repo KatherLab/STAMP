@@ -1,6 +1,7 @@
 from pathlib import Path
 from typing import Literal
 
+import torch
 from pydantic import AliasChoices, BaseModel, Field
 from torch._prims_common import DeviceLikeType
 
@@ -23,5 +24,5 @@ class PreprocessingConfig(BaseModel, arbitrary_types_allowed=True):
         Field(validation_alias=AliasChoices("extractor", "feat_extractor"))
     )
     max_workers: int = Field(8, validation_alias=AliasChoices("max_workers", "cores"))
-    device: DeviceLikeType = "cpu"
+    accelerator: DeviceLikeType = "cuda" if torch.cuda.is_available() else "cpu"
     brightness_cutoff: int | None = Field(240, ge=0, le=255)

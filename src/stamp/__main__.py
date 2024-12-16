@@ -61,7 +61,17 @@ def run_cli(args: argparse.Namespace) -> None:
                 raise ValueError("no preprocessing configuration supplied")
 
             _add_file_handle_(logger, output_dir=config.preprocessing.output_dir)
-            extract_(**vars(config.preprocessing))
+            extract_(
+                output_dir=config.preprocessing.output_dir,
+                wsi_dir=config.preprocessing.wsi_dir,
+                cache_dir=config.preprocessing.cache_dir,
+                tile_size_um=config.preprocessing.tile_size_um,
+                tile_size_px=config.preprocessing.tile_size_px,
+                extractor=config.preprocessing.extractor,
+                max_workers=config.preprocessing.max_workers,
+                accelerator=config.preprocessing.accelerator,
+                brightness_cutoff=config.preprocessing.brightness_cutoff,
+            )
 
         case "train":
             from stamp.modeling.train import train_categorical_model_
@@ -79,11 +89,7 @@ def run_cli(args: argparse.Namespace) -> None:
                 patient_label=config.training.patient_label,
                 ground_truth_label=config.training.ground_truth_label,
                 filename_label=config.training.filename_label,
-                categories=(
-                    np.array(config.training.categories)
-                    if config.training.categories is not None
-                    else None
-                ),
+                categories=config.training.categories,
                 # Dataset and -loader parameters
                 bag_size=config.training.bag_size,
                 num_workers=config.training.num_workers,
