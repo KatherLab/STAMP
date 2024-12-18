@@ -4,6 +4,7 @@ import logging
 from collections.abc import Callable
 from functools import cache
 from pathlib import Path
+from random import shuffle
 from typing import Iterator, Literal, assert_never
 
 import h5py
@@ -58,7 +59,7 @@ def _get_preprocessing_code_hash() -> str:
     can be identified as such after the fact.
     """
     hasher = hashlib.sha256()
-    for file_path in sorted(Path(__file__).parent.glob("**/*.py")):
+    for file_path in sorted(Path(__file__).parent.glob("*.py")):
         with open(file_path, "rb") as fp:
             hasher.update(fp.read())
     return hasher.hexdigest()
@@ -162,15 +163,16 @@ def extract_(
 
     feat_output_dir = output_dir / extractor_id
 
-    for slide_path in (
-        progress := tqdm(
-            list(
-                slide_path
-                for extension in supported_extensions
-                for slide_path in wsi_dir.glob(f"**/*{extension}")
-            )
-        )
-    ):
+    slide_paths = [
+        slide_path
+        for extension in supported_extensions
+        for slide_path in wsi_dir.glob(f"**/*{extension}")
+    ]
+    # We shuffle so if we run multiple jobs on multiple computers at the same time,
+    # They won't interfere with each other too much
+    shuffle(slide_paths)
+
+    for slide_path in (progress := tqdm(slide_paths)):
         progress.set_description(str(slide_path.relative_to(wsi_dir)))
         logger.debug(f"processing {slide_path}")
 
