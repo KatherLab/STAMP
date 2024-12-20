@@ -1,14 +1,17 @@
 {
-    "python.analysis.typeCheckingMode": "standard",
     "editor.formatOnSave": true,
     "editor.formatOnSaveMode": "modificationsIfAvailable",
-    "editor.defaultFormatter": "charliermarsh.ruff",
+    "python.analysis.typeCheckingMode": "standard",
     "python.analysis.inlayHints.callArgumentNames": "all",
     "python.analysis.inlayHints.functionReturnTypes": true,
     "python.analysis.inlayHints.pytestParameters": true,
     "python.analysis.inlayHints.variableTypes": true,
-    "editor.codeActionsOnSave": {
-        "source.organizeImports": "always"
+    "[python]": {
+        "editor.formatOnSave": true,
+        "editor.defaultFormatter": "charliermarsh.ruff",
+        "editor.codeActionsOnSave": {
+            "source.organizeImports": "explicit"
+        }
     },
     "ruff.lint.ignore": [
         "F722", // otherwise jaxtyping annotations get flagged
