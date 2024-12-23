@@ -147,15 +147,19 @@ def run_cli(args: argparse.Namespace) -> None:
             )
 
         case "statistics":
-            raise NotImplementedError()
-            from stamp.modeling.statistics import compute_stats_
+            from stamp.statistics import compute_stats_
 
             if config.statistics is None:
                 raise ValueError("no statistics configuration supplied")
 
             _add_file_handle_(_logger, output_dir=config.statistics.output_dir)
 
-            compute_stats_(**vars(config.statistics))
+            compute_stats_(
+                output_dir=config.statistics.output_dir,
+                pred_csvs=config.statistics.pred_csvs,
+                ground_truth_label=config.statistics.ground_truth_label,
+                true_class=config.statistics.true_class,
+            )
 
         case "heatmaps":
             from stamp.heatmaps import heatmaps_
