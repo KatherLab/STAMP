@@ -9,8 +9,8 @@ from pydantic import BaseModel
 from stamp.modeling.data import PandasLabel
 from stamp.statistics.categorical import categorical_aggregated_
 from stamp.statistics.prc import (
-    plot_precision_recall_curves_,
-    plot_single_decorated_prc_curve,
+    plot_multiple_decorated_precision_recall_curves,
+    plot_single_decorated_precision_recall_curve,
 )
 from stamp.statistics.roc import (
     plot_multiple_decorated_roc_curves,
@@ -106,21 +106,20 @@ def compute_stats_(
         dpi=300,
     )
     if len(preds_dfs) == 1:
-        plot_single_decorated_prc_curve(
-            ax,
-            y_trues[0],
-            y_preds[0],
+        plot_single_decorated_precision_recall_curve(
+            ax=ax,
+            y_true=y_trues[0],
+            y_score=y_preds[0],
             title=f"{ground_truth_label} = {true_class}",
             n_bootstrap_samples=n_bootstrap_samples,
         )
 
     else:
-        plot_precision_recall_curves_(
-            ax,
-            pred_csvs,
-            target_label=ground_truth_label,
-            true_label=true_class,
-            outpath=stats_dir,
+        plot_multiple_decorated_precision_recall_curves(
+            ax=ax,
+            y_trues=y_trues,
+            y_scores=y_preds,
+            title=f"{ground_truth_label} = {true_class}",
         )
 
     fig.tight_layout()
