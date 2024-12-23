@@ -32,21 +32,21 @@ def _categorical(preds_df: pd.DataFrame, target_label: str) -> pd.DataFrame:
 
     # roc_auc
     stats_df["roc_auc_score"] = [
-        metrics.roc_auc_score(y_true == cat, y_pred[:, i])
+        metrics.roc_auc_score(y_true == cat, y_pred[:, i])  # pyright: ignore[reportCallIssue,reportArgumentType]
         for i, cat in enumerate(categories)
     ]
 
     # average_precision
     stats_df["average_precision_score"] = [
-        metrics.average_precision_score(y_true == cat, y_pred[:, i])
+        metrics.average_precision_score(y_true == cat, y_pred[:, i])  # pyright: ignore[reportCallIssue,reportArgumentType]
         for i, cat in enumerate(categories)
     ]
 
     # p values
     p_values = []
     for i, cat in enumerate(categories):
-        pos_scores = y_pred[:, i][y_true == cat]
-        neg_scores = y_pred[:, i][y_true != cat]
+        pos_scores = y_pred[:, i][y_true == cat]  # pyright: ignore[reportCallIssue,reportArgumentType]
+        neg_scores = y_pred[:, i][y_true != cat]  # pyright: ignore[reportCallIssue,reportArgumentType]
         p_values.append(st.ttest_ind(pos_scores, neg_scores).pvalue)  # pyright: ignore[reportAttributeAccessIssue]
     stats_df["p_value"] = p_values
 
