@@ -264,7 +264,7 @@ def _supertiles(
     max_workers: int,
     brightness_cutoff: int | None,
 ) -> Iterator[_Tile[Microns]]:
-    slide_mpp = get_slide_mpp(slide)
+    slide_mpp = get_slide_mpp_(slide)
     if slide_mpp is None:
         raise MPPExtractionError()
 
@@ -358,7 +358,7 @@ def _tiles_from_cache_file(cache_file_path: Path) -> Iterator[_Tile]:
                 )
 
 
-def get_slide_mpp(slide: openslide.AbstractSlide | Path) -> float | None:
+def get_slide_mpp_(slide: openslide.AbstractSlide | Path) -> float | None:
     """Returns the Microns per Slide Pixel of the WSI, or None if none could be found."""
     if isinstance(slide, Path):
         slide = openslide.open_slide(slide)

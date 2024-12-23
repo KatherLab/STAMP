@@ -34,7 +34,7 @@ def _create_config_file(config_file: Path) -> None:
         )
 
 
-def run_cli(args: argparse.Namespace) -> None:
+def _run_cli(args: argparse.Namespace) -> None:
     # Handle init command
     if args.command == "init":
         _create_config_file(args.config)
@@ -189,7 +189,7 @@ def _add_file_handle_(logger: logging.Logger, *, output_dir: Path) -> None:
     logger.addHandler(file_handler)
 
 
-def main() -> None:
+def _main() -> None:
     parser = argparse.ArgumentParser(
         prog="stamp", description="STAMP: Solid Tumor Associative Modeling in Pathology"
     )
@@ -233,11 +233,11 @@ def main() -> None:
 
     # Run the CLI
     try:
-        run_cli(args)
+        _run_cli(args)
     except Exception as e:
         _logger.exception(e)
         exit(1)
 
 
 if __name__ == "__main__":
-    main()
+    _main()

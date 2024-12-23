@@ -92,7 +92,7 @@ class LitVisionTransformer(lightning.LightningModule):
 
         # Used during deployment
         self.ground_truth_label = ground_truth_label
-        self.categories: npt.NDArray[np.str_] = np.array(categories)
+        self.categories = np.array(categories)
         self.train_patients = train_patients
         self.valid_patients = valid_patients
 

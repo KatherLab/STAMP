@@ -24,7 +24,7 @@ from stamp.preprocessing.tiling import (
     MPPExtractionError,
     SlidePixels,
     TilePixels,
-    get_slide_mpp,
+    get_slide_mpp_,
     tiles_with_cache,
 )
 
@@ -89,7 +89,7 @@ class _TileDataset(IterableDataset):
         # Already check if we can extract the MPP here.
         # We don't want to kill our dataloader later,
         # because that leads to _a lot_ of error messages which are difficult to read
-        if get_slide_mpp(openslide.OpenSlide(slide_path)) is None:
+        if get_slide_mpp_(openslide.OpenSlide(slide_path)) is None:
             raise MPPExtractionError()
 
     def __iter__(self) -> Iterator[tuple[Tensor, Microns, Microns]]:
@@ -259,7 +259,7 @@ def _get_rejection_thumb(
 
     inclusion_map = np.zeros(
         np.uint32(
-            np.ceil(np.array(slide.dimensions) * get_slide_mpp(slide) / tile_size_um)
+            np.ceil(np.array(slide.dimensions) * get_slide_mpp_(slide) / tile_size_um)
         ),
         dtype=bool,
     )

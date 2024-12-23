@@ -18,7 +18,7 @@ from torch.func import jacrev  # pyright: ignore[reportPrivateImportUsage]
 from stamp.modeling.lightning_model import LitVisionTransformer
 from stamp.modeling.vision_transformer import VisionTransformer
 from stamp.preprocessing.extract import supported_extensions
-from stamp.preprocessing.tiling import SlidePixels, get_slide_mpp
+from stamp.preprocessing.tiling import SlidePixels, get_slide_mpp_
 
 logger = logging.getLogger("stamp")
 
@@ -67,7 +67,7 @@ def _vals_to_im(
 
 
 def _show_thumb(slide, thumb_ax: Axes, attention: Tensor) -> np.ndarray:
-    mpp = get_slide_mpp(slide)
+    mpp = get_slide_mpp_(slide)
     dims_um = np.array(slide.dimensions) * mpp
     thumb = slide.get_thumbnail(np.round(dims_um * 8 / 256).astype(int))
     thumb_ax.imshow(np.array(thumb)[: attention.shape[0] * 8, : attention.shape[1] * 8])
@@ -121,7 +121,7 @@ def heatmaps_(
         logger.info(f"creating heatmaps for {wsi_path.name}")
 
         slide = openslide.open_slide(wsi_path)
-        slide_mpp = get_slide_mpp(slide)
+        slide_mpp = get_slide_mpp_(slide)
         assert slide_mpp is not None, "could not determine slide MPP"
 
         with h5py.File(h5_path) as h5:

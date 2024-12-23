@@ -99,14 +99,14 @@ def dataloader_from_patient_data(
                 batch_size=batch_size,
                 shuffle=shuffle,
                 num_workers=num_workers,
-                collate_fn=collate_to_tuple,
+                collate_fn=_collate_to_tuple,
             ),
         ),
         list(categories),
     )
 
 
-def collate_to_tuple(
+def _collate_to_tuple(
     items: list[tuple[_Bag, BagSize, _EncodedTarget]],
 ) -> tuple[Bags, BagSizes, EncodedTargets]:
     bags = torch.stack([bag for bag, _, _ in items])
