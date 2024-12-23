@@ -1,11 +1,9 @@
-import logging
-from collections import namedtuple
-from typing import List, Mapping, Optional, Sequence, Tuple
+from typing import NamedTuple, Optional, Sequence, Tuple, TypeAlias, cast
 
 import numpy as np
 import numpy.typing as npt
-import pandas as pd
 import scipy.stats as st
+from jaxtyping import Bool, Float
 from matplotlib.axes import Axes
 from matplotlib.collections import LineCollection
 from matplotlib.colors import Colormap
@@ -17,22 +15,20 @@ __copyright__ = "Copyright (C) 2022-2024 Marko van Treeck"
 __license__ = "MIT"
 
 
-all = [
-    "plot_roc_curve",
-    "plot_roc_curves",
-    "plot_rocs_for_subtypes",
-]
+_Auc: TypeAlias = float
+_Auc95CILower: TypeAlias = float
+_Auc95CIUpper: TypeAlias = float
 
 
 def plot_single_decorated_roc_curve(
-    ax: Axes,
-    y_true: npt.NDArray[np.bool_],
-    y_pred: npt.NDArray[np.float64],
     *,
-    title: Optional[str] = None,
-    n_bootstrap_samples: Optional[int] = None,
-    threshold_cmap: Optional[Colormap] = None,
-) -> Axes:
+    ax: Axes,
+    y_true: Bool[np.ndarray, "sample"],  # noqa: F821
+    y_score: Float[np.ndarray, "sample"],  # noqa: F821
+    title: str,
+    n_bootstrap_samples: int | None,
+    threshold_cmap: Colormap | None,
+) -> None:
     """Plots a single ROC curve.
 
     Args:
@@ -41,33 +37,44 @@ def plot_single_decorated_roc_curve(
         y_pred:  A sequence of predictions.
         title:  Title of the plot.
     """
-    auc, lower, upper = plot_bootstrapped_roc_curve(
-        ax,
-        y_true,
-        y_pred,
-        label=title,
-        n_bootstrap_samples=n_bootstrap_samples,
-        threshold_cmap=threshold_cmap,
-    )
-    style_auc(ax)
-    ax.set_title(f"{title}\nAUROC = {auc:.2f} [{lower:.2f}-{upper:.2f}]")
+    if n_bootstrap_samples is not None:
+        auc, lower, upper = _plot_bootstrapped_roc_curve(
+            ax=ax,
+            y_true=y_true,
+            y_score=y_score,
+            n_bootstrap_samples=n_bootstrap_samples,
+            threshold_cmap=threshold_cmap,
+        )
+        ax.set_title(f"{title}\nAUROC = {auc:.2f} [{lower:.2f}-{upper:.2f}]")
+    else:
+        fpr, tpr, thresh = roc_curve(y_true, y_score)
+        auc = roc_auc_score(y_true, y_score)
 
-    return ax
+        _plot_curve(
+            ax=ax,
+            x=fpr,
+            y=tpr,
+            thresh=np.clip(thresh, 0.0, 1.0),
+            label=f"AUC = {auc:0.2f}",
+            threshold_cmap=threshold_cmap,
+        )
 
+        ax.set_title(f"{title}\nAUROC = {auc:.2f}")
 
-def auc_str(auc: float, lower: Optional[float], upper: Optional[float]) -> str:
-    return f"AUC = {auc:0.2f} [{lower:0.2f}-{upper:0.2f}]"
-
-
-def style_auc(ax: Axes) -> None:
     ax.plot([0, 1], [0, 1], "r--")
     ax.set_aspect("equal")
     ax.set_xlabel("False Positive Rate")
     ax.set_ylabel("True Positive Rate")
-    ax.legend(loc="lower right")
 
 
-TPA = namedtuple("TPA", ["true", "pred", "auc"])
+def _auc_str(auc: float, lower: Optional[float], upper: Optional[float]) -> str:
+    return f"AUC = {auc:0.2f} [{lower:0.2f}-{upper:0.2f}]"
+
+
+class _TPA(NamedTuple):
+    trues: Bool[np.ndarray, "sample"]  # noqa: F821
+    scores: Float[np.ndarray, "sample"]  # noqa: F821
+    auc: float
 
 
 def plot_multiple_decorated_roc_curves(
@@ -87,108 +94,69 @@ def plot_multiple_decorated_roc_curves(
         title:  Title of the plot.
     """
     # sort trues, preds, AUCs by AUC
-    tpas = [TPA(t, p, roc_auc_score(t, p)) for t, p in zip(y_trues, y_scores)]
+    tpas = [_TPA(t, p, float(roc_auc_score(t, p))) for t, p in zip(y_trues, y_scores)]
     tpas = sorted(tpas, key=lambda x: x.auc, reverse=True)
 
+    lower, upper = None, None
     # plot rocs
-    for t, p, auc in tpas:
-        auc, lower, upper = plot_bootstrapped_roc_curve(
-            ax, t, p, label="AUC = {ci}", n_bootstrap_samples=n_bootstrap_samples
-        )
+    if n_bootstrap_samples is not None:
+        for t, p, auc in tpas:
+            _, lower, upper = _plot_bootstrapped_roc_curve(
+                ax=ax,
+                y_true=t,
+                y_score=p,
+                n_bootstrap_samples=n_bootstrap_samples,
+                threshold_cmap=None,
+            )
+    else:
+        for t, p, auc in tpas:
+            fpr, tpr, thresh = roc_curve(t, p)
+
+            _plot_curve(
+                ax=ax,
+                x=fpr,
+                y=tpr,
+                thresh=np.clip(thresh, 0.0, 1.0),
+                label=f"AUC = {auc:0.2f}",
+                threshold_cmap=None,
+            )
 
     # style plot
-    style_auc(ax)
+    ax.plot([0, 1], [0, 1], "r--")
+    ax.set_aspect("equal")
+    ax.set_xlabel("False Positive Rate")
+    ax.set_ylabel("True Positive Rate")
+    ax.legend(loc="lower right")
 
     # calculate confidence intervals and print title
     aucs = [x.auc for x in tpas]
     mean_auc = np.mean(aucs).item()
     if not n_bootstrap_samples:
-        lower, upper = st.t.interval(
-            0.95, len(aucs) - 1, loc=np.mean(aucs), scale=st.sem(aucs)
+        lower, upper = cast(
+            tuple[_Auc95CILower, _Auc95CIUpper],
+            st.t.interval(0.95, len(aucs) - 1, loc=np.mean(aucs), scale=st.sem(aucs)),
         )
+
+    assert lower is not None
+    assert upper is not None
 
     # limit conf bounds to [0,1] in case of low sample numbers
-    lower = max(0, lower)
-    upper = min(1, upper)
+    lower, upper = max(0.0, lower), min(1.0, upper)
 
     if title:
-        ax.set_title(f"{title}\n {auc_str(mean_auc, lower, upper)}")
+        ax.set_title(f"{title}\n {_auc_str(mean_auc, lower, upper)}")
     else:
-        ax.set_title(auc_str(mean_auc, lower, upper))
+        ax.set_title(_auc_str(mean_auc, lower, upper))
 
 
-def split_preds_into_groups(
-    preds_df: pd.DataFrame,
+def _plot_bootstrapped_roc_curve(
     *,
-    clini_df: pd.DataFrame,
-    target_label: str,
-    true_label: str,
-    subgroup_label: str,
-) -> Mapping[str, Tuple[npt.NDArray[np.bool_], npt.NDArray[np.float64]]]:
-    """Splits predictions into a mapping `subgroup_name -> (y_true, y_pred)."""
-    groups = {}
-    for subgroup, subgroup_patients in clini_df.PATIENT.groupby(
-        clini_df[subgroup_label]
-    ):
-        subgroup_preds = preds_df[preds_df.PATIENT.isin(subgroup_patients)]
-        y_true = subgroup_preds[target_label] == true_label
-        y_pred = pd.to_numeric(subgroup_preds[f"{target_label}_{true_label}"])
-        groups[subgroup] = (y_true.values, y_pred.values)  # type: ignore
-
-    return groups
-
-
-def plot_decorated_rocs_for_subtypes(
     ax: Axes,
-    groups: Mapping[str, Tuple[npt.NDArray[np.bool_], npt.NDArray[np.float64]]],
-    *,
-    target_label: str,
-    true_label: str,
-    subgroup_label: str,
-    subgroups: Optional[Sequence[str]] = None,
-    n_bootstrap_samples: Optional[int] = None,
-) -> None:
-    """Plots a ROC for multiple groups."""
-    tpas: List[Tuple[str, TPA]] = []
-    for subgroup, (y_true, y_pred) in groups.items():
-        if subgroups and subgroup not in subgroups:
-            continue
-
-        if len(np.unique(y_true)) <= 1:
-            logging.warn(
-                f"subgroup {subgroup} does only have samples of one class... skipping"
-            )
-            continue
-
-        tpas.append((subgroup, TPA(y_true, y_pred, roc_auc_score(y_true, y_pred))))
-
-    # sort trues, preds, AUCs by AUC
-    tpas = sorted(tpas, key=lambda x: x[1].auc, reverse=True)
-
-    # plot rocs
-    for subgroup, (t, s, _) in tpas:
-        plot_bootstrapped_roc_curve(
-            ax=ax,
-            y_true=t,
-            y_score=s,
-            label=f"{target_label} for {subgroup} (AUC = {{ci}})",
-            n_bootstrap_samples=n_bootstrap_samples,
-        )
-
-    # style plot
-    style_auc(ax)
-    ax.legend(loc="lower right")
-    ax.set_title(f"{target_label} = {true_label} Subgrouped by {subgroup_label}")
-
-
-def plot_bootstrapped_roc_curve(
-    ax: Axes,
-    y_true: npt.NDArray[np.bool_],
-    y_score: npt.NDArray[np.float64],
-    label: Optional[str],
-    n_bootstrap_samples: Optional[int] = None,
-    threshold_cmap: Optional[Colormap] = None,
-):
+    y_true: Bool[np.ndarray, "sample"],  # noqa: F821
+    y_score: Float[np.ndarray, "sample"],  # noqa: F821
+    n_bootstrap_samples: int,
+    threshold_cmap: Colormap | None,
+) -> Tuple[_Auc, _Auc95CILower, _Auc95CIUpper]:
     """Plots a roc curve with bootstrap interval.
 
     Args:
@@ -199,65 +167,61 @@ def plot_bootstrapped_roc_curve(
             The string `{ci}` will be replaced with the AUC
             and the range of the confidence interval.
     """
-    assert len(y_true) == len(y_score), "length of truths and scores does not match."
-    lower = None
-    upper = None
-    if n_bootstrap_samples:
-        # draw some confidence intervals based on bootstrapping
-        # sample repeatedly (with replacement) from our data points,
-        # interpolate along the resulting ROC curves
-        # and then sample the bottom 0.025 / top 0.975 quantile point
-        # for each sampled fpr-position
-        rng = np.random.default_rng()
-        interp_rocs = []
-        interp_fpr = np.linspace(0, 1, num=1000)
-        bootstrap_aucs = []
-        for _ in trange(
-            n_bootstrap_samples, desc="Bootstrapping ROC curves", leave=False
-        ):
-            sample_idxs = rng.choice(len(y_true), len(y_true))
-            sample_y_true = y_true[sample_idxs]
-            sample_y_score = y_score[sample_idxs]
-            if len(np.unique(sample_y_true)) != 2:
-                continue
-            fpr, tpr, thresh = roc_curve(sample_y_true, sample_y_score)
-            interp_rocs.append(np.interp(interp_fpr, fpr, tpr))
-            bootstrap_aucs.append(roc_auc_score(sample_y_true, sample_y_score))
+    # draw some confidence intervals based on bootstrapping
+    # sample repeatedly (with replacement) from our data points,
+    # interpolate along the resulting ROC curves
+    # and then sample the bottom 0.025 / top 0.975 quantile point
+    # for each sampled fpr-position
+    rng = np.random.default_rng()
+    interp_rocs = []
+    interp_fpr = np.linspace(0, 1, num=1000)
+    bootstrap_aucs: list[float] = []
+    for _ in trange(n_bootstrap_samples, desc="Bootstrapping ROC curves", leave=False):
+        sample_idxs = rng.choice(len(y_true), len(y_true))
+        sample_y_true = y_true[sample_idxs]
+        sample_y_score = y_score[sample_idxs]
+        if len(np.unique(sample_y_true)) != 2:
+            continue
+        fpr, tpr, thresh = roc_curve(sample_y_true, sample_y_score)
+        interp_rocs.append(np.interp(interp_fpr, fpr, tpr))
+        bootstrap_aucs.append(float(roc_auc_score(sample_y_true, sample_y_score)))
 
-        lower = np.quantile(interp_rocs, 0.025, axis=0)
-        upper = np.quantile(interp_rocs, 0.975, axis=0)
-        ax.fill_between(interp_fpr, lower, upper, alpha=0.5)
-        upper = np.quantile(bootstrap_aucs, 0.975)
-        lower = np.quantile(bootstrap_aucs, 0.025)
+    roc_lower: Float[np.ndarray, "fpr"]  # noqa: F821
+    roc_upper: Float[np.ndarray, "fpr"]  # noqa: F821
+    roc_lower, roc_upper = np.quantile(interp_rocs, [0.025, 0.975], axis=0)
+    ax.fill_between(interp_fpr, roc_lower, roc_upper, alpha=0.5)
+
+    auc_lower: _Auc95CILower
+    auc_upper: _Auc95CIUpper
+    auc_lower, auc_upper = np.quantile(bootstrap_aucs, [0.025, 0.975])
 
     fpr, tpr, thresh = roc_curve(y_true, y_score)
-    auc = roc_auc_score(y_true, y_score)
-    # ci_str = f"${auc:0.2f} [{l:0.2f}-{h:0.2f}]$" if conf_range else f"${auc:0.2f}$"
-    # ax.plot(fpr, tpr, label=label.format(ci=ci_str) if label else "")
-    plot_curve(
-        ax,
-        fpr,
-        tpr,
-        np.clip(thresh, 0, 1),
+    auc = float(roc_auc_score(y_true, y_score))
+
+    _plot_curve(
+        ax=ax,
+        x=fpr,
+        y=tpr,
+        thresh=np.clip(thresh, 0.0, 1.0),
         label=f"AUC = {auc:0.2f}",
         threshold_cmap=threshold_cmap,
     )
-    return auc, lower, upper
+    return auc, auc_lower, auc_upper
 
 
-def plot_curve(
-    ax: Axes,
-    x: npt.NDArray[np.float64],
-    y: npt.NDArray[np.float64],
-    thresh: npt.NDArray[np.float64],
+def _plot_curve(
     *,
-    label: Optional[str],
-    threshold_cmap: Optional[Colormap] = None,
+    ax: Axes,
+    x: Float[np.ndarray, "sample"],  # noqa: F821
+    y: Float[np.ndarray, "sample"],  # noqa: F821
+    thresh: Float[np.ndarray, "sample"],  # noqa: F821
+    label: str | None,
+    threshold_cmap: Colormap | None,
 ) -> None:
     if threshold_cmap is not None:
         points = np.array([x, y]).transpose().reshape(-1, 1, 2)
         segments = np.concatenate([points[:-1], points[1:]], axis=1)
-        lc = LineCollection(segments.tolist(), cmap=threshold_cmap, label=label)
+        lc = LineCollection(list(segments), cmap=threshold_cmap, label=label)
         lc.set_array(thresh)
         ax.add_collection(lc)
         ax.set_xlim(-0.05, 1.05)

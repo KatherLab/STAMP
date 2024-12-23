@@ -1,3 +1,4 @@
+# %%
 import io
 import tempfile
 from pathlib import Path
@@ -9,11 +10,11 @@ from torch.utils.data import DataLoader
 
 from stamp.modeling.data import (
     BagDataset,
+    BagSize,
     FeaturePath,
     GroundTruth,
     PatientData,
     PatientId,
-    _BagSize,
     filter_complete_patient_data_,
 )
 
@@ -71,7 +72,7 @@ def test_get_cohort_df() -> None:
 
 
 def test_dataset(
-    bag_size: _BagSize = _BagSize(5),
+    bag_size: BagSize = BagSize(5),
     dim_feats: int = 34,
     batch_size: int = 2,
 ) -> None:
@@ -83,7 +84,7 @@ def test_dataset(
             [_make_feature_file(torch.rand((34, dim_feats)))],
         ],
         bag_size=bag_size,
-        ground_truths=torch.rand(3, 4),
+        ground_truths=torch.rand(3, 4) > 0.5,
     )
 
     assert len(ds) == 3

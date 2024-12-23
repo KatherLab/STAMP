@@ -5,7 +5,6 @@ import sys
 from pathlib import Path
 from typing import assert_never
 
-import numpy as np
 import yaml
 
 from stamp.config import StampConfig
@@ -13,14 +12,14 @@ from stamp.config import StampConfig
 STAMP_FACTORY_SETTINGS = Path(__file__).with_name("config.yaml")
 
 # Set up the logger
-logger = logging.getLogger("stamp")
-logger.setLevel(logging.DEBUG)
-formatter = logging.Formatter("%(asctime)s\t%(levelname)s\t%(message)s")
+_logger = logging.getLogger("stamp")
+_logger.setLevel(logging.DEBUG)
+_formatter = logging.Formatter("%(asctime)s\t%(levelname)s\t%(message)s")
 
-stream_handler = logging.StreamHandler(sys.stderr)
-stream_handler.setLevel(logging.INFO)
-stream_handler.setFormatter(formatter)
-logger.addHandler(stream_handler)
+_stream_handler = logging.StreamHandler(sys.stderr)
+_stream_handler.setLevel(logging.INFO)
+_stream_handler.setFormatter(_formatter)
+_logger.addHandler(_stream_handler)
 
 
 def _create_config_file(config_file: Path) -> None:
@@ -28,9 +27,9 @@ def _create_config_file(config_file: Path) -> None:
     if not config_file.exists():
         # Copy original config file
         shutil.copy(STAMP_FACTORY_SETTINGS, config_file)
-        logger.info(f"Created new config file at {config_file.absolute()}")
+        _logger.info(f"Created new config file at {config_file.absolute()}")
     else:
-        logger.info(
+        _logger.info(
             f"Refusing to overwrite existing config file at {config_file.absolute()}"
         )
 
@@ -60,7 +59,7 @@ def run_cli(args: argparse.Namespace) -> None:
             if config.preprocessing is None:
                 raise ValueError("no preprocessing configuration supplied")
 
-            _add_file_handle_(logger, output_dir=config.preprocessing.output_dir)
+            _add_file_handle_(_logger, output_dir=config.preprocessing.output_dir)
             extract_(
                 output_dir=config.preprocessing.output_dir,
                 wsi_dir=config.preprocessing.wsi_dir,
@@ -79,7 +78,7 @@ def run_cli(args: argparse.Namespace) -> None:
             if config.training is None:
                 raise ValueError("no training configuration supplied")
 
-            _add_file_handle_(logger, output_dir=config.training.output_dir)
+            _add_file_handle_(_logger, output_dir=config.training.output_dir)
             # We pass every parameter explicitly so our type checker can do its work.
             train_categorical_model_(
                 output_dir=config.training.output_dir,
@@ -106,7 +105,7 @@ def run_cli(args: argparse.Namespace) -> None:
             if config.deployment is None:
                 raise ValueError("no deployment configuration supplied")
 
-            _add_file_handle_(logger, output_dir=config.deployment.output_dir)
+            _add_file_handle_(_logger, output_dir=config.deployment.output_dir)
             deploy_categorical_model_(
                 output_dir=config.deployment.output_dir,
                 checkpoint_path=config.deployment.checkpoint_path,
@@ -121,14 +120,31 @@ def run_cli(args: argparse.Namespace) -> None:
             )
 
         case "crossval":
-            raise NotImplementedError()
-            from stamp.modeling.transformer.helpers import categorical_crossval_
+            from stamp.modeling.crossval import categorical_crossval_
 
             if config.crossval is None:
                 raise ValueError("no crossval configuration supplied")
 
-            _add_file_handle_(logger, output_dir=config.crossval.output_dir)
-            categorical_crossval_(**vars(config.crossval))
+            _add_file_handle_(_logger, output_dir=config.crossval.output_dir)
+            categorical_crossval_(
+                output_dir=config.crossval.output_dir,
+                clini_table=config.crossval.clini_table,
+                slide_table=config.crossval.slide_table,
+                feature_dir=config.crossval.feature_dir,
+                patient_label=config.crossval.patient_label,
+                ground_truth_label=config.crossval.ground_truth_label,
+                filename_label=config.crossval.filename_label,
+                categories=config.crossval.categories,
+                n_splits=config.crossval.n_splits,
+                # Dataset and -loader parameters
+                bag_size=config.crossval.bag_size,
+                num_workers=config.crossval.num_workers,
+                # crossval paramenters
+                batch_size=config.crossval.batch_size,
+                max_epochs=config.crossval.max_epochs,
+                patience=config.crossval.patience,
+                accelerator=config.crossval.accelerator,
+            )
 
         case "statistics":
             raise NotImplementedError()
@@ -137,7 +153,7 @@ def run_cli(args: argparse.Namespace) -> None:
             if config.statistics is None:
                 raise ValueError("no statistics configuration supplied")
 
-            _add_file_handle_(logger, output_dir=config.statistics.output_dir)
+            _add_file_handle_(_logger, output_dir=config.statistics.output_dir)
 
             compute_stats_(**vars(config.statistics))
 
@@ -147,7 +163,7 @@ def run_cli(args: argparse.Namespace) -> None:
             if config.heatmaps is None:
                 raise ValueError("no heatmaps configuration supplied")
 
-            _add_file_handle_(logger, output_dir=config.heatmaps.output_dir)
+            _add_file_handle_(_logger, output_dir=config.heatmaps.output_dir)
 
             heatmaps_(**vars(config.heatmaps))
 
@@ -215,7 +231,7 @@ def main() -> None:
     try:
         run_cli(args)
     except Exception as e:
-        logger.exception(e)
+        _logger.exception(e)
         exit(1)
 
 

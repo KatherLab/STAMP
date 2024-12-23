@@ -1,3 +1,4 @@
+from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import cast
 
@@ -5,16 +6,18 @@ import lightning
 import lightning.pytorch
 import lightning.pytorch.accelerators
 import lightning.pytorch.accelerators.accelerator
-import numpy.typing as npt
 import torch
 from lightning.pytorch.accelerators.accelerator import Accelerator
 from lightning.pytorch.callbacks import EarlyStopping, ModelCheckpoint
 from lightning.pytorch.loggers import CSVLogger
 from sklearn.model_selection import train_test_split
+from torch.utils.data.dataloader import DataLoader
 
 from stamp.modeling.data import (
     BagDataset,
     Category,
+    PandasLabel,
+    PatientData,
     PatientId,
     dataloader_from_patient_data,
     filter_complete_patient_data_,
@@ -42,10 +45,10 @@ def train_categorical_model_(
     slide_table: Path,
     feature_dir: Path,
     output_dir: Path,
-    patient_label: str,
-    ground_truth_label: str,
-    filename_label: str,
-    categories: npt.NDArray[Category] | None,
+    patient_label: PandasLabel,
+    ground_truth_label: PandasLabel,
+    filename_label: PandasLabel,
+    categories: Sequence[Category] | None,
     # Dataset and -loader parameters
     bag_size: int,
     num_workers: int,
@@ -61,6 +64,7 @@ def train_categorical_model_(
         clini_table:
             An excel or csv file to read the clinical information from.
             Must at least have the columns specified in the arguments
+
             `patient_label` (containing a unique patient ID)
             and `ground_truth_label` (containing the ground truth to train for).
         slide_table:
@@ -105,11 +109,91 @@ def train_categorical_model_(
         drop_patients_with_missing_ground_truth=True,
     )
 
+    model, train_dl, valid_dl = _setup_model_for_training(
+        patient_to_data=patient_to_data,
+        categories=categories,
+        bag_size=bag_size,
+        batch_size=batch_size,
+        num_workers=num_workers,
+        ground_truth_label=ground_truth_label,
+        clini_table=clini_table,
+        slide_table=slide_table,
+        feature_dir=feature_dir,
+    )
+
+    torch.set_float32_matmul_precision("high")
+
+    model_checkpoint = ModelCheckpoint(
+        monitor="validation_loss",
+        mode="min",
+        filename="checkpoint-{epoch:02d}-{validation_loss:0.3f}",
+    )
+    trainer = lightning.Trainer(
+        default_root_dir=output_dir,
+        callbacks=[
+            EarlyStopping(monitor="validation_loss", mode="min", patience=patience),
+            model_checkpoint,
+        ],
+        max_epochs=max_epochs,
+        # FIXME The number of accelerators is currently fixed to one for the
+        # following reasons:
+        #  1. `trainer.predict()` does not return any predictions if used with
+        #     the default strategy no multiple GPUs
+        #  2. `barspoon.model.SafeMulticlassAUROC` breaks on multiple GPUs
+        accelerator=accelerator,
+        devices=1,
+        gradient_clip_val=0.5,
+        logger=CSVLogger(save_dir=output_dir),
+    )
+    trainer.fit(model=model, train_dataloaders=train_dl, val_dataloaders=valid_dl)
+    model.load_from_checkpoint(model_checkpoint.best_model_path)
+    trainer.save_checkpoint(output_dir / "model.ckpt")
+
+
+def _setup_model_for_training(
+    *,
+    patient_to_data: Mapping[PatientId, PatientData],
+    categories: Sequence[Category] | None,
+    bag_size: int,
+    batch_size: int,
+    num_workers: int,
+    ground_truth_label: PandasLabel,
+    clini_table: Path,
+    slide_table: Path,
+    feature_dir: Path,
+) -> tuple[
+    LitVisionTransformer,
+    DataLoader[tuple[Bags, BagSizes, EncodedTargets]],
+    DataLoader[tuple[Bags, BagSizes, EncodedTargets]],
+]:
+    """Prepares model, dataloaders for training
+
+    Args:
+        patient to data:
+            A mapping from patient IDs to their metadata.
+            The ground truth must not be `None`.
+
+    Returns:
+        A tuple of the model, the training dataloader and the validation dataloader.
+    """
+
     # Do a stratified train-validation split
-    ground_truths = [patient_to_ground_truth[patient] for patient in patient_to_data]
+    ground_truths = [
+        patient_data.ground_truth
+        for patient_data in patient_to_data.values()
+        if patient_data.ground_truth is not None
+    ]
+
+    if len(ground_truths) != len(patient_to_data):
+        raise ValueError(
+            "patient_to_data must have a ground truth defined for all targets!"
+        )
+
     train_patients, valid_patients = cast(
-        tuple[npt.NDArray[PatientId], npt.NDArray[PatientId]],
-        train_test_split(list(patient_to_data), stratify=ground_truths, random_state=0),
+        tuple[Sequence[PatientId], Sequence[PatientId]],
+        train_test_split(
+            list(patient_to_data), stratify=ground_truths, shuffle=True, random_state=0
+        ),
     )
 
     train_dl, categories = dataloader_from_patient_data(
@@ -141,7 +225,8 @@ def train_categorical_model_(
 
     # Weigh classes inversely to their occurrence
     category_counts = cast(BagDataset, train_dl.dataset).ground_truths.sum(dim=0)
-    category_weights = (x := category_counts.sum() / category_counts) / x.sum()
+    cat_ratio_reciprocal = category_counts.sum() / category_counts
+    category_weights = cat_ratio_reciprocal / cat_ratio_reciprocal.sum()
 
     if len(categories) <= 1:
         raise ValueError(f"not enough categories to train on: {categories}")
@@ -174,29 +259,4 @@ def train_categorical_model_(
         feature_dir=feature_dir,
     )
 
-    torch.set_float32_matmul_precision("high")
-
-    trainer = lightning.Trainer(
-        default_root_dir=output_dir,
-        callbacks=[
-            EarlyStopping(monitor="validation_loss", mode="min", patience=patience),
-            ModelCheckpoint(
-                monitor="validation_loss",
-                mode="min",
-                filename="checkpoint-{epoch:02d}-{validation_loss:0.3f}",
-            ),
-        ],
-        max_epochs=max_epochs,
-        # FIXME The number of accelerators is currently fixed to one for the
-        # following reasons:
-        #  1. `trainer.predict()` does not return any predictions if used with
-        #     the default strategy no multiple GPUs
-        #  2. `barspoon.model.SafeMulticlassAUROC` breaks on multiple GPUs
-        accelerator=accelerator,
-        devices=1,
-        gradient_clip_val=0.5,
-        logger=CSVLogger(save_dir=output_dir),
-    )
-
-    trainer.fit(model=model, train_dataloaders=train_dl, val_dataloaders=valid_dl)
-    trainer.save_checkpoint(output_dir / "model.ckpt")
+    return model, train_dl, valid_dl

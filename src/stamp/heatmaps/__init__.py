@@ -8,28 +8,30 @@ import matplotlib.pyplot as plt
 import numpy as np
 import openslide
 import torch
-
-# from fastai.vision.learner import Learner, load_learner
-Learner = "Learner"  # Fixme when removing fastai
+from jaxtyping import Float
 from matplotlib.axes import Axes
 from matplotlib.patches import Patch
 from PIL import Image
 from torch import Tensor
 from torch.func import jacrev  # pyright: ignore[reportPrivateImportUsage]
 
+from stamp.modeling.lightning_model import LitVisionTransformer
+from stamp.modeling.vision_transformer import VisionTransformer
 from stamp.preprocessing.extract import supported_extensions
 from stamp.preprocessing.tiling import SlidePixels, get_slide_mpp
 
 logger = logging.getLogger("stamp")
 
 
-def get_stride(coords: Tensor) -> float:
-    xs = coords[:, 0].unique(sorted=True)
-    stride = (xs[1:] - xs[:-1]).min()
-    return stride
+def _get_stride(coords: Float[Tensor, "tile coord"]) -> float:
+    xs: Tensor = coords[:, 0].unique(sorted=True)
+    stride: Tensor = (xs[1:] - xs[:-1]).min()
+    return stride.item()
 
 
-def gradcam_per_category(learn: Learner, feats: Tensor) -> Tensor:
+def _gradcam_per_category(
+    model: VisionTransformer, feats: Float[Tensor, "tile feat"]
+) -> Float[Tensor, "tile category"]:
     tile, feat = -2, -1  # feats dimensions
 
     return (
@@ -37,20 +39,20 @@ def gradcam_per_category(learn: Learner, feats: Tensor) -> Tensor:
             feats
             * jacrev(
                 lambda x: torch.softmax(
-                    learn.model(x.unsqueeze(0), torch.tensor([x.shape[tile]])),
+                    model(x.unsqueeze(0), torch.tensor([x.shape[tile]])),
                     dim=1,
                 ).squeeze(0)
             )(feats)
         )
         .mean(feat)
         .abs()
-    )
+    ).permute(-1, -2)
 
 
-def vals_to_im(
-    scores: Tensor,  # [n_tiles *d_feats]
-    coords_norm: Tensor,  # "n_tiles *d_feats",
-) -> Tensor:
+def _vals_to_im(
+    scores: Float[Tensor, "tile feat"],
+    coords_norm: Float[Tensor, "tile coord"],
+) -> Float[Tensor, "width height category"]:
     """Arranges scores in a 2d grid according to coordinates"""
     size = coords_norm.max(0).values.flip(0) + 1
     im = torch.zeros((*size.tolist(), *scores.shape[1:]))
@@ -64,7 +66,7 @@ def vals_to_im(
     return im
 
 
-def show_thumb(slide, thumb_ax: Axes, attention: Tensor) -> np.ndarray:
+def _show_thumb(slide, thumb_ax: Axes, attention: Tensor) -> np.ndarray:
     mpp = get_slide_mpp(slide)
     dims_um = np.array(slide.dimensions) * mpp
     thumb = slide.get_thumbnail(np.round(dims_um * 8 / 256).astype(int))
@@ -72,7 +74,7 @@ def show_thumb(slide, thumb_ax: Axes, attention: Tensor) -> np.ndarray:
     return np.array(thumb)[: attention.shape[0] * 8, : attention.shape[1] * 8]
 
 
-def show_class_map(
+def _show_class_map(
     class_ax: Axes, top_score_indices: Tensor, gradcam_2d, categories: Collection[str]
 ) -> None:
     cmap = plt.get_cmap("Pastel1")
@@ -97,12 +99,9 @@ def heatmaps_(
     topk: int,
     bottomk: int,
 ) -> None:
-    learn = load_learner(checkpoint_path)
-    learn.model.eval()
-    categories: Collection[str] = learn.dls.train.dataset._datasets[
-        -1
-    ].encode.categories_[0]
+    model = LitVisionTransformer.load_from_checkpoint(checkpoint_path).eval()
 
+    # Collect slides to generate heatmaps for
     if slide_paths is not None:
         wsis_to_process = (wsi_dir / slide for slide in slide_paths)
     else:
@@ -131,7 +130,7 @@ def heatmaps_(
             ).float()
             coords = torch.tensor(h5["coords"][:])  # pyright: ignore[reportIndexIssue]
 
-            stride = cast(float, h5.attrs.get("tile_size", get_stride(coords)))
+            stride = cast(float, h5.attrs.get("tile_size", _get_stride(coords)))
             if h5.attrs.get("unit") == "um":
                 coords_tile_slide_px = torch.round(coords / slide_mpp).long()
                 tile_size_slide_px = SlidePixels(
@@ -154,37 +153,40 @@ def heatmaps_(
 
         coords_norm = (coords // stride).long()
 
-        preds = torch.softmax(
-            learn.model(feats.unsqueeze(0), torch.tensor([feats.shape[-2]])),
+        slide_score = torch.softmax(
+            model(feats.unsqueeze(0), torch.tensor([feats.shape[-2]])),
             dim=1,
         ).squeeze(0)
 
-        gradcam = gradcam_per_category(
-            learn=learn,
+        gradcam = _gradcam_per_category(
+            model=model.vision_transformer,
             feats=feats,
-        ).permute(-1, -2)  # shape: [tile, category]
-        gradcam_2d = vals_to_im(
+        )  # shape: [tile, category]
+        gradcam_2d = _vals_to_im(
             gradcam,
             coords_norm,
         ).detach()  # shape: [width, height, category]
 
         scores = torch.softmax(
-            learn.model(feats.unsqueeze(-2), torch.ones((len(feats)))), dim=1
+            model(feats.unsqueeze(-2), torch.ones((len(feats)))), dim=1
         )  # shape: [tile, category]
-        scores_2d = vals_to_im(
+        scores_2d = _vals_to_im(
             scores, coords_norm
         ).detach()  # shape: [width, height, category]
 
-        fig, axs = plt.subplots(nrows=2, ncols=max(2, len(categories)), figsize=(12, 8))
+        fig, axs = plt.subplots(
+            nrows=2, ncols=max(2, len(model.categories)), figsize=(12, 8)
+        )
 
-        show_class_map(
+        _show_class_map(
             class_ax=axs[0, 1],
             top_score_indices=scores_2d.topk(2).indices[:, :, 0],
             gradcam_2d=gradcam_2d,
-            categories=categories,
+            categories=model.categories,
         )
 
-        for ax, (pos_idx, category) in zip(axs[1, :], enumerate(categories)):
+        attention = None
+        for ax, (pos_idx, category) in zip(axs[1, :], enumerate(model.categories)):
             ax: Axes
             top2 = scores.topk(2)
             # Calculate the distance of the "hot" class
@@ -205,7 +207,7 @@ def heatmaps_(
                 gradcam[..., pos_idx] / gradcam.max(),
                 (
                     others := gradcam[
-                        ..., list(set(range(len(categories))) - {pos_idx})
+                        ..., list(set(range(len(model.categories))) - {pos_idx})
                     ]
                     .max(-1)
                     .values
@@ -220,21 +222,21 @@ def heatmaps_(
             score_im = cast(
                 np.ndarray,
                 plt.get_cmap("RdBu_r")(
-                    vals_to_im(category_score / 2 + 0.5, coords_norm).detach()
+                    _vals_to_im(category_score / 2 + 0.5, coords_norm).detach()
                 ),
             )
 
-            score_im[..., -1] = vals_to_im(attention, coords_norm) > 0
+            score_im[..., -1] = _vals_to_im(attention, coords_norm) > 0
 
             ax.imshow(score_im)
-            ax.set_title(f"{category} {preds[pos_idx]:1.2f}")
+            ax.set_title(f"{category} {slide_score[pos_idx]:1.2f}")
             target_size = np.array(score_im.shape[:2][::-1]) * 8
 
             Image.fromarray(np.uint8(score_im * 255)).resize(
                 tuple(target_size), resample=Image.Resampling.NEAREST
             ).save(
                 slide_output_dir
-                / f"scores-{h5_path.stem}-score_{category}={preds[pos_idx]:0.2f}.png"
+                / f"scores-{h5_path.stem}-score_{category}={slide_score[pos_idx]:0.2f}.png"
             )
 
             # Top tiles
@@ -265,11 +267,15 @@ def heatmaps_(
                     )
                 )
 
+        assert (
+            attention is not None
+        ), "attention should have been set in the for loop above"
+
         # Generate overview
-        thumb = show_thumb(
+        thumb = _show_thumb(
             slide=slide,
             thumb_ax=axs[0, 0],
-            attention=vals_to_im(
+            attention=_vals_to_im(
                 attention,
                 coords_norm,  # pyright: ignore[reportPossiblyUnboundVariable]
             ),

@@ -12,13 +12,10 @@ __copyright__ = "Copyright (C) 2022-2024 Marko van Treeck"
 __license__ = "MIT"
 
 
-__all__ = ["categorical", "aggregate_categorical_stats", "categorical_aggregated_"]
+_score_labels = ["roc_auc_score", "average_precision_score", "p_value", "count"]
 
 
-score_labels = ["roc_auc_score", "average_precision_score", "p_value", "count"]
-
-
-def categorical(preds_df: pd.DataFrame, target_label: str) -> pd.DataFrame:
+def _categorical(preds_df: pd.DataFrame, target_label: str) -> pd.DataFrame:
     """Calculates some stats for categorical prediction tables.
 
     This will calculate the number of items, the AUROC, AUPRC and p value
@@ -50,15 +47,15 @@ def categorical(preds_df: pd.DataFrame, target_label: str) -> pd.DataFrame:
     for i, cat in enumerate(categories):
         pos_scores = y_pred[:, i][y_true == cat]
         neg_scores = y_pred[:, i][y_true != cat]
-        p_values.append(st.ttest_ind(pos_scores, neg_scores).pvalue)
+        p_values.append(st.ttest_ind(pos_scores, neg_scores).pvalue)  # pyright: ignore[reportAttributeAccessIssue]
     stats_df["p_value"] = p_values
 
-    assert set(score_labels) & set(stats_df.columns) == set(score_labels)
+    assert set(_score_labels) & set(stats_df.columns) == set(_score_labels)
 
     return stats_df
 
 
-def aggregate_categorical_stats(df) -> pd.DataFrame:
+def _aggregate_categorical_stats(df) -> pd.DataFrame:
     stats = {}
     for cat, data in df.groupby("level_1"):
         scores_df = data[["roc_auc_score", "average_precision_score"]]
@@ -75,7 +72,7 @@ def aggregate_categorical_stats(df) -> pd.DataFrame:
     return pd.DataFrame.from_dict(stats, orient="index")
 
 
-def categorical_aggregated_(preds_csvs, outpath: str, target_label: str) -> None:
+def categorical_aggregated_(*, preds_csvs, outpath: Path, target_label: str) -> None:
     """Calculate statistics for categorical deployments.
 
     Args:
@@ -87,18 +84,11 @@ def categorical_aggregated_(preds_csvs, outpath: str, target_label: str) -> None
     calculate the mean and 95% confidence interval for all the scores as
     well as sum the total instane count for each class.
     """
-    outpath = Path(outpath)
     preds_dfs = {
-        Path(p).parent.name: categorical(pd.read_csv(p, dtype=str), target_label)
+        Path(p).parent.name: _categorical(pd.read_csv(p, dtype=str), target_label)
         for p in preds_csvs
     }
     preds_df = pd.concat(preds_dfs).sort_index()
     preds_df.to_csv(outpath / f"{target_label}-categorical-stats-individual.csv")
-    stats_df = aggregate_categorical_stats(preds_df.reset_index())
+    stats_df = _aggregate_categorical_stats(preds_df.reset_index())
     stats_df.to_csv(outpath / f"{target_label}-categorical-stats-aggregated.csv")
-
-
-if __name__ == "__main__":
-    from fire import Fire
-
-    Fire(categorical_aggregated_)

@@ -18,7 +18,7 @@ def test_predict(
     dim_input: int = 12,
 ) -> None:
     model = LitVisionTransformer(
-        categories=categories,
+        categories=list(categories),
         category_weights=torch.rand(len(categories)),
         dim_input=dim_input,
         dim_model=n_heads * 3,
@@ -92,7 +92,7 @@ def _make_feature_file(feats: torch.Tensor) -> io.BytesIO:
 def test_to_prediction_df() -> None:
     n_heads = 7
     model = LitVisionTransformer(
-        categories=np.array(["foo", "bar", "baz"]),
+        categories=["foo", "bar", "baz"],
         category_weights=torch.tensor([0.1, 0.2, 0.7]),
         dim_input=12,
         dim_model=n_heads * 3,

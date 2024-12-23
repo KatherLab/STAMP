@@ -11,7 +11,7 @@ authors = [
 ]
 description = "A protocol for Solid Tumor Associative Modeling in Pathology"
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.10,<3.13"    # <3.13 because torchvision does not support it
 
 classifiers = [
     "Programming Language :: Python :: 3",

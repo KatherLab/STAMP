@@ -1,8 +1,10 @@
 """Lightning wrapper around the model"""
 
+from collections.abc import Iterable, Sequence
 from typing import TypeAlias
 
 import lightning
+import numpy as np
 import numpy.typing as npt
 from jaxtyping import Float
 from packaging.version import Version
@@ -20,7 +22,7 @@ from stamp.modeling.data import (
 )
 from stamp.modeling.vision_transformer import VisionTransformer
 
-Losses: TypeAlias = Float[Tensor, "batch loss"]
+Loss: TypeAlias = Float[Tensor, ""]
 
 
 class LitVisionTransformer(lightning.LightningModule):
@@ -28,7 +30,7 @@ class LitVisionTransformer(lightning.LightningModule):
     def __init__(
         self,
         *,
-        categories: npt.NDArray[Category],
+        categories: Sequence[Category],
         category_weights: Float[Tensor, "category_weight"],  # noqa: F821
         dim_input: int,
         dim_model: int,
@@ -38,8 +40,8 @@ class LitVisionTransformer(lightning.LightningModule):
         dropout: float,
         # Metadata used by other parts of stamp, but not by the model itself
         ground_truth_label: PandasLabel,
-        train_patients: npt.NDArray[PatientId],
-        valid_patients: npt.NDArray[PatientId],
+        train_patients: Iterable[PatientId],
+        valid_patients: Iterable[PatientId],
         stamp_version: Version = Version(stamp.__version__),
         # Other metadata
         **metadata,
@@ -57,7 +59,7 @@ class LitVisionTransformer(lightning.LightningModule):
                 "the number of category weights has to mathc the number of categories!"
             )
 
-        self.model = VisionTransformer(
+        self.vision_transformer = VisionTransformer(
             dim_output=len(categories),
             dim_input=dim_input,
             dim_model=dim_model,
@@ -71,7 +73,7 @@ class LitVisionTransformer(lightning.LightningModule):
         # Check if version is compatible.
         # This should only happen when the model is loaded,
         # otherwise the default value will make these checks pass.
-        if stamp_version < Version("2.0.0.dev0"):
+        if stamp_version < Version("2.0.0.dev1"):
             # Update this as we change our model in incompatible ways!
             raise ValueError(
                 f"model has been built with stamp version {stamp_version} "
@@ -90,13 +92,18 @@ class LitVisionTransformer(lightning.LightningModule):
 
         # Used during deployment
         self.ground_truth_label = ground_truth_label
-        self.categories = categories
+        self.categories: npt.NDArray[np.str_] = np.array(categories)
         self.train_patients = train_patients
         self.valid_patients = valid_patients
 
-        _ = metadata  # unused
+        _ = metadata  # unused, but saved in model
 
         self.save_hyperparameters()
+
+    def forward(
+        self, bags: Float[Tensor, "batch tile feature"]
+    ) -> Float[Tensor, "batch logit"]:
+        return self.vision_transformer(bags)
 
     def _step(
         self,
@@ -104,18 +111,15 @@ class LitVisionTransformer(lightning.LightningModule):
         step_name: str,
         batch: tuple[Bags, BagSizes, EncodedTargets],
         batch_idx: int,
-    ) -> Losses:
+    ) -> Loss:
         _ = batch_idx  # unused
 
         bags, _, targets = batch
-        assert (
-            bags.ndim == 3
-        ), "expected bags to have dimensions [batch_size, n_tiles, n_features]"
 
-        logits = self.model(bags)
+        logits = self.vision_transformer(bags)
 
         loss = nn.functional.cross_entropy(
-            logits, targets, weight=self.class_weights.type_as(logits)
+            logits, targets.type_as(logits), weight=self.class_weights.type_as(logits)
         )
 
         self.log(
@@ -142,7 +146,7 @@ class LitVisionTransformer(lightning.LightningModule):
 
     def training_step(
         self, batch: tuple[Bags, BagSizes, EncodedTargets], batch_idx: int
-    ) -> Losses:
+    ) -> Loss:
         return self._step(
             step_name="training",
             batch=batch,
@@ -151,7 +155,7 @@ class LitVisionTransformer(lightning.LightningModule):
 
     def validation_step(
         self, batch: tuple[Bags, BagSizes, EncodedTargets], batch_idx: int
-    ) -> Losses:
+    ) -> Loss:
         return self._step(
             step_name="validation",
             batch=batch,
@@ -160,7 +164,7 @@ class LitVisionTransformer(lightning.LightningModule):
 
     def test_step(
         self, batch: tuple[Bags, BagSizes, EncodedTargets], batch_idx: int
-    ) -> Losses:
+    ) -> Loss:
         return self._step(
             step_name="test",
             batch=batch,
@@ -171,7 +175,7 @@ class LitVisionTransformer(lightning.LightningModule):
         self, batch: tuple[Bags, BagSizes, EncodedTargets], batch_idx: int
     ) -> Float[Tensor, "batch logit"]:
         bags, _, _ = batch
-        return self.model(bags)
+        return self.vision_transformer(bags)
 
     def configure_optimizers(self) -> optim.Optimizer:
         optimizer = optim.Adam(self.parameters(), lr=1e-3)

@@ -27,7 +27,7 @@ __author__ = "Marko van Treeck"
 __copyright__ = "Copyright (C) 2024 Marko van Treeck"
 __license__ = "MIT"
 
-logger = logging.getLogger("stamp")
+_logger = logging.getLogger("stamp")
 
 Logit: TypeAlias = float
 
@@ -53,7 +53,7 @@ def deploy_categorical_model_(
         ground_truth_label is not None
         and ground_truth_label != model.ground_truth_label
     ):
-        logger.warning(
+        _logger.warning(
             "deployment ground truth label differs from training: "
             f"{ground_truth_label} vs {model.ground_truth_label}"
         )
@@ -122,7 +122,7 @@ def _predict(
         patient_data=list(patient_to_data.values()),
         bag_size=None,  # Use all the tiles for deployment
         # Use same encoding scheme as during training
-        categories=model.categories,
+        categories=list(model.categories),
         batch_size=1,
         shuffle=False,
         num_workers=num_workers,

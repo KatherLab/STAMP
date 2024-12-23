@@ -7,8 +7,9 @@ In parts from https://github.com/lucidrains/vit-pytorch/blob/main/vit_pytorch/vi
 from typing import Iterable, cast
 
 import torch
+from beartype import beartype
 from einops import repeat
-from jaxtyping import Float
+from jaxtyping import Float, jaxtyped
 from torch import Tensor, nn
 
 
@@ -39,9 +40,10 @@ class SelfAttention(nn.Module):
         self.norm = nn.LayerNorm(dim)
         self.mhsa = nn.MultiheadAttention(dim, heads, dropout, batch_first=True)
 
+    @jaxtyped(typechecker=beartype)
     def forward(
-        self, x: Float[Tensor, "batch sequence feature"]
-    ) -> Float[Tensor, "batch sequence feature"]:
+        self, x: Float[Tensor, "batch sequence proj_feature"]
+    ) -> Float[Tensor, "batch sequence proj_feature"]:
         x = self.norm(x)
         attn_output, _ = self.mhsa(x, x, x, need_weights=False)
         return attn_output
@@ -79,14 +81,17 @@ class Transformer(nn.Module):
 
         self.norm = nn.LayerNorm(dim)
 
+    @jaxtyped(typechecker=beartype)
     def forward(
-        self, x: Float[Tensor, "batch sequence feature"]
-    ) -> Float[Tensor, "batch sequence feature"]:
+        self, x: Float[Tensor, "batch sequence proj_feature"]
+    ) -> Float[Tensor, "batch sequence proj_feature"]:
         for attn, ff in cast(Iterable[tuple[nn.Module, nn.Module]], self.layers):
             x_attn = attn(x)
             x = x_attn + x
             x = ff(x) + x
-        return self.norm(x)
+
+        x = self.norm(x)
+        return x
 
 
 class VisionTransformer(nn.Module):
@@ -120,6 +125,7 @@ class VisionTransformer(nn.Module):
 
         self.mlp_head = nn.Sequential(nn.Linear(dim_model, dim_output))
 
+    @jaxtyped(typechecker=beartype)
     def forward(
         self, bags: Float[Tensor, "batch tile feature"]
     ) -> Float[Tensor, "batch logit"]:

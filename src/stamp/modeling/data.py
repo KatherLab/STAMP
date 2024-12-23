@@ -9,14 +9,13 @@ from typing import BinaryIO, NewType, TextIO, TypeAlias, cast
 
 import h5py
 import numpy as np
-import numpy.typing as npt
 import pandas as pd
 import torch
-from jaxtyping import Float, Int
+from jaxtyping import Bool, Float, Int
 from torch import Tensor
 from torch.utils.data import DataLoader, Dataset
 
-logger = logging.getLogger("stamp")
+_logger = logging.getLogger("stamp")
 
 __all__ = [
     "BagDataset",
@@ -34,22 +33,22 @@ __copyright__ = "Copyright (C) 2022-2024 Marko van Treeck"
 __license__ = "MIT"
 
 
-PatientId: TypeAlias = np.str_
+PatientId: TypeAlias = str
 GroundTruth = NewType("GroundTruth", str)
 FeaturePath = NewType("FeaturePath", Path)
 
-Category: TypeAlias = np.str_
+Category: TypeAlias = str
 
 # One instance
 _Bag: TypeAlias = Float[Tensor, "tile feature"]
-_BagSize: TypeAlias = int
-_EncodedTarget: TypeAlias = Float[Tensor, "tile category_is_hot"]
+BagSize: TypeAlias = int
+_EncodedTarget: TypeAlias = Bool[Tensor, "category_is_hot"]  # noqa: F821
 """The ground truth, encoded numerically (currently: one-hot)"""
 
 # A batch of the above
 Bags: TypeAlias = Float[Tensor, "batch tile feature"]
-BagSizes: TypeAlias = Int[Tensor, "batch size"]
-EncodedTargets: TypeAlias = Float[Tensor, "batch tile category_is_hot"]
+BagSizes: TypeAlias = Int[Tensor, "batch"]  # noqa: F821
+EncodedTargets: TypeAlias = Bool[Tensor, "batch category_is_hot"]
 """The ground truth, encoded numerically (currently: one-hot)"""
 
 PandasLabel: TypeAlias = str
@@ -68,11 +67,11 @@ def dataloader_from_patient_data(
     *,
     patient_data: Sequence[PatientData],
     bag_size: int | None,
-    categories: npt.NDArray[Category] | None = None,
+    categories: Sequence[Category] | None = None,
     batch_size: int,
     shuffle: bool,
     num_workers: int,
-) -> tuple[DataLoader[tuple[Bags, BagSizes, EncodedTargets]], npt.NDArray[Category]]:
+) -> tuple[DataLoader[tuple[Bags, BagSizes, EncodedTargets]], Sequence[Category]]:
     """Creates a dataloader from patient data, encoding the ground truths.
 
     Args:
@@ -82,7 +81,9 @@ def dataloader_from_patient_data(
     """
 
     raw_ground_truths = np.array([patient.ground_truth for patient in patient_data])
-    categories = categories if categories is not None else np.unique(raw_ground_truths)
+    categories = (
+        categories if categories is not None else list(np.unique(raw_ground_truths))
+    )
     one_hot = torch.tensor(raw_ground_truths.reshape(-1, 1) == categories)
     ds = BagDataset(
         bags=[patient.feature_files for patient in patient_data],
@@ -94,15 +95,29 @@ def dataloader_from_patient_data(
         cast(
             DataLoader[tuple[Bags, BagSizes, EncodedTargets]],
             DataLoader(
-                ds, batch_size=batch_size, shuffle=shuffle, num_workers=num_workers
+                ds,
+                batch_size=batch_size,
+                shuffle=shuffle,
+                num_workers=num_workers,
+                collate_fn=collate_to_tuple,
             ),
         ),
-        categories,
+        list(categories),
     )
 
 
+def collate_to_tuple(
+    items: list[tuple[_Bag, BagSize, _EncodedTarget]],
+) -> tuple[Bags, BagSizes, EncodedTargets]:
+    bags = torch.stack([bag for bag, _, _ in items])
+    bag_sizes = torch.tensor([bagsize for _, bagsize, _ in items])
+    encoded_targets = torch.stack([encoded_target for _, _, encoded_target in items])
+
+    return (bags, bag_sizes, encoded_targets)
+
+
 @dataclass
-class BagDataset(Dataset[tuple[_Bag, _BagSize, _EncodedTarget]]):
+class BagDataset(Dataset[tuple[_Bag, BagSize, _EncodedTarget]]):
     """A dataset of bags of instances."""
 
     _: KW_ONLY
@@ -114,7 +129,7 @@ class BagDataset(Dataset[tuple[_Bag, _BagSize, _EncodedTarget]]):
     where N is the number of instances and F the number of features per instance.
     """
 
-    bag_size: _BagSize | None = None
+    bag_size: BagSize | None = None
     """The number of instances in each bag.
 
     For bags containing more instances,
@@ -123,7 +138,7 @@ class BagDataset(Dataset[tuple[_Bag, _BagSize, _EncodedTarget]]):
     If `bag_size` is None, all the samples will be used.
     """
 
-    ground_truths: Float[Tensor, "index category_is_hot"]
+    ground_truths: Bool[Tensor, "index category_is_hot"]
     """The ground truth for each bag, one-hot encoded."""
 
     def __post_init__(self) -> None:
@@ -135,7 +150,7 @@ class BagDataset(Dataset[tuple[_Bag, _BagSize, _EncodedTarget]]):
     def __len__(self) -> int:
         return len(self.bags)
 
-    def __getitem__(self, index: int) -> tuple[_Bag, _BagSize, _EncodedTarget]:
+    def __getitem__(self, index: int) -> tuple[_Bag, BagSize, _EncodedTarget]:
         # Collect all the features
         feats = []
         for bag_file in self.bags[index]:
@@ -149,17 +164,17 @@ class BagDataset(Dataset[tuple[_Bag, _BagSize, _EncodedTarget]]):
         if self.bag_size:
             return (
                 *_to_fixed_size_bag(feats, bag_size=self.bag_size),
-                self.ground_truths[index].float(),
+                self.ground_truths[index],
             )
         else:
             return (
                 feats,
                 len(feats),
-                self.ground_truths[index].float(),
+                self.ground_truths[index],
             )
 
 
-def _to_fixed_size_bag(bag: _Bag, bag_size: _BagSize = 512) -> tuple[_Bag, _BagSize]:
+def _to_fixed_size_bag(bag: _Bag, bag_size: BagSize = 512) -> tuple[_Bag, BagSize]:
     """Samples a fixed-size bag of tiles from an arbitrary one.
 
     If the original bag did not have enough tiles,
@@ -189,10 +204,8 @@ def patient_to_ground_truth_from_clini_table_(
     """Loads the patients and their ground truths from a clini table."""
     clini_df = _read_table(
         clini_table_path,
-        dtype={
-            patient_label: str,
-            ground_truth_label: str,
-        },
+        usecols=[patient_label, ground_truth_label],
+        dtype=str,
     )
     try:
         patient_to_ground_truth: Mapping[PatientId, GroundTruth] = clini_df.set_index(
@@ -225,10 +238,8 @@ def slide_to_patient_from_slide_table_(
     """Creates a slide-to-patient mapping from a slide table."""
     slide_df = _read_table(
         slide_table_path,
-        dtype={
-            patient_label: str,
-            filename_label: str,
-        },
+        usecol=[patient_label, filename_label],
+        dtype=str,
     )
 
     slide_to_patient: Mapping[FeaturePath, PatientId] = {
@@ -317,20 +328,20 @@ def _log_patient_slide_feature_inconsitencies(
         patients_without_slides := patient_to_ground_truth.keys()
         - slide_to_patient.values()
     ):
-        logger.warning(
+        _logger.warning(
             f"some patients have no associated slides: {patients_without_slides}"
         )
 
     if patients_without_ground_truth := (
         slide_to_patient.values() - patient_to_ground_truth.keys()
     ):
-        logger.warning(
+        _logger.warning(
             f"some patients have no clinical information: {patients_without_ground_truth}"
         )
 
     if slides_without_features := {
         slide for slide in slide_to_patient.keys() if not slide.exists()
     }:
-        logger.warning(
+        _logger.warning(
             f"some feature files could not be found: {slides_without_features}"
         )
