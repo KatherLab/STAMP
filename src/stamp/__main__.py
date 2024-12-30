@@ -37,7 +37,7 @@ def _create_config_file(config_file: Path) -> None:
 def _run_cli(args: argparse.Namespace) -> None:
     # Handle init command
     if args.command == "init":
-        _create_config_file(args.config)
+        _create_config_file(args.config_file_path)
         return
 
     # Load YAML configuration

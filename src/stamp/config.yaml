@@ -82,7 +82,7 @@ training:
   slide_table: "/path/of/slide.csv"
 
   # Name of the column from the clini table to train on.
-  target_label: "KRAS"
+  ground_truth_label: "KRAS"
 
   # Optional settings:
 
@@ -122,7 +122,7 @@ statistics:
   output_dir: "/path/to/save/files/to"
 
   # Name of the target label.
-  target_label: "KRAS"
+  ground_truth_label: "KRAS"
 
   # A lot of the statistics are computed "one-vs-all", i.e. there needs to be
   # a positive class to calculate the statistics for.

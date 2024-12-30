@@ -1,48 +1,81 @@
-# Getting Started with STAMP
+# Getting Started with Stamp
 
-This guide is designed to help you with your first steps using the STAMP pipeline
+This guide is designed to help you with your first steps using the stamp pipeline
 to predict biomarkers and other attributes from whole slide images (WSIs).
+To follow along,
+you will need some WSIs,
+a table mapping each of these slides to a patient
+as well as some ground truth we will eventually train a neural network on.
 
+### Whole Slide Images
 
-## Cross-Validation
+The whole slide images have to be in any of the formats [supported by OpenSlide][openslide].
+For the next steps we assume that all these WSIs are stored in the same directory.
+We will call this directory the _WSI directory_.
+
+[openslide]: https://openslide.org/#about-openslide "About Openslide"
+
+## Creating a Configuration File
+
+Stamp is configured using configuration files.
+We recommend creating one configuration file per experiment
+and storing in the same folder as the eventual results,
+as this makes it easier to reconstruct which data and parameters a model was trained with later.
+
+The `stamp init` command creates a new configuration file with dummy values.
+By default, it is created in `$PWD/config.yaml`,
+but we can use the `--config` option to specify its location:
+```bash
+# Create a directory to save our experiment results to
+mkdir stamp-test-experiment
+# Create a new config file in said directory
+stamp --config stamp-test-experiment/config.yaml init
+```
 
 
 ### Feature Extraction
 
 To do any kind of training on our data, we first have to convert it into a form
-more easily usable for neural networks.
-We do this using a feature extraction network.
-This network has been already been trained on a large amount of WSIs
+more easily usable by neural networks.
+We do this using a _feature extractor_.
+A feature extractor is a neural network has been trained on a large amount of WSIs
 to extract extract the information relevant for our domain from images.
 This way, we can compress WSIs into a more compact representation,
 which in turn allows us to efficiently train machine learning models with them.
 
-STAMP currently supports three feature extractors, [ctranspath][ctranspath],
+Stamp currently supports three feature extractors, [ctranspath][ctranspath],
 [UNI][uni] and [CONCH][conch].
 The latter two require you to request access to the model on huggingface,
 so we will stick with ctranspath for this example.
 
-Create a file named `example-crossval.yaml` and add the following lines,
-with the `output_dir`, `wsi_dir` and `cache_dir` entries adapted so
-`output_dir` points to a directory you want to save the extracted features to
-and `wsi_dir` is the path to a directory containing the WSIs you want to extract features from.
+Open the `stamp-test-experiment/config.yaml` we created in the last step
+and modify the `output_dir`, `wsi_dir` and `cache_dir` entries
+in the `preprocessing` section
+to contain the absolute paths of the directory the configuration file resides in.
+`wsi_dir` Needs to point to a path containing the WSIs you want to extract features from.
+
 The `cache_dir` will be used to save intermediate data.
 Should you decide to try another feature extractor later,
 using the same cache dir again will significantly speed up the extraction process.
+If you will only extract features once, it can be set to `none`.
 
 ```yaml
-# Cross-validation example STAMP config file
+# stamp-test-experiment/config.yaml
 
 preprocessing:
-  output_dir: "/path/to/save/files/to"
-  wsi_dir: "/path/containing/whole/slide/images/to/extract/features/from"
+  output_dir: "/absolute/path/to/stamp-test-experiment"
+  wsi_dir: "/absolute/path/to/wsi_dir"
 
   # Other possible values are "mahmood-uni" and "mahmood-conch"
   extractor: "ctranspath"
 
   # Having a cache dir will speed up extracting features multiple times,
-  # e.g. with different feature extractors.  Optional.
-  cache_dir: "/path/to/save/cache/files/to"
+  # e.g. with different feature extractors.
+  # Optional.
+  cache_dir: "/absolute/path/to/stamp-test-experiment/../cache"
+  # If you do not want to use a cache,
+  # change the cache dir to the following:
+  # cache_dir: null
 
   # Device to run feature extraction on.
   # Set this to "cpu" if you do not have a CUDA-capable GPU.
@@ -55,7 +88,7 @@ preprocessing:
 
 Extracting the features is then as easy as running
 ```sh
-stamp -c example-crossval.yaml preprocess
+stamp --config stamp-test-experiment/config.yaml preprocess
 ```
 Depending on the size of your dataset and your hardware,
 this process may take anything between a few hours and days.
@@ -68,8 +101,8 @@ where your home directory storage is limited, you may want to also specify
 your huggingface storage directory by setting the `HF_HOME` environment variable:
 ```sh
 export HF_HOME=/path/to/directory/to/store/huggingface/data/in
-huggingface-cli login   # only necessary once
-stamp -c example-crossval.yaml preprocess
+huggingface-cli login   # only needs to be done once per $HF_HOME
+stamp -c stamp-test-experiment/config.yaml preprocess
 ```
 
 
