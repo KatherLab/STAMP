@@ -189,7 +189,7 @@ def _add_file_handle_(logger: logging.Logger, *, output_dir: Path) -> None:
     logger.addHandler(file_handler)
 
 
-def _main() -> None:
+def main() -> None:
     parser = argparse.ArgumentParser(
         prog="stamp", description="STAMP: Solid Tumor Associative Modeling in Pathology"
     )
@@ -207,7 +207,6 @@ def _main() -> None:
         "init",
         help="Create a new STAMP configuration file at the path specified by --config",
     )
-    commands.add_parser("setup", help="Download required resources")
     commands.add_parser(
         "preprocess", help="Preprocess whole-slide images into feature vectors"
     )
@@ -240,4 +239,4 @@ def _main() -> None:
 
 
 if __name__ == "__main__":
-    _main()
+    main()
