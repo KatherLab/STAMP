@@ -7,25 +7,24 @@ from itertools import repeat
 from pathlib import Path
 from typing import Optional, TypeVar, cast
 
-import torch
-import torch.nn as nn
-import torch.utils.checkpoint as checkpoint
-from torch import Tensor, _assert
-from torch.nn.init import _calculate_fan_in_and_fan_out
-from torchvision.transforms import v2
-
-from stamp.preprocessing.extractor import Extractor
-
 try:
     import gdown
+    import torch
+    import torch.nn as nn
+    import torch.utils.checkpoint as checkpoint
+    from torch import Tensor, _assert
+    from torch.nn.init import _calculate_fan_in_and_fan_out
+    from torchvision.transforms import v2
 except ModuleNotFoundError as e:
     raise ModuleNotFoundError(
         "ctranspath dependencies not installed."
         " Please reinstall stamp using `pip install 'stamp[ctranspath]'`"
     ) from e
 
+from stamp.preprocessing.extractor import Extractor
+
 __author__ = "Marko van Treeck"
-__copyright__ = "Copyright (C) 2022-2024 Marko van Treeck"
+__copyright__ = "Copyright (C) 2022-2025 Marko van Treeck"
 __license__ = "MIT"
 
 

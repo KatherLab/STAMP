@@ -10,6 +10,9 @@ except ModuleNotFoundError as e:
         " Please reinstall stamp using `pip install 'stamp[conch]'`"
     ) from e
 
+__author__ = "Marko van Treeck"
+__copyright__ = "Copyright (C) 2022-2025 Marko van Treeck"
+__license__ = "MIT"
 
 class _StampConchModel(torch.nn.Module):
     def __init__(self, model) -> None:

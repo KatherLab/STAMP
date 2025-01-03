@@ -48,6 +48,15 @@ Stamp currently supports three feature extractors, [ctranspath][ctranspath],
 The latter two require you to request access to the model on huggingface,
 so we will stick with ctranspath for this example.
 
+In order to use a feature extractor,
+you also have to install their respective dependencies.
+You can do so by specifying the feature extractor you want to use
+when installing stamp:
+```sh
+# Install stamp including all depencencies for stamp and uni
+pip install "git+https://github.com/KatherLab/stamp@v2[ctranspath,uni]"
+```
+
 Open the `stamp-test-experiment/config.yaml` we created in the last step
 and modify the `output_dir`, `wsi_dir` and `cache_dir` entries
 in the `preprocessing` section
@@ -93,17 +102,18 @@ stamp --config stamp-test-experiment/config.yaml preprocess
 Depending on the size of your dataset and your hardware,
 this process may take anything between a few hours and days.
 
-> You can interrupt this process at any time.
-> It will continue where you stopped it the next time you run `stamp preprocess`.
+You can interrupt this process at any time.
+It will continue where you stopped it the next time you run `stamp preprocess`.
 
-**If you are using the UNI or CONCH models** and working in an environment
-where your home directory storage is limited, you may want to also specify
-your huggingface storage directory by setting the `HF_HOME` environment variable:
-```sh
-export HF_HOME=/path/to/directory/to/store/huggingface/data/in
-huggingface-cli login   # only needs to be done once per $HF_HOME
-stamp -c stamp-test-experiment/config.yaml preprocess
-```
+> **If you are using the UNI or CONCH models**
+> and working in an environment where your home directory storage is limited,
+> you may want to also specify your huggingface storage directory
+> by setting the `HF_HOME` environment variable:
+> ```sh
+> export HF_HOME=/path/to/directory/to/store/huggingface/data/in
+> huggingface-cli login   # only needs to be done once per $HF_HOME
+> stamp -c stamp-test-experiment/config.yaml preprocess
+> ```
 
 
 [ctranspath]: https://www.sciencedirect.com/science/article/abs/pii/S1361841522002043 "Transformer-based unsupervised contrastive learning for histopathological image classification"

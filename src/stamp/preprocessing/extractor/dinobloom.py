@@ -1,4 +1,3 @@
-# %%
 import hashlib
 import os
 import urllib.request
@@ -10,6 +9,10 @@ from torch import nn
 from torchvision import transforms
 
 from stamp.preprocessing.extractor import Extractor
+
+__author__ = "Marko van Treeck"
+__copyright__ = "Copyright (C) 2022-2025 Marko van Treeck"
+__license__ = "MIT"
 
 
 def _file_digest(file: str | Path) -> str:
