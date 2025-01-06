@@ -2,6 +2,7 @@ import hashlib
 import os
 import urllib.request
 from pathlib import Path
+from tempfile import NamedTemporaryFile
 from typing import cast
 
 import torch
@@ -59,18 +60,18 @@ def dino_bloom() -> Extractor:
 
     if not model_file.exists():
         _stamp_cache_dir.mkdir(exist_ok=True, parents=True)
-        tmp_model_file = model_file.with_suffix(".tmp")
-        urllib.request.urlretrieve(
-            "https://zenodo.org/records/10908163/files/DinoBloom-S.pth",
-            tmp_model_file,
-        )
-        assert (
-            _file_digest(tmp_model_file)
-            == "c2f7990b003e89bcece80e379fb8fe0ba2ec392ce19b286e8a294abd99568e44"
-        ), "unexpected model weights"
+        with NamedTemporaryFile(dir=model_file.parent, delete=False) as tmp_model_file:
+            urllib.request.urlretrieve(
+                "https://zenodo.org/records/10908163/files/DinoBloom-S.pth",
+                tmp_model_file.name,
+            )
+            assert (
+                _file_digest(tmp_model_file.name)
+                == "c2f7990b003e89bcece80e379fb8fe0ba2ec392ce19b286e8a294abd99568e44"
+            ), "unexpected model weights"
 
-        # Only rename on successful download
-        tmp_model_file.rename(model_file)
+            # Only rename on successful download
+            Path(tmp_model_file.name).rename(model_file)
 
     return Extractor(
         model=_get_dino_bloom(model_file),

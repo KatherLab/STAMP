@@ -5,6 +5,7 @@ from collections.abc import Callable
 from functools import cache
 from pathlib import Path
 from random import shuffle
+from tempfile import NamedTemporaryFile
 from typing import Iterator, Literal, assert_never
 
 import h5py
@@ -179,7 +180,6 @@ def extract_(
         feature_output_path = feat_output_dir / slide_path.relative_to(
             wsi_dir
         ).with_suffix(".h5")
-        tmp_feature_output_path = feature_output_path.with_suffix(".tmp")
         if feature_output_path.exists():
             logger.debug(
                 f"skipping {slide_path} because {feature_output_path} already exists"
@@ -218,22 +218,26 @@ def extract_(
 
         coords = torch.stack([torch.concat(xs_um), torch.concat(ys_um)], dim=1).numpy()
 
-        try:
-            # Save the file under an intermediate name to prevent half-written files
-            with h5py.File(tmp_feature_output_path, "w") as h5_fp:
+        # Save the file under an intermediate name to prevent half-written files
+        with (
+            NamedTemporaryFile(dir=output_dir, delete=False) as tmp_h5_file,
+            h5py.File(tmp_h5_file, "w") as h5_fp,
+        ):
+            try:
                 h5_fp["coords"] = coords
                 h5_fp["feats"] = torch.concat(feats).numpy()
 
                 h5_fp.attrs["extractor"] = extractor_id
                 h5_fp.attrs["unit"] = "um"
                 h5_fp.attrs["tile_size"] = tile_size_um
-        except Exception:
-            logger.exception(f"error while writing {tmp_feature_output_path}")
-            tmp_feature_output_path.unlink(missing_ok=True)
-            continue
+            except Exception:
+                logger.exception(f"error while writing {feature_output_path}")
+                if tmp_h5_file is not None:
+                    Path(tmp_h5_file.name).unlink(missing_ok=True)
+                continue
 
-        tmp_feature_output_path.rename(feature_output_path)
-        logger.debug(f"saved features to {feature_output_path}")
+            Path(tmp_h5_file.name).rename(feature_output_path)
+            logger.debug(f"saved features to {feature_output_path}")
 
         # Save rejection thumbnail
         thumbnail_path = feat_output_dir / slide_path.relative_to(wsi_dir).with_suffix(
