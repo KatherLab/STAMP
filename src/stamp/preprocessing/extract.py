@@ -119,6 +119,7 @@ def extract_(
             "mahmood-conch",
             "mahmood-uni",
             "dino-bloom",
+            "virchow2",
         ]
         | Extractor
     ),
@@ -147,6 +148,11 @@ def extract_(
         from stamp.preprocessing.extractor.dinobloom import dino_bloom
 
         extractor = dino_bloom()
+
+    elif extractor == "virchow2":
+        from stamp.preprocessing.extractor.virchow2 import virchow2
+
+        extractor = virchow2()
 
     elif isinstance(extractor, Extractor):
         extractor = extractor

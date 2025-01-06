@@ -41,23 +41,29 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+dinobloom = [
+    "torchvision>=0.20.1",
+    "xformers>=0.0.28.post3",
+]
+conch = [
+    "huggingface-hub>=0.26.2",
+    "conch",
+]
 ctranspath = [
     "gdown>=5.2.0",
     "torchvision>=0.20.1",
 ]
 uni = [
     "huggingface-hub>=0.26.2",
-    "timm>=0.9.8",
     "uni",
 ]
-conch = [
-    "huggingface-hub>=0.26.2",
-    "conch",
+virchow2 = [
+    "huggingface-hub>=0.27.1",
+    "timm>=0.9.11",
+    "torch>=2.0.0",
 ]
-dinobloom = [
-    "torchvision>=0.20.1",
-    "xformers>=0.0.28.post3",
-]
+# Blanket target
+all = ["stamp[dinobloom,conch,ctranspath,uni,virchow2]"]
 
 [project.scripts]
 "stamp" = "stamp.__main__:main"
@@ -79,5 +85,6 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.uv.sources]
-uni = { git = "https://github.com/mahmoodlab/UNI.git", rev = "f8f32c60a1d86805fdcb7317673c45318dac4806" }
+#TODO change the git repo once our pull request has been accepted
+uni = {git = "https://github.com/KatherLab/uni", rev = "f37c299eb0bffa0e585f120974082cfec6ee6d53" }
 conch = { git = "https://github.com/Mahmoodlab/CONCH.git", rev = "02d6ac59cc20874bff0f581de258c2b257f69a84" }

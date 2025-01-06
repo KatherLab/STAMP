@@ -2007,6 +2007,16 @@ dependencies = [
 ]
 
 [package.optional-dependencies]
+all = [
+    { name = "conch" },
+    { name = "gdown" },
+    { name = "huggingface-hub" },
+    { name = "timm" },
+    { name = "torch" },
+    { name = "torchvision" },
+    { name = "uni" },
+    { name = "xformers" },
+]
 conch = [
     { name = "conch" },
     { name = "huggingface-hub" },
@@ -2021,8 +2031,12 @@ dinobloom = [
 ]
 uni = [
     { name = "huggingface-hub" },
-    { name = "timm" },
     { name = "uni" },
+]
+virchow2 = [
+    { name = "huggingface-hub" },
+    { name = "timm" },
+    { name = "torch" },
 ]
 
 [package.dev-dependencies]
@@ -2042,6 +2056,7 @@ requires-dist = [
     { name = "h5py", specifier = ">=3.12.1" },
     { name = "huggingface-hub", marker = "extra == 'conch'", specifier = ">=0.26.2" },
     { name = "huggingface-hub", marker = "extra == 'uni'", specifier = ">=0.26.2" },
+    { name = "huggingface-hub", marker = "extra == 'virchow2'", specifier = ">=0.27.1" },
     { name = "jaxtyping", specifier = ">=0.2.36" },
     { name = "lightning", specifier = ">=2.4.0" },
     { name = "matplotlib", specifier = ">=3.9.2" },
@@ -2054,13 +2069,15 @@ requires-dist = [
     { name = "pydantic", specifier = ">=2.10.3" },
     { name = "pyyaml", specifier = ">=6.0.2" },
     { name = "scikit-learn", specifier = ">=1.5.2" },
-    { name = "timm", marker = "extra == 'uni'", specifier = ">=0.9.8" },
+    { name = "stamp", extras = ["dinobloom", "conch", "ctranspath", "uni", "virchow2"], marker = "extra == 'all'" },
+    { name = "timm", marker = "extra == 'virchow2'", specifier = ">=0.9.11" },
     { name = "torch", specifier = ">=2.5.1" },
+    { name = "torch", marker = "extra == 'virchow2'", specifier = ">=2.0.0" },
     { name = "torchmetrics", specifier = ">=1.6.0" },
     { name = "torchvision", marker = "extra == 'ctranspath'", specifier = ">=0.20.1" },
     { name = "torchvision", marker = "extra == 'dinobloom'", specifier = ">=0.20.1" },
     { name = "tqdm", specifier = ">=4.66.6" },
-    { name = "uni", marker = "extra == 'uni'", git = "https://github.com/mahmoodlab/UNI.git?rev=f8f32c60a1d86805fdcb7317673c45318dac4806" },
+    { name = "uni", marker = "extra == 'uni'", git = "https://github.com/KatherLab/uni?rev=f37c299eb0bffa0e585f120974082cfec6ee6d53" },
     { name = "xformers", marker = "extra == 'dinobloom'", specifier = ">=0.0.28.post3" },
 ]
 
@@ -2095,7 +2112,7 @@ wheels = [
 
 [[package]]
 name = "timm"
-version = "0.9.8"
+version = "1.0.12"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "huggingface-hub" },
@@ -2104,9 +2121,9 @@ dependencies = [
     { name = "torch" },
     { name = "torchvision" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/d0/a4/62af90ee93bce0953cf054df75b07a0966ae107f71ef690e8cb9f45ca8ab/timm-0.9.8.tar.gz", hash = "sha256:7d070a5ca8eea4e8c75bf79595a67efa0ea19bbcf2d5db2ee8e5d87417b70f2f", size = 2123459 }
+sdist = { url = "https://files.pythonhosted.org/packages/8b/d9/7382e27b379d4b791811396e05c9421703bbb21b2f726ff3e78469b5b194/timm-1.0.12.tar.gz", hash = "sha256:9da490683bd06302ec40e1892f1ccf87985f033e41f3580887d886b9aee9449a", size = 2219847 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/df/e4/3a56b85846102b67af6937410f9f8dc314fc60529d6891fc003611fc3796/timm-0.9.8-py3-none-any.whl", hash = "sha256:198632472f470d69397088a5996823eff7f8900413a7616dc96ca7d7b7460026", size = 2228333 },
+    { url = "https://files.pythonhosted.org/packages/6b/02/0d8925809296bed4cf841446e1291c3f381fde6d777a1ab2a25a3829b4a4/timm-1.0.12-py3-none-any.whl", hash = "sha256:6b2770674213f10b7f193be5598ce48bd010ab21cc8af77dba6aeef58b1298a1", size = 2351767 },
 ]
 
 [[package]]
@@ -2337,7 +2354,7 @@ wheels = [
 [[package]]
 name = "uni"
 version = "0.1.0"
-source = { git = "https://github.com/mahmoodlab/UNI.git?rev=f8f32c60a1d86805fdcb7317673c45318dac4806#f8f32c60a1d86805fdcb7317673c45318dac4806" }
+source = { git = "https://github.com/KatherLab/uni?rev=f37c299eb0bffa0e585f120974082cfec6ee6d53#f37c299eb0bffa0e585f120974082cfec6ee6d53" }
 dependencies = [
     { name = "numpy" },
     { name = "pandas" },
@@ -2347,6 +2364,7 @@ dependencies = [
     { name = "torchvision" },
     { name = "tqdm" },
     { name = "transformers" },
+    { name = "xformers" },
 ]
 
 [[package]]

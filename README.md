@@ -14,16 +14,8 @@ To install stamp, run
 python -m venv .venv
 . .venv/bin/activate
 
-pip install "git+https://github.com/KatherLab/stamp@v2"
+pip install "git+https://github.com/KatherLab/stamp@v2[all]"
 ```
-
-If you also want to use stamp for feature extraction,
-you also need to install the additional requirements for the corresponding feature extractor.
-To do so, replace the above installation command with
-```bash
-pip install "git+https://github.com/KatherLab/stamp@v2[$EXTRACTOR]"
-```
-where `$EXTRACTOR` is one of `ctranspath`, `mahmood-uni`, `mahmood-conch` or `dino-bloom`.
 
 If the installation was successful, running `stamp` in your terminal should yield the following output:
 

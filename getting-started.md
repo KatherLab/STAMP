@@ -43,18 +43,23 @@ to extract extract the information relevant for our domain from images.
 This way, we can compress WSIs into a more compact representation,
 which in turn allows us to efficiently train machine learning models with them.
 
-Stamp currently supports three feature extractors, [ctranspath][ctranspath],
-[UNI][uni] and [CONCH][conch].
-The latter two require you to request access to the model on huggingface,
-so we will stick with ctranspath for this example.
+Stamp currently supports the followoing feature extractors:
+  - [ctranspath][ctranspath]
+  - [DinoBloom][dinobloom]
+  - [CONCH][conch]
+  - [UNI][uni]
+  - [Virchow2][virchow2]
+
+As some of the above require you to request access to the model on huggingface,
+we will stick with ctranspath for this example.
 
 In order to use a feature extractor,
 you also have to install their respective dependencies.
 You can do so by specifying the feature extractor you want to use
 when installing stamp:
 ```sh
-# Install stamp including all depencencies for ctranspath and uni
-pip install "git+https://github.com/KatherLab/stamp@v2[ctranspath,uni]"
+# Install stamp including the dependencies for all feature extractors
+pip install "git+https://github.com/KatherLab/stamp@v2[all]"
 ```
 
 Open the `stamp-test-experiment/config.yaml` we created in the last step
@@ -122,5 +127,7 @@ meaning ignored that it was ignored during feature extraction.
 > ```
 
 [ctranspath]: https://www.sciencedirect.com/science/article/abs/pii/S1361841522002043 "Transformer-based unsupervised contrastive learning for histopathological image classification"
+[dinobloom]: https://github.com/marrlab/DinoBloom "DinoBloom: A Foundation Model for Generalizable Cell Embeddings in Hematology"
 [uni]: https://www.nature.com/articles/s41591-024-02857-3 "Towards a general-purpose foundation model for computational pathology"
 [conch]: https://www.nature.com/articles/s41591-024-02856-4 "A visual-language foundation model for computational pathology"
+[virchow2]: https://huggingface.co/paige-ai/Virchow2
