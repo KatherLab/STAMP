@@ -7,7 +7,7 @@ you will need some WSIs,
 a table mapping each of these slides to a patient
 as well as some ground truth we will eventually train a neural network on.
 
-### Whole Slide Images
+## Whole Slide Images
 
 The whole slide images have to be in any of the formats [supported by OpenSlide][openslide].
 For the next steps we assume that all these WSIs are stored in the same directory.
@@ -25,15 +25,14 @@ as this makes it easier to reconstruct which data and parameters a model was tra
 The `stamp init` command creates a new configuration file with dummy values.
 By default, it is created in `$PWD/config.yaml`,
 but we can use the `--config` option to specify its location:
-```bash
+```sh
 # Create a directory to save our experiment results to
 mkdir stamp-test-experiment
 # Create a new config file in said directory
 stamp --config stamp-test-experiment/config.yaml init
 ```
 
-
-### Feature Extraction
+## Feature Extraction
 
 To do any kind of training on our data, we first have to convert it into a form
 more easily usable by neural networks.
@@ -43,7 +42,7 @@ to extract extract the information relevant for our domain from images.
 This way, we can compress WSIs into a more compact representation,
 which in turn allows us to efficiently train machine learning models with them.
 
-Stamp currently supports the followoing feature extractors:
+Stamp currently supports the following feature extractors:
   - [ctranspath][ctranspath]
   - [DinoBloom][dinobloom]
   - [CONCH][conch]
@@ -131,3 +130,63 @@ meaning ignored that it was ignored during feature extraction.
 [uni]: https://www.nature.com/articles/s41591-024-02857-3 "Towards a general-purpose foundation model for computational pathology"
 [conch]: https://www.nature.com/articles/s41591-024-02856-4 "A visual-language foundation model for computational pathology"
 [virchow2]: https://huggingface.co/paige-ai/Virchow2
+
+## Doing Cross-Validation on the Data Set
+
+One way to quickly ascertain if a neural network can be trained to recognize a specific pattern
+without the need to source a separate testing set
+is to perform a cross-validation on it.
+During a cross validation,
+we train multiple models on a subset of the data,
+testing its effectiveness on the held-out part of the data not used during training.
+To perform a cross-validation, add the following lines to your `stamp-test-experiment/config.yaml`,
+with `feature_dir` adapted to match the directory the `.h5` files were output to in the last step.
+`clini_table` and `slide_table` both need to point to tables,
+either in excel or `.csv` format,
+with contents as described below.
+Finally, `ground_truth_label` needs to contain the column name
+of the data we want to train our model on.
+Stamp only can be used to train neural networks for categorical targets.
+We recommend explicitly setting the possible classes using the `categories` field.
+
+```yaml
+# stamp-test-experiment/config.yaml
+
+crossval:
+  output_dir: "/absolute/path/to/stamp-test-experiment"
+
+  # An excel (.xlsx) or CSV (.csv) table containing the clinical information of
+  # patients.  Patients not present in this file will be ignored during training.
+  # Has to contain at least two columns, one titled "PATIENT", containing a patient ID,
+  # and a second column containing the categorical ground truths for that patient.
+  clini_table: "metadata-CRC/TCGA-CRC-DX_CLINI.xlsx"
+
+  # Directory the extracted features are saved in.
+  feature_dir: "/absolute/path/to/stamp-test-experiment/xiyuewang-ctranspath-7c998680-112fc79c"
+
+  # A table (.xlsx or .csv) relating every patient to their feature files.
+  # The table must contain at least two columns, one titled "PATIENT",
+  # containing the patient ID (matching those in the `clini_table`), and one
+  # called "FILENAME", containing the feature file path relative to `feature_dir`.
+  # Patient IDs not present in the clini table as well as non-existent feature
+  # paths are ignored.
+  slide_table: "slide.csv"
+
+  # Name of the column from the clini table to train on.
+  ground_truth_label: "isMSIH"
+
+  # Optional settings:
+
+  # The categories occurring in the target label column of the clini table.
+  # If unspecified, they will be inferred from the table itself.
+  categories: ["yes", "no"]
+
+  # Number of folds to split the data into for cross-validation
+  #n_splits: 5
+```
+
+After specifying all the parameters of our cross-validation,
+we can run it by invoking:
+```sh
+stamp --config stamp-test-experiment/config.yaml crossval
+```
