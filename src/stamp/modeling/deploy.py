@@ -103,7 +103,7 @@ def deploy_categorical_model_(
 def _predict(
     *,
     model: LitVisionTransformer,
-    patient_to_data: Mapping[PatientId, PatientData],
+    patient_to_data: Mapping[PatientId, PatientData[GroundTruth | None]],
     num_workers: int,
     accelerator: str | Accelerator,
 ) -> Mapping[PatientId, torch.Tensor]:

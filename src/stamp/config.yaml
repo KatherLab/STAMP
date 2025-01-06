@@ -49,9 +49,11 @@ crossval:
   slide_table: "/path/of/slide.csv"
 
   # Name of the column from the clini table to train on.
-  target_label: "KRAS"
+  ground_truth_label: "KRAS"
 
   # Optional settings:
+  patient_label: "PATIENT"
+  filename_label: "FILENAME"
 
   # The categories occurring in the target label column of the clini table.
   # If unspecified, they will be inferred from the table itself.

@@ -1,6 +1,6 @@
 [project]
 name = "stamp"
-version = "2.0.0-dev2"
+version = "2.0.0-dev3"
 authors = [
     { name = "Omar El Nahhas", email = "omar.el_nahhas@tu-dresden.de" },
     { name = "Marko van Treeck", email = "markovantreeck@gmail.com" },

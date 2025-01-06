@@ -5,7 +5,7 @@ from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import KW_ONLY, dataclass
 from itertools import groupby
 from pathlib import Path
-from typing import BinaryIO, NewType, TextIO, TypeAlias, cast
+from typing import BinaryIO, Generic, NewType, TextIO, TypeAlias, TypeVar, cast
 
 import h5py
 import numpy as np
@@ -17,16 +17,6 @@ from torch.utils.data import DataLoader, Dataset
 
 _logger = logging.getLogger("stamp")
 
-__all__ = [
-    "BagDataset",
-    "Category",
-    "FeaturePath",
-    "dataloader_from_patient_data",
-    "filter_complete_patient_data_",
-    "patient_to_ground_truth_from_clini_table_",
-    "slide_to_patient_from_slide_table_",
-]
-
 
 __author__ = "Marko van Treeck"
 __copyright__ = "Copyright (C) 2022-2024 Marko van Treeck"
@@ -34,7 +24,7 @@ __license__ = "MIT"
 
 
 PatientId: TypeAlias = str
-GroundTruth = NewType("GroundTruth", str)
+GroundTruth: TypeAlias = str
 FeaturePath = NewType("FeaturePath", Path)
 
 Category: TypeAlias = str
@@ -53,19 +43,20 @@ EncodedTargets: TypeAlias = Bool[Tensor, "batch category_is_hot"]
 
 PandasLabel: TypeAlias = str
 
+GroundTruthType = TypeVar("GroundTruthType", covariant=True)
 
 @dataclass
-class PatientData:
+class PatientData(Generic[GroundTruthType]):
     """All raw (i.e. non-generated) information we have on the patient."""
 
     _ = KW_ONLY
-    ground_truth: GroundTruth | None
+    ground_truth: GroundTruthType
     feature_files: Iterable[FeaturePath | BinaryIO]
 
 
 def dataloader_from_patient_data(
     *,
-    patient_data: Sequence[PatientData],
+    patient_data: Sequence[PatientData[GroundTruth | None]],
     bag_size: int | None,
     categories: Sequence[Category] | None = None,
     batch_size: int,
@@ -206,7 +197,7 @@ def patient_to_ground_truth_from_clini_table_(
         clini_table_path,
         usecols=[patient_label, ground_truth_label],
         dtype=str,
-    )
+    ).dropna()
     try:
         patient_to_ground_truth: Mapping[PatientId, GroundTruth] = clini_df.set_index(
             patient_label, verify_integrity=True
@@ -238,7 +229,7 @@ def slide_to_patient_from_slide_table_(
     """Creates a slide-to-patient mapping from a slide table."""
     slide_df = _read_table(
         slide_table_path,
-        usecol=[patient_label, filename_label],
+        usecols=[patient_label, filename_label],
         dtype=str,
     )
 
@@ -317,7 +308,7 @@ def filter_complete_patient_data_(
 
 def _log_patient_slide_feature_inconsitencies(
     *,
-    patient_to_ground_truth: Mapping[PatientId, GroundTruth | None],
+    patient_to_ground_truth: Mapping[PatientId, GroundTruthType],
     slide_to_patient: Mapping[FeaturePath, PatientId],
 ) -> None:
     """Checks whether the arguments are consistent and logs all irregularities.

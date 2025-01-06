@@ -60,6 +60,10 @@ def _run_cli(args: argparse.Namespace) -> None:
                 raise ValueError("no preprocessing configuration supplied")
 
             _add_file_handle_(_logger, output_dir=config.preprocessing.output_dir)
+            _logger.info(
+                "using the following configuration:\n"
+                f"{yaml.dump(config.preprocessing.model_dump(mode='json'))}"
+            )
             extract_(
                 output_dir=config.preprocessing.output_dir,
                 wsi_dir=config.preprocessing.wsi_dir,
@@ -79,6 +83,10 @@ def _run_cli(args: argparse.Namespace) -> None:
                 raise ValueError("no training configuration supplied")
 
             _add_file_handle_(_logger, output_dir=config.training.output_dir)
+            _logger.info(
+                "using the following configuration:\n"
+                f"{yaml.dump(config.training.model_dump(mode='json'))}"
+            )
             # We pass every parameter explicitly so our type checker can do its work.
             train_categorical_model_(
                 output_dir=config.training.output_dir,
@@ -106,6 +114,10 @@ def _run_cli(args: argparse.Namespace) -> None:
                 raise ValueError("no deployment configuration supplied")
 
             _add_file_handle_(_logger, output_dir=config.deployment.output_dir)
+            _logger.info(
+                "using the following configuration:\n"
+                f"{yaml.dump(config.deployment.model_dump(mode='json'))}"
+            )
             deploy_categorical_model_(
                 output_dir=config.deployment.output_dir,
                 checkpoint_path=config.deployment.checkpoint_path,
@@ -126,6 +138,10 @@ def _run_cli(args: argparse.Namespace) -> None:
                 raise ValueError("no crossval configuration supplied")
 
             _add_file_handle_(_logger, output_dir=config.crossval.output_dir)
+            _logger.info(
+                "using the following configuration:\n"
+                f"{yaml.dump(config.crossval.model_dump(mode='json'))}"
+            )
             categorical_crossval_(
                 output_dir=config.crossval.output_dir,
                 clini_table=config.crossval.clini_table,
@@ -153,7 +169,10 @@ def _run_cli(args: argparse.Namespace) -> None:
                 raise ValueError("no statistics configuration supplied")
 
             _add_file_handle_(_logger, output_dir=config.statistics.output_dir)
-
+            _logger.info(
+                "using the following configuration:\n"
+                f"{yaml.dump(config.statistics.model_dump(mode='json'))}"
+            )
             compute_stats_(
                 output_dir=config.statistics.output_dir,
                 pred_csvs=config.statistics.pred_csvs,
@@ -168,7 +187,10 @@ def _run_cli(args: argparse.Namespace) -> None:
                 raise ValueError("no heatmaps configuration supplied")
 
             _add_file_handle_(_logger, output_dir=config.heatmaps.output_dir)
-
+            _logger.info(
+                "using the following configuration:\n"
+                f"{yaml.dump(config.heatmaps.model_dump(mode='json'))}"
+            )
             heatmaps_(**vars(config.heatmaps))
 
         case _:

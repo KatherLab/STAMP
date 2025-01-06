@@ -72,7 +72,9 @@ def _aggregate_categorical_stats(df) -> pd.DataFrame:
     return pd.DataFrame.from_dict(stats, orient="index")
 
 
-def categorical_aggregated_(*, preds_csvs, outpath: Path, target_label: str) -> None:
+def categorical_aggregated_(
+    *, preds_csvs, outpath: Path, ground_truth_label: str
+) -> None:
     """Calculate statistics for categorical deployments.
 
     Args:
@@ -85,10 +87,13 @@ def categorical_aggregated_(*, preds_csvs, outpath: Path, target_label: str) -> 
     well as sum the total instane count for each class.
     """
     preds_dfs = {
-        Path(p).parent.name: _categorical(pd.read_csv(p, dtype=str), target_label)
+        Path(p).parent.name: _categorical(
+            pd.read_csv(p, dtype=str).dropna(subset=[ground_truth_label]),
+            ground_truth_label,
+        )
         for p in preds_csvs
     }
     preds_df = pd.concat(preds_dfs).sort_index()
-    preds_df.to_csv(outpath / f"{target_label}-categorical-stats-individual.csv")
+    preds_df.to_csv(outpath / f"{ground_truth_label}-categorical-stats-individual.csv")
     stats_df = _aggregate_categorical_stats(preds_df.reset_index())
-    stats_df.to_csv(outpath / f"{target_label}-categorical-stats-aggregated.csv")
+    stats_df.to_csv(outpath / f"{ground_truth_label}-categorical-stats-aggregated.csv")

@@ -1,5 +1,3 @@
-from typing import Any
-
 from pydantic import BaseModel
 
 from stamp.heatmaps.config import HeatmapConfig
@@ -12,7 +10,7 @@ class StampConfig(BaseModel):
     preprocessing: PreprocessingConfig | None = None
 
     training: TrainConfig | None = None
-    crossval: CrossvalConfig | None | Any = None
+    crossval: CrossvalConfig | None = None
     deployment: DeploymentConfig | None = None
 
     statistics: StatsConfig | None = None

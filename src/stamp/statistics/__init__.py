@@ -66,7 +66,7 @@ def compute_stats_(
     ]
     n_bootstrap_samples = 1000
     figure_width = _Inches(3.8)
-    threshold_cmap = plt.get_cmap()
+    threshold_cmap = None
 
     roc_curve_figure_aspect_ratio = 1.08
     fig, ax = plt.subplots(
@@ -94,11 +94,10 @@ def compute_stats_(
         )
 
     fig.tight_layout()
-    stats_dir = output_dir / "statistics"
-    if not stats_dir.exists():
-        stats_dir.mkdir(parents=True, exist_ok=True)
+    if not output_dir.exists():
+        output_dir.mkdir(parents=True, exist_ok=True)
 
-    fig.savefig(stats_dir / f"AUROC_{ground_truth_label}={true_class}.svg")
+    fig.savefig(output_dir / f"AUROC_{ground_truth_label}={true_class}.svg")
     plt.close(fig)
 
     fig, ax = plt.subplots(
@@ -123,9 +122,9 @@ def compute_stats_(
         )
 
     fig.tight_layout()
-    fig.savefig(stats_dir / f"AUPRC_{ground_truth_label}={true_class}.svg")
+    fig.savefig(output_dir / f"AUPRC_{ground_truth_label}={true_class}.svg")
     plt.close(fig)
 
     categorical_aggregated_(
-        preds_csvs=pred_csvs, target_label=ground_truth_label, outpath=stats_dir
+        preds_csvs=pred_csvs, ground_truth_label=ground_truth_label, outpath=output_dir
     )

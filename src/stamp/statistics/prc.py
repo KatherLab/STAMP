@@ -109,13 +109,13 @@ def plot_single_decorated_precision_recall_curve(
         title:  Title of the plot.
     """
     if n_bootstrap_samples is not None:
-        prc, lower, upper = _plot_bootstrapped_pr_curve(
+        auprc, lower, upper = _plot_bootstrapped_pr_curve(
             ax=ax,
             y_true=y_true,
             y_score=y_score,
             n_bootstrap_samples=n_bootstrap_samples,
         )
-        ax.set_title(f"{title}\nAUPRC = {auc:.2f} [{lower:.2f}-{upper:.2f}]")
+        ax.set_title(f"{title}\nAUPRC = {auprc:.2f} [{lower:.2f}-{upper:.2f}]")
     else:
         raise NotImplementedError()
 

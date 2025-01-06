@@ -1,14 +1,14 @@
 import logging
 from collections.abc import Collection, Iterable
 from pathlib import Path
-from typing import cast
+from typing import cast, no_type_check
 
 import h5py
 import matplotlib.pyplot as plt
 import numpy as np
 import openslide
 import torch
-from jaxtyping import Float
+from jaxtyping import Float, Integer
 from matplotlib.axes import Axes
 from matplotlib.patches import Patch
 from PIL import Image
@@ -32,14 +32,14 @@ def _get_stride(coords: Float[Tensor, "tile coord"]) -> float:
 def _gradcam_per_category(
     model: VisionTransformer, feats: Float[Tensor, "tile feat"]
 ) -> Float[Tensor, "tile category"]:
-    tile, feat = -2, -1  # feats dimensions
+    feat = -1  # feats dimension
 
     return (
         (
             feats
             * jacrev(
                 lambda x: torch.softmax(
-                    model(x.unsqueeze(0), torch.tensor([x.shape[tile]])),
+                    model(x.unsqueeze(0)),
                     dim=1,
                 ).squeeze(0)
             )(feats)
@@ -51,7 +51,7 @@ def _gradcam_per_category(
 
 def _vals_to_im(
     scores: Float[Tensor, "tile feat"],
-    coords_norm: Float[Tensor, "tile coord"],
+    coords_norm: Integer[Tensor, "tile coord"],
 ) -> Float[Tensor, "width height category"]:
     """Arranges scores in a 2d grid according to coordinates"""
     size = coords_norm.max(0).values.flip(0) + 1
@@ -74,6 +74,7 @@ def _show_thumb(slide, thumb_ax: Axes, attention: Tensor) -> np.ndarray:
     return np.array(thumb)[: attention.shape[0] * 8, : attention.shape[1] * 8]
 
 
+@no_type_check  # beartype breaks here for some reason
 def _show_class_map(
     class_ax: Axes, top_score_indices: Tensor, gradcam_2d, categories: Collection[str]
 ) -> None:
@@ -154,7 +155,7 @@ def heatmaps_(
         coords_norm = (coords // stride).long()
 
         slide_score = torch.softmax(
-            model(feats.unsqueeze(0), torch.tensor([feats.shape[-2]])),
+            model(feats.unsqueeze(0)),
             dim=1,
         ).squeeze(0)
 
@@ -168,7 +169,8 @@ def heatmaps_(
         ).detach()  # shape: [width, height, category]
 
         scores = torch.softmax(
-            model(feats.unsqueeze(-2), torch.ones((len(feats)))), dim=1
+            model(feats.unsqueeze(-2)),
+            dim=1,
         )  # shape: [tile, category]
         scores_2d = _vals_to_im(
             scores, coords_norm
@@ -222,11 +224,15 @@ def heatmaps_(
             score_im = cast(
                 np.ndarray,
                 plt.get_cmap("RdBu_r")(
-                    _vals_to_im(category_score / 2 + 0.5, coords_norm).detach()
+                    _vals_to_im(category_score.unsqueeze(-1) / 2 + 0.5, coords_norm)
+                    .squeeze(-1)
+                    .detach()
                 ),
             )
 
-            score_im[..., -1] = _vals_to_im(attention, coords_norm) > 0
+            score_im[..., -1] = (
+                _vals_to_im(attention.unsqueeze(-1), coords_norm).squeeze(-1) > 0
+            )
 
             ax.imshow(score_im)
             ax.set_title(f"{category} {slide_score[pos_idx]:1.2f}")
@@ -276,9 +282,9 @@ def heatmaps_(
             slide=slide,
             thumb_ax=axs[0, 0],
             attention=_vals_to_im(
-                attention,
+                attention.unsqueeze(-1),
                 coords_norm,  # pyright: ignore[reportPossiblyUnboundVariable]
-            ),
+            ).squeeze(-1),
         )
         Image.fromarray(thumb).save(slide_output_dir / f"thumbnail-{h5_path.stem}.png")
 

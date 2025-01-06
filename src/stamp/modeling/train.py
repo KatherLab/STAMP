@@ -16,6 +16,7 @@ from torch.utils.data.dataloader import DataLoader
 from stamp.modeling.data import (
     BagDataset,
     Category,
+    GroundTruth,
     PandasLabel,
     PatientData,
     PatientId,
@@ -30,9 +31,6 @@ from stamp.modeling.lightning_model import (
     EncodedTargets,
     LitVisionTransformer,
 )
-
-__all__ = ["train_categorical_model_"]
-
 
 __author__ = "Marko van Treeck"
 __copyright__ = "Copyright (C) 2024 Marko van Treeck"
@@ -109,7 +107,7 @@ def train_categorical_model_(
         drop_patients_with_missing_ground_truth=True,
     )
 
-    model, train_dl, valid_dl = _setup_model_for_training(
+    model, train_dl, valid_dl = setup_model_for_training(
         patient_to_data=patient_to_data,
         categories=categories,
         bag_size=bag_size,
@@ -150,9 +148,9 @@ def train_categorical_model_(
     trainer.save_checkpoint(output_dir / "model.ckpt")
 
 
-def _setup_model_for_training(
+def setup_model_for_training(
     *,
-    patient_to_data: Mapping[PatientId, PatientData],
+    patient_to_data: Mapping[PatientId, PatientData[GroundTruth]],
     categories: Sequence[Category] | None,
     bag_size: int,
     batch_size: int,
@@ -166,16 +164,7 @@ def _setup_model_for_training(
     DataLoader[tuple[Bags, BagSizes, EncodedTargets]],
     DataLoader[tuple[Bags, BagSizes, EncodedTargets]],
 ]:
-    """Prepares model, dataloaders for training
-
-    Args:
-        patient to data:
-            A mapping from patient IDs to their metadata.
-            The ground truth must not be `None`.
-
-    Returns:
-        A tuple of the model, the training dataloader and the validation dataloader.
-    """
+    """Creates a model and dataloaders for training"""
 
     # Do a stratified train-validation split
     ground_truths = [

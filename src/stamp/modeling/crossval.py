@@ -1,6 +1,7 @@
 import logging
 from collections.abc import Mapping, Sequence
 from pathlib import Path
+from typing import Any, Final, cast
 
 import lightning
 import lightning.pytorch
@@ -16,6 +17,8 @@ from sklearn.model_selection import StratifiedKFold
 
 from stamp.modeling.data import (
     Category,
+    FeaturePath,
+    GroundTruth,
     PandasLabel,
     PatientData,
     PatientId,
@@ -24,7 +27,8 @@ from stamp.modeling.data import (
     slide_to_patient_from_slide_table_,
 )
 from stamp.modeling.deploy import _predict, _to_prediction_df
-from stamp.modeling.train import _setup_model_for_training
+from stamp.modeling.lightning_model import LitVisionTransformer
+from stamp.modeling.train import setup_model_for_training
 
 __author__ = "Marko van Treeck"
 __copyright__ = "Copyright (C) 2024 Marko van Treeck"
@@ -61,28 +65,35 @@ def categorical_crossval_(
     patience: int,
     accelerator: str | Accelerator,
 ) -> None:
-    patient_to_ground_truth = patient_to_ground_truth_from_clini_table_(
-        clini_table_path=clini_table,
-        ground_truth_label=ground_truth_label,
-        patient_label=patient_label,
+    patient_to_ground_truth: Final[dict[PatientId, GroundTruth]] = (
+        patient_to_ground_truth_from_clini_table_(
+            clini_table_path=clini_table,
+            ground_truth_label=ground_truth_label,
+            patient_label=patient_label,
+        )
     )
-    slide_to_patient = slide_to_patient_from_slide_table_(
-        slide_table_path=slide_table,
-        feature_dir=feature_dir,
-        patient_label=patient_label,
-        filename_label=filename_label,
+    slide_to_patient: Final[dict[FeaturePath, PatientId]] = (
+        slide_to_patient_from_slide_table_(
+            slide_table_path=slide_table,
+            feature_dir=feature_dir,
+            patient_label=patient_label,
+            filename_label=filename_label,
+        )
     )
 
     # Clean data (remove slides without ground truth, missing features, etc.)
-    patient_to_data = filter_complete_patient_data_(
-        patient_to_ground_truth=patient_to_ground_truth,
-        slide_to_patient=slide_to_patient,
-        drop_patients_with_missing_ground_truth=True,
+    patient_to_data: Final[Mapping[Category, PatientData]] = (
+        filter_complete_patient_data_(
+            patient_to_ground_truth=patient_to_ground_truth,
+            slide_to_patient=slide_to_patient,
+            drop_patients_with_missing_ground_truth=True,
+        )
     )
 
     output_dir.mkdir(parents=True, exist_ok=True)
     splits_file = output_dir / "splits.json"
 
+    # Generate the splits, or load them from the splits file if they already exist
     if not splits_file.exists():
         splits = _get_splits(patient_to_data=patient_to_data, n_splits=n_splits)
         with open(splits_file, "w") as fp:
@@ -113,75 +124,72 @@ def categorical_crossval_(
     for split_i, split in enumerate(splits.splits):
         split_dir = output_dir / f"split-{split_i}"
 
-        model, train_dl, valid_dl = _setup_model_for_training(
-            patient_to_data={
-                patient_id: patient_data
-                for patient_id, patient_data in patient_to_data.items()
-                if patient_id in split.train_patients
-            },
-            categories=categories
-            or sorted(
-                {
-                    patient_data.ground_truth
-                    for patient_data in patient_to_data.values()
-                    if patient_data.ground_truth is not None
-                }
-            ),
-            bag_size=bag_size,
-            batch_size=batch_size,
-            num_workers=num_workers,
-            ground_truth_label=ground_truth_label,
-            clini_table=clini_table,
-            slide_table=slide_table,
-            feature_dir=feature_dir,
-        )
+        if (split_dir / "patient-preds.csv").exists():
+            _logger.info(
+                "skipping training for split {split_i}, "
+                "as a model checkpoint is already present"
+            )
+            continue
 
-        torch.set_float32_matmul_precision("high")
+        # Train the model
+        if not (split_dir / "model.ckpt").exists():
+            trainer = _train_model(
+                output_dir=split_dir,
+                clini_table=clini_table,
+                slide_table=slide_table,
+                feature_dir=feature_dir,
+                ground_truth_label=ground_truth_label,
+                bag_size=bag_size,
+                num_workers=num_workers,
+                batch_size=batch_size,
+                max_epochs=max_epochs,
+                patience=patience,
+                accelerator=accelerator,
+                patient_to_data={
+                    patient_id: patient_data
+                    for patient_id, patient_data in patient_to_data.items()
+                    if patient_id in split.train_patients
+                },
+                categories=(
+                    categories
+                    or sorted(
+                        {
+                            patient_data.ground_truth
+                            for patient_data in patient_to_data.values()
+                            if patient_data.ground_truth is not None
+                        }
+                    )
+                ),
+            )
+            trainer.save_checkpoint(split_dir / "model.ckpt")
+            model = cast(LitVisionTransformer, trainer.model)
+        else:
+            model = LitVisionTransformer.load_from_checkpoint(split_dir / "model.ckpt")
 
-        model_checkpoint = ModelCheckpoint(
-            monitor="validation_loss",
-            mode="min",
-            filename="checkpoint-{epoch:02d}-{validation_loss:0.3f}",
-        )
-        trainer = lightning.Trainer(
-            default_root_dir=split_dir,
-            callbacks=[
-                EarlyStopping(monitor="validation_loss", mode="min", patience=patience),
-                model_checkpoint,
-            ],
-            max_epochs=max_epochs,
-            # FIXME The number of accelerators is currently fixed to one for the
-            # following reasons:
-            #  1. `trainer.predict()` does not return any predictions if used with
-            #     the default strategy no multiple GPUs
-            #  2. `barspoon.model.SafeMulticlassAUROC` breaks on multiple GPUs
-            accelerator=accelerator,
-            devices=1,
-            gradient_clip_val=0.5,
-            logger=CSVLogger(save_dir=split_dir),
-        )
-        trainer.fit(model=model, train_dataloaders=train_dl, val_dataloaders=valid_dl)
-        model.load_from_checkpoint(model_checkpoint.best_model_path)
-        trainer.save_checkpoint(split_dir / "model.ckpt")
+        # Deploy on test set
+        if not (split_dir / "patient-preds.csv").exists():
+            predictions = _predict(
+                model=model,
+                patient_to_data={
+                    patient_id: patient_data
+                    for patient_id, patient_data in patient_to_data.items()
+                    if patient_id in split.test_patients
+                },
+                num_workers=num_workers,
+                accelerator=accelerator,
+            )
 
-        predictions = _predict(
-            model=model,
-            patient_to_data=patient_to_data,
-            num_workers=num_workers,
-            accelerator=accelerator,
-        )
-
-        _to_prediction_df(
-            model=model,
-            patient_to_ground_truth=patient_to_ground_truth,
-            predictions=predictions,
-            patient_label=patient_label,
-            ground_truth_label=ground_truth_label,
-        ).to_csv(split_dir / "patient-preds.csv", index=False)
+            _to_prediction_df(
+                model=model,
+                patient_to_ground_truth=patient_to_ground_truth,
+                predictions=predictions,
+                patient_label=patient_label,
+                ground_truth_label=ground_truth_label,
+            ).to_csv(split_dir / "patient-preds.csv", index=False)
 
 
 def _get_splits(
-    *, patient_to_data: Mapping[PatientId, PatientData], n_splits: int
+    *, patient_to_data: Mapping[PatientId, PatientData[Any]], n_splits: int
 ) -> _Splits:
     patients = np.array(list(patient_to_data.keys()))
     skf = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=0)
@@ -200,3 +208,63 @@ def _get_splits(
         ]
     )
     return splits
+
+
+def _train_model(
+    *,
+    output_dir: Path,
+    patient_to_data: Mapping[PatientId, PatientData[GroundTruth]],
+    categories: Sequence[Category],
+    # Dataset and -loader parameters
+    bag_size: int,
+    num_workers: int,
+    # Training paramenters
+    batch_size: int,
+    max_epochs: int,
+    patience: int,
+    accelerator: str | Accelerator,
+    # Metadata stored in model
+    clini_table: Path,
+    slide_table: Path,
+    feature_dir: Path,
+    ground_truth_label: PandasLabel,
+) -> lightning.Trainer:
+    model, train_dl, valid_dl = setup_model_for_training(
+        patient_to_data=patient_to_data,
+        categories=categories,
+        bag_size=bag_size,
+        batch_size=batch_size,
+        num_workers=num_workers,
+        ground_truth_label=ground_truth_label,
+        clini_table=clini_table,
+        slide_table=slide_table,
+        feature_dir=feature_dir,
+    )
+
+    torch.set_float32_matmul_precision("high")
+
+    model_checkpoint = ModelCheckpoint(
+        monitor="validation_loss",
+        mode="min",
+        filename="checkpoint-{epoch:02d}-{validation_loss:0.3f}",
+    )
+    trainer = lightning.Trainer(
+        default_root_dir=output_dir,
+        callbacks=[
+            EarlyStopping(monitor="validation_loss", mode="min", patience=patience),
+            model_checkpoint,
+        ],
+        max_epochs=max_epochs,
+        # FIXME The number of accelerators is currently fixed to one for the
+        # following reasons:
+        #  1. `trainer.predict()` does not return any predictions if used with
+        #     the default strategy no multiple GPUs
+        #  2. `barspoon.model.SafeMulticlassAUROC` breaks on multiple GPUs
+        accelerator=accelerator,
+        devices=1,
+        gradient_clip_val=0.5,
+        logger=CSVLogger(save_dir=output_dir),
+    )
+    trainer.fit(model=model, train_dataloaders=train_dl, val_dataloaders=valid_dl)
+    LitVisionTransformer.load_from_checkpoint(model_checkpoint.best_model_path)
+    return trainer

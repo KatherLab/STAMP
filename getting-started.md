@@ -13,7 +13,7 @@ The whole slide images have to be in any of the formats [supported by OpenSlide]
 For the next steps we assume that all these WSIs are stored in the same directory.
 We will call this directory the _WSI directory_.
 
-[openslide]: https://openslide.org/#about-openslide "About Openslide"
+[openslide]: https://openslide.org/#about-openslide "About OpenSlide"
 
 ## Creating a Configuration File
 
@@ -53,7 +53,7 @@ you also have to install their respective dependencies.
 You can do so by specifying the feature extractor you want to use
 when installing stamp:
 ```sh
-# Install stamp including all depencencies for stamp and uni
+# Install stamp including all depencencies for ctranspath and uni
 pip install "git+https://github.com/KatherLab/stamp@v2[ctranspath,uni]"
 ```
 
@@ -105,6 +105,12 @@ this process may take anything between a few hours and days.
 You can interrupt this process at any time.
 It will continue where you stopped it the next time you run `stamp preprocess`.
 
+As the preprocessing is running,
+you can see the output directory fill up with the features, saved in `.h5` files,
+as well as `.jpg`s showing from which parts of the slide features are extracted.
+Most of the background should be marked in red,
+meaning ignored that it was ignored during feature extraction.
+
 > **If you are using the UNI or CONCH models**
 > and working in an environment where your home directory storage is limited,
 > you may want to also specify your huggingface storage directory
@@ -114,7 +120,6 @@ It will continue where you stopped it the next time you run `stamp preprocess`.
 > huggingface-cli login   # only needs to be done once per $HF_HOME
 > stamp -c stamp-test-experiment/config.yaml preprocess
 > ```
-
 
 [ctranspath]: https://www.sciencedirect.com/science/article/abs/pii/S1361841522002043 "Transformer-based unsupervised contrastive learning for histopathological image classification"
 [uni]: https://www.nature.com/articles/s41591-024-02857-3 "Towards a general-purpose foundation model for computational pathology"
