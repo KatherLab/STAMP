@@ -2003,6 +2003,7 @@ dependencies = [
     { name = "scikit-learn" },
     { name = "torch" },
     { name = "torchmetrics" },
+    { name = "torchvision" },
     { name = "tqdm" },
 ]
 
@@ -2074,6 +2075,7 @@ requires-dist = [
     { name = "torch", specifier = ">=2.5.1" },
     { name = "torch", marker = "extra == 'virchow2'", specifier = ">=2.0.0" },
     { name = "torchmetrics", specifier = ">=1.6.0" },
+    { name = "torchvision", specifier = ">=0.20.1" },
     { name = "torchvision", marker = "extra == 'ctranspath'", specifier = ">=0.20.1" },
     { name = "torchvision", marker = "extra == 'dinobloom'", specifier = ">=0.20.1" },
     { name = "tqdm", specifier = ">=4.66.6" },

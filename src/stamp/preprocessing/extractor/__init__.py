@@ -2,6 +2,7 @@ from collections.abc import Callable
 from dataclasses import KW_ONLY, dataclass
 
 import torch
+from jaxtyping import Float
 from PIL import Image
 from torch import nn
 
@@ -14,7 +15,7 @@ __license__ = "MIT"
 class Extractor:
     _: KW_ONLY
     model: nn.Module
-    transform: Callable[[Image.Image], torch.Tensor]
+    transform: Callable[[Image.Image], Float[torch.Tensor, "batch ..."]]
     identifier: str
     """An ID _uniquely_ identifying the model and extractor.
     

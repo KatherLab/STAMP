@@ -1,6 +1,6 @@
 [project]
 name = "stamp"
-version = "2.0.0-dev3"
+version = "2.0.0-dev4"
 authors = [
     { name = "Omar El Nahhas", email = "omar.el_nahhas@tu-dresden.de" },
     { name = "Marko van Treeck", email = "markovantreeck@gmail.com" },
@@ -37,6 +37,7 @@ dependencies = [
     "scikit-learn>=1.5.2",
     "torch>=2.5.1",
     "torchmetrics>=1.6.0",
+    "torchvision>=0.20.1",
     "tqdm>=4.66.6",
 ]
 

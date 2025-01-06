@@ -120,6 +120,7 @@ def extract_(
             "mahmood-uni",
             "dino-bloom",
             "virchow2",
+            "empty",
         ]
         | Extractor
     ),
@@ -153,6 +154,11 @@ def extract_(
         from stamp.preprocessing.extractor.virchow2 import virchow2
 
         extractor = virchow2()
+
+    elif extractor == "empty":
+        from stamp.preprocessing.extractor.empty import empty
+
+        extractor = empty()
 
     elif isinstance(extractor, Extractor):
         extractor = extractor
