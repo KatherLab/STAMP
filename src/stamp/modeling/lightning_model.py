@@ -5,7 +5,6 @@ from typing import TypeAlias
 
 import lightning
 import numpy as np
-import numpy.typing as npt
 from jaxtyping import Float
 from packaging.version import Version
 from torch import Tensor, nn, optim
