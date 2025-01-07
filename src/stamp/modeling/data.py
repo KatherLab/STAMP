@@ -45,6 +45,7 @@ PandasLabel: TypeAlias = str
 
 GroundTruthType = TypeVar("GroundTruthType", covariant=True)
 
+
 @dataclass
 class PatientData(Generic[GroundTruthType]):
     """All raw (i.e. non-generated) information we have on the patient."""

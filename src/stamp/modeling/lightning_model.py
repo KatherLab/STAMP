@@ -25,7 +25,6 @@ Loss: TypeAlias = Float[Tensor, ""]
 
 
 class LitVisionTransformer(lightning.LightningModule):
-
     def __init__(
         self,
         *,
