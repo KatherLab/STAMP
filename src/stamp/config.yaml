@@ -33,19 +33,25 @@ crossval:
 
   # An excel (.xlsx) or CSV (.csv) table containing the clinical information of
   # patients.  Patients not present in this file will be ignored during training.
-  # Has to contain at least two columns, one titled "PATIENT", containing a patient ID,
-  # and a second column containing the categorical ground truths for that patient.
+  # Has to contain at least two columns,
+  # one titled with the value of `patient_label` (as defined below)
+  # containing a unique ID for each patient,
+  # and one with the value of `ground_truth_label` (also defined below),
+  # containing the ground truth corresponding to that patient.
   clini_table: "/path/of/clini.csv"
 
   # Directory the extracted features are saved in.
   feature_dir: "/path/your/extracted/features/are/stored/in"
 
   # A table (.xlsx or .csv) relating every patient to their feature files.
-  # The table must contain at least two columns, one titled "PATIENT",
-  # containing the patient ID (matching those in the `clini_table`), and one
-  # called "FILENAME", containing the feature file path relative to `feature_dir`.
-  # Patient IDs not present in the clini table as well as non-existent feature
-  # paths are ignored.
+  # The table must contain at least two columns,
+  # one titled with the value of `patient_label` (as defined below),
+  # containing the patient ID (matching those in the `clini_table`),
+  # and one titled according to `filename_label` (also defined below)
+  # containing the feature file path relative to `feature_dir`.
+  # Patient IDs not present in the clini table
+  # as well as non-existent feature paths
+  # are ignored.
   slide_table: "/path/of/slide.csv"
 
   # Name of the column from the clini table to train on.
@@ -68,19 +74,25 @@ training:
 
   # An excel (.xlsx) or CSV (.csv) table containing the clinical information of
   # patients.  Patients not present in this file will be ignored during training.
-  # Has to contain at least two columns, one titled "PATIENT", containing a patient ID,
-  # and a second column containing the categorical ground truths for that patient.
+  # Has to contain at least two columns,
+  # one titled with the value of `patient_label` (as defined below)
+  # containing a unique ID for each patient,
+  # and one with the value of `ground_truth_label` (also defined below),
+  # containing the ground truth corresponding to that patient.
   clini_table: "/path/of/clini.csv"
 
   # Directory the extracted features are saved in.
   feature_dir: "/path/your/extracted/features/are/stored/in"
 
   # A table (.xlsx or .csv) relating every patient to their feature files.
-  # The table must contain at least two columns, one titled "PATIENT",
-  # containing the patient ID (matching those in the `clini_table`), and one
-  # called "FILENAME", containing the feature file path relative to `feature_dir`.
-  # Patient IDs not present in the clini table as well as non-existent feature
-  # paths are ignored.
+  # The table must contain at least two columns,
+  # one titled with the value of `patient_label` (as defined below),
+  # containing the patient ID (matching those in the `clini_table`),
+  # and one titled according to `filename_label` (also defined below)
+  # containing the feature file path relative to `feature_dir`.
+  # Patient IDs not present in the clini table
+  # as well as non-existent feature paths
+  # are ignored.
   slide_table: "/path/of/slide.csv"
 
   # Name of the column from the clini table to train on.
@@ -114,10 +126,13 @@ deployment:
   slide_table: "/path/of/slide.csv"
 
   # Name of the column from the clini to compare predictions to.
-  target_label: "KRAS"
+  ground_truth_label: "KRAS"
+
+  patient_label: "PATIENT"
+  filename_label: "FILENAME"
 
   # Path of the trained model to deploy.
-  checkpoint_path: "/path/to/export.pkl"
+  checkpoint_path: "/path/to/model.ckpt"
 
 
 statistics:
@@ -152,7 +167,7 @@ heatmaps:
   wsi_dir: "/path/containing/whole/slide/images/to/extract/features/from"
 
   # Path of the model to generate the heatmaps with.
-  checkpoint_path: "/path/to/export.pkl"
+  checkpoint_path: "/path/to/model.ckpt"
 
   # Slides to generate the heatmaps for.
   # The slide paths have to be specified relative to `wsi_dir`.

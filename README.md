@@ -8,7 +8,7 @@ A Protocol for End-to-End Deep Learning in Computational Pathology".
 > **Note**
 > This repo contains an updated version of the codebase.
 > For a version compatible with the instructions in the paper,
-> please check out [version 1 of STAMP][stamp v1]
+> please check out [version 1 of STAMP][stamp v1].
 
 [stamp paper]: https://www.nature.com/articles/s41596-024-01047-2 "From whole-slide image to biomarker prediction: end-to-end weakly supervised deep learning in computational pathology"
 [stamp v1]: https://github.com/KatherLab/STAMP/tree/v1
