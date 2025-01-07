@@ -48,7 +48,7 @@ dinobloom = [
 ]
 conch = [
     "huggingface-hub>=0.26.2",
-    "conch",
+    "conch @ git+https://github.com/Mahmoodlab/CONCH.git@02d6ac59cc20874bff0f581de258c2b257f69a84",
 ]
 ctranspath = [
     "gdown>=5.2.0",
@@ -56,7 +56,8 @@ ctranspath = [
 ]
 uni = [
     "huggingface-hub>=0.26.2",
-    "uni",
+    #TODO change the git repo back to mahmoodlab's once our pull request has been accepted
+    "uni @ git+https://github.com/KatherLab/uni.git@f37c299eb0bffa0e585f120974082cfec6ee6d53",
 ]
 virchow2 = [
     "huggingface-hub>=0.27.1",
@@ -85,7 +86,5 @@ dev = [
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
-[tool.uv.sources]
-#TODO change the git repo once our pull request has been accepted
-uni = {git = "https://github.com/KatherLab/uni", rev = "f37c299eb0bffa0e585f120974082cfec6ee6d53" }
-conch = { git = "https://github.com/Mahmoodlab/CONCH.git", rev = "02d6ac59cc20874bff0f581de258c2b257f69a84" }
+[tool.hatch.metadata]
+allow-direct-references = true
