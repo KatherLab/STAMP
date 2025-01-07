@@ -77,6 +77,7 @@ class _TileDataset(IterableDataset):
         max_supertile_size_slide_px: SlidePixels,
         max_workers: int,
         brightness_cutoff: int | None,
+        canny_cutoff: float | None,
     ) -> None:
         self.slide_path = slide_path
         self.cache_dir = cache_dir
@@ -86,6 +87,7 @@ class _TileDataset(IterableDataset):
         self.max_supertile_size_slide_px = max_supertile_size_slide_px
         self.max_workers = max_workers
         self.brightness_cutoff = brightness_cutoff
+        self.canny_cutoff = canny_cutoff
 
         # Already check if we can extract the MPP here.
         # We don't want to kill our dataloader later,
@@ -104,6 +106,7 @@ class _TileDataset(IterableDataset):
                 max_supertile_size_slide_px=self.max_supertile_size_slide_px,
                 max_workers=self.max_workers,
                 brightness_cutoff=self.brightness_cutoff,
+                canny_cutoff=self.canny_cutoff,
             )
         )
 
@@ -129,6 +132,7 @@ def extract_(
     max_workers: int,
     accelerator: DeviceLikeType,
     brightness_cutoff: int | None,
+    canny_cutoff: float | None,
 ) -> None:
     if extractor == "ctranspath":
         from stamp.preprocessing.extractor.ctranspath import ctranspath
@@ -210,6 +214,7 @@ def extract_(
                 max_supertile_size_slide_px=SlidePixels(2**10),
                 max_workers=max_workers,
                 brightness_cutoff=brightness_cutoff,
+                canny_cutoff=canny_cutoff,
             )
             # Parallelism is implemented in the dataset iterator already, so one worker is enough!
             dl = DataLoader(ds, batch_size=64, num_workers=1, drop_last=False)

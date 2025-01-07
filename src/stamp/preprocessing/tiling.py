@@ -15,6 +15,7 @@ import cv2
 import numpy as np
 import numpy.typing as npt
 import openslide
+from pandas import cut
 from PIL import Image
 
 __author__ = "Marko van Treeck"
@@ -68,6 +69,7 @@ def tiles_with_cache(
     max_supertile_size_slide_px: SlidePixels,
     max_workers: int,
     brightness_cutoff: int | None,
+    canny_cutoff: float | None,
 ) -> Iterator[_Tile[Microns]]:
     """Iterates over the tiles in a WSI, using or saving a cached version if applicable"""
 
@@ -80,6 +82,7 @@ def tiles_with_cache(
             max_supertile_size_slide_px=max_supertile_size_slide_px,
             max_workers=max_workers,
             brightness_cutoff=brightness_cutoff,
+            canny_cutoff=canny_cutoff,
         )
         return
 
@@ -126,6 +129,7 @@ def tiles_with_cache(
                     max_supertile_size_slide_px=max_supertile_size_slide_px,
                     max_workers=max_workers,
                     brightness_cutoff=brightness_cutoff,
+                    canny_cutoff=canny_cutoff,
                 ):
                     with zip.open(
                         f"tile_({float(tile.coordinates.x)}, {float(tile.coordinates.y)}).jpg",
@@ -151,6 +155,7 @@ def _tiles_with_tissue(
     max_supertile_size_slide_px: SlidePixels,
     max_workers: int,
     brightness_cutoff: int | None,
+    canny_cutoff: float | None,
 ) -> Iterator[_Tile[Microns]]:
     """Yields all tiels from a WSI which (probably) show tissue"""
     for tile in _tiles(
@@ -161,7 +166,7 @@ def _tiles_with_tissue(
         max_workers=max_workers,
         brightness_cutoff=brightness_cutoff,
     ):
-        if _has_enough_texture(tile.image):
+        if canny_cutoff is None or _has_enough_texture(tile.image, cutoff=canny_cutoff):
             yield tile
 
 
@@ -232,6 +237,7 @@ def _foreground_coords(
         .resize(tuple(supertile_thumb_size))
         .convert("I")
     )
+    # `brightness_cutoff is None` includes all tiles
     is_foreground = (
         thumb_grayscale < brightness_cutoff
         if brightness_cutoff is not None
@@ -246,7 +252,7 @@ def _foreground_coords(
                 yield _XYCoords(SlidePixels(x_slide_px), SlidePixels(y_slide_px))
 
 
-def _has_enough_texture(tile: Image.Image) -> bool:
+def _has_enough_texture(tile: Image.Image, cutoff: float) -> bool:
     """`True` if the image has a bunch of edges,
     i.e. if the image is likely to contain tissue"""
     # L mode converts the image to grayscale with values from 0...255
@@ -255,9 +261,9 @@ def _has_enough_texture(tile: Image.Image) -> bool:
     edges = cv2.Canny(np.array(tile_grayscale), 40, 100)
     edge_score = np.array(edges).mean() / 255
 
-    # if "at least two precent of our image are edges",
+    # if "at least cutoff-ratio of our image are edges",
     # we deem it to have enough texture
-    return bool(edge_score > 0.02)
+    return bool(edge_score >= cutoff)
 
 
 def _supertiles(
