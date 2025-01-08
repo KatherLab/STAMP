@@ -135,10 +135,10 @@ def test_to_prediction_df() -> None:
 
     # Check if no loss / target is given for targets with missing ground truths
     no_ground_truth = preds_df[preds_df["patient"].isin(["pat6"])]
-    assert no_ground_truth["target"].isna().all()
-    assert no_ground_truth["loss"].isna().all()
+    assert no_ground_truth["target"].isna().all()  # pyright: ignore[reportGeneralTypeIssues,reportAttributeAccessIssue]
+    assert no_ground_truth["loss"].isna().all()  # pyright: ignore[reportGeneralTypeIssues,reportAttributeAccessIssue]
 
     # Check if loss / target is given for targets with ground truths
     with_ground_truth = preds_df[preds_df["patient"].isin(["pat5", "pat7"])]
-    assert (~with_ground_truth["target"].isna()).all()
-    assert (~with_ground_truth["loss"].isna()).all()
+    assert (~with_ground_truth["target"].isna()).all()  # pyright: ignore[reportGeneralTypeIssues,reportAttributeAccessIssue]
+    assert (~with_ground_truth["loss"].isna()).all()  # pyright: ignore[reportGeneralTypeIssues,reportAttributeAccessIssue]
