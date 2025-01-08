@@ -1,7 +1,7 @@
 """Helper classes to manage pytorch data."""
 
 import logging
-from collections.abc import Iterable, Mapping, Sequence
+from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import KW_ONLY, dataclass
 from itertools import groupby
 from pathlib import Path
@@ -63,6 +63,7 @@ def dataloader_from_patient_data(
     batch_size: int,
     shuffle: bool,
     num_workers: int,
+    transform: Callable[[Tensor], Tensor] | None,
 ) -> tuple[DataLoader[tuple[Bags, BagSizes, EncodedTargets]], Sequence[Category]]:
     """Creates a dataloader from patient data, encoding the ground truths.
 
@@ -81,6 +82,7 @@ def dataloader_from_patient_data(
         bags=[patient.feature_files for patient in patient_data],
         bag_size=bag_size,
         ground_truths=one_hot,
+        transform=transform,
     )
 
     return (
@@ -133,6 +135,8 @@ class BagDataset(Dataset[tuple[_Bag, BagSize, _EncodedTarget]]):
     ground_truths: Bool[Tensor, "index category_is_hot"]
     """The ground truth for each bag, one-hot encoded."""
 
+    transform: Callable[[Tensor], Tensor] | None
+
     def __post_init__(self) -> None:
         if len(self.bags) != len(self.ground_truths):
             raise ValueError(
@@ -152,8 +156,11 @@ class BagDataset(Dataset[tuple[_Bag, BagSize, _EncodedTarget]]):
                 )
         feats = torch.concat(feats).float()
 
+        if self.transform is not None:
+            feats = self.transform(feats)
+
         # Sample a subset, if required
-        if self.bag_size:
+        if self.bag_size is not None:
             return (
                 *_to_fixed_size_bag(feats, bag_size=self.bag_size),
                 self.ground_truths[index],
@@ -166,7 +173,7 @@ class BagDataset(Dataset[tuple[_Bag, BagSize, _EncodedTarget]]):
             )
 
 
-def _to_fixed_size_bag(bag: _Bag, bag_size: BagSize = 512) -> tuple[_Bag, BagSize]:
+def _to_fixed_size_bag(bag: _Bag, bag_size: BagSize) -> tuple[_Bag, BagSize]:
     """Samples a fixed-size bag of tiles from an arbitrary one.
 
     If the original bag did not have enough tiles,

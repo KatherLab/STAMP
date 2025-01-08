@@ -126,6 +126,7 @@ def _predict(
         batch_size=1,
         shuffle=False,
         num_workers=num_workers,
+        transform=None,
     )
 
     trainer = lightning.Trainer(
@@ -136,9 +137,7 @@ def _predict(
     predictions = torch.concat(
         cast(
             list[torch.Tensor],
-            trainer.predict(
-                cast(lightning.LightningModule, torch.compile(model)), test_dl
-            ),
+            trainer.predict(model, test_dl),
         )
     )
 

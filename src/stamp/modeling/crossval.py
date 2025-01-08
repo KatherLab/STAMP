@@ -22,6 +22,7 @@ from stamp.modeling.data import (
 from stamp.modeling.deploy import _predict, _to_prediction_df
 from stamp.modeling.lightning_model import LitVisionTransformer
 from stamp.modeling.train import setup_model_for_training, train_model_
+from stamp.modeling.transforms import VaryPrecisionTransform
 
 __author__ = "Marko van Treeck"
 __copyright__ = "Copyright (C) 2024 Marko van Treeck"
@@ -57,6 +58,8 @@ def categorical_crossval_(
     max_epochs: int,
     patience: int,
     accelerator: str | Accelerator,
+    # Experimental features
+    use_vary_precision_transform: bool,
 ) -> None:
     patient_to_ground_truth: Final[dict[PatientId, GroundTruth]] = (
         patient_to_ground_truth_from_clini_table_(
@@ -148,6 +151,11 @@ def categorical_crossval_(
                             if patient_data.ground_truth is not None
                         }
                     )
+                ),
+                train_transform=(
+                    VaryPrecisionTransform(min_fraction_bits=1)
+                    if use_vary_precision_transform
+                    else None
                 ),
             )
             model = train_model_(

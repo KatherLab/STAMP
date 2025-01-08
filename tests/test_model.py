@@ -14,7 +14,6 @@ def test_vision_transformer_dims(
     input_dim: int = 456,
     n_heads: int = 4,
 ) -> None:
-
     model = VisionTransformer(
         dim_output=num_classes,
         dim_input=input_dim,
@@ -38,7 +37,6 @@ def test_inference_reproducibility(
     input_dim: int = 457,
     n_heads: int = 5,
 ) -> None:
-
     model = VisionTransformer(
         dim_output=num_classes,
         dim_input=input_dim,

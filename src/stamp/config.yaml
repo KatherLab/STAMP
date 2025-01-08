@@ -104,6 +104,14 @@ training:
   # If unspecified, they will be inferred from the table itself.
   #categories: ["mutated", "wild type"]
 
+  # Experimental features:
+
+  # Please try uncommenting the settings below
+  # and report if they improve / reduce model performance!
+
+  # Change the precision of features during training
+  #use_vary_precision_transform: true
+
 
 deployment:
   output_dir: "/path/to/save/files/to"

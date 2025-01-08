@@ -76,7 +76,6 @@ def test_dataset(
     dim_feats: int = 34,
     batch_size: int = 2,
 ) -> None:
-
     ds = BagDataset(
         bags=[
             [_make_feature_file(torch.rand((12, dim_feats)))],
@@ -85,6 +84,7 @@ def test_dataset(
         ],
         bag_size=bag_size,
         ground_truths=torch.rand(3, 4) > 0.5,
+        transform=None,
     )
 
     assert len(ds) == 3

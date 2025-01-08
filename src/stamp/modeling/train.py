@@ -1,5 +1,5 @@
 import shutil
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from pathlib import Path
 from typing import cast
 
@@ -32,6 +32,7 @@ from stamp.modeling.lightning_model import (
     EncodedTargets,
     LitVisionTransformer,
 )
+from stamp.modeling.transforms import VaryPrecisionTransform
 
 __author__ = "Marko van Treeck"
 __copyright__ = "Copyright (C) 2024 Marko van Treeck"
@@ -56,6 +57,8 @@ def train_categorical_model_(
     max_epochs: int,
     patience: int,
     accelerator: str | Accelerator,
+    # Experimental features
+    use_vary_precision_transform: bool,
 ) -> None:
     """Trains a model.
 
@@ -119,6 +122,11 @@ def train_categorical_model_(
         clini_table=clini_table,
         slide_table=slide_table,
         feature_dir=feature_dir,
+        train_transform=(
+            VaryPrecisionTransform(min_fraction_bits=1)
+            if use_vary_precision_transform
+            else None
+        ),
     )
     train_model_(
         output_dir=output_dir,
@@ -187,6 +195,7 @@ def setup_model_for_training(
     bag_size: int,
     batch_size: int,
     num_workers: int,
+    train_transform: Callable[[torch.Tensor], torch.Tensor] | None,
     # Metadata, has no effect on model training
     ground_truth_label: PandasLabel,
     clini_table: Path,
@@ -225,6 +234,7 @@ def setup_model_for_training(
         batch_size=batch_size,
         shuffle=True,
         num_workers=num_workers,
+        transform=train_transform,
     )
     del categories  # Let's not accidentally reuse the original categories
     valid_dl, _ = dataloader_from_patient_data(
@@ -234,6 +244,7 @@ def setup_model_for_training(
         batch_size=1,
         shuffle=False,
         num_workers=num_workers,
+        transform=None,
     )
     if overlap := set(train_patients) & set(valid_patients):
         raise RuntimeError(

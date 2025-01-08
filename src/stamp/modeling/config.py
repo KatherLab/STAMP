@@ -34,6 +34,9 @@ class TrainConfig(BaseModel):
     patience: int = 16
     accelerator: str = "gpu" if torch.cuda.is_available() else "cpu"
 
+    # Experimental features
+    use_vary_precision_transform: bool = False
+
 
 class CrossvalConfig(TrainConfig):
     n_splits: int = Field(5, ge=2)
