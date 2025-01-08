@@ -1,3 +1,4 @@
+import shutil
 from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import cast
@@ -107,6 +108,7 @@ def train_categorical_model_(
         drop_patients_with_missing_ground_truth=True,
     )
 
+    # Train the model
     model, train_dl, valid_dl = setup_model_for_training(
         patient_to_data=patient_to_data,
         categories=categories,
@@ -118,7 +120,32 @@ def train_categorical_model_(
         slide_table=slide_table,
         feature_dir=feature_dir,
     )
+    train_model_(
+        output_dir=output_dir,
+        model=model,
+        train_dl=train_dl,
+        valid_dl=valid_dl,
+        max_epochs=max_epochs,
+        patience=patience,
+        accelerator=accelerator,
+    )
 
+
+def train_model_(
+    *,
+    output_dir: Path,
+    model: LitVisionTransformer,
+    train_dl: DataLoader[tuple[Bags, BagSizes, EncodedTargets]],
+    valid_dl: DataLoader[tuple[Bags, BagSizes, EncodedTargets]],
+    max_epochs: int,
+    patience: int,
+    accelerator: str | Accelerator,
+) -> LitVisionTransformer:
+    """Trains a model.
+
+    Returns:
+        The model with the best validation loss during training.
+    """
     torch.set_float32_matmul_precision("high")
 
     model_checkpoint = ModelCheckpoint(
@@ -143,9 +170,14 @@ def train_categorical_model_(
         gradient_clip_val=0.5,
         logger=CSVLogger(save_dir=output_dir),
     )
-    trainer.fit(model=model, train_dataloaders=train_dl, val_dataloaders=valid_dl)
-    model.load_from_checkpoint(model_checkpoint.best_model_path)
-    trainer.save_checkpoint(output_dir / "model.ckpt")
+    trainer.fit(
+        model=cast(lightning.LightningModule, torch.compile(model)),
+        train_dataloaders=train_dl,
+        val_dataloaders=valid_dl,
+    )
+    shutil.move(model_checkpoint.best_model_path, output_dir / "model.ckpt")
+
+    return LitVisionTransformer.load_from_checkpoint(model_checkpoint.best_model_path)
 
 
 def setup_model_for_training(
@@ -155,6 +187,7 @@ def setup_model_for_training(
     bag_size: int,
     batch_size: int,
     num_workers: int,
+    # Metadata, has no effect on model training
     ground_truth_label: PandasLabel,
     clini_table: Path,
     slide_table: Path,
@@ -185,7 +218,7 @@ def setup_model_for_training(
         ),
     )
 
-    train_dl, categories = dataloader_from_patient_data(
+    train_dl, train_categories = dataloader_from_patient_data(
         patient_data=[patient_to_data[patient] for patient in train_patients],
         categories=categories,
         bag_size=bag_size,
@@ -193,10 +226,11 @@ def setup_model_for_training(
         shuffle=True,
         num_workers=num_workers,
     )
+    del categories  # Let's not accidentally reuse the original categories
     valid_dl, _ = dataloader_from_patient_data(
         patient_data=[patient_to_data[patient] for patient in valid_patients],
         bag_size=None,  # Use all the patient data for validation
-        categories=categories,
+        categories=train_categories,
         batch_size=1,
         shuffle=False,
         num_workers=num_workers,
@@ -217,12 +251,12 @@ def setup_model_for_training(
     cat_ratio_reciprocal = category_counts.sum() / category_counts
     category_weights = cat_ratio_reciprocal / cat_ratio_reciprocal.sum()
 
-    if len(categories) <= 1:
-        raise ValueError(f"not enough categories to train on: {categories}")
+    if len(train_categories) <= 1:
+        raise ValueError(f"not enough categories to train on: {train_categories}")
     elif any(category_counts < 16):
         underpopulated_categories = {
             category: count
-            for category, count in zip(categories, category_counts, strict=True)
+            for category, count in zip(train_categories, category_counts, strict=True)
             if count < 16
         }
         raise ValueError(
@@ -231,7 +265,7 @@ def setup_model_for_training(
 
     # Train the model
     model = LitVisionTransformer(
-        categories=categories,
+        categories=train_categories,
         category_weights=category_weights,
         dim_input=dim_feats,
         dim_model=512,

@@ -1,17 +1,10 @@
 import logging
 from collections.abc import Mapping, Sequence
 from pathlib import Path
-from typing import Any, Final, cast
+from typing import Any, Final
 
-import lightning
-import lightning.pytorch
-import lightning.pytorch.accelerators
-import lightning.pytorch.accelerators.accelerator
 import numpy as np
-import torch
 from lightning.pytorch.accelerators.accelerator import Accelerator
-from lightning.pytorch.callbacks import EarlyStopping, ModelCheckpoint
-from lightning.pytorch.loggers import CSVLogger
 from pydantic import BaseModel
 from sklearn.model_selection import StratifiedKFold
 
@@ -28,7 +21,7 @@ from stamp.modeling.data import (
 )
 from stamp.modeling.deploy import _predict, _to_prediction_df
 from stamp.modeling.lightning_model import LitVisionTransformer
-from stamp.modeling.train import setup_model_for_training
+from stamp.modeling.train import setup_model_for_training, train_model_
 
 __author__ = "Marko van Treeck"
 __copyright__ = "Copyright (C) 2024 Marko van Treeck"
@@ -133,8 +126,7 @@ def categorical_crossval_(
 
         # Train the model
         if not (split_dir / "model.ckpt").exists():
-            trainer = _train_model(
-                output_dir=split_dir,
+            model, train_dl, valid_dl = setup_model_for_training(
                 clini_table=clini_table,
                 slide_table=slide_table,
                 feature_dir=feature_dir,
@@ -142,9 +134,6 @@ def categorical_crossval_(
                 bag_size=bag_size,
                 num_workers=num_workers,
                 batch_size=batch_size,
-                max_epochs=max_epochs,
-                patience=patience,
-                accelerator=accelerator,
                 patient_to_data={
                     patient_id: patient_data
                     for patient_id, patient_data in patient_to_data.items()
@@ -161,8 +150,15 @@ def categorical_crossval_(
                     )
                 ),
             )
-            trainer.save_checkpoint(split_dir / "model.ckpt")
-            model = cast(LitVisionTransformer, trainer.model)
+            model = train_model_(
+                output_dir=split_dir,
+                model=model,
+                train_dl=train_dl,
+                valid_dl=valid_dl,
+                max_epochs=max_epochs,
+                patience=patience,
+                accelerator=accelerator,
+            )
         else:
             model = LitVisionTransformer.load_from_checkpoint(split_dir / "model.ckpt")
 
@@ -208,67 +204,3 @@ def _get_splits(
         ]
     )
     return splits
-
-
-def _train_model(
-    *,
-    output_dir: Path,
-    patient_to_data: Mapping[PatientId, PatientData[GroundTruth]],
-    categories: Sequence[Category],
-    # Dataset and -loader parameters
-    bag_size: int,
-    num_workers: int,
-    # Training paramenters
-    batch_size: int,
-    max_epochs: int,
-    patience: int,
-    accelerator: str | Accelerator,
-    # Metadata stored in model
-    clini_table: Path,
-    slide_table: Path,
-    feature_dir: Path,
-    ground_truth_label: PandasLabel,
-) -> lightning.Trainer:
-    model, train_dl, valid_dl = setup_model_for_training(
-        patient_to_data=patient_to_data,
-        categories=categories,
-        bag_size=bag_size,
-        batch_size=batch_size,
-        num_workers=num_workers,
-        ground_truth_label=ground_truth_label,
-        clini_table=clini_table,
-        slide_table=slide_table,
-        feature_dir=feature_dir,
-    )
-
-    torch.set_float32_matmul_precision("high")
-
-    model_checkpoint = ModelCheckpoint(
-        monitor="validation_loss",
-        mode="min",
-        filename="checkpoint-{epoch:02d}-{validation_loss:0.3f}",
-    )
-    trainer = lightning.Trainer(
-        default_root_dir=output_dir,
-        callbacks=[
-            EarlyStopping(monitor="validation_loss", mode="min", patience=patience),
-            model_checkpoint,
-        ],
-        max_epochs=max_epochs,
-        # FIXME The number of accelerators is currently fixed to one for the
-        # following reasons:
-        #  1. `trainer.predict()` does not return any predictions if used with
-        #     the default strategy no multiple GPUs
-        #  2. `barspoon.model.SafeMulticlassAUROC` breaks on multiple GPUs
-        accelerator=accelerator,
-        devices=1,
-        gradient_clip_val=0.5,
-        logger=CSVLogger(save_dir=output_dir),
-    )
-    trainer.fit(
-        model=cast(lightning.LightningModule, torch.compile(model)),
-        train_dataloaders=train_dl,
-        val_dataloaders=valid_dl,
-    )
-    LitVisionTransformer.load_from_checkpoint(model_checkpoint.best_model_path)
-    return trainer
