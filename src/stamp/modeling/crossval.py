@@ -265,6 +265,10 @@ def _train_model(
         gradient_clip_val=0.5,
         logger=CSVLogger(save_dir=output_dir),
     )
-    trainer.fit(model=model, train_dataloaders=train_dl, val_dataloaders=valid_dl)
+    trainer.fit(
+        model=cast(lightning.LightningModule, torch.compile(model)),
+        train_dataloaders=train_dl,
+        val_dataloaders=valid_dl,
+    )
     LitVisionTransformer.load_from_checkpoint(model_checkpoint.best_model_path)
     return trainer

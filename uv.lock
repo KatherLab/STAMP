@@ -1983,7 +1983,7 @@ wheels = [
 
 [[package]]
 name = "stamp"
-version = "2.0.0.dev3"
+version = "2.0.0.dev5"
 source = { editable = "." }
 dependencies = [
     { name = "beartype" },
@@ -2051,7 +2051,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "beartype", specifier = ">=0.19.0" },
-    { name = "conch", marker = "extra == 'conch'", git = "https://github.com/Mahmoodlab/CONCH.git?rev=02d6ac59cc20874bff0f581de258c2b257f69a84" },
+    { name = "conch", marker = "extra == 'conch'", git = "https://github.com/Mahmoodlab/CONCH.git?rev=02d6ac59cc20874bff0f581de258c2b257f69a84#02d6ac59cc20874bff0f581de258c2b257f69a84" },
     { name = "einops", specifier = ">=0.8.0" },
     { name = "gdown", marker = "extra == 'ctranspath'", specifier = ">=5.2.0" },
     { name = "h5py", specifier = ">=3.12.1" },
@@ -2079,7 +2079,7 @@ requires-dist = [
     { name = "torchvision", marker = "extra == 'ctranspath'", specifier = ">=0.20.1" },
     { name = "torchvision", marker = "extra == 'dinobloom'", specifier = ">=0.20.1" },
     { name = "tqdm", specifier = ">=4.66.6" },
-    { name = "uni", marker = "extra == 'uni'", git = "https://github.com/KatherLab/uni?rev=f37c299eb0bffa0e585f120974082cfec6ee6d53" },
+    { name = "uni", marker = "extra == 'uni'", git = "https://github.com/KatherLab/uni.git?rev=f37c299eb0bffa0e585f120974082cfec6ee6d53#f37c299eb0bffa0e585f120974082cfec6ee6d53" },
     { name = "xformers", marker = "extra == 'dinobloom'", specifier = ">=0.0.28.post3" },
 ]
 
@@ -2356,7 +2356,7 @@ wheels = [
 [[package]]
 name = "uni"
 version = "0.1.0"
-source = { git = "https://github.com/KatherLab/uni?rev=f37c299eb0bffa0e585f120974082cfec6ee6d53#f37c299eb0bffa0e585f120974082cfec6ee6d53" }
+source = { git = "https://github.com/KatherLab/uni.git?rev=f37c299eb0bffa0e585f120974082cfec6ee6d53#f37c299eb0bffa0e585f120974082cfec6ee6d53" }
 dependencies = [
     { name = "numpy" },
     { name = "pandas" },

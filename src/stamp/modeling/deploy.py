@@ -134,7 +134,12 @@ def _predict(
         logger=False,
     )
     predictions = torch.concat(
-        cast(list[torch.Tensor], trainer.predict(model, test_dl))
+        cast(
+            list[torch.Tensor],
+            trainer.predict(
+                cast(lightning.LightningModule, torch.compile(model)), test_dl
+            ),
+        )
     )
 
     return dict(zip(patient_to_data, predictions, strict=True))
