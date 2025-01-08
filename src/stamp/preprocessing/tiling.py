@@ -15,7 +15,6 @@ import cv2
 import numpy as np
 import numpy.typing as npt
 import openslide
-from pandas import cut
 from PIL import Image
 
 __author__ = "Marko van Treeck"
