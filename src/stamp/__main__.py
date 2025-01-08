@@ -74,6 +74,7 @@ def _run_cli(args: argparse.Namespace) -> None:
                 max_workers=config.preprocessing.max_workers,
                 accelerator=config.preprocessing.accelerator,
                 brightness_cutoff=config.preprocessing.brightness_cutoff,
+                canny_cutoff=config.preprocessing.canny_cutoff,
             )
 
         case "train":
