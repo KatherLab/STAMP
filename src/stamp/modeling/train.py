@@ -179,11 +179,11 @@ def train_model_(
         logger=CSVLogger(save_dir=output_dir),
     )
     trainer.fit(
-        model=cast(lightning.LightningModule, torch.compile(model)),
+        model=model,
         train_dataloaders=train_dl,
         val_dataloaders=valid_dl,
     )
-    shutil.move(model_checkpoint.best_model_path, output_dir / "model.ckpt")
+    shutil.copy(model_checkpoint.best_model_path, output_dir / "model.ckpt")
 
     return LitVisionTransformer.load_from_checkpoint(model_checkpoint.best_model_path)
 
