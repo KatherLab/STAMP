@@ -1,5 +1,5 @@
 import logging
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import TypeAlias, cast
 
@@ -7,6 +7,7 @@ import lightning
 import numpy as np
 import pandas as pd
 import torch
+from jaxtyping import Float
 from lightning.pytorch.accelerators.accelerator import Accelerator
 
 from stamp.modeling.data import (
@@ -24,7 +25,7 @@ from stamp.modeling.lightning_model import LitVisionTransformer
 __all__ = ["deploy_categorical_model_"]
 
 __author__ = "Marko van Treeck"
-__copyright__ = "Copyright (C) 2024 Marko van Treeck"
+__copyright__ = "Copyright (C) 2024-2025 Marko van Treeck"
 __license__ = "MIT"
 
 _logger = logging.getLogger("stamp")
@@ -35,7 +36,7 @@ Logit: TypeAlias = float
 def deploy_categorical_model_(
     *,
     output_dir: Path,
-    checkpoint_path: Path,
+    checkpoint_paths: Sequence[Path],
     clini_table: Path | None,
     slide_table: Path,
     feature_dir: Path,
@@ -45,19 +46,37 @@ def deploy_categorical_model_(
     num_workers: int,
     accelerator: str | Accelerator,
 ) -> None:
-    model = LitVisionTransformer.load_from_checkpoint(
-        checkpoint_path=checkpoint_path
-    ).eval()
+    models = [
+        LitVisionTransformer.load_from_checkpoint(
+            checkpoint_path=checkpoint_path
+        ).eval()
+        for checkpoint_path in checkpoint_paths
+    ]
+
+    # Ensure all models were trained on the same ground truth label
+    if (
+        len(ground_truth_labels := set(model.ground_truth_label for model in models))
+        != 1
+    ):
+        raise RuntimeError(
+            f"ground truth labels differ between models: {ground_truth_labels}"
+        )
+    # Ensure the categories were the same between all models
+    if len(categories := set(tuple(model.categories) for model in models)) != 1:
+        raise RuntimeError(f"categories differ between models: {categories}")
+
+    model_ground_truth_label = models[0].ground_truth_label
+    model_categories = list(models[0].categories)
 
     if (
         ground_truth_label is not None
-        and ground_truth_label != model.ground_truth_label
+        and ground_truth_label != model_ground_truth_label
     ):
         _logger.warning(
             "deployment ground truth label differs from training: "
-            f"{ground_truth_label} vs {model.ground_truth_label}"
+            f"{ground_truth_label} vs {model_ground_truth_label}"
         )
-    ground_truth_label = ground_truth_label or model.ground_truth_label
+    ground_truth_label = ground_truth_label or model_ground_truth_label
 
     slide_to_patient = slide_to_patient_from_slide_table_(
         slide_table_path=slide_table,
@@ -84,17 +103,35 @@ def deploy_categorical_model_(
         drop_patients_with_missing_ground_truth=False,
     )
 
-    predictions = _predict(
-        model=model,
-        patient_to_data=patient_to_data,
-        num_workers=num_workers,
-        accelerator=accelerator,
-    )
+    all_predictions: list[Mapping[PatientId, Float[torch.Tensor, "category"]]] = []  # noqa: F821
+    for model_i, model in enumerate(models):
+        predictions = _predict(
+            model=model,
+            patient_to_data=patient_to_data,
+            num_workers=num_workers,
+            accelerator=accelerator,
+        )
+        all_predictions.append(predictions)
 
+        _to_prediction_df(
+            categories=model_categories,
+            patient_to_ground_truth=patient_to_ground_truth,
+            predictions=predictions,
+            patient_label=patient_label,
+            ground_truth_label=ground_truth_label,
+        ).to_csv(output_dir / f"patient-preds-{model_i}.csv", index=False)
+
+    # TODO we probably also want to save the 95% confidence interval in addition to the mean
     _to_prediction_df(
-        model=model,
+        categories=model_categories,
         patient_to_ground_truth=patient_to_ground_truth,
-        predictions=predictions,
+        predictions={
+            # Mean prediction
+            patient_id: torch.stack(
+                [predictions[patient_id] for predictions in all_predictions]
+            ).mean(dim=0)
+            for patient_id in patient_to_data.keys()
+        },
         patient_label=patient_label,
         ground_truth_label=ground_truth_label,
     ).to_csv(output_dir / "patient-preds.csv", index=False)
@@ -106,7 +143,7 @@ def _predict(
     patient_to_data: Mapping[PatientId, PatientData[GroundTruth | None]],
     num_workers: int,
     accelerator: str | Accelerator,
-) -> Mapping[PatientId, torch.Tensor]:
+) -> Mapping[PatientId, Float[torch.Tensor, "category"]]:  # noqa: F821
     model = model.eval()
     torch.set_float32_matmul_precision("medium")
 
@@ -146,7 +183,7 @@ def _predict(
 
 def _to_prediction_df(
     *,
-    model: LitVisionTransformer,
+    categories: Sequence[GroundTruth],
     patient_to_ground_truth: Mapping[PatientId, GroundTruth | None],
     predictions: Mapping[PatientId, torch.Tensor],
     patient_label: PandasLabel,
@@ -158,17 +195,17 @@ def _to_prediction_df(
             {
                 patient_label: patient_id,
                 ground_truth_label: patient_to_ground_truth.get(patient_id),
-                "pred": model.categories[prediction.argmax()],
+                "pred": categories[int(prediction.argmax())],
                 **{
                     f"{ground_truth_label}_{category}": torch.softmax(
                         prediction, dim=0
                     )[i_cat].item()
-                    for i_cat, category in enumerate(model.categories)
+                    for i_cat, category in enumerate(categories)
                 },
                 "loss": (
                     torch.nn.functional.cross_entropy(
                         prediction.reshape(1, -1),
-                        torch.tensor(np.where(model.categories == ground_truth)[0]),
+                        torch.tensor(np.where(np.array(categories) == ground_truth)[0]),
                     ).item()
                     if (ground_truth := patient_to_ground_truth.get(patient_id))
                     is not None

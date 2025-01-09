@@ -122,7 +122,7 @@ def _run_cli(args: argparse.Namespace) -> None:
             )
             deploy_categorical_model_(
                 output_dir=config.deployment.output_dir,
-                checkpoint_path=config.deployment.checkpoint_path,
+                checkpoint_paths=config.deployment.checkpoint_paths,
                 clini_table=config.deployment.clini_table,
                 slide_table=config.deployment.slide_table,
                 feature_dir=config.deployment.feature_dir,

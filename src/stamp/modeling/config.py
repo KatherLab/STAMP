@@ -45,7 +45,7 @@ class CrossvalConfig(TrainConfig):
 class DeploymentConfig(BaseModel):
     output_dir: Path
 
-    checkpoint_path: Path
+    checkpoint_paths: list[Path]
     clini_table: Path | None = None
     slide_table: Path
     feature_dir: Path

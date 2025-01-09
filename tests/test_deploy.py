@@ -106,7 +106,7 @@ def test_to_prediction_df() -> None:
     )
 
     preds_df = _to_prediction_df(
-        model=model,
+        categories=list(model.categories),
         patient_to_ground_truth={
             PatientId("pat5"): GroundTruth("foo"),
             PatientId("pat6"): None,

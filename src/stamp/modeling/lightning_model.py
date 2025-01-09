@@ -6,7 +6,7 @@ from typing import TypeAlias
 import lightning
 import numpy as np
 import torch
-from jaxtyping import Float
+from jaxtyping import Bool, Float
 from packaging.version import Version
 from torch import Tensor, nn, optim
 from torchmetrics.classification import MulticlassAUROC
@@ -100,7 +100,8 @@ class LitVisionTransformer(lightning.LightningModule):
         self.save_hyperparameters()
 
     def forward(
-        self, bags: Float[Tensor, "batch tile feature"]
+        self,
+        bags: Bags,
     ) -> Float[Tensor, "batch logit"]:
         return self.vision_transformer(bags)
 
@@ -115,12 +116,9 @@ class LitVisionTransformer(lightning.LightningModule):
 
         bags, bag_sizes, targets = batch
 
-        max_possible_bag_size = bags.size(1)
-        mask = torch.arange(max_possible_bag_size).type_as(bag_sizes).unsqueeze(
-            0
-        ).repeat(len(bags), 1) >= bag_sizes.unsqueeze(1)
-
-        logits = self.vision_transformer(bags, mask=mask)
+        logits = self.vision_transformer(
+            bags, mask=_mask_from_bags(bags=bags, bag_sizes=bag_sizes)
+        )
 
         loss = nn.functional.cross_entropy(
             logits, targets.type_as(logits), weight=self.class_weights.type_as(logits)
@@ -178,9 +176,23 @@ class LitVisionTransformer(lightning.LightningModule):
     def predict_step(
         self, batch: tuple[Bags, BagSizes, EncodedTargets], batch_idx: int
     ) -> Float[Tensor, "batch logit"]:
-        bags, _, _ = batch
-        return self.vision_transformer(bags)
+        bags, bag_sizes, _ = batch
+        return self.vision_transformer(
+            bags, mask=_mask_from_bags(bags=bags, bag_sizes=bag_sizes)
+        )
 
     def configure_optimizers(self) -> optim.Optimizer:
         optimizer = optim.Adam(self.parameters(), lr=1e-3)
         return optimizer
+
+def _mask_from_bags(
+    *,
+    bags: Bags,
+    bag_sizes: BagSizes,  # noqa: F821
+) -> Bool[Tensor, "batch tile"]:
+    max_possible_bag_size = bags.size(1)
+    mask = torch.arange(max_possible_bag_size).type_as(bag_sizes).unsqueeze(0).repeat(
+        len(bags), 1
+    ) >= bag_sizes.unsqueeze(1)
+
+    return mask

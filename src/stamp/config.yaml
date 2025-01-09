@@ -140,7 +140,12 @@ deployment:
   filename_label: "FILENAME"
 
   # Path of the trained model to deploy.
-  checkpoint_path: "/path/to/model.ckpt"
+  checkpoint_paths:
+  - "/path/to/model.ckpt"
+  # You can also combine multiple models to get a majority vote from multiple models.
+  # This is especially handy to e.g. combine the models from a cross-validation.
+  #- "/path/to/model2.ckpt"
+  #- "/path/to/model3.ckpt"
 
 
 statistics:

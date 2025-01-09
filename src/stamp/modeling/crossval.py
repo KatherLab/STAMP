@@ -117,12 +117,20 @@ def categorical_crossval_(
             f"{ground_truths_not_in_split}"
         )
 
+    categories = categories or sorted(
+        {
+            patient_data.ground_truth
+            for patient_data in patient_to_data.values()
+            if patient_data.ground_truth is not None
+        }
+    )
+
     for split_i, split in enumerate(splits.splits):
         split_dir = output_dir / f"split-{split_i}"
 
         if (split_dir / "patient-preds.csv").exists():
             _logger.info(
-                "skipping training for split {split_i}, "
+                f"skipping training for split {split_i}, "
                 "as a model checkpoint is already present"
             )
             continue
@@ -184,7 +192,7 @@ def categorical_crossval_(
             )
 
             _to_prediction_df(
-                model=model,
+                categories=categories,
                 patient_to_ground_truth=patient_to_ground_truth,
                 predictions=predictions,
                 patient_label=patient_label,

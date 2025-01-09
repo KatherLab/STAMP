@@ -11,7 +11,7 @@ import h5py
 import numpy as np
 import pandas as pd
 import torch
-from jaxtyping import Bool, Float, Int
+from jaxtyping import Bool, Float, Integer
 from torch import Tensor
 from torch.utils.data import DataLoader, Dataset
 
@@ -37,7 +37,7 @@ _EncodedTarget: TypeAlias = Bool[Tensor, "category_is_hot"]  # noqa: F821
 
 # A batch of the above
 Bags: TypeAlias = Float[Tensor, "batch tile feature"]
-BagSizes: TypeAlias = Int[Tensor, "batch"]  # noqa: F821
+BagSizes: TypeAlias = Integer[Tensor, "batch"]  # noqa: F821
 EncodedTargets: TypeAlias = Bool[Tensor, "batch category_is_hot"]
 """The ground truth, encoded numerically (currently: one-hot)"""
 
