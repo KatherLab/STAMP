@@ -2,14 +2,13 @@
 In parts from https://github.com/lucidrains/vit-pytorch/blob/main/vit_pytorch/vit.py
 """
 
-# TODO implement masking
-
-from typing import Iterable, cast
+from collections.abc import Iterable
+from typing import cast
 
 import torch
 from beartype import beartype
 from einops import repeat
-from jaxtyping import Float, jaxtyped
+from jaxtyping import Bool, Float, jaxtyped
 from torch import Tensor, nn
 
 
@@ -42,10 +41,31 @@ class SelfAttention(nn.Module):
 
     @jaxtyped(typechecker=beartype)
     def forward(
-        self, x: Float[Tensor, "batch sequence proj_feature"]
+        self,
+        x: Float[Tensor, "batch sequence proj_feature"],
+        *,
+        attn_mask: Bool[Tensor, "batch sequence sequence"] | None,
     ) -> Float[Tensor, "batch sequence proj_feature"]:
+        """
+        Args:
+            attn_mask:
+                Which of the features to ignore during self-attention.
+                `attn_mask[b,q,k] == False` means that
+                query `q` of batch `b` can attend to key `k`.
+                If `attn_mask` is `None`, all tokens can attend to all others.
+        """
         x = self.norm(x)
-        attn_output, _ = self.mhsa(x, x, x, need_weights=False)
+        attn_output, _ = self.mhsa(
+            x,
+            x,
+            x,
+            need_weights=False,
+            attn_mask=(
+                attn_mask.repeat(self.mhsa.num_heads, 1, 1)
+                if attn_mask is not None
+                else None
+            ),
+        )
         return attn_output
 
 
@@ -83,10 +103,13 @@ class Transformer(nn.Module):
 
     @jaxtyped(typechecker=beartype)
     def forward(
-        self, x: Float[Tensor, "batch sequence proj_feature"]
+        self,
+        x: Float[Tensor, "batch sequence proj_feature"],
+        *,
+        attn_mask: Bool[Tensor, "batch sequence sequence"] | None,
     ) -> Float[Tensor, "batch sequence proj_feature"]:
         for attn, ff in cast(Iterable[tuple[nn.Module, nn.Module]], self.layers):
-            x_attn = attn(x)
+            x_attn = attn(x, attn_mask=attn_mask)
             x = x_attn + x
             x = ff(x) + x
 
@@ -127,18 +150,36 @@ class VisionTransformer(nn.Module):
 
     @jaxtyped(typechecker=beartype)
     def forward(
-        self, bags: Float[Tensor, "batch tile feature"]
+        self,
+        bags: Float[Tensor, "batch tile feature"],
+        *,
+        mask: Bool[Tensor, "batch tile"] | None,
     ) -> Float[Tensor, "batch logit"]:
         batch_size, _n_tiles, _n_features = bags.shape
 
-        # map input sequence to latent space of TransMIL
+        # Map input sequence to latent space of TransMIL
         bags = self.project_features(bags)
 
+        # Prepend a class token to every bag,
+        # include it in the mask.
+        # TODO should the tiles be able to refer to the class token? Test!
         cls_tokens = repeat(self.class_token, "d -> b 1 d", b=batch_size)
-        bags = torch.cat((cls_tokens, bags), dim=1)
+        bags = torch.cat([cls_tokens, bags], dim=1)
+        if mask is not None:
+            mask_with_class_token = torch.cat(
+                [torch.zeros(mask.shape[0], 1).type_as(mask), mask], dim=1
+            )
+            square_attn_mask = torch.einsum(
+                "bq,bk->bqk", mask_with_class_token, mask_with_class_token
+            )
+            # Don't allow other tiles to reference the class token
+            square_attn_mask[:, 1:, 0] = True
 
-        bags = self.transformer(bags)
+            bags = self.transformer(bags, attn_mask=square_attn_mask)
+        else:
+            bags = self.transformer(bags, attn_mask=None)
 
-        bags = bags[:, 0]  # only take class token
+        # Only take class token
+        bags = bags[:, 0]
 
         return self.mlp_head(bags)

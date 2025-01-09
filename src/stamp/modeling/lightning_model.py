@@ -5,6 +5,7 @@ from typing import TypeAlias
 
 import lightning
 import numpy as np
+import torch
 from jaxtyping import Float
 from packaging.version import Version
 from torch import Tensor, nn, optim
@@ -71,7 +72,7 @@ class LitVisionTransformer(lightning.LightningModule):
         # Check if version is compatible.
         # This should only happen when the model is loaded,
         # otherwise the default value will make these checks pass.
-        if stamp_version < Version("2.0.0.dev1"):
+        if stamp_version < Version("2.0.0.dev8"):
             # Update this as we change our model in incompatible ways!
             raise ValueError(
                 f"model has been built with stamp version {stamp_version} "
@@ -112,9 +113,14 @@ class LitVisionTransformer(lightning.LightningModule):
     ) -> Loss:
         _ = batch_idx  # unused
 
-        bags, _, targets = batch
+        bags, bag_sizes, targets = batch
 
-        logits = self.vision_transformer(bags)
+        max_possible_bag_size = bags.size(1)
+        mask = torch.arange(max_possible_bag_size).type_as(bag_sizes).unsqueeze(
+            0
+        ).repeat(len(bags), 1) >= bag_sizes.unsqueeze(1)
+
+        logits = self.vision_transformer(bags, mask=mask)
 
         loss = nn.functional.cross_entropy(
             logits, targets.type_as(logits), weight=self.class_weights.type_as(logits)
