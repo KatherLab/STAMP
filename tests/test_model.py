@@ -25,7 +25,8 @@ def test_vision_transformer_dims(
     )
 
     batch = torch.rand((batch_size, n_tiles, input_dim))
-    logits = model(batch)
+    mask = torch.rand((batch_size, n_tiles)) > 0.5
+    logits = model(batch, mask=mask)
     assert logits.shape == (batch_size, num_classes)
 
 
@@ -50,9 +51,18 @@ def test_inference_reproducibility(
     model = model.eval()
 
     batch = torch.rand((batch_size, n_tiles, input_dim))
+    mask = (
+        torch.arange(n_tiles).to(device=batch.device).unsqueeze(0).repeat(batch_size, 1)
+    ) >= torch.randint(1, n_tiles, (batch_size, 1))
 
     with torch.inference_mode():
-        logits1 = model(batch)
-        logits2 = model(batch)
+        logits1 = model(
+            batch,
+            mask=mask,
+        )
+        logits2 = model(
+            batch,
+            mask=mask,
+        )
 
     assert logits1.allclose(logits2)
