@@ -1,11 +1,12 @@
 import hashlib
 import math
-import os
 import warnings
 from collections.abc import Iterable
 from itertools import repeat
 from pathlib import Path
 from typing import Optional, TypeVar, cast
+
+from stamp.cache import STAMP_CACHE_DIR
 
 try:
     import gdown
@@ -33,14 +34,9 @@ def _file_digest(file: str | Path) -> str:
         return hashlib.file_digest(fp, "sha256").hexdigest()
 
 
-_stamp_cache_dir = (
-    Path(os.environ.get("XDG_CACHE_HOME") or (Path.home() / ".cache")) / "stamp"
-)
-
-
 def ctranspath(model_path: Path | None = None) -> Extractor:
-    model_path = model_path or _stamp_cache_dir / "ctranspath.pth"
-    if not model_path.exists():
+    model_path = model_path or STAMP_CACHE_DIR / "ctranspath.pth"
+    if not model_path.is_file():
         model_path.parent.mkdir(parents=True, exist_ok=True)
         gdown.download(
             "https://drive.google.com/u/0/uc?id=1DoDx_70_TLj98gTf6YTXnu4tFhsFocDX&export=download",

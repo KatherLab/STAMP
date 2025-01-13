@@ -1,5 +1,4 @@
 import hashlib
-import os
 import urllib.request
 from pathlib import Path
 from tempfile import NamedTemporaryFile
@@ -9,6 +8,7 @@ import torch
 from torch import nn
 from torchvision import transforms
 
+from stamp.cache import STAMP_CACHE_DIR
 from stamp.preprocessing.extractor import Extractor
 
 __author__ = "Marko van Treeck"
@@ -20,10 +20,6 @@ def _file_digest(file: str | Path) -> str:
     with open(file, "rb") as fp:
         return hashlib.file_digest(fp, "sha256").hexdigest()
 
-
-_stamp_cache_dir = (
-    Path(os.environ.get("XDG_CACHE_HOME") or (Path.home() / ".cache")) / "stamp"
-)
 
 _embed_sizes = {
     "dinov2_vits14": 384,
@@ -56,10 +52,9 @@ def _get_dino_bloom(model_path: Path, modelname: str = "dinov2_vits14") -> nn.Mo
 
 
 def dino_bloom() -> Extractor:
-    model_file = _stamp_cache_dir / "dinobloom-s.pth"
+    model_file = STAMP_CACHE_DIR / "dinobloom-s.pth"
 
     if not model_file.exists():
-        _stamp_cache_dir.mkdir(exist_ok=True, parents=True)
         with NamedTemporaryFile(dir=model_file.parent, delete=False) as tmp_model_file:
             urllib.request.urlretrieve(
                 "https://zenodo.org/records/10908163/files/DinoBloom-S.pth",
