@@ -40,7 +40,7 @@ class LitVisionTransformer(lightning.LightningModule):
         dropout: float,
         # Experimental features
         # TODO remove default values for stamp 3; they're only here for backwards compatibility
-        use_alibi: bool,  # = False,
+        use_alibi: bool = False,
         # Metadata used by other parts of stamp, but not by the model itself
         ground_truth_label: PandasLabel,
         train_patients: Iterable[PatientId],
@@ -202,7 +202,7 @@ class LitVisionTransformer(lightning.LightningModule):
 def _mask_from_bags(
     *,
     bags: Bags,
-    bag_sizes: BagSizes,  # noqa: F821
+    bag_sizes: BagSizes,
 ) -> Bool[Tensor, "batch tile"]:
     max_possible_bag_size = bags.size(1)
     mask = torch.arange(max_possible_bag_size).type_as(bag_sizes).unsqueeze(0).repeat(
