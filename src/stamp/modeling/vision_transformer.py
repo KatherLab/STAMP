@@ -44,12 +44,8 @@ class SelfAttention(nn.Module):
 
         if use_alibi:
             self.mhsa = MultiHeadALiBi(
+                embed_dim=dim,
                 num_heads=num_heads,
-                query_dim=dim,
-                key_dim=dim,
-                value_dim=dim,
-                inner_dim=dim // num_heads,
-                out_dim=dim,
             )
         else:
             self.mhsa = nn.MultiheadAttention(dim, num_heads, dropout, batch_first=True)

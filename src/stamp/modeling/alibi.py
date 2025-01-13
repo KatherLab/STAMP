@@ -1,4 +1,3 @@
-# %%
 import torch
 from jaxtyping import Bool, Float
 from torch import Tensor, nn
@@ -77,69 +76,66 @@ class MultiHeadALiBi(nn.Module):
     def __init__(
         self,
         *,
+        embed_dim: int,
         num_heads: int,
-        query_dim: int,
-        key_dim: int,
-        value_dim: int,
-        inner_dim: int,
-        out_dim: int,
     ) -> None:
         super().__init__()
 
+        if embed_dim % num_heads != 0:
+            raise ValueError(f"{embed_dim=} has to be divisible by {num_heads=}")
+
         self.query_encoders = nn.ModuleList(
             [
-                nn.Linear(in_features=query_dim, out_features=inner_dim)
+                nn.Linear(in_features=embed_dim, out_features=embed_dim // num_heads)
                 for _ in range(num_heads)
             ]
         )
         self.key_encoders = nn.ModuleList(
             [
-                nn.Linear(in_features=key_dim, out_features=inner_dim)
+                nn.Linear(in_features=embed_dim, out_features=embed_dim // num_heads)
                 for _ in range(num_heads)
             ]
         )
         self.value_encoders = nn.ModuleList(
             [
-                nn.Linear(in_features=value_dim, out_features=inner_dim)
+                nn.Linear(in_features=embed_dim, out_features=embed_dim // num_heads)
                 for _ in range(num_heads)
             ]
         )
 
         self.attentions = nn.ModuleList([_ALiBi() for _ in range(num_heads)])
 
-        self.fc = nn.Linear(in_features=inner_dim, out_features=out_dim)
+        self.fc = nn.Linear(in_features=embed_dim, out_features=embed_dim)
 
     def forward(
         self,
         *,
-        q: Float[Tensor, "batch query qk_feature"],
-        k: Float[Tensor, "batch key qk_feature"],
-        v: Float[Tensor, "batch key v_feature"],
+        q: Float[Tensor, "batch query mh_qk_feature"],
+        k: Float[Tensor, "batch key mh_qk_feature"],
+        v: Float[Tensor, "batch key hm_v_feature"],
         coords_q: Float[Tensor, "batch query coord"],
         coords_k: Float[Tensor, "batch key coord"],
         attn_mask: Bool[Tensor, "batch query key"] | None,
         alibi_mask: Bool[Tensor, "batch query key"],
-    ) -> Float[Tensor, "batch query v_feature"]:
-        stacked_attentions: Float[Tensor, "n_head batch query v_feature"] = self.fc(
-            torch.stack(
-                [
-                    att(
-                        q=q_enc(q),
-                        k=k_enc(k),
-                        v=v_enc(v),
-                        coords_q=coords_q,
-                        coords_k=coords_k,
-                        attn_mask=attn_mask,
-                        alibi_mask=alibi_mask,
-                    )
-                    for q_enc, k_enc, v_enc, att in zip(
-                        self.query_encoders,
-                        self.key_encoders,
-                        self.value_encoders,
-                        self.attentions,
-                        strict=True,
-                    )
-                ]
-            ),
+    ) -> Float[Tensor, "batch query mh_v_feature"]:
+        stacked_attentions = torch.stack(
+            [
+                att(
+                    q=q_enc(q),
+                    k=k_enc(k),
+                    v=v_enc(v),
+                    coords_q=coords_q,
+                    coords_k=coords_k,
+                    attn_mask=attn_mask,
+                    alibi_mask=alibi_mask,
+                )
+                for q_enc, k_enc, v_enc, att in zip(
+                    self.query_encoders,
+                    self.key_encoders,
+                    self.value_encoders,
+                    self.attentions,
+                    strict=True,
+                )
+            ]
         )
-        return stacked_attentions.permute(1, 0, 2, 3).flatten(start_dim=1, end_dim=2)
+        return self.fc(stacked_attentions.permute(1, 2, 0, 3).flatten(-2, -1))

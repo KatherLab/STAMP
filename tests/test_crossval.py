@@ -19,13 +19,14 @@ SlidePath: TypeAlias = Path
 FeatureDir: TypeAlias = Path
 
 
-def test_crossval(
+def test_crossval_integration(
     n_patients: int = 800,
     max_slides_per_patient: int = 3,
     min_tiles_per_slide: int = 8,
     max_tiles_per_slide: int = 2**10,
     feat_dim: int = 25,
     n_categories: int = 3,
+    use_alibi: bool = False,
 ) -> None:
     random.seed(0)
     torch.manual_seed(0)
@@ -64,7 +65,7 @@ def test_crossval(
             n_splits=3,
             # Experimental features
             use_vary_precision_transform=False,
-            use_alibi=False,
+            use_alibi=use_alibi,
         )
 
 
