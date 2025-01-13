@@ -171,11 +171,14 @@ def _predict(
         devices=1,  # Needs to be 1, otherwise half the predictions are missing for some reason
         logger=False,
     )
-    predictions = torch.concat(
-        cast(
-            list[torch.Tensor],
-            trainer.predict(model, test_dl),
-        )
+    predictions = torch.softmax(
+        torch.concat(
+            cast(
+                list[torch.Tensor],
+                trainer.predict(model, test_dl),
+            )
+        ),
+        dim=1,
     )
 
     return dict(zip(patient_to_data, predictions, strict=True))
@@ -197,9 +200,7 @@ def _to_prediction_df(
                 ground_truth_label: patient_to_ground_truth.get(patient_id),
                 "pred": categories[int(prediction.argmax())],
                 **{
-                    f"{ground_truth_label}_{category}": torch.softmax(
-                        prediction, dim=0
-                    )[i_cat].item()
+                    f"{ground_truth_label}_{category}": prediction[i_cat].item()
                     for i_cat, category in enumerate(categories)
                 },
                 "loss": (

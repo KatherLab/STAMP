@@ -65,5 +65,5 @@ def test_backwards_compatability() -> None:
     )
 
     assert torch.allclose(
-        predictions["TestPatient"], torch.tensor([-1.7769, 1.5988]), atol=1e-4
+        predictions["TestPatient"], torch.tensor([0.0331, 0.9669]), atol=1e-4
     ), f"prediction does not match that of stamp {model.hparams['stamp_version']}"
