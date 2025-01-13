@@ -2,7 +2,7 @@ from enum import StrEnum
 from pathlib import Path
 
 import torch
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 from torch._prims_common import DeviceLikeType
 
 from stamp.preprocessing.tiling import Microns, TilePixels
@@ -22,6 +22,8 @@ class ExtractorName(StrEnum):
 
 
 class PreprocessingConfig(BaseModel, arbitrary_types_allowed=True):
+    model_config = ConfigDict(extra="forbid")
+
     output_dir: Path
     wsi_dir: Path
     cache_dir: Path | None = None
@@ -32,12 +34,12 @@ class PreprocessingConfig(BaseModel, arbitrary_types_allowed=True):
     accelerator: DeviceLikeType = "cuda" if torch.cuda.is_available() else "cpu"
 
     # Background rejection
-    brightness_cutoff: int | None = Field(240, ge=0, le=255)
+    brightness_cutoff: int | None = Field(240, gt=0, lt=255)
     """Any tile brighter than this will be discarded as probable background.
     If set to `None`, the brightness-based background rejection is disabled.
     """
 
-    canny_cutoff: float | None = Field(0.02, ge=0, le=1)
+    canny_cutoff: float | None = Field(0.02, gt=0.0, lt=1.0)
     """Any tile with a lower ratio of pixels classified as "edges" than this
     will be rejected.
     If set to `None`, brightness-based rejection is disabled.

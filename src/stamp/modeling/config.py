@@ -2,12 +2,14 @@ import os
 from pathlib import Path
 
 import torch
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from stamp.modeling.data import PandasLabel
 
 
 class TrainConfig(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     output_dir: Path = Field(description="The directory to save the results to")
 
     clini_table: Path = Field(description="Excel or CSV to read clinical data from")
@@ -44,6 +46,8 @@ class CrossvalConfig(TrainConfig):
 
 
 class DeploymentConfig(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     output_dir: Path
 
     checkpoint_paths: list[Path]

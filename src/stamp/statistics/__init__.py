@@ -4,7 +4,7 @@ from typing import NewType, Sequence
 import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 from stamp.modeling.data import PandasLabel
 from stamp.statistics.categorical import categorical_aggregated_
@@ -31,6 +31,8 @@ def _read_table(file: Path, **kwargs) -> pd.DataFrame:
 
 
 class StatsConfig(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     output_dir: Path
 
     pred_csvs: list[Path]
