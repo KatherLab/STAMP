@@ -54,7 +54,7 @@ def _run_cli(args: argparse.Namespace) -> None:
             print(yaml.dump(config.model_dump(mode="json")))
 
         case "preprocess":
-            from stamp.preprocessing.extract import extract_
+            from stamp.preprocessing import extract_
 
             if config.preprocessing is None:
                 raise ValueError("no preprocessing configuration supplied")

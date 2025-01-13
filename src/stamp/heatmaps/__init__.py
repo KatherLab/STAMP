@@ -17,7 +17,7 @@ from torch.func import jacrev  # pyright: ignore[reportPrivateImportUsage]
 
 from stamp.modeling.lightning_model import LitVisionTransformer
 from stamp.modeling.vision_transformer import VisionTransformer
-from stamp.preprocessing.extract import supported_extensions
+from stamp.preprocessing import supported_extensions
 from stamp.preprocessing.tiling import SlidePixels, get_slide_mpp_
 
 logger = logging.getLogger("stamp")
