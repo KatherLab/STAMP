@@ -8,7 +8,7 @@ from concurrent import futures
 from dataclasses import dataclass
 from pathlib import Path
 from tempfile import NamedTemporaryFile
-from typing import Generic, NamedTuple, NewType, TypedDict, TypeVar, cast
+from typing import Final, Generic, NamedTuple, NewType, TypedDict, TypeVar, cast
 from zipfile import ZipFile
 
 import cv2
@@ -27,17 +27,17 @@ _logger = logging.getLogger("stamp")
 # Digest of _this_ file, used for unambiguously identifying the tiling procedure.
 # As a consequence, all details pertaining to tiling should be limited to _this_ file.
 with open(__file__, "rb") as this_file_fp:
-    code_hash = hashlib.file_digest(this_file_fp, "sha256").hexdigest()
+    _CODE_HASH: Final[str] = hashlib.file_digest(this_file_fp, "sha256").hexdigest()
 
 
 Microns = NewType("Microns", float)
 """Micrometers, usually referring to the tissue on the slide"""
 
 SlidePixels = NewType("SlidePixels", int)
-"""Pixels of the WSI scan at largest magnification"""
+"""Pixels of the WSI scan at largest magnification (i.e. coordinates used by OpenSlide)"""
 
 TilePixels = NewType("TilePixels", int)
-"""Pixels on the Tile"""
+"""Pixels after resizing, i.e. how they appear on the final tile"""
 
 _Unit = TypeVar("_Unit")
 
@@ -91,7 +91,7 @@ def tiles_with_cache(
         "tile_size_px": tile_size_px,
         "max_supertile_size_slide_px": max_supertile_size_slide_px,
         "brightness_cutoff": brightness_cutoff,
-        "code_sha256": code_hash,
+        "code_sha256": _CODE_HASH,
     }
     tiler_params_hash = hashlib.sha256(
         json.dumps(tiler_params, sort_keys=True).encode()
