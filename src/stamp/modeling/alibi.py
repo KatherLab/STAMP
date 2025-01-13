@@ -14,9 +14,9 @@ class _RunningMeanScaler(nn.Module):
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         if self.training:
             # Welford's algorithm
-            self.running_mean = (
-                self.running_mean + (x - self.running_mean) / self.items_so_far
-            ).mean()
+            self.running_mean.copy_(
+                (self.running_mean + (x - self.running_mean) / self.items_so_far).mean()
+            )
             self.items_so_far += 1
 
         return x / self.running_mean

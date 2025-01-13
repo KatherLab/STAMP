@@ -28,6 +28,7 @@ def test_alibi_shapes(embed_dim: int = 32, num_heads: int = 8) -> None:
         alibi_mask=torch.zeros((2, 23, 34), dtype=torch.bool),
     )
 
+
 def test_alibi_integration() -> None:
     test_crossval_integration(
         use_alibi=True,

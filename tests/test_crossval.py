@@ -107,12 +107,14 @@ def _create_random_dataset(
             ] = patient_id
 
     clini_df = pd.DataFrame(
-        patient_to_ground_truth.items(), columns=["patient", "ground_truth"]
+        patient_to_ground_truth.items(),
+        columns=["patient", "ground_truth"],  # pyright: ignore[reportArgumentType]
     )
     clini_df.to_csv(clini_path, index=False)
 
     slide_df = pd.DataFrame(
-        slide_path_to_patient.items(), columns=["slide_path", "patient"]
+        slide_path_to_patient.items(),
+        columns=["slide_path", "patient"],  # pyright: ignore[reportArgumentType]
     )
     slide_df.to_csv(slide_path, index=False)
 
