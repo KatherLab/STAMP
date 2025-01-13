@@ -1,4 +1,3 @@
-# %%
 import hashlib
 import logging
 from collections.abc import Callable
@@ -6,7 +5,7 @@ from functools import cache
 from pathlib import Path
 from random import shuffle
 from tempfile import NamedTemporaryFile
-from typing import Iterator, Literal, assert_never
+from typing import Iterator, assert_never
 
 import h5py
 import numpy as np
@@ -19,6 +18,7 @@ from torch._prims_common import DeviceLikeType
 from torch.utils.data import DataLoader, IterableDataset
 from tqdm import tqdm
 
+from stamp.preprocessing.config import ExtractorName
 from stamp.preprocessing.extractor import Extractor
 from stamp.preprocessing.tiling import (
     Microns,
@@ -116,17 +116,7 @@ def extract_(
     wsi_dir: Path,
     output_dir: Path,
     cache_dir: Path | None,
-    extractor: (
-        Literal[
-            "ctranspath",
-            "mahmood-conch",
-            "mahmood-uni",
-            "dino-bloom",
-            "virchow2",
-            "empty",
-        ]
-        | Extractor
-    ),
+    extractor: ExtractorName | Extractor,
     tile_size_px: TilePixels,
     tile_size_um: Microns,
     max_workers: int,
@@ -134,41 +124,42 @@ def extract_(
     brightness_cutoff: int | None,
     canny_cutoff: float | None,
 ) -> None:
-    if extractor == "ctranspath":
-        from stamp.preprocessing.extractor.ctranspath import ctranspath
+    match extractor:
+        case ExtractorName.CTRANSPATH:
+            from stamp.preprocessing.extractor.ctranspath import ctranspath
 
-        extractor = ctranspath()
+            extractor = ctranspath()
 
-    elif extractor == "mahmood-conch":
-        from stamp.preprocessing.extractor.conch import conch
+        case ExtractorName.CONCH:
+            from stamp.preprocessing.extractor.conch import conch
 
-        extractor = conch()
+            extractor = conch()
 
-    elif extractor == "mahmood-uni":
-        from stamp.preprocessing.extractor.uni import uni
+        case ExtractorName.UNI:
+            from stamp.preprocessing.extractor.uni import uni
 
-        extractor = uni()
+            extractor = uni()
 
-    elif extractor == "dino-bloom":
-        from stamp.preprocessing.extractor.dinobloom import dino_bloom
+        case ExtractorName.DINO_BLOOM:
+            from stamp.preprocessing.extractor.dinobloom import dino_bloom
 
-        extractor = dino_bloom()
+            extractor = dino_bloom()
 
-    elif extractor == "virchow2":
-        from stamp.preprocessing.extractor.virchow2 import virchow2
+        case ExtractorName.VIRCHOW2:
+            from stamp.preprocessing.extractor.virchow2 import virchow2
 
-        extractor = virchow2()
+            extractor = virchow2()
 
-    elif extractor == "empty":
-        from stamp.preprocessing.extractor.empty import empty
+        case ExtractorName.EMPTY:
+            from stamp.preprocessing.extractor.empty import empty
 
-        extractor = empty()
+            extractor = empty()
 
-    elif isinstance(extractor, Extractor):
-        extractor = extractor
+        case Extractor():
+            extractor = extractor
 
-    else:
-        assert_never(extractor)  # This should be unreachable
+        case _ as unreachable:
+            assert_never(unreachable)
 
     model = extractor.model.to(accelerator).eval()
     extractor_id = f"{extractor.identifier}-{_get_preprocessing_code_hash()[:8]}"
