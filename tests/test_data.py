@@ -6,6 +6,8 @@ from pathlib import Path
 import h5py
 import pytest
 import torch
+from jaxtyping import Float
+from torch import Tensor
 from torch.utils.data import DataLoader
 
 from stamp.modeling.data import (
@@ -78,9 +80,21 @@ def test_dataset(
 ) -> None:
     ds = BagDataset(
         bags=[
-            [_make_feature_file(torch.rand((12, dim_feats)))],
-            [_make_feature_file(torch.rand((1, dim_feats)))],
-            [_make_feature_file(torch.rand((34, dim_feats)))],
+            [
+                _make_feature_file(
+                    feats=torch.rand((12, dim_feats)), coords=torch.rand(12, 2)
+                )
+            ],
+            [
+                _make_feature_file(
+                    feats=torch.rand((1, dim_feats)), coords=torch.rand(1, 2)
+                )
+            ],
+            [
+                _make_feature_file(
+                    feats=torch.rand((34, dim_feats)), coords=torch.rand(34, 2)
+                )
+            ],
         ],
         bag_size=bag_size,
         ground_truths=torch.rand(3, 4) > 0.5,
@@ -90,21 +104,26 @@ def test_dataset(
     assert len(ds) == 3
 
     # Test single dataset item
-    item_bag, item_bag_size, _ = ds[0]
+    item_bag, coords, item_bag_size, _ = ds[0]
     assert item_bag.shape == (bag_size, dim_feats)
+    assert coords.shape == (bag_size, 2)
     assert item_bag_size <= bag_size
 
     # Test batching
     dl = DataLoader(ds, batch_size=batch_size, shuffle=False)
-    bag, bag_sizes, _ = next(iter(dl))
+    bag, coords, bag_sizes, _ = next(iter(dl))
     assert bag.shape == (batch_size, bag_size, dim_feats)
+    assert coords.shape == (batch_size, bag_size, 2)
     assert (bag_sizes <= bag_size).all()
 
 
-def _make_feature_file(feats: torch.Tensor) -> io.BytesIO:
+def _make_feature_file(
+    *, feats: Float[Tensor, "tile feat_d"], coords: Float[Tensor, "tile 2"]
+) -> io.BytesIO:
     """Creates a feature file from the given data"""
     file = io.BytesIO()
     with h5py.File(file, "w") as h5:
         h5["feats"] = feats
+        h5["coords"] = coords
 
     return file

@@ -106,7 +106,9 @@ def _run_cli(args: argparse.Namespace) -> None:
                 max_epochs=config.training.max_epochs,
                 patience=config.training.patience,
                 accelerator=config.training.accelerator,
+                # Experimental features
                 use_vary_precision_transform=config.training.use_vary_precision_transform,
+                use_alibi=config.training.use_alibi,
             )
 
         case "deploy":
@@ -164,6 +166,7 @@ def _run_cli(args: argparse.Namespace) -> None:
                 accelerator=config.crossval.accelerator,
                 # Experimental Features
                 use_vary_precision_transform=config.crossval.use_vary_precision_transform,
+                use_alibi=config.crossval.use_alibi,
             )
 
         case "statistics":

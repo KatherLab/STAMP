@@ -34,12 +34,14 @@ _Bag: TypeAlias = Float[Tensor, "tile feature"]
 BagSize: TypeAlias = int
 _EncodedTarget: TypeAlias = Bool[Tensor, "category_is_hot"]  # noqa: F821
 """The ground truth, encoded numerically (currently: one-hot)"""
+_Coordinates: TypeAlias = Float[Tensor, "tile 2"]
 
 # A batch of the above
 Bags: TypeAlias = Float[Tensor, "batch tile feature"]
 BagSizes: TypeAlias = Integer[Tensor, "batch"]  # noqa: F821
 EncodedTargets: TypeAlias = Bool[Tensor, "batch category_is_hot"]
 """The ground truth, encoded numerically (currently: one-hot)"""
+CoordinatesBatch: TypeAlias = Float[Tensor, "batch tile 2"]
 
 PandasLabel: TypeAlias = str
 
@@ -64,7 +66,10 @@ def dataloader_from_patient_data(
     shuffle: bool,
     num_workers: int,
     transform: Callable[[Tensor], Tensor] | None,
-) -> tuple[DataLoader[tuple[Bags, BagSizes, EncodedTargets]], Sequence[Category]]:
+) -> tuple[
+    DataLoader[tuple[Bags, CoordinatesBatch, BagSizes, EncodedTargets]],
+    Sequence[Category],
+]:
     """Creates a dataloader from patient data, encoding the ground truths.
 
     Args:
@@ -87,7 +92,7 @@ def dataloader_from_patient_data(
 
     return (
         cast(
-            DataLoader[tuple[Bags, BagSizes, EncodedTargets]],
+            DataLoader[tuple[Bags, CoordinatesBatch, BagSizes, EncodedTargets]],
             DataLoader(
                 ds,
                 batch_size=batch_size,
@@ -101,17 +106,18 @@ def dataloader_from_patient_data(
 
 
 def _collate_to_tuple(
-    items: list[tuple[_Bag, BagSize, _EncodedTarget]],
-) -> tuple[Bags, BagSizes, EncodedTargets]:
-    bags = torch.stack([bag for bag, _, _ in items])
-    bag_sizes = torch.tensor([bagsize for _, bagsize, _ in items])
-    encoded_targets = torch.stack([encoded_target for _, _, encoded_target in items])
+    items: list[tuple[_Bag, _Coordinates, BagSize, _EncodedTarget]],
+) -> tuple[Bags, CoordinatesBatch, BagSizes, EncodedTargets]:
+    bags = torch.stack([bag for bag, _, _, _ in items])
+    coords = torch.stack([coord for _, coord, _, _ in items])
+    bag_sizes = torch.tensor([bagsize for _, _, bagsize, _ in items])
+    encoded_targets = torch.stack([encoded_target for _, _, _, encoded_target in items])
 
-    return (bags, bag_sizes, encoded_targets)
+    return (bags, coords, bag_sizes, encoded_targets)
 
 
 @dataclass
-class BagDataset(Dataset[tuple[_Bag, BagSize, _EncodedTarget]]):
+class BagDataset(Dataset[tuple[_Bag, _Coordinates, BagSize, _EncodedTarget]]):
     """A dataset of bags of instances."""
 
     _: KW_ONLY
@@ -146,15 +152,20 @@ class BagDataset(Dataset[tuple[_Bag, BagSize, _EncodedTarget]]):
     def __len__(self) -> int:
         return len(self.bags)
 
-    def __getitem__(self, index: int) -> tuple[_Bag, BagSize, _EncodedTarget]:
+    def __getitem__(
+        self, index: int
+    ) -> tuple[_Bag, _Coordinates, BagSize, _EncodedTarget]:
         # Collect all the features
         feats = []
+        coords = []
         for bag_file in self.bags[index]:
             with h5py.File(bag_file, "r") as f:
                 feats.append(
                     torch.from_numpy(f["feats"][:])  # pyright: ignore[reportIndexIssue]
                 )
+                coords.append(torch.from_numpy(f["coords"][:]))  # pyright: ignore[reportIndexIssue]
         feats = torch.concat(feats).float()
+        coords = torch.concat(coords).float()
 
         if self.transform is not None:
             feats = self.transform(feats)
@@ -162,18 +173,21 @@ class BagDataset(Dataset[tuple[_Bag, BagSize, _EncodedTarget]]):
         # Sample a subset, if required
         if self.bag_size is not None:
             return (
-                *_to_fixed_size_bag(feats, bag_size=self.bag_size),
+                *_to_fixed_size_bag(feats, coords=coords, bag_size=self.bag_size),
                 self.ground_truths[index],
             )
         else:
             return (
                 feats,
+                coords,
                 len(feats),
                 self.ground_truths[index],
             )
 
 
-def _to_fixed_size_bag(bag: _Bag, bag_size: BagSize) -> tuple[_Bag, BagSize]:
+def _to_fixed_size_bag(
+    bag: _Bag, coords: _Coordinates, bag_size: BagSize
+) -> tuple[_Bag, _Coordinates, BagSize]:
     """Samples a fixed-size bag of tiles from an arbitrary one.
 
     If the original bag did not have enough tiles,
@@ -183,6 +197,7 @@ def _to_fixed_size_bag(bag: _Bag, bag_size: BagSize) -> tuple[_Bag, BagSize]:
     n_tiles, _dim_feats = bag.shape
     bag_idxs = torch.randperm(n_tiles)[:bag_size]
     bag_samples = bag[bag_idxs]
+    coord_samples = coords[bag_idxs]
 
     # zero-pad if we don't have enough samples
     zero_padded_bag = torch.cat(
@@ -191,7 +206,13 @@ def _to_fixed_size_bag(bag: _Bag, bag_size: BagSize) -> tuple[_Bag, BagSize]:
             torch.zeros(bag_size - bag_samples.shape[0], bag_samples.shape[1]),
         )
     )
-    return zero_padded_bag, min(bag_size, len(bag))
+    zero_padded_coord = torch.cat(
+        (
+            coord_samples,
+            torch.zeros(bag_size - coord_samples.shape[0], coord_samples.shape[1]),
+        )
+    )
+    return zero_padded_bag, zero_padded_coord, min(bag_size, len(bag))
 
 
 def patient_to_ground_truth_from_clini_table_(

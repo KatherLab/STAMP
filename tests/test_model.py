@@ -22,11 +22,13 @@ def test_vision_transformer_dims(
         n_heads=n_heads,
         dim_feedforward=135,
         dropout=0.12,
+        use_alibi=False,
     )
 
-    batch = torch.rand((batch_size, n_tiles, input_dim))
+    bags = torch.rand((batch_size, n_tiles, input_dim))
+    coords = torch.rand((batch_size, n_tiles, 2))
     mask = torch.rand((batch_size, n_tiles)) > 0.5
-    logits = model(batch, mask=mask)
+    logits = model.forward(bags, coords=coords, mask=mask)
     assert logits.shape == (batch_size, num_classes)
 
 
@@ -46,22 +48,26 @@ def test_inference_reproducibility(
         n_heads=n_heads,
         dim_feedforward=135,
         dropout=0.12,
+        use_alibi=False,
     )
 
     model = model.eval()
 
-    batch = torch.rand((batch_size, n_tiles, input_dim))
+    bags = torch.rand((batch_size, n_tiles, input_dim))
+    coords = torch.rand((batch_size, n_tiles, 2))
     mask = (
-        torch.arange(n_tiles).to(device=batch.device).unsqueeze(0).repeat(batch_size, 1)
+        torch.arange(n_tiles).to(device=bags.device).unsqueeze(0).repeat(batch_size, 1)
     ) >= torch.randint(1, n_tiles, (batch_size, 1))
 
     with torch.inference_mode():
-        logits1 = model(
-            batch,
+        logits1 = model.forward(
+            bags,
+            coords=coords,
             mask=mask,
         )
-        logits2 = model(
-            batch,
+        logits2 = model.forward(
+            bags,
+            coords=coords,
             mask=mask,
         )
 

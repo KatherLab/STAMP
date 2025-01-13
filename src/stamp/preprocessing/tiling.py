@@ -195,9 +195,9 @@ def _tiles(
         brightness_cutoff=brightness_cutoff,
     ):
         assert supertile.size[0] == supertile.size[1], "supertile needs to be square"
-        assert (
-            supertile.size[0] % tile_size_px == 0
-        ), "supertile needs to perfectly divide into tiles"
+        assert supertile.size[0] % tile_size_px == 0, (
+            "supertile needs to perfectly divide into tiles"
+        )
         no_tiles = supertile.size[0] // tile_size_px
         assert round(supertile_size_um / no_tiles - tile_size_um) == 0
 

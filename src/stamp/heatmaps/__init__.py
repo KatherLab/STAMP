@@ -273,9 +273,9 @@ def heatmaps_(
                     )
                 )
 
-        assert (
-            attention is not None
-        ), "attention should have been set in the for loop above"
+        assert attention is not None, (
+            "attention should have been set in the for loop above"
+        )
 
         # Generate overview
         thumb = _show_thumb(

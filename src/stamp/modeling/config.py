@@ -36,6 +36,7 @@ class TrainConfig(BaseModel):
 
     # Experimental features
     use_vary_precision_transform: bool = False
+    use_alibi: bool = False
 
 
 class CrossvalConfig(TrainConfig):

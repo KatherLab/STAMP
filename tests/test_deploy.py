@@ -5,6 +5,8 @@ import numpy as np
 import numpy.typing as npt
 import pytest
 import torch
+from jaxtyping import Float
+from torch import Tensor
 
 from stamp.modeling.data import GroundTruth, PatientData, PatientId
 from stamp.modeling.deploy import _predict, _to_prediction_df
@@ -29,12 +31,17 @@ def test_predict(
         ground_truth_label="test",
         train_patients=np.array(["pat1", "pat2"]),
         valid_patients=np.array(["pat3", "pat4"]),
+        use_alibi=False,
     )
 
     patient_to_data = {
         PatientId("pat5"): PatientData(
             ground_truth=GroundTruth("foo"),
-            feature_files={_make_feature_file(torch.rand(23, dim_input))},
+            feature_files={
+                _make_feature_file(
+                    feats=torch.rand(23, dim_input), coords=torch.rand(23, 2)
+                )
+            },
         )
     }
 
@@ -46,21 +53,29 @@ def test_predict(
     )
 
     assert len(predictions) == len(patient_to_data)
-    assert predictions[PatientId("pat5")].shape == torch.Size(
-        [3]
-    ), "expected one score per class"
+    assert predictions[PatientId("pat5")].shape == torch.Size([3]), (
+        "expected one score per class"
+    )
 
     # Check if scores consistent between runs
 
     more_patients_to_data = {
         PatientId("pat6"): PatientData(
             ground_truth=GroundTruth("bar"),
-            feature_files={_make_feature_file(torch.rand(12, dim_input))},
+            feature_files={
+                _make_feature_file(
+                    feats=torch.rand(12, dim_input), coords=torch.rand(12, 2)
+                )
+            },
         ),
         **patient_to_data,
         PatientId("pat7"): PatientData(
             ground_truth=GroundTruth("baz"),
-            feature_files={_make_feature_file(torch.rand(56, dim_input))},
+            feature_files={
+                _make_feature_file(
+                    feats=torch.rand(56, dim_input), coords=torch.rand(56, 2)
+                )
+            },
         ),
     }
 
@@ -80,11 +95,14 @@ def test_predict(
     ), "the same inputs should repeatedly yield the same results"
 
 
-def _make_feature_file(feats: torch.Tensor) -> io.BytesIO:
+def _make_feature_file(
+    *, feats: Float[Tensor, "tile feat_d"], coords: Float[Tensor, "tile 2"]
+) -> io.BytesIO:
     """Creates a feature file from the given data"""
     file = io.BytesIO()
     with h5py.File(file, "w") as h5:
         h5["feats"] = feats
+        h5["coords"] = coords
 
     return file
 
@@ -103,6 +121,7 @@ def test_to_prediction_df() -> None:
         ground_truth_label="test",
         train_patients=np.array(["pat1", "pat2"]),
         valid_patients=np.array(["pat3", "pat4"]),
+        use_alibi=False,
     )
 
     preds_df = _to_prediction_df(

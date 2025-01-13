@@ -16,6 +16,7 @@ from stamp.modeling.data import (
     Bags,
     BagSizes,
     Category,
+    CoordinatesBatch,
     EncodedTargets,
     PandasLabel,
     PatientId,
@@ -37,6 +38,9 @@ class LitVisionTransformer(lightning.LightningModule):
         n_heads: int,
         n_layers: int,
         dropout: float,
+        # Experimental features
+        # TODO remove default values for stamp 3; they're only here for backwards compatibility
+        use_alibi: bool,  # = False,
         # Metadata used by other parts of stamp, but not by the model itself
         ground_truth_label: PandasLabel,
         train_patients: Iterable[PatientId],
@@ -66,6 +70,7 @@ class LitVisionTransformer(lightning.LightningModule):
             n_heads=n_heads,
             dim_feedforward=dim_feedforward,
             dropout=dropout,
+            use_alibi=use_alibi,
         )
         self.class_weights = category_weights
 
@@ -109,15 +114,15 @@ class LitVisionTransformer(lightning.LightningModule):
         self,
         *,
         step_name: str,
-        batch: tuple[Bags, BagSizes, EncodedTargets],
+        batch: tuple[Bags, CoordinatesBatch, BagSizes, EncodedTargets],
         batch_idx: int,
     ) -> Loss:
         _ = batch_idx  # unused
 
-        bags, bag_sizes, targets = batch
+        bags, coords, bag_sizes, targets = batch
 
         logits = self.vision_transformer(
-            bags, mask=_mask_from_bags(bags=bags, bag_sizes=bag_sizes)
+            bags, coords=coords, mask=_mask_from_bags(bags=bags, bag_sizes=bag_sizes)
         )
 
         loss = nn.functional.cross_entropy(
@@ -147,7 +152,9 @@ class LitVisionTransformer(lightning.LightningModule):
         return loss
 
     def training_step(
-        self, batch: tuple[Bags, BagSizes, EncodedTargets], batch_idx: int
+        self,
+        batch: tuple[Bags, CoordinatesBatch, BagSizes, EncodedTargets],
+        batch_idx: int,
     ) -> Loss:
         return self._step(
             step_name="training",
@@ -156,7 +163,9 @@ class LitVisionTransformer(lightning.LightningModule):
         )
 
     def validation_step(
-        self, batch: tuple[Bags, BagSizes, EncodedTargets], batch_idx: int
+        self,
+        batch: tuple[Bags, CoordinatesBatch, BagSizes, EncodedTargets],
+        batch_idx: int,
     ) -> Loss:
         return self._step(
             step_name="validation",
@@ -165,7 +174,9 @@ class LitVisionTransformer(lightning.LightningModule):
         )
 
     def test_step(
-        self, batch: tuple[Bags, BagSizes, EncodedTargets], batch_idx: int
+        self,
+        batch: tuple[Bags, CoordinatesBatch, BagSizes, EncodedTargets],
+        batch_idx: int,
     ) -> Loss:
         return self._step(
             step_name="test",
@@ -174,16 +185,19 @@ class LitVisionTransformer(lightning.LightningModule):
         )
 
     def predict_step(
-        self, batch: tuple[Bags, BagSizes, EncodedTargets], batch_idx: int
+        self,
+        batch: tuple[Bags, CoordinatesBatch, BagSizes, EncodedTargets],
+        batch_idx: int,
     ) -> Float[Tensor, "batch logit"]:
-        bags, bag_sizes, _ = batch
+        bags, coords, bag_sizes, _ = batch
         return self.vision_transformer(
-            bags, mask=_mask_from_bags(bags=bags, bag_sizes=bag_sizes)
+            bags, coords=coords, mask=_mask_from_bags(bags=bags, bag_sizes=bag_sizes)
         )
 
     def configure_optimizers(self) -> optim.Optimizer:
         optimizer = optim.Adam(self.parameters(), lr=1e-3)
         return optimizer
+
 
 def _mask_from_bags(
     *,

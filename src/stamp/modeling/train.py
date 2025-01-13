@@ -17,6 +17,7 @@ from torch.utils.data.dataloader import DataLoader
 from stamp.modeling.data import (
     BagDataset,
     Category,
+    CoordinatesBatch,
     GroundTruth,
     PandasLabel,
     PatientData,
@@ -59,6 +60,7 @@ def train_categorical_model_(
     accelerator: str | Accelerator,
     # Experimental features
     use_vary_precision_transform: bool,
+    use_alibi: bool,
 ) -> None:
     """Trains a model.
 
@@ -127,6 +129,7 @@ def train_categorical_model_(
             if use_vary_precision_transform
             else None
         ),
+        use_alibi=use_alibi,
     )
     train_model_(
         output_dir=output_dir,
@@ -143,8 +146,8 @@ def train_model_(
     *,
     output_dir: Path,
     model: LitVisionTransformer,
-    train_dl: DataLoader[tuple[Bags, BagSizes, EncodedTargets]],
-    valid_dl: DataLoader[tuple[Bags, BagSizes, EncodedTargets]],
+    train_dl: DataLoader[tuple[Bags, CoordinatesBatch, BagSizes, EncodedTargets]],
+    valid_dl: DataLoader[tuple[Bags, CoordinatesBatch, BagSizes, EncodedTargets]],
     max_epochs: int,
     patience: int,
     accelerator: str | Accelerator,
@@ -196,6 +199,7 @@ def setup_model_for_training(
     batch_size: int,
     num_workers: int,
     train_transform: Callable[[torch.Tensor], torch.Tensor] | None,
+    use_alibi: bool,
     # Metadata, has no effect on model training
     ground_truth_label: PandasLabel,
     clini_table: Path,
@@ -203,8 +207,8 @@ def setup_model_for_training(
     feature_dir: Path,
 ) -> tuple[
     LitVisionTransformer,
-    DataLoader[tuple[Bags, BagSizes, EncodedTargets]],
-    DataLoader[tuple[Bags, BagSizes, EncodedTargets]],
+    DataLoader[tuple[Bags, CoordinatesBatch, BagSizes, EncodedTargets]],
+    DataLoader[tuple[Bags, CoordinatesBatch, BagSizes, EncodedTargets]],
 ]:
     """Creates a model and dataloaders for training"""
 
@@ -252,8 +256,8 @@ def setup_model_for_training(
         )
 
     # Sample one bag to infer the input dimensions of the model
-    bags, bag_sizes, targets = cast(
-        tuple[Bags, BagSizes, EncodedTargets], next(iter(train_dl))
+    bags, coords, bag_sizes, targets = cast(
+        tuple[Bags, CoordinatesBatch, BagSizes, EncodedTargets], next(iter(train_dl))
     )
     _, _, dim_feats = bags.shape
 
@@ -284,6 +288,7 @@ def setup_model_for_training(
         n_heads=8,
         n_layers=2,
         dropout=0.25,
+        use_alibi=use_alibi,
         # Metadata, has no effect on model training
         ground_truth_label=ground_truth_label,
         train_patients=train_patients,

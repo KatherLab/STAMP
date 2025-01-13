@@ -60,6 +60,7 @@ def categorical_crossval_(
     accelerator: str | Accelerator,
     # Experimental features
     use_vary_precision_transform: bool,
+    use_alibi: bool,
 ) -> None:
     patient_to_ground_truth: Final[dict[PatientId, GroundTruth]] = (
         patient_to_ground_truth_from_clini_table_(
@@ -165,6 +166,7 @@ def categorical_crossval_(
                     if use_vary_precision_transform
                     else None
                 ),
+                use_alibi=use_alibi,
             )
             model = train_model_(
                 output_dir=split_dir,

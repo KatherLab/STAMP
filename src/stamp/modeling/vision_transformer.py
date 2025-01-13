@@ -3,13 +3,15 @@ In parts from https://github.com/lucidrains/vit-pytorch/blob/main/vit_pytorch/vi
 """
 
 from collections.abc import Iterable
-from typing import cast
+from typing import assert_never, cast
 
 import torch
 from beartype import beartype
 from einops import repeat
 from jaxtyping import Bool, Float, jaxtyped
 from torch import Tensor, nn
+
+from stamp.modeling.alibi import MultiHeadALiBi
 
 
 def feed_forward(
@@ -30,21 +32,37 @@ def feed_forward(
 class SelfAttention(nn.Module):
     def __init__(
         self,
+        *,
         dim: int,
-        heads: int = 8,
-        dropout: float = 0.0,
+        num_heads: int,
+        dropout: float,
+        use_alibi: bool,
     ) -> None:
         super().__init__()
-        self.heads = heads
+        self.heads = num_heads
         self.norm = nn.LayerNorm(dim)
-        self.mhsa = nn.MultiheadAttention(dim, heads, dropout, batch_first=True)
+
+        if use_alibi:
+            self.mhsa = MultiHeadALiBi(
+                num_heads=num_heads,
+                query_dim=dim,
+                key_dim=dim,
+                value_dim=dim,
+                inner_dim=dim // num_heads,
+                out_dim=dim,
+            )
+        else:
+            self.mhsa = nn.MultiheadAttention(dim, num_heads, dropout, batch_first=True)
 
     @jaxtyped(typechecker=beartype)
     def forward(
         self,
         x: Float[Tensor, "batch sequence proj_feature"],
         *,
+        coords: Float[Tensor, "batch sequence xy"],
         attn_mask: Bool[Tensor, "batch sequence sequence"] | None,
+        # Help, my abstractions are leaking!
+        alibi_mask: Bool[Tensor, "batch sequence sequence"],
     ) -> Float[Tensor, "batch sequence proj_feature"]:
         """
         Args:
@@ -53,30 +71,51 @@ class SelfAttention(nn.Module):
                 `attn_mask[b,q,k] == False` means that
                 query `q` of batch `b` can attend to key `k`.
                 If `attn_mask` is `None`, all tokens can attend to all others.
+            alibi_mask:
+                Which query-key pairs to apply ALiBi to.
+                If this module was constructed using `use_alibi=False`,
+                this has no effect.
         """
         x = self.norm(x)
-        attn_output, _ = self.mhsa(
-            x,
-            x,
-            x,
-            need_weights=False,
-            attn_mask=(
-                attn_mask.repeat(self.mhsa.num_heads, 1, 1)
-                if attn_mask is not None
-                else None
-            ),
-        )
+        match self.mhsa:
+            case nn.MultiheadAttention():
+                attn_output, _ = self.mhsa(
+                    x,
+                    x,
+                    x,
+                    need_weights=False,
+                    attn_mask=(
+                        attn_mask.repeat(self.mhsa.num_heads, 1, 1)
+                        if attn_mask is not None
+                        else None
+                    ),
+                )
+            case MultiHeadALiBi():
+                attn_output = self.mhsa(
+                    q=x,
+                    k=x,
+                    v=x,
+                    coords_q=coords,
+                    coords_k=coords,
+                    attn_mask=attn_mask,
+                    alibi_mask=alibi_mask,
+                )
+            case _ as unreachable:
+                assert_never(unreachable)
+
         return attn_output
 
 
 class Transformer(nn.Module):
     def __init__(
         self,
+        *,
         dim: int,
         depth: int,
         heads: int,
         mlp_dim: int,
-        dropout: float = 0.0,
+        dropout: float,
+        use_alibi: bool,
     ) -> None:
         super().__init__()
         self.depth = depth
@@ -85,9 +124,10 @@ class Transformer(nn.Module):
                 nn.ModuleList(
                     [
                         SelfAttention(
-                            dim,
-                            heads=heads,
+                            dim=dim,
+                            num_heads=heads,
                             dropout=dropout,
+                            use_alibi=use_alibi,
                         ),
                         feed_forward(
                             dim,
@@ -106,10 +146,12 @@ class Transformer(nn.Module):
         self,
         x: Float[Tensor, "batch sequence proj_feature"],
         *,
+        coords: Float[Tensor, "batch sequence 2"],
         attn_mask: Bool[Tensor, "batch sequence sequence"] | None,
+        alibi_mask: Bool[Tensor, "batch sequence sequence"],
     ) -> Float[Tensor, "batch sequence proj_feature"]:
         for attn, ff in cast(Iterable[tuple[nn.Module, nn.Module]], self.layers):
-            x_attn = attn(x, attn_mask=attn_mask)
+            x_attn = attn(x, coords=coords, attn_mask=attn_mask, alibi_mask=alibi_mask)
             x = x_attn + x
             x = ff(x) + x
 
@@ -128,6 +170,7 @@ class VisionTransformer(nn.Module):
         n_heads: int,
         dim_feedforward: int,
         dropout: float,
+        use_alibi: bool,
     ) -> None:
         super().__init__()
         self.class_token = nn.Parameter(torch.randn(dim_model))
@@ -144,6 +187,7 @@ class VisionTransformer(nn.Module):
             heads=n_heads,
             mlp_dim=dim_feedforward,
             dropout=dropout,
+            use_alibi=use_alibi,
         )
 
         self.mlp_head = nn.Sequential(nn.Linear(dim_model, dim_output))
@@ -153,6 +197,7 @@ class VisionTransformer(nn.Module):
         self,
         bags: Float[Tensor, "batch tile feature"],
         *,
+        coords: Float[Tensor, "batch tile 2"],
         mask: Bool[Tensor, "batch tile"] | None,
     ) -> Float[Tensor, "batch logit"]:
         batch_size, _n_tiles, _n_features = bags.shape
@@ -165,19 +210,35 @@ class VisionTransformer(nn.Module):
         # TODO should the tiles be able to refer to the class token? Test!
         cls_tokens = repeat(self.class_token, "d -> b 1 d", b=batch_size)
         bags = torch.cat([cls_tokens, bags], dim=1)
-        if mask is not None:
-            mask_with_class_token = torch.cat(
-                [torch.zeros(mask.shape[0], 1).type_as(mask), mask], dim=1
-            )
-            square_attn_mask = torch.einsum(
-                "bq,bk->bqk", mask_with_class_token, mask_with_class_token
-            )
-            # Don't allow other tiles to reference the class token
-            square_attn_mask[:, 1:, 0] = True
+        coords = torch.cat(
+            [torch.zeros(batch_size, 1, 2).type_as(coords), coords], dim=1
+        )
 
-            bags = self.transformer(bags, attn_mask=square_attn_mask)
-        else:
-            bags = self.transformer(bags, attn_mask=None)
+        match mask:
+            case None:
+                bags = self.transformer(bags, coords=coords, attn_mask=None)
+
+            case _:
+                mask_with_class_token = torch.cat(
+                    [torch.zeros(mask.shape[0], 1).type_as(mask), mask], dim=1
+                )
+                square_attn_mask = torch.einsum(
+                    "bq,bk->bqk", mask_with_class_token, mask_with_class_token
+                )
+                # Don't allow other tiles to reference the class token
+                square_attn_mask[:, 1:, 0] = True
+
+                # Don't apply ALiBi to the query, as the coordinates don't make sense here
+                alibi_mask = torch.zeros_like(square_attn_mask)
+                alibi_mask[:, 0, :] = True
+                alibi_mask[:, :, 0] = True
+
+                bags = self.transformer(
+                    bags,
+                    coords=coords,
+                    attn_mask=square_attn_mask,
+                    alibi_mask=alibi_mask,
+                )
 
         # Only take class token
         bags = bags[:, 0]

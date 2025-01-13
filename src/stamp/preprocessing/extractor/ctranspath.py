@@ -50,7 +50,9 @@ def ctranspath(model_path: Path | None = None) -> Extractor:
     digest = _file_digest(model_path)
     assert (
         digest == "7c998680060c8743551a412583fac689db43cec07053b72dfec6dcd810113539"
-    ), f"The digest of the downloaded checkpoint ({model_path}) did not match the expected value."
+    ), (
+        f"The digest of the downloaded checkpoint ({model_path}) did not match the expected value."
+    )
 
     model = _swin_tiny_patch4_window7_224(embed_layer=_ConvStem, pretrained=False)
     model.head = nn.Identity()
@@ -439,7 +441,9 @@ class _ConvStem(nn.Module):
         B, C, H, W = x.shape
         assert (
             H == self.img_size[0] and W == self.img_size[1]  # type: ignore
-        ), f"Input image size ({H}*{W}) doesn't match model ({self.img_size[0]}*{self.img_size[1]})."  # type: ignore
+        ), (
+            f"Input image size ({H}*{W}) doesn't match model ({self.img_size[0]}*{self.img_size[1]})."
+        )  # type: ignore
         x = self.proj(x)
         if self.flatten:
             x = x.flatten(2).transpose(1, 2)  # BCHW -> BNC
@@ -594,9 +598,9 @@ class _SwinTransformerBlock(nn.Module):
             # if window size is larger than input resolution, we don't partition windows
             self.shift_size = 0
             self.window_size = min(self.input_resolution)
-        assert (
-            0 <= self.shift_size < self.window_size
-        ), "shift_size must in 0-window_size"
+        assert 0 <= self.shift_size < self.window_size, (
+            "shift_size must in 0-window_size"
+        )
 
         self.norm1 = norm_layer(dim)
         self.attn = _WindowAttention(

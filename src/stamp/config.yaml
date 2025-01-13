@@ -68,6 +68,18 @@ crossval:
   # Number of folds to split the data into for cross-validation
   #n_splits: 5
 
+  # Experimental features:
+
+  # Please try uncommenting the settings below
+  # and report if they improve / reduce model performance!
+
+  # Change the precision of features during training
+  #use_vary_precision_transform: true
+
+  # Use ALiBi positional embedding
+  # use_alibi: true
+
+
 
 training:
   output_dir: "/path/to/save/files/to"
@@ -111,6 +123,9 @@ training:
 
   # Change the precision of features during training
   #use_vary_precision_transform: true
+
+  # Use ALiBi positional embedding
+  # use_alibi: true
 
 
 deployment:
