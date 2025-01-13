@@ -27,6 +27,7 @@ def test_crossval_integration(
     feat_dim: int = 25,
     n_categories: int = 3,
     use_alibi: bool = False,
+    use_vary_precision_transform: bool = False,
 ) -> None:
     random.seed(0)
     torch.manual_seed(0)
@@ -64,7 +65,7 @@ def test_crossval_integration(
             accelerator="gpu" if torch.cuda.is_available() else "cpu",
             n_splits=3,
             # Experimental features
-            use_vary_precision_transform=False,
+            use_vary_precision_transform=use_vary_precision_transform,
             use_alibi=use_alibi,
         )
 
