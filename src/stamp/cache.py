@@ -15,6 +15,7 @@ STAMP_CACHE_DIR.mkdir(exist_ok=True, parents=True)
 
 
 def download_file(*, url: str, file_name: str, sha256sum: str) -> Path:
+    """Downloads a file, or loads it from cache if it has been downloaded before"""
     outfile_path = STAMP_CACHE_DIR / file_name
     if outfile_path.is_file():
         with open(outfile_path, "rb") as weight_file:

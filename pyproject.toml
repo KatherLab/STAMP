@@ -76,6 +76,7 @@ all = ["stamp[dinobloom,conch,ctranspath,uni,virchow2]"]
 
 [dependency-groups]
 dev = [
+    "huggingface-hub>=0.27.1",
     "ipykernel>=6.29.5",
     "pyright>=1.1.389,!=1.1.391",
     "pytest>=8.3.4",

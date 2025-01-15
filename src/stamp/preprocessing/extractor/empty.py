@@ -21,12 +21,17 @@ class _EmptyModel(torch.nn.Module):
     def forward(
         self, batch: Float[torch.Tensor, "batch channel height width"]
     ) -> Float[torch.Tensor, "batch feature"]:
-        return torch.zeros(batch.size(0)).type_as(batch)
+        return torch.zeros(batch.size(0), 0).type_as(batch)
 
 
 def empty() -> Extractor:
     return Extractor(
         model=_EmptyModel(),
-        transform=torchvision.transforms.functional.pil_to_tensor,
+        transform=torchvision.transforms.Compose(
+            [
+                torchvision.transforms.PILToTensor(),
+                torchvision.transforms.Lambda(lambda x: x.float()),
+            ]
+        ),
         identifier="empty",
     )

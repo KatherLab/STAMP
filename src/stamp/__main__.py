@@ -72,7 +72,7 @@ def _run_cli(args: argparse.Namespace) -> None:
                 tile_size_px=config.preprocessing.tile_size_px,
                 extractor=config.preprocessing.extractor,
                 max_workers=config.preprocessing.max_workers,
-                accelerator=config.preprocessing.accelerator,
+                device=config.preprocessing.device,
                 brightness_cutoff=config.preprocessing.brightness_cutoff,
                 canny_cutoff=config.preprocessing.canny_cutoff,
             )

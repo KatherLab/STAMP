@@ -1,11 +1,11 @@
 import hashlib
 import logging
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
 from functools import cache
 from pathlib import Path
 from random import shuffle
 from tempfile import NamedTemporaryFile
-from typing import Iterator, assert_never
+from typing import assert_never
 
 import h5py
 import numpy as np
@@ -18,6 +18,7 @@ from torch._prims_common import DeviceLikeType
 from torch.utils.data import DataLoader, IterableDataset
 from tqdm import tqdm
 
+import stamp
 from stamp.preprocessing.config import ExtractorName
 from stamp.preprocessing.extractor import Extractor
 from stamp.preprocessing.tiling import (
@@ -120,7 +121,7 @@ def extract_(
     tile_size_px: TilePixels,
     tile_size_um: Microns,
     max_workers: int,
-    accelerator: DeviceLikeType,
+    device: DeviceLikeType,
     brightness_cutoff: int | None,
     canny_cutoff: float | None,
 ) -> None:
@@ -161,7 +162,7 @@ def extract_(
         case _ as unreachable:
             assert_never(unreachable)
 
-    model = extractor.model.to(accelerator).eval()
+    model = extractor.model.to(device).eval()
     extractor_id = f"{extractor.identifier}-{_get_preprocessing_code_hash()[:8]}"
 
     logger.info(f"Using extractor {extractor.identifier}")
@@ -213,7 +214,7 @@ def extract_(
             feats, xs_um, ys_um = [], [], []
             for tiles, xs, ys in tqdm(dl, leave=False):
                 with torch.inference_mode():
-                    feats.append(model(tiles.to(accelerator)).detach().half().cpu())
+                    feats.append(model(tiles.to(device)).detach().half().cpu())
                 xs_um.append(xs.float())
                 ys_um.append(ys.float())
         except Exception:
@@ -235,6 +236,7 @@ def extract_(
                 h5_fp["coords"] = coords
                 h5_fp["feats"] = torch.concat(feats).numpy()
 
+                h5_fp.attrs["stamp_version"] = stamp.__version__
                 h5_fp.attrs["extractor"] = extractor_id
                 h5_fp.attrs["unit"] = "um"
                 h5_fp.attrs["tile_size"] = tile_size_um

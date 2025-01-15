@@ -7,7 +7,7 @@ preprocessing:
   extractor: "ctranspath"
 
   # Device to run feature extraction on ("cpu", "cuda", "cuda:0", etc.)
-  accelerator: "cuda"
+  device: "cuda"
 
   # Optional settings:
 
