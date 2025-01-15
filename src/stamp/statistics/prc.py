@@ -1,5 +1,6 @@
 # %%
-from typing import NamedTuple, Optional, Sequence, Tuple, TypeAlias
+from collections.abc import Sequence
+from typing import NamedTuple, TypeAlias
 
 import numpy as np
 import numpy.typing as npt
@@ -30,7 +31,7 @@ def _plot_bootstrapped_pr_curve(
     y_true: Bool[np.ndarray, "sample"],  # noqa: F821
     y_score: Float[np.ndarray, "sample"],  # noqa: F821
     n_bootstrap_samples: int,
-) -> Tuple[_Auprc, _Auprc95CILower, _Auprc95CIUpper]:
+) -> tuple[_Auprc, _Auprc95CILower, _Auprc95CIUpper]:
     """Plots a precision-recall curve with bootstrap interval.
 
     Args:
@@ -138,8 +139,8 @@ def plot_multiple_decorated_precision_recall_curves(
     ax: Axes,
     y_trues: Sequence[npt.NDArray[np.bool_]],
     y_scores: Sequence[npt.NDArray[np.float64]],
-    title: Optional[str] = None,
-) -> Tuple[float, float]:
+    title: str | None = None,
+) -> tuple[float, float]:
     """Plots a family of precision-recall curves.
 
     Args:

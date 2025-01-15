@@ -1,4 +1,5 @@
-from typing import NamedTuple, Optional, Sequence, Tuple, TypeAlias, cast
+from collections.abc import Sequence
+from typing import NamedTuple, TypeAlias, cast
 
 import numpy as np
 import numpy.typing as npt
@@ -67,7 +68,7 @@ def plot_single_decorated_roc_curve(
     ax.set_ylabel("True Positive Rate")
 
 
-def _auc_str(auc: float, lower: Optional[float], upper: Optional[float]) -> str:
+def _auc_str(auc: float, lower: float, upper: float) -> str:
     return f"AUC = {auc:0.2f} [{lower:0.2f}-{upper:0.2f}]"
 
 
@@ -82,8 +83,8 @@ def plot_multiple_decorated_roc_curves(
     y_trues: Sequence[npt.NDArray[np.bool_]],
     y_scores: Sequence[npt.NDArray[np.float64]],
     *,
-    title: Optional[str] = None,
-    n_bootstrap_samples: Optional[int] = None,
+    title: str | None = None,
+    n_bootstrap_samples: int | None = None,
 ) -> None:
     """Plots a family of ROC curves.
 
@@ -156,7 +157,7 @@ def _plot_bootstrapped_roc_curve(
     y_score: Float[np.ndarray, "sample"],  # noqa: F821
     n_bootstrap_samples: int,
     threshold_cmap: Colormap | None,
-) -> Tuple[_Auc, _Auc95CILower, _Auc95CIUpper]:
+) -> tuple[_Auc, _Auc95CILower, _Auc95CIUpper]:
     """Plots a roc curve with bootstrap interval.
 
     Args:

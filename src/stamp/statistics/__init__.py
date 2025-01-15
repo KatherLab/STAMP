@@ -1,5 +1,6 @@
+from collections.abc import Sequence
 from pathlib import Path
-from typing import NewType, Sequence
+from typing import NewType
 
 import numpy as np
 import pandas as pd
