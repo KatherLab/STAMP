@@ -3,7 +3,6 @@ from pathlib import Path
 
 import torch
 from pydantic import BaseModel, ConfigDict, Field
-from torch._prims_common import DeviceLikeType
 
 from stamp.preprocessing.tiling import Microns, TilePixels
 
@@ -31,7 +30,7 @@ class PreprocessingConfig(BaseModel, arbitrary_types_allowed=True):
     tile_size_px: TilePixels = TilePixels(224)
     extractor: ExtractorName
     max_workers: int = 8
-    device: DeviceLikeType = "cuda" if torch.cuda.is_available() else "cpu"
+    device: str = "cuda" if torch.cuda.is_available() else "cpu"
 
     # Background rejection
     brightness_cutoff: int | None = Field(240, gt=0, lt=255)
