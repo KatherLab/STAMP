@@ -1,17 +1,12 @@
 # %%
-import io
 import tempfile
 from pathlib import Path
 
-import h5py
 import pytest
 import torch
-from jaxtyping import Float
 from random_data import make_feature_file
-from torch import Tensor
 from torch.utils.data import DataLoader
 
-import stamp
 from stamp.modeling.data import (
     BagDataset,
     BagSize,
@@ -21,7 +16,6 @@ from stamp.modeling.data import (
     PatientId,
     filter_complete_patient_data_,
 )
-from stamp.preprocessing.tiling import Microns
 
 
 @pytest.mark.filterwarnings("ignore:some patients have no associated slides")

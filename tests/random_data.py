@@ -11,22 +11,14 @@ from typing import TypeAlias
 import h5py
 import numpy as np
 import pandas as pd
-import pytest
 import torch
 from jaxtyping import Float
 from torch import Tensor
-from torch.utils.data import DataLoader
 
 import stamp
 from stamp.modeling.data import (
-    BagDataset,
-    BagSize,
     Category,
-    FeaturePath,
-    GroundTruth,
-    PatientData,
     PatientId,
-    filter_complete_patient_data_,
 )
 from stamp.preprocessing.tiling import Microns
 

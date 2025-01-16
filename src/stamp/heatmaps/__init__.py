@@ -78,13 +78,16 @@ def _show_thumb(slide, thumb_ax: Axes, attention: Tensor) -> np.ndarray:
     return np.array(thumb)[: attention.shape[0] * 8, : attention.shape[1] * 8]
 
 
-@no_type_check  # beartype breaks here for some reason
+@no_type_check  # beartype<=0.19.0 breaks here for some reason
 def _show_class_map(
-    class_ax: Axes, top_score_indices: Tensor, gradcam_2d, categories: Collection[str]
+    class_ax: Axes,
+    top_score_indices: Integer[Tensor, "width height"],
+    gradcam_2d: Float[Tensor, "width height category"],
+    categories: Collection[str],
 ) -> None:
     cmap = plt.get_cmap("Pastel1")
     classes = cast(np.ndarray, cmap(top_score_indices.cpu().numpy()))
-    classes[..., -1] = (gradcam_2d.sum(-1) > 0).detach().cpu() * 1.0
+    classes[..., -1] = (gradcam_2d.sum(-1) > 0).detach().cpu().numpy() * 1.0
     class_ax.imshow(classes)
     class_ax.legend(
         handles=[

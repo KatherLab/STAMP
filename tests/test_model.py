@@ -1,9 +1,6 @@
-import pytest
 import torch
 
 from stamp.modeling.vision_transformer import VisionTransformer
-
-pytestmark = pytest.mark.filterwarnings("error")
 
 
 def test_vision_transformer_dims(

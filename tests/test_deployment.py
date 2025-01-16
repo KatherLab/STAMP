@@ -1,13 +1,8 @@
-import io
-
-import h5py
 import numpy as np
 import numpy.typing as npt
 import pytest
 import torch
-from jaxtyping import Float
 from random_data import make_feature_file
-from torch import Tensor
 
 from stamp.modeling.data import GroundTruth, PatientData, PatientId
 from stamp.modeling.deploy import _predict, _to_prediction_df

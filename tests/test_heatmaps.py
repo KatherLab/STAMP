@@ -1,16 +1,15 @@
-# %%
 import tempfile
 from pathlib import Path
 
+import pytest
 import torch
 
 from stamp.cache import download_file
 from stamp.heatmaps import heatmaps_
 
-# %%
 
-
-def test_heatmap_integration():
+@pytest.mark.filterwarnings("ignore:There is a performance drop")
+def test_heatmap_integration() -> None:
     example_chekpoint_path = download_file(
         url="https://github.com/KatherLab/STAMP/releases/download/2.0.0-dev8/example-model.ckpt",
         file_name="example-model.ckpt",
