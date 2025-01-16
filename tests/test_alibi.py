@@ -1,5 +1,6 @@
+import pytest
 import torch
-from test_crossval import test_crossval_integration
+from test_train_deploy import test_train_deploy_integration
 
 from stamp.modeling.alibi import MultiHeadALiBi
 
@@ -28,7 +29,8 @@ def test_alibi_shapes(embed_dim: int = 32, num_heads: int = 8) -> None:
     )
 
 
+@pytest.mark.filterwarnings("ignore:No positive samples in targets")
 def test_alibi_integration() -> None:
-    test_crossval_integration(
+    test_train_deploy_integration(
         use_alibi=True,
     )

@@ -78,6 +78,8 @@ def deploy_categorical_model_(
         )
     ground_truth_label = ground_truth_label or model_ground_truth_label
 
+    output_dir.mkdir(exist_ok=True, parents=True)
+
     slide_to_patient = slide_to_patient_from_slide_table_(
         slide_table_path=slide_table,
         feature_dir=feature_dir,

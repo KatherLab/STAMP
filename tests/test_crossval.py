@@ -2,20 +2,18 @@ import os
 import random
 import tempfile
 from pathlib import Path
-from typing import TypeAlias
 
 import numpy as np
+import pytest
 import torch
 from random_data import create_random_dataset
 
 from stamp.modeling.crossval import categorical_crossval_
 
-CliniPath: TypeAlias = Path
-SlidePath: TypeAlias = Path
-FeatureDir: TypeAlias = Path
 
-
+@pytest.mark.filterwarnings("ignore:No positive samples in targets")
 def test_crossval_integration(
+    *,
     n_patients: int = 800,
     max_slides_per_patient: int = 3,
     min_tiles_per_slide: int = 8,

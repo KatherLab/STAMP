@@ -42,7 +42,8 @@ def create_random_dataset(
     min_tiles_per_slide: int,
     max_tiles_per_slide: int,
     feat_dim: int,
-    n_categories: int,
+    categories: Sequence[str] | None = None,
+    n_categories: int | None = None,
 ) -> tuple[CliniPath, SlidePath, FeatureDir, Sequence[Category]]:
     slide_path_to_patient: Mapping[Path, PatientId] = {}
     patient_to_ground_truth: Mapping[PatientId, str] = {}
@@ -52,7 +53,15 @@ def create_random_dataset(
     feat_dir = dir / "feats"
     feat_dir.mkdir()
 
-    categories = [random_string(8) for _ in range(n_categories)]
+    if categories is not None:
+        if n_categories is not None:
+            raise ValueError("only one of `categories` and `n_categories` can be set")
+    else:
+        if n_categories is None:
+            raise ValueError(
+                "either `categories` or `n_categories` has to be specified"
+            )
+        categories = [random_string(8) for _ in range(n_categories)]
 
     for _ in range(n_patients):
         # Random patient ID

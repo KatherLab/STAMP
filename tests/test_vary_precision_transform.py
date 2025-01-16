@@ -1,5 +1,6 @@
+import pytest
 import torch
-from test_crossval import test_crossval_integration
+from test_train_deploy import test_train_deploy_integration
 
 from stamp.modeling.transforms import vary_precision
 
@@ -13,8 +14,8 @@ def test_vary_precision_transform() -> None:
             (raw.abs().log2() - augmented.abs().log2()) < (2 ** (-min_fracton_bits))
         ).all()
 
-
+@pytest.mark.filterwarnings("ignore:No positive samples in targets")
 def test_varying_precision_integration() -> None:
-    test_crossval_integration(
+    test_train_deploy_integration(
         use_vary_precision_transform=True,
     )

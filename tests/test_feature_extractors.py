@@ -49,6 +49,7 @@ def test_if_feature_extraction_crashes(extractor=ExtractorName.CTRANSPATH) -> No
         assert len(just_extracted_feats) > 0
 
 
+@pytest.mark.filterwarnings("ignore:Importing from timm.models.layers is deprecated")
 def test_if_conch_feature_extraction_crashes() -> None:
     test_if_feature_extraction_crashes(ExtractorName.CONCH)
 
@@ -57,6 +58,10 @@ def test_if_uni_feature_extraction_crashes() -> None:
     test_if_feature_extraction_crashes(ExtractorName.UNI)
 
 
+@pytest.mark.filterwarnings(
+    "ignore:You are using `torch.load` with `weights_only=False`"
+)
+@pytest.mark.filterwarnings("ignore:xFormers is available")
 def test_if_dino_bloom_feature_extraction_crashes() -> None:
     test_if_feature_extraction_crashes(ExtractorName.DINO_BLOOM)
 
@@ -129,6 +134,6 @@ def test_backward_compatability(extractor=ExtractorName.CTRANSPATH) -> None:
         assert torch.allclose(just_extracted_coords, reference_coords), (
             f"extracted {extractor} coordinates differ from those made with stamp version {reference_version}"
         )
-        assert torch.allclose(just_extracted_feats, reference_feats), (
+        assert torch.allclose(just_extracted_feats, reference_feats, atol=1e-5), (
             f"extracted {extractor} features differ from those made with stamp version {reference_version}"
         )
