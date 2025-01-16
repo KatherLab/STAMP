@@ -69,7 +69,7 @@ def test_if_empty_feature_extraction_crashes() -> None:
     test_if_feature_extraction_crashes(ExtractorName.EMPTY)
 
 
-def check_backward_compatability(extractor=ExtractorName.CTRANSPATH) -> None:
+def test_backward_compatability(extractor=ExtractorName.CTRANSPATH) -> None:
     example_slide_path = download_file(
         url="https://github.com/KatherLab/STAMP/releases/download/2.0.0.dev14/TCGA-G4-6625-01Z-00-DX1.0fa26667-2581-4f96-a891-d78dbc3299b4.svs",
         file_name="TCGA-G4-6625-01Z-00-DX1.0fa26667-2581-4f96-a891-d78dbc3299b4.svs",
@@ -96,10 +96,12 @@ def check_backward_compatability(extractor=ExtractorName.CTRANSPATH) -> None:
             )
         except ModuleNotFoundError:
             pytest.skip(f"dependencies for {extractor} not installed")
+        except GatedRepoError:
+            pytest.skip(f"cannot access gated repo for {extractor}")
 
         reference_feature_path = download_file(
-            url="https://github.com/KatherLab/STAMP/releases/download/2.0.0.dev14/ctranspath-TCGA-G4-6625-01Z-00-DX1.0fa26667-2581-4f96-a891-d78dbc3299b4.h5",
-            file_name="ctranspath-TCGA-G4-6625-01Z-00-DX1.0fa26667-2581-4f96-a891-d78dbc3299b4.h5",
+            url=f"https://github.com/KatherLab/STAMP/releases/download/2.0.0.dev14/TCGA-G4-6625-01Z-00-DX1.0fa26667-2581-4f96-a891-d78dbc3299b4-{extractor}.h5",
+            file_name=f"TCGA-G4-6625-01Z-00-DX1.0fa26667-2581-4f96-a891-d78dbc3299b4-{extractor}.h5",
             sha256sum="f3f33b069c3ed860d2bdb7d65ca5db64936d7acee3ba1061a457a8cdb1bc67e3",
         )
 
@@ -115,3 +117,6 @@ def check_backward_compatability(extractor=ExtractorName.CTRANSPATH) -> None:
         ), (
             f"extracted {extractor} features differ from those made with stamp version {reference_version}"
         )
+
+def check_uni_backward_compatability() -> None:
+    test_backward_compatability(ExtractorName.UNI)

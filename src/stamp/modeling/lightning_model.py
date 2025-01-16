@@ -187,7 +187,7 @@ class LitVisionTransformer(lightning.LightningModule):
     def predict_step(
         self,
         batch: tuple[Bags, CoordinatesBatch, BagSizes, EncodedTargets],
-        batch_idx: int,
+        batch_idx: int = -1,
     ) -> Float[Tensor, "batch logit"]:
         bags, coords, bag_sizes, _ = batch
         return self.vision_transformer(

@@ -1,6 +1,8 @@
 from pathlib import Path
 
+import torch
 from pydantic import BaseModel, ConfigDict
+from torch._prims_common import DeviceLikeType
 
 
 class HeatmapConfig(BaseModel):
@@ -13,6 +15,8 @@ class HeatmapConfig(BaseModel):
     checkpoint_path: Path
 
     slide_paths: list[Path] | None = None
+
+    device: DeviceLikeType = "cuda" if torch.cuda.is_available() else "cpu"
 
     topk: int = 0
     bottomk: int = 0

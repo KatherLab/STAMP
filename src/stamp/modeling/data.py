@@ -116,6 +116,7 @@ def _collate_to_tuple(
     return (bags, coords, bag_sizes, encoded_targets)
 
 
+# FIXME: transform the coordinates into um!
 @dataclass
 class BagDataset(Dataset[tuple[_Bag, _Coordinates, BagSize, _EncodedTarget]]):
     """A dataset of bags of instances."""

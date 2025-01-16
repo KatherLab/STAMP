@@ -198,7 +198,16 @@ def _run_cli(args: argparse.Namespace) -> None:
                 "using the following configuration:\n"
                 f"{yaml.dump(config.heatmaps.model_dump(mode='json'))}"
             )
-            heatmaps_(**vars(config.heatmaps))
+            heatmaps_(
+                feature_dir=config.heatmaps.feature_dir,
+                wsi_dir=config.heatmaps.wsi_dir,
+                checkpoint_path=config.heatmaps.checkpoint_path,
+                output_dir=config.heatmaps.output_dir,
+                slide_paths=config.heatmaps.slide_paths,
+                device=config.heatmaps.device,
+                topk=config.heatmaps.topk,
+                bottomk=config.heatmaps.bottomk,
+            )
 
         case _:
             raise RuntimeError(

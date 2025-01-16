@@ -42,6 +42,22 @@ def test_heatmap_integration():
             output_dir=dir / "output",
             slide_paths=None,
             device="cuda" if torch.cuda.is_available() else "cpu",
-            topk=5,
-            bottomk=5,
+            topk=2,
+            bottomk=2,
+        )
+
+        assert (dir / "output" / "slide" / "overview-slide.png").is_file()
+        assert (dir / "output" / "slide" / "thumbnail-slide.png").is_file()
+        assert (dir / "output" / "slide" / "slide-MSIH=0.16.png").is_file()
+        assert (dir / "output" / "slide" / "slide-nonMSIH=0.84.png").is_file()
+        assert len(list((dir / "output" / "slide").glob("top-slide-MSIH=*.jpg"))) == 2
+        assert (
+            len(list((dir / "output" / "slide").glob("top-slide-nonMSIH=*.jpg"))) == 2
+        )
+        assert (
+            len(list((dir / "output" / "slide").glob("bottom-slide-MSIH=*.jpg"))) == 2
+        )
+        assert (
+            len(list((dir / "output" / "slide").glob("bottom-slide-nonMSIH=*.jpg")))
+            == 2
         )
