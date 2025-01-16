@@ -6,6 +6,7 @@ import numpy.typing as npt
 import pytest
 import torch
 from jaxtyping import Float
+from random_data import make_feature_file
 from torch import Tensor
 
 from stamp.modeling.data import GroundTruth, PatientData, PatientId
@@ -38,7 +39,7 @@ def test_predict(
         PatientId("pat5"): PatientData(
             ground_truth=GroundTruth("foo"),
             feature_files={
-                _make_feature_file(
+                make_feature_file(
                     feats=torch.rand(23, dim_input), coords=torch.rand(23, 2)
                 )
             },
@@ -57,13 +58,12 @@ def test_predict(
         "expected one score per class"
     )
 
-    # Check if scores consistent between runs
-
+    # Check if scores are consistent between runs
     more_patients_to_data = {
         PatientId("pat6"): PatientData(
             ground_truth=GroundTruth("bar"),
             feature_files={
-                _make_feature_file(
+                make_feature_file(
                     feats=torch.rand(12, dim_input), coords=torch.rand(12, 2)
                 )
             },
@@ -72,7 +72,7 @@ def test_predict(
         PatientId("pat7"): PatientData(
             ground_truth=GroundTruth("baz"),
             feature_files={
-                _make_feature_file(
+                make_feature_file(
                     feats=torch.rand(56, dim_input), coords=torch.rand(56, 2)
                 )
             },
@@ -93,18 +93,6 @@ def test_predict(
     assert torch.allclose(
         predictions[PatientId("pat5")], more_predictions[PatientId("pat5")]
     ), "the same inputs should repeatedly yield the same results"
-
-
-def _make_feature_file(
-    *, feats: Float[Tensor, "tile feat_d"], coords: Float[Tensor, "tile 2"]
-) -> io.BytesIO:
-    """Creates a feature file from the given data"""
-    file = io.BytesIO()
-    with h5py.File(file, "w") as h5:
-        h5["feats"] = feats
-        h5["coords"] = coords
-
-    return file
 
 
 def test_to_prediction_df() -> None:

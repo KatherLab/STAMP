@@ -106,17 +106,25 @@ def test_backward_compatability(extractor=ExtractorName.CTRANSPATH) -> None:
         )
 
         with h5py.File(reference_feature_path) as h5_file:
+            reference_coords = h5_file["coords"][:]  # pyright: ignore[reportIndexIssue]
             reference_feats = h5_file["feats"][:]  # pyright: ignore[reportIndexIssue]
             reference_version = h5_file.attrs["stamp_version"]
 
         with h5py.File(next((dir / "output").glob("*/*.h5"))) as h5_file:
+            just_extracted_coords = h5_file["coords"][:]  # pyright: ignore[reportIndexIssue]
             just_extracted_feats = h5_file["feats"][:]  # pyright: ignore[reportIndexIssue]
 
+        assert torch.allclose(
+            torch.tensor(just_extracted_coords), torch.tensor(reference_coords)
+        ), (
+            f"extracted {extractor} features differ from those made with stamp version {reference_version}"
+        )
         assert torch.allclose(
             torch.tensor(just_extracted_feats), torch.tensor(reference_feats)
         ), (
             f"extracted {extractor} features differ from those made with stamp version {reference_version}"
         )
+
 
 def check_uni_backward_compatability() -> None:
     test_backward_compatability(ExtractorName.UNI)

@@ -1,5 +1,6 @@
 """Routines to create random data"""
 
+import io
 import random
 import string
 import tempfile
@@ -10,9 +11,24 @@ from typing import TypeAlias
 import h5py
 import numpy as np
 import pandas as pd
+import pytest
 import torch
+from jaxtyping import Float
+from torch import Tensor
+from torch.utils.data import DataLoader
 
-from stamp.modeling.data import Category, PatientId
+import stamp
+from stamp.modeling.data import (
+    BagDataset,
+    BagSize,
+    Category,
+    FeaturePath,
+    GroundTruth,
+    PatientData,
+    PatientId,
+    filter_complete_patient_data_,
+)
+from stamp.preprocessing.tiling import Microns
 
 CliniPath: TypeAlias = Path
 SlidePath: TypeAlias = Path
@@ -79,7 +95,12 @@ def create_random_dataset(
 
 
 def create_random_feature_file(
-    *, dir: Path, min_tiles: int, max_tiles: int, feat_dim: int
+    *,
+    dir: Path,
+    min_tiles: int,
+    max_tiles: int,
+    feat_dim: int,
+    tile_size_um: Microns = Microns(2508),
 ) -> Path:
     """Creates a h5 file with random contents.
 
@@ -95,8 +116,13 @@ def create_random_feature_file(
         tempfile.NamedTemporaryFile(dir=dir, suffix=".h5", delete=False) as tmp_file,
         h5py.File(tmp_file, "w") as h5_file,
     ):
-        h5_file["feats"] = torch.rand(n_tiles, feat_dim)
+        h5_file["feats"] = torch.rand(n_tiles, feat_dim) * 1000 * tile_size_um
         h5_file["coords"] = torch.rand(n_tiles, 2)
+
+        h5_file.attrs["stamp_version"] = stamp.__version__
+        h5_file.attrs["extractor"] = "random-test-generator"
+        h5_file.attrs["unit"] = "um"
+        h5_file.attrs["tile_size"] = tile_size_um
         return Path(tmp_file.name)
 
 
@@ -120,3 +146,22 @@ def random_patient_preds(*, n_patients: int, categories: list[str]) -> pd.DataFr
 
 def random_string(len: int) -> str:
     return "".join(random.choices(string.ascii_uppercase + string.digits, k=len))
+
+
+def make_feature_file(
+    *,
+    feats: Float[Tensor, "tile feat_d"],
+    coords: Float[Tensor, "tile 2"],
+    tile_size_um: Microns = Microns(2508),
+) -> io.BytesIO:
+    """Creates a feature file from the given data"""
+    file = io.BytesIO()
+    with h5py.File(file, "w") as h5:
+        h5["feats"] = feats
+        h5["coords"] = coords * tile_size_um
+        h5.attrs["stamp_version"] = stamp.__version__
+        h5.attrs["extractor"] = "random-test-generator"
+        h5.attrs["unit"] = "um"
+        h5.attrs["tile_size"] = tile_size_um
+
+    return file

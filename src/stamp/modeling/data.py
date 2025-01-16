@@ -12,14 +12,17 @@ import numpy as np
 import pandas as pd
 import torch
 from jaxtyping import Bool, Float, Integer
+from packaging.version import Version
 from torch import Tensor
 from torch.utils.data import DataLoader, Dataset
+
+import stamp
 
 _logger = logging.getLogger("stamp")
 
 
 __author__ = "Marko van Treeck"
-__copyright__ = "Copyright (C) 2022-2024 Marko van Treeck"
+__copyright__ = "Copyright (C) 2022-2025 Marko van Treeck"
 __license__ = "MIT"
 
 
@@ -116,7 +119,6 @@ def _collate_to_tuple(
     return (bags, coords, bag_sizes, encoded_targets)
 
 
-# FIXME: transform the coordinates into um!
 @dataclass
 class BagDataset(Dataset[tuple[_Bag, _Coordinates, BagSize, _EncodedTarget]]):
     """A dataset of bags of instances."""
@@ -158,15 +160,16 @@ class BagDataset(Dataset[tuple[_Bag, _Coordinates, BagSize, _EncodedTarget]]):
     ) -> tuple[_Bag, _Coordinates, BagSize, _EncodedTarget]:
         # Collect all the features
         feats = []
-        coords = []
+        coords_um = []
         for bag_file in self.bags[index]:
-            with h5py.File(bag_file, "r") as f:
+            with h5py.File(bag_file, "r") as h5:
                 feats.append(
-                    torch.from_numpy(f["feats"][:])  # pyright: ignore[reportIndexIssue]
+                    torch.from_numpy(h5["feats"][:])  # pyright: ignore[reportIndexIssue]
                 )
-                coords.append(torch.from_numpy(f["coords"][:]))  # pyright: ignore[reportIndexIssue]
+                coords_um.append(_get_coords_um(h5))
+
         feats = torch.concat(feats).float()
-        coords = torch.concat(coords).float()
+        coords_um = torch.concat(coords_um).float()
 
         if self.transform is not None:
             feats = self.transform(feats)
@@ -174,16 +177,42 @@ class BagDataset(Dataset[tuple[_Bag, _Coordinates, BagSize, _EncodedTarget]]):
         # Sample a subset, if required
         if self.bag_size is not None:
             return (
-                *_to_fixed_size_bag(feats, coords=coords, bag_size=self.bag_size),
+                *_to_fixed_size_bag(feats, coords=coords_um, bag_size=self.bag_size),
                 self.ground_truths[index],
             )
         else:
             return (
                 feats,
-                coords,
+                coords_um,
                 len(feats),
                 self.ground_truths[index],
             )
+
+
+def _get_coords_um(feature_h5: h5py.File) -> Tensor:
+    """Get coordinates in um from h5 file"""
+    coords = torch.from_numpy(feature_h5["coords"][:]).float()  # pyright: ignore[reportIndexIssue]
+    stride = cast(float, feature_h5.attrs.get("tile_size", get_stride(coords)))
+
+    if feature_h5.attrs.get("unit") == "um":
+        coords_um = coords
+    elif round(stride) == 224:
+        _logger.info(
+            f"{feature_h5.filename}: tile stride is roughly 224, assuming coordinates have unit 256um/224px (historic STAMP format)"
+        )
+        coords_um = coords / 224 * 256
+    elif (version_str := feature_h5.attrs.get("stamp_version")) and (
+        extraction_version := Version(version_str)
+    ) > Version(stamp.__version__):
+        raise RuntimeError(
+            f"features were extracted with a newer version of stamp, please update your stamp to at least version {extraction_version}."
+        )
+    else:
+        raise RuntimeError(
+            "unable to infer coordinates from feature file. Please reextract them using `stamp preprocess`."
+        )
+
+    return coords_um
 
 
 def _to_fixed_size_bag(
@@ -301,7 +330,7 @@ def filter_complete_patient_data_(
         Checks feature paths' existance.
     """
 
-    _log_patient_slide_feature_inconsitencies(
+    _log_patient_slide_feature_inconsistencies(
         patient_to_ground_truth=patient_to_ground_truth,
         slide_to_patient=slide_to_patient,
     )
@@ -336,7 +365,7 @@ def filter_complete_patient_data_(
     return patients
 
 
-def _log_patient_slide_feature_inconsitencies(
+def _log_patient_slide_feature_inconsistencies(
     *,
     patient_to_ground_truth: Mapping[PatientId, GroundTruthType],
     slide_to_patient: Mapping[FeaturePath, PatientId],
@@ -366,3 +395,17 @@ def _log_patient_slide_feature_inconsitencies(
         _logger.warning(
             f"some feature files could not be found: {slides_without_features}"
         )
+
+
+def get_stride(coords: Float[Tensor, "tile 2"]) -> float:
+    """Gets the minimum step width between any two coordintes."""
+    xs: Tensor = coords[:, 0].unique(sorted=True)
+    ys: Tensor = coords[:, 1].unique(sorted=True)
+    stride = cast(
+        float,
+        min(
+            (xs[1:] - xs[:-1]).min().item(),
+            (ys[1:] - ys[:-1]).min().item(),
+        ),
+    )
+    return stride

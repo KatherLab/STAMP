@@ -18,7 +18,7 @@ import openslide
 from PIL import Image
 
 __author__ = "Marko van Treeck"
-__copyright__ = "Copyright (C) 2022-2024 Marko van Treeck"
+__copyright__ = "Copyright (C) 2022-2025 Marko van Treeck"
 __license__ = "MIT"
 
 

@@ -180,6 +180,7 @@ def train_model_(
         devices=1,
         gradient_clip_val=0.5,
         logger=CSVLogger(save_dir=output_dir),
+        log_every_n_steps=len(train_dl),
     )
     trainer.fit(
         model=model,

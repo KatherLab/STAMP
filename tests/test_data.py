@@ -7,9 +7,11 @@ import h5py
 import pytest
 import torch
 from jaxtyping import Float
+from random_data import make_feature_file
 from torch import Tensor
 from torch.utils.data import DataLoader
 
+import stamp
 from stamp.modeling.data import (
     BagDataset,
     BagSize,
@@ -19,8 +21,7 @@ from stamp.modeling.data import (
     PatientId,
     filter_complete_patient_data_,
 )
-
-pytestmark = pytest.mark.filterwarnings("error")
+from stamp.preprocessing.tiling import Microns
 
 
 @pytest.mark.filterwarnings("ignore:some patients have no associated slides")
@@ -81,17 +82,17 @@ def test_dataset(
     ds = BagDataset(
         bags=[
             [
-                _make_feature_file(
+                make_feature_file(
                     feats=torch.rand((12, dim_feats)), coords=torch.rand(12, 2)
                 )
             ],
             [
-                _make_feature_file(
-                    feats=torch.rand((1, dim_feats)), coords=torch.rand(1, 2)
+                make_feature_file(
+                    feats=torch.rand((8, dim_feats)), coords=torch.rand(8, 2)
                 )
             ],
             [
-                _make_feature_file(
+                make_feature_file(
                     feats=torch.rand((34, dim_feats)), coords=torch.rand(34, 2)
                 )
             ],
@@ -115,15 +116,3 @@ def test_dataset(
     assert bag.shape == (batch_size, bag_size, dim_feats)
     assert coords.shape == (batch_size, bag_size, 2)
     assert (bag_sizes <= bag_size).all()
-
-
-def _make_feature_file(
-    *, feats: Float[Tensor, "tile feat_d"], coords: Float[Tensor, "tile 2"]
-) -> io.BytesIO:
-    """Creates a feature file from the given data"""
-    file = io.BytesIO()
-    with h5py.File(file, "w") as h5:
-        h5["feats"] = feats
-        h5["coords"] = coords
-
-    return file

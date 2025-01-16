@@ -16,18 +16,13 @@ from torch import Tensor
 from torch._prims_common import DeviceLikeType
 from torch.func import jacrev  # pyright: ignore[reportPrivateImportUsage]
 
+from stamp.modeling.data import _get_coords_um, get_stride
 from stamp.modeling.lightning_model import LitVisionTransformer
 from stamp.modeling.vision_transformer import VisionTransformer
 from stamp.preprocessing import supported_extensions
-from stamp.preprocessing.tiling import SlidePixels, get_slide_mpp_
+from stamp.preprocessing.tiling import Microns, SlidePixels, get_slide_mpp_
 
 _logger = logging.getLogger("stamp")
-
-
-def _get_stride(coords: Float[Tensor, "tile coord"]) -> float:
-    xs: Tensor = coords[:, 0].unique(sorted=True)
-    stride: Tensor = (xs[1:] - xs[:-1]).min()
-    return stride.item()
 
 
 def _gradcam_per_category(
@@ -143,33 +138,23 @@ def heatmaps_(
                 .float()
                 .to(device)
             )
-            coords = torch.tensor(h5["coords"][:]).to(device)  # pyright: ignore[reportIndexIssue]
+            coords_um = _get_coords_um(h5)
+            stride_um = Microns(get_stride(coords_um))
 
-            stride = cast(float, h5.attrs.get("tile_size", _get_stride(coords)))
             if h5.attrs.get("unit") == "um":
-                coords_um = coords
-                coords_tile_slide_px = torch.round(coords / slide_mpp).long()
                 tile_size_slide_px = SlidePixels(
-                    int(cast(np.float64, h5.attrs["tile_size"]) / slide_mpp)
+                    int(round(cast(float, h5.attrs["tile_size"]) / slide_mpp))
                 )
             else:
-                xs = np.unique(coords[:, 0])
-                stride = round(np.min(xs[1:] - xs[:-1]))
-                if round(stride) == 224:
-                    slide_path = getattr(slide, "_filename", "unknown slide")
-                    _logger.info(
-                        f"{slide_path}: tile stride is roughly 224, assuming coordinates have unit 256um/224px (historic STAMP format)"
-                    )
-                    coords_um = coords / 224 * 256
-                    coords_tile_slide_px = coords_um / slide_mpp
-                    tile_size_slide_px = SlidePixels(int(256 / slide_mpp))
-                else:
-                    raise RuntimeError(
-                        "unable to infer coordinates from feature file. Please reextract them using `stamp preprocess`."
-                    )
+                tile_size_slide_px = SlidePixels(int(round(256 / slide_mpp)))
 
-        coords_norm = (coords // stride).long()
+        # grid coordinates, i.e. the top-left most tile is (0, 0), the one to its right (0, 1) etc.
+        coords_norm = (coords_um / stride_um).round().long()
 
+        # coordinates as used by OpenSlide
+        coords_tile_slide_px = torch.round(coords_um / slide_mpp).long()
+
+        # Score for the entire slide
         slide_score = (
             model.vision_transformer(
                 bags=feats.unsqueeze(0),
