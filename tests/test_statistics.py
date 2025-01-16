@@ -28,12 +28,22 @@ def test_statistics_integration(
                 n_patients=random.randint(100, 1000), categories=categories
             ).to_csv(dir / f"patient-preds-{patient_preds_i}.csv")
 
+        true_class = categories[1]
         compute_stats_(
             output_dir=dir / "output",
             pred_csvs=[dir / f"patient-preds-{i}.csv" for i in range(n_patient_preds)],
             ground_truth_label="ground_truth",
-            true_class=categories[1],
+            true_class=true_class,
         )
+
+        assert (
+            dir / "output" / "ground_truth-categorical-stats-aggregated.csv"
+        ).is_file()
+        assert (
+            dir / "output" / "ground_truth-categorical-stats-individual.csv"
+        ).is_file()
+        assert (dir / "output" / f"AUROC_ground_truth={true_class}.svg").is_file()
+        assert (dir / "output" / f"AUPRC_ground_truth={true_class}.svg").is_file()
 
 
 def test_statistics_integration_for_multiple_patient_preds() -> None:

@@ -14,6 +14,7 @@ def test_vary_precision_transform() -> None:
             (raw.abs().log2() - augmented.abs().log2()) < (2 ** (-min_fracton_bits))
         ).all()
 
+
 @pytest.mark.filterwarnings("ignore:No positive samples in targets")
 def test_varying_precision_integration() -> None:
     test_train_deploy_integration(
