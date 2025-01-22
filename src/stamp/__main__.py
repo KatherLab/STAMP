@@ -3,7 +3,6 @@ import logging
 import shutil
 import sys
 from pathlib import Path
-from typing import assert_never
 
 import yaml
 
@@ -46,9 +45,7 @@ def _run_cli(args: argparse.Namespace) -> None:
 
     match args.command:
         case "init":
-            assert_never(
-                "this case should be handled above"  # pyright: ignore[reportArgumentType]
-            )
+            raise RuntimeError("this case should be handled above")
 
         case "config":
             print(yaml.dump(config.model_dump(mode="json")))
