@@ -1,6 +1,5 @@
-# %%
 from collections.abc import Sequence
-from typing import NamedTuple, TypeAlias
+from typing import NamedTuple, TypeAlias, cast
 
 import numpy as np
 import numpy.typing as npt
@@ -37,8 +36,7 @@ def _plot_bootstrapped_pr_curve(
     Args:
         ax: The axes to plot onto.
         y_true: The ground truths.
-        y_pred: The predicted probabilities or scores.
-        title: A title for the plot.
+        y_score: The predicted probabilities or scores.
         n_bootstrap_samples: Number of bootstrap samples for confidence intervals.
 
     Returns:
@@ -54,9 +52,7 @@ def _plot_bootstrapped_pr_curve(
         sample_y_true = y_true[sample_idxs]
         sample_y_pred = y_score[sample_idxs]
 
-        if len(np.unique(sample_y_true)) != 2 or not (
-            0 in sample_y_true and 1 in sample_y_true
-        ):
+        if not (0 in sample_y_true and 1 in sample_y_true):
             continue
 
         precision, recall, _ = precision_recall_curve(sample_y_true, sample_y_pred)
@@ -74,14 +70,19 @@ def _plot_bootstrapped_pr_curve(
         bootstrap_auprcs.append(bootstrapped_auprc)
 
     # Calculate the confidence intervals for each threshold
-    prc_lower: Float[np.ndarray, "fpr"]  # noqa: F821
-    prc_upper: Float[np.ndarray, "fpr"]  # noqa: F821
-    prc_lower, prc_upper = np.quantile(interp_prcs, [0.025, 0.975], axis=0)
+    prc_lower, prc_upper = cast(
+        tuple[
+            Float[np.ndarray, "recall"],  # noqa: F821
+            Float[np.ndarray, "recall"],  # noqa: F821
+        ],
+        np.quantile(interp_prcs, [0.025, 0.975], axis=0),
+    )
     ax.fill_between(interp_recall, prc_lower, prc_upper, alpha=0.5)
 
-    auprc_lower: _Auprc95CILower
-    auprc_upper: _Auprc95CIUpper
-    auprc_lower, auprc_upper = np.quantile(bootstrap_auprcs, [0.025, 0.975])
+    auprc_lower, auprc_upper = cast(
+        tuple[_Auprc95CILower, _Auprc95CIUpper],
+        np.quantile(bootstrap_auprcs, [0.025, 0.975]),
+    )
 
     # Calculate the standard AUPRC
     precision, recall, _ = precision_recall_curve(y_true, y_score)
@@ -99,28 +100,24 @@ def plot_single_decorated_precision_recall_curve(
     y_true: Bool[np.ndarray, "sample"],  # noqa: F821
     y_score: Float[np.ndarray, "sample"],  # noqa: F821
     title: str,
-    n_bootstrap_samples: int | None,
+    n_bootstrap_samples: int,
 ) -> None:
-    """Plots a single ROC curve.
+    """Plots a single precision-recall curve.
 
     Args:
         ax:  Axis to plot to.
         y_true:  A sequence of ground truths.
-        y_pred:  A sequence of predictions.
+        y_score:  A sequence of predictions.
         title:  Title of the plot.
     """
-    if n_bootstrap_samples is not None:
-        auprc, lower, upper = _plot_bootstrapped_pr_curve(
-            ax=ax,
-            y_true=y_true,
-            y_score=y_score,
-            n_bootstrap_samples=n_bootstrap_samples,
-        )
-        ax.set_title(f"{title}\nAUPRC = {auprc:.2f} [{lower:.2f}-{upper:.2f}]")
-    else:
-        raise NotImplementedError()
+    auprc, lower, upper = _plot_bootstrapped_pr_curve(
+        ax=ax,
+        y_true=y_true,
+        y_score=y_score,
+        n_bootstrap_samples=n_bootstrap_samples,
+    )
+    ax.set_title(f"{title}\nAUPRC = {auprc:.2f} [{lower:.2f}-{upper:.2f}]")
 
-    ax.plot([0, 1], [0, 1], "r--", alpha=0)
     ax.set_aspect("equal")
     ax.set_xlabel("Recall")
     ax.set_ylabel("Precision")
@@ -146,7 +143,7 @@ def plot_multiple_decorated_precision_recall_curves(
     Args:
         ax:  Axis to plot to.
         y_trues:  Sequence of ground truth lists.
-        y_preds:  Sequence of prediction lists.
+        y_scores:  Sequence of prediction lists.
         title:  Title of the plot.
 
     Returns:
@@ -160,9 +157,9 @@ def plot_multiple_decorated_precision_recall_curves(
     tpas = sorted(tpas, key=lambda x: x.auc, reverse=True)
 
     # plot precision_recalls
-    for t, p, prc in tpas:
-        precision, recall, _ = precision_recall_curve(t, p)
-        ax.plot(recall, precision, label=f"PRC = {prc:0.2f}")
+    for true, pred, prc_score in tpas:
+        precision, recall, _ = precision_recall_curve(true, pred)
+        ax.plot(recall, precision, label=f"PRC = {prc_score:0.2f}")
 
     # style plot
     all_samples = np.concatenate(y_trues)
@@ -184,7 +181,6 @@ def plot_multiple_decorated_precision_recall_curves(
     lower = max(0, lower)
     upper = min(1, upper)
 
-    # conf_range = (h-l)/2
     auc_str = f"PRC = {np.mean(aucs):0.2f} [{lower:0.2f}-{upper:0.2f}]"
 
     if title:

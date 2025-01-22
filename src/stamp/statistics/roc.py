@@ -132,7 +132,7 @@ def plot_multiple_decorated_roc_curves(
     # calculate confidence intervals and print title
     aucs = [x.auc for x in tpas]
     mean_auc = np.mean(aucs).item()
-    if not n_bootstrap_samples:
+    if n_bootstrap_samples is None:
         lower, upper = cast(
             tuple[_Auc95CILower, _Auc95CIUpper],
             st.t.interval(0.95, len(aucs) - 1, loc=np.mean(aucs), scale=st.sem(aucs)),
@@ -145,7 +145,7 @@ def plot_multiple_decorated_roc_curves(
     lower, upper = max(0.0, lower), min(1.0, upper)
 
     if title:
-        ax.set_title(f"{title}\n {_auc_str(mean_auc, lower, upper)}")
+        ax.set_title(f"{title}\n{_auc_str(mean_auc, lower, upper)}")
     else:
         ax.set_title(_auc_str(mean_auc, lower, upper))
 
@@ -162,11 +162,9 @@ def _plot_bootstrapped_roc_curve(
 
     Args:
         ax:  The axes to plot onto.
+
         y_true:  The ground truths.
         y_score:  The predictions corresponding to the ground truths.
-        label:  A label to attach to the curve.
-            The string `{ci}` will be replaced with the AUC
-            and the range of the confidence interval.
     """
     # draw some confidence intervals based on bootstrapping
     # sample repeatedly (with replacement) from our data points,
@@ -187,9 +185,13 @@ def _plot_bootstrapped_roc_curve(
         interp_rocs.append(np.interp(interp_fpr, fpr, tpr))
         bootstrap_aucs.append(float(roc_auc_score(sample_y_true, sample_y_score)))
 
-    roc_lower: Float[np.ndarray, "fpr"]  # noqa: F821
-    roc_upper: Float[np.ndarray, "fpr"]  # noqa: F821
-    roc_lower, roc_upper = np.quantile(interp_rocs, [0.025, 0.975], axis=0)
+    roc_lower, roc_upper = cast(
+        tuple[
+            Float[np.ndarray, "fpr"],  # noqa: F821
+            Float[np.ndarray, "fpr"],  # noqa: F821
+        ],
+        np.quantile(interp_rocs, [0.025, 0.975], axis=0),
+    )
     ax.fill_between(interp_fpr, roc_lower, roc_upper, alpha=0.5)
 
     auc_lower: _Auc95CILower

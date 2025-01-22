@@ -1,6 +1,6 @@
-#!/usr/bin/env python3
 """Calculate statistics for deployments on categorical targets."""
 
+from collections.abc import Sequence
 from pathlib import Path
 
 import pandas as pd
@@ -8,7 +8,7 @@ import scipy.stats as st
 from sklearn import metrics
 
 __author__ = "Marko van Treeck"
-__copyright__ = "Copyright (C) 2022-2024 Marko van Treeck"
+__copyright__ = "Copyright (C) 2022-2025 Marko van Treeck"
 __license__ = "MIT"
 
 
@@ -55,7 +55,7 @@ def _categorical(preds_df: pd.DataFrame, target_label: str) -> pd.DataFrame:
     return stats_df
 
 
-def _aggregate_categorical_stats(df) -> pd.DataFrame:
+def _aggregate_categorical_stats(df: pd.DataFrame) -> pd.DataFrame:
     stats = {}
     for cat, data in df.groupby("level_1"):
         scores_df = data[["roc_auc_score", "average_precision_score"]]
@@ -73,7 +73,7 @@ def _aggregate_categorical_stats(df) -> pd.DataFrame:
 
 
 def categorical_aggregated_(
-    *, preds_csvs, outpath: Path, ground_truth_label: str
+    *, preds_csvs: Sequence[Path], outpath: Path, ground_truth_label: str
 ) -> None:
     """Calculate statistics for categorical deployments.
 
