@@ -13,12 +13,20 @@ from stamp.modeling.train import train_categorical_model_
 
 @pytest.mark.slow
 @pytest.mark.filterwarnings("ignore:No positive samples in targets")
+@pytest.mark.parametrize(
+    "use_alibi,use_vary_precision_transform",
+    [
+        pytest.param(False, False, id="no experimental features"),
+        pytest.param(True, False, id="use alibi"),
+        pytest.param(False, True, id="use vary_precision_transform"),
+    ],
+)
 def test_train_deploy_integration(
     *,
     tmp_path: Path,
     feat_dim: int = 25,
-    use_alibi: bool = False,
-    use_vary_precision_transform: bool = False,
+    use_alibi: bool,
+    use_vary_precision_transform: bool,
 ) -> None:
     random.seed(0)
     torch.manual_seed(0)
