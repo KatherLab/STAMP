@@ -1,6 +1,6 @@
 [project]
 name = "stamp"
-version = "2.0.0rc0"
+version = "2.0.0rc1"
 authors = [
     { name = "Omar El Nahhas", email = "omar.el_nahhas@tu-dresden.de" },
     { name = "Marko van Treeck", email = "markovantreeck@gmail.com" },
@@ -11,7 +11,7 @@ authors = [
 ]
 description = "A protocol for Solid Tumor Associative Modeling in Pathology"
 readme = "README.md"
-requires-python = ">=3.11,<3.13"    # <3.13 because torchvision does not support it
+requires-python = ">=3.11"
 
 classifiers = [
     "Programming Language :: Python :: 3",
