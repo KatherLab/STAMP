@@ -1,4 +1,3 @@
-# %%
 import tempfile
 from pathlib import Path
 
@@ -20,12 +19,12 @@ from stamp.modeling.data import (
 
 @pytest.mark.filterwarnings("ignore:some patients have no associated slides")
 @pytest.mark.filterwarnings("ignore:some feature files could not be found")
-def test_get_cohort_df() -> None:
+def test_get_cohort_df(tmp_path: Path) -> None:
     with (
-        tempfile.NamedTemporaryFile() as slide_a1,
-        tempfile.NamedTemporaryFile() as slide_b1,
-        tempfile.NamedTemporaryFile() as slide_b2,
-        tempfile.NamedTemporaryFile() as slide_c1,
+        tempfile.NamedTemporaryFile(dir=tmp_path) as slide_a1,
+        tempfile.NamedTemporaryFile(dir=tmp_path) as slide_b1,
+        tempfile.NamedTemporaryFile(dir=tmp_path) as slide_b2,
+        tempfile.NamedTemporaryFile(dir=tmp_path) as slide_c1,
     ):
         patients_with_complete_data = filter_complete_patient_data_(
             patient_to_ground_truth={

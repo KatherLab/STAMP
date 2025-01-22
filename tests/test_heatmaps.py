@@ -1,4 +1,3 @@
-import tempfile
 from pathlib import Path
 
 import pytest
@@ -9,7 +8,7 @@ from stamp.heatmaps import heatmaps_
 
 
 @pytest.mark.filterwarnings("ignore:There is a performance drop")
-def test_heatmap_integration() -> None:
+def test_heatmap_integration(tmp_path: Path) -> None:
     example_chekpoint_path = download_file(
         url="https://github.com/KatherLab/STAMP/releases/download/2.0.0-dev8/example-model.ckpt",
         file_name="example-model.ckpt",
@@ -25,38 +24,37 @@ def test_heatmap_integration() -> None:
         file_name="TCGA-G4-6625-01Z-00-DX1.0fa26667-2581-4f96-a891-d78dbc3299b4-mahmood-uni.h5",
         sha256sum="13b1390241e73a3969915d3d01c5c64f1b7c68318a685d8e3bf851067162f0bc",
     )
-    with tempfile.TemporaryDirectory(prefix="stamp_test_heatmaps_") as tmp_dir:
-        dir = Path(tmp_dir)
-        wsi_dir = dir / "wsis"
-        wsi_dir.mkdir()
-        (wsi_dir / "slide.svs").symlink_to(example_slide_path)
-        feature_dir = dir / "feats"
-        feature_dir.mkdir()
-        (feature_dir / "slide.h5").symlink_to(example_feature_path)
 
-        heatmaps_(
-            feature_dir=feature_dir,
-            wsi_dir=wsi_dir,
-            checkpoint_path=example_chekpoint_path,
-            output_dir=dir / "output",
-            slide_paths=None,
-            device="cuda" if torch.cuda.is_available() else "cpu",
-            topk=2,
-            bottomk=2,
-        )
+    wsi_dir = tmp_path / "wsis"
+    wsi_dir.mkdir()
+    (wsi_dir / "slide.svs").symlink_to(example_slide_path)
+    feature_dir = tmp_path / "feats"
+    feature_dir.mkdir()
+    (feature_dir / "slide.h5").symlink_to(example_feature_path)
 
-        assert (dir / "output" / "slide" / "overview-slide.png").is_file()
-        assert (dir / "output" / "slide" / "thumbnail-slide.png").is_file()
-        assert (dir / "output" / "slide" / "slide-MSIH=0.16.png").is_file()
-        assert (dir / "output" / "slide" / "slide-nonMSIH=0.84.png").is_file()
-        assert len(list((dir / "output" / "slide").glob("top-slide-MSIH=*.jpg"))) == 2
-        assert (
-            len(list((dir / "output" / "slide").glob("top-slide-nonMSIH=*.jpg"))) == 2
-        )
-        assert (
-            len(list((dir / "output" / "slide").glob("bottom-slide-MSIH=*.jpg"))) == 2
-        )
-        assert (
-            len(list((dir / "output" / "slide").glob("bottom-slide-nonMSIH=*.jpg")))
-            == 2
-        )
+    heatmaps_(
+        feature_dir=feature_dir,
+        wsi_dir=wsi_dir,
+        checkpoint_path=example_chekpoint_path,
+        output_dir=tmp_path / "output",
+        slide_paths=None,
+        device="cuda" if torch.cuda.is_available() else "cpu",
+        topk=2,
+        bottomk=2,
+    )
+
+    assert (tmp_path / "output" / "slide" / "overview-slide.png").is_file()
+    assert (tmp_path / "output" / "slide" / "thumbnail-slide.png").is_file()
+    assert (tmp_path / "output" / "slide" / "slide-MSIH=0.16.png").is_file()
+    assert (tmp_path / "output" / "slide" / "slide-nonMSIH=0.84.png").is_file()
+    assert len(list((tmp_path / "output" / "slide").glob("top-slide-MSIH=*.jpg"))) == 2
+    assert (
+        len(list((tmp_path / "output" / "slide").glob("top-slide-nonMSIH=*.jpg"))) == 2
+    )
+    assert (
+        len(list((tmp_path / "output" / "slide").glob("bottom-slide-MSIH=*.jpg"))) == 2
+    )
+    assert (
+        len(list((tmp_path / "output" / "slide").glob("bottom-slide-nonMSIH=*.jpg")))
+        == 2
+    )

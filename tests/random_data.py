@@ -73,7 +73,7 @@ def create_random_dataset(
         for _ in range(random.randint(1, max_slides_per_patient)):
             slide_path_to_patient[
                 create_random_feature_file(
-                    dir=feat_dir,
+                    tmp_path=feat_dir,
                     min_tiles=min_tiles_per_slide,
                     max_tiles=max_tiles_per_slide,
                     feat_dim=feat_dim,
@@ -97,7 +97,7 @@ def create_random_dataset(
 
 def create_random_feature_file(
     *,
-    dir: Path,
+    tmp_path: Path,
     min_tiles: int,
     max_tiles: int,
     feat_dim: int,
@@ -114,7 +114,9 @@ def create_random_feature_file(
     """
     n_tiles = random.randint(min_tiles, max_tiles)
     with (
-        tempfile.NamedTemporaryFile(dir=dir, suffix=".h5", delete=False) as tmp_file,
+        tempfile.NamedTemporaryFile(
+            dir=tmp_path, suffix=".h5", delete=False
+        ) as tmp_file,
         h5py.File(tmp_file, "w") as h5_file,
     ):
         h5_file["feats"] = torch.rand(n_tiles, feat_dim) * 1000 * tile_size_um

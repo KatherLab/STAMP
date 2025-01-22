@@ -1,6 +1,11 @@
+from pathlib import Path
+
 import pytest
 import torch
-from test_train_deploy import test_train_deploy_integration
+from test_train_deploy import (
+    # prevent rerunning test_train_deploy_integration
+    test_train_deploy_integration as _test_train_deploy_integration,
+)
 
 from stamp.modeling.transforms import vary_precision
 
@@ -15,8 +20,10 @@ def test_vary_precision_transform() -> None:
         ).all()
 
 
+@pytest.mark.slow
 @pytest.mark.filterwarnings("ignore:No positive samples in targets")
-def test_varying_precision_integration() -> None:
-    test_train_deploy_integration(
+def test_varying_precision_integration(tmp_path: Path) -> None:
+    _test_train_deploy_integration(
+        tmp_path=tmp_path,
         use_vary_precision_transform=True,
     )

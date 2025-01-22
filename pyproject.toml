@@ -90,3 +90,8 @@ build-backend = "hatchling.build"
 [tool.hatch.metadata]
 # To allow referencing git repos in dependencies
 allow-direct-references = true
+
+[tool.pytest.ini_options]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+]
