@@ -268,7 +268,7 @@ def heatmaps_(
             for score, index in zip(*category_score.topk(topk)):
                 (
                     slide.read_region(
-                        tuple(coords_tile_slide_px[index]),  # pyright: ignore[reportArgumentType]
+                        tuple(coords_tile_slide_px[index].tolist()),
                         0,
                         (tile_size_slide_px, tile_size_slide_px),
                     )
@@ -281,7 +281,7 @@ def heatmaps_(
             for score, index in zip(*(-category_score).topk(bottomk)):
                 (
                     slide.read_region(
-                        tuple(coords_tile_slide_px[index]),  # pyright: ignore[reportArgumentType]
+                        tuple(coords_tile_slide_px[index].tolist()),
                         0,
                         (tile_size_slide_px, tile_size_slide_px),
                     )
