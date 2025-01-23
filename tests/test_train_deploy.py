@@ -62,7 +62,7 @@ def test_train_deploy_integration(
         feature_dir=train_feature_dir,
         output_dir=tmp_path / "train_output",
         patient_label="patient",
-        ground_truth_label="ground_truth",
+        ground_truth_label="ground-truth",
         filename_label="slide_path",
         categories=categories,
         # Dataset and -loader parameters
@@ -85,7 +85,7 @@ def test_train_deploy_integration(
         slide_table=deploy_slide_path,
         feature_dir=deploy_feature_dir,
         patient_label="patient",
-        ground_truth_label="ground_truth",
+        ground_truth_label="ground-truth",
         filename_label="slide_path",
         accelerator="gpu" if torch.cuda.is_available() else "cpu",
         num_workers=min(os.cpu_count() or 1, 16),

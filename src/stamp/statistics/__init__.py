@@ -100,7 +100,7 @@ def compute_stats_(
     if not output_dir.exists():
         output_dir.mkdir(parents=True, exist_ok=True)
 
-    fig.savefig(output_dir / f"AUROC_{ground_truth_label}={true_class}.svg")
+    fig.savefig(output_dir / f"roc-curve_{ground_truth_label}={true_class}.svg")
     plt.close(fig)
 
     fig, ax = plt.subplots(
@@ -125,7 +125,7 @@ def compute_stats_(
         )
 
     fig.tight_layout()
-    fig.savefig(output_dir / f"AUPRC_{ground_truth_label}={true_class}.svg")
+    fig.savefig(output_dir / f"pr-curve_{ground_truth_label}={true_class}.svg")
     plt.close(fig)
 
     categorical_aggregated_(

@@ -82,7 +82,7 @@ def create_random_dataset(
 
     clini_df = pd.DataFrame(
         patient_to_ground_truth.items(),
-        columns=["patient", "ground_truth"],  # pyright: ignore[reportArgumentType]
+        columns=["patient", "ground-truth"],  # pyright: ignore[reportArgumentType]
     )
     clini_df.to_csv(clini_path, index=False)
 
@@ -133,9 +133,9 @@ def random_patient_preds(*, n_patients: int, categories: list[str]) -> pd.DataFr
     return pd.DataFrame(
         {
             "patient": [random_string(8) for _ in range(n_patients)],
-            "ground_truth": [random.choice(categories) for _ in range(n_patients)],
+            "ground-truth": [random.choice(categories) for _ in range(n_patients)],
             **{
-                f"ground_truth_{cat}": scores
+                f"ground-truth_{cat}": scores
                 for i, (cat, scores) in enumerate(
                     zip(
                         categories,

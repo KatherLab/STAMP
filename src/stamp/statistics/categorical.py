@@ -94,6 +94,6 @@ def categorical_aggregated_(
         for p in preds_csvs
     }
     preds_df = pd.concat(preds_dfs).sort_index()
-    preds_df.to_csv(outpath / f"{ground_truth_label}-categorical-stats-individual.csv")
+    preds_df.to_csv(outpath / f"{ground_truth_label}_categorical-stats_individual.csv")
     stats_df = _aggregate_categorical_stats(preds_df.reset_index())
-    stats_df.to_csv(outpath / f"{ground_truth_label}-categorical-stats-aggregated.csv")
+    stats_df.to_csv(outpath / f"{ground_truth_label}_categorical-stats_aggregated.csv")

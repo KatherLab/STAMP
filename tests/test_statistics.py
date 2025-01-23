@@ -30,18 +30,18 @@ def test_statistics_integration(
     compute_stats_(
         output_dir=tmp_path / "output",
         pred_csvs=[tmp_path / f"patient-preds-{i}.csv" for i in range(n_patient_preds)],
-        ground_truth_label="ground_truth",
+        ground_truth_label="ground-truth",
         true_class=true_class,
     )
 
     assert (
-        tmp_path / "output" / "ground_truth-categorical-stats-aggregated.csv"
+        tmp_path / "output" / "ground-truth_categorical-stats_aggregated.csv"
     ).is_file()
     assert (
-        tmp_path / "output" / "ground_truth-categorical-stats-individual.csv"
+        tmp_path / "output" / "ground-truth_categorical-stats_individual.csv"
     ).is_file()
-    assert (tmp_path / "output" / f"AUROC_ground_truth={true_class}.svg").is_file()
-    assert (tmp_path / "output" / f"AUPRC_ground_truth={true_class}.svg").is_file()
+    assert (tmp_path / "output" / f"roc-curve_ground-truth={true_class}.svg").is_file()
+    assert (tmp_path / "output" / f"pr-curve_ground-truth={true_class}.svg").is_file()
 
 
 def test_statistics_integration_for_multiple_patient_preds(tmp_path: Path) -> None:

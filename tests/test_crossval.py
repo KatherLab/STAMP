@@ -46,7 +46,7 @@ def test_crossval_integration(
         feature_dir=feature_dir,
         output_dir=output_dir,
         patient_label="patient",
-        ground_truth_label="ground_truth",
+        ground_truth_label="ground-truth",
         filename_label="slide_path",
         categories=categories,
         # Dataset and -loader parameters

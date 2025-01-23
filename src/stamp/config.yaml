@@ -180,11 +180,11 @@ statistics:
 
   # For a cross-validation with five folds, it could look like this:
   #pred_csvs:
-  #- "/path/to/fold-0/patient-preds.csv"
-  #- "/path/to/fold-1/patient-preds.csv"
-  #- "/path/to/fold-2/patient-preds.csv"
-  #- "/path/to/fold-3/patient-preds.csv"
-  #- "/path/to/fold-4/patient-preds.csv"
+  #- "/path/to/split-0/patient-preds.csv"
+  #- "/path/to/split-1/patient-preds.csv"
+  #- "/path/to/split-2/patient-preds.csv"
+  #- "/path/to/split-3/patient-preds.csv"
+  #- "/path/to/split-4/patient-preds.csv"
 
 heatmaps:
   output_dir: "/path/to/save/files/to"
