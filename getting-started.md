@@ -190,3 +190,44 @@ we can run it by invoking:
 ```sh
 stamp --config stamp-test-experiment/config.yaml crossval
 ```
+
+## Generating Statistics
+
+After training and validating your model, you may want to generate statistics to evaluate its performance.
+This can be done by adding a `statistics` section to your `stamp-test-experiment/config.yaml` file.
+The configuration should look like this:
+
+```yaml
+# stamp-test-experiment/config.yaml
+
+statistics:
+  output_dir: "/absolute/path/to/stamp-test-experiment/statistics"
+
+  # Name of the target label.
+  ground_truth_label: "isMSIH"
+
+  # A lot of the statistics are computed "one-vs-all", i.e. there needs to be
+  # a positive class to calculate the statistics for.
+  true_class: "yes"
+
+  pred_csvs:
+  - "/absolute/path/to/stamp-test-experiment/split-0/patient-preds.csv"
+  - "/absolute/path/to/stamp-test-experiment/split-1/patient-preds.csv"
+  - "/absolute/path/to/stamp-test-experiment/split-2/patient-preds.csv"
+  - "/absolute/path/to/stamp-test-experiment/split-3/patient-preds.csv"
+  - "/absolute/path/to/stamp-test-experiment/split-4/patient-preds.csv"
+```
+
+To generate the statistics, run the following command:
+```sh
+stamp --config stamp-test-experiment/config.yaml statistics
+```
+
+Afterwards, the `output_dir` should contain the following files:
+  - `isMSIH-categorical-stats-individual.csv` contains statistical scores
+    for each individual split.
+  - `isMSIH-categorical-stats-aggregated.csv` contains the mean
+    as well as the 95% confidence interval for the statistical scores
+    for the splits.
+  - `roc-curve_isMSIH=yes.svg` and `pr-curve_isMSIH=yes.svg`
+    contain the ROC and precision recall curves of the splits.
