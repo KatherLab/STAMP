@@ -1,9 +1,13 @@
+from typing import cast
+
 import torch
+from torchvision.transforms import Compose
 
 from stamp.preprocessing.extractor import Extractor
 
 try:
     from conch.open_clip_custom import create_model_from_pretrained
+    from conch.open_clip_custom.coca_model import CoCa
 except ModuleNotFoundError as e:
     raise ModuleNotFoundError(
         "conch dependencies not installed."
@@ -16,7 +20,7 @@ __license__ = "MIT"
 
 
 class _StampConchModel(torch.nn.Module):
-    def __init__(self, model) -> None:
+    def __init__(self, model: CoCa) -> None:
         super().__init__()
         self.model = model
 
@@ -24,9 +28,10 @@ class _StampConchModel(torch.nn.Module):
         return self.model.encode_image(batch, proj_contrast=False, normalize=False)
 
 
-def conch() -> Extractor:
-    model, preprocess = create_model_from_pretrained(  # type: ignore
-        "conch_ViT-B-16", "hf_hub:MahmoodLab/conch"
+def conch() -> Extractor[_StampConchModel]:
+    model, preprocess = cast(
+        tuple[CoCa, Compose],
+        create_model_from_pretrained("conch_ViT-B-16", "hf_hub:MahmoodLab/conch"),
     )
 
     return Extractor(

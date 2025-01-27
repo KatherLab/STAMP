@@ -29,7 +29,7 @@ class Virchow2ClsOnly(torch.nn.Module):
         return self.model(batch)[:, 0]
 
 
-def virchow2() -> Extractor:
+def virchow2() -> Extractor[Virchow2ClsOnly]:
     """Extracts features from slide tiles using Virchow2 tile encoder."""
 
     # Load the model structure

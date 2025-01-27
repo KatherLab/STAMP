@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import hashlib
 import math
 import warnings
@@ -34,7 +36,7 @@ def _file_digest(file: str | Path) -> str:
         return hashlib.file_digest(fp, "sha256").hexdigest()
 
 
-def ctranspath(model_path: Path | None = None) -> Extractor:
+def ctranspath(model_path: Path | None = None) -> Extractor[_SwinTransformer]:
     model_path = model_path or STAMP_CACHE_DIR / "ctranspath.pth"
     if not model_path.is_file():
         model_path.parent.mkdir(parents=True, exist_ok=True)

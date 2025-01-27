@@ -24,7 +24,7 @@ class _EmptyModel(torch.nn.Module):
         return torch.zeros(batch.size(0), 0).type_as(batch)
 
 
-def empty() -> Extractor:
+def empty() -> Extractor[_EmptyModel]:
     return Extractor(
         model=_EmptyModel(),
         transform=torchvision.transforms.Compose(
