@@ -93,7 +93,7 @@ class _TileDataset(IterableDataset):
         # Already check if we can extract the MPP here.
         # We don't want to kill our dataloader later,
         # because that leads to _a lot_ of error messages which are difficult to read
-        if get_slide_mpp_(openslide.OpenSlide(slide_path)) is None:
+        if get_slide_mpp_(openslide.open_slide(slide_path)) is None:
             raise MPPExtractionError()
 
     def __iter__(self) -> Iterator[tuple[Tensor, Microns, Microns]]:
@@ -255,7 +255,7 @@ def extract_(
         )
         thumbnail_path.parent.mkdir(exist_ok=True, parents=True)
         _get_rejection_thumb(
-            openslide.OpenSlide(str(slide_path)),
+            openslide.open_slide(str(slide_path)),
             size=(512, 512),
             coords_um=coords,
             tile_size_um=tile_size_um,
@@ -263,7 +263,7 @@ def extract_(
 
 
 def _get_rejection_thumb(
-    slide: openslide.OpenSlide,
+    slide: openslide.AbstractSlide,
     *,
     size: tuple[int, int],
     coords_um: npt.NDArray,

@@ -75,7 +75,7 @@ def tiles_with_cache(
     if cache_dir is None:
         # If we have no cache dir, fall back to normal tile extraction.
         yield from _tiles_with_tissue(
-            slide=openslide.OpenSlide(slide_path),
+            slide=openslide.open_slide(slide_path),
             tile_size_um=tile_size_um,
             tile_size_px=tile_size_px,
             max_supertile_size_slide_px=max_supertile_size_slide_px,
@@ -122,7 +122,7 @@ def tiles_with_cache(
                     tiler_params_json_fp.write(json.dumps(tiler_params).encode())
 
                 for tile in _tiles_with_tissue(
-                    openslide.OpenSlide(slide_path),
+                    openslide.open_slide(slide_path),
                     tile_size_um=tile_size_um,
                     tile_size_px=tile_size_px,
                     max_supertile_size_slide_px=max_supertile_size_slide_px,
@@ -147,7 +147,7 @@ def tiles_with_cache(
 
 
 def _tiles_with_tissue(
-    slide: openslide.OpenSlide,
+    slide: openslide.AbstractSlide,
     *,
     tile_size_um: Microns,
     tile_size_px: TilePixels,
@@ -170,7 +170,7 @@ def _tiles_with_tissue(
 
 
 def _tiles(
-    slide: openslide.OpenSlide,
+    slide: openslide.AbstractSlide,
     *,
     tile_size_um: Microns,
     tile_size_px: TilePixels,
@@ -222,7 +222,7 @@ def _tiles(
 
 
 def _foreground_coords(
-    slide: openslide.OpenSlide,
+    slide: openslide.AbstractSlide,
     tile_size_slide_px: SlidePixels,
     brightness_cutoff: int | None,
 ) -> Iterator[_XYCoords[SlidePixels]]:
@@ -266,7 +266,7 @@ def _has_enough_texture(tile: Image.Image, cutoff: float) -> bool:
 
 
 def _supertiles(
-    slide: openslide.OpenSlide,
+    slide: openslide.AbstractSlide,
     *,
     tile_size_um: Microns,
     tile_size_px: TilePixels,
@@ -384,7 +384,7 @@ def get_slide_mpp_(slide: openslide.AbstractSlide | Path) -> float | None:
 
 
 def _extract_mpp_from_comments(slide: openslide.AbstractSlide) -> float | None:
-    slide_properties = slide.properties.get("openslide.comment", default="")
+    slide_properties = slide.properties.get("openslide.comment", "")
     pattern = r"<PixelSizeMicrons>(.*?)</PixelSizeMicrons>"
     match = re.search(pattern, slide_properties)
     if match is not None and (mpp := match.group(1)) is not None:
