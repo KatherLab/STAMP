@@ -61,6 +61,7 @@ def test_if_feature_extraction_crashes(
             brightness_cutoff=224,
             canny_cutoff=0.02,
             device="cuda" if torch.cuda.is_available() else "cpu",
+            force_slide_mpp=None,
         )
     except ModuleNotFoundError:
         pytest.skip(f"dependencies for {extractor} not installed")
@@ -116,6 +117,7 @@ def test_backward_compatability(tmp_path: Path) -> None:
             brightness_cutoff=224,
             canny_cutoff=0.02,
             device="cuda" if torch.cuda.is_available() else "cpu",
+            force_slide_mpp=None,
         )
     except ModuleNotFoundError:
         pytest.skip(f"dependencies for {extractor} not installed")

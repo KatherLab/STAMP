@@ -69,6 +69,7 @@ def tiles_with_cache(
     max_workers: int,
     brightness_cutoff: int | None,
     canny_cutoff: float | None,
+    force_slide_mpp: float | None,
 ) -> Iterator[_Tile[Microns]]:
     """Iterates over the tiles in a WSI, using or saving a cached version if applicable"""
 
@@ -82,6 +83,7 @@ def tiles_with_cache(
             max_workers=max_workers,
             brightness_cutoff=brightness_cutoff,
             canny_cutoff=canny_cutoff,
+            force_slide_mpp=force_slide_mpp,
         )
         return
 
@@ -129,6 +131,7 @@ def tiles_with_cache(
                     max_workers=max_workers,
                     brightness_cutoff=brightness_cutoff,
                     canny_cutoff=canny_cutoff,
+                    force_slide_mpp=force_slide_mpp,
                 ):
                     with zip.open(
                         f"tile_({float(tile.coordinates.x)}, {float(tile.coordinates.y)}).jpg",
@@ -155,6 +158,7 @@ def _tiles_with_tissue(
     max_workers: int,
     brightness_cutoff: int | None,
     canny_cutoff: float | None,
+    force_slide_mpp: float | None,
 ) -> Iterator[_Tile[Microns]]:
     """Yields all tiels from a WSI which (probably) show tissue"""
     for tile in _tiles(
@@ -164,6 +168,7 @@ def _tiles_with_tissue(
         max_supertile_size_slide_px=max_supertile_size_slide_px,
         max_workers=max_workers,
         brightness_cutoff=brightness_cutoff,
+        force_slide_mpp=force_slide_mpp,
     ):
         if canny_cutoff is None or _has_enough_texture(tile.image, cutoff=canny_cutoff):
             yield tile
@@ -177,6 +182,7 @@ def _tiles(
     max_supertile_size_slide_px: SlidePixels,
     max_workers: int,
     brightness_cutoff: int | None,
+    force_slide_mpp: float | None,
 ) -> Iterator[_Tile[Microns]]:
     """Yields tiles, excluding background.
 
@@ -193,6 +199,7 @@ def _tiles(
         max_supertile_size_slide_px=max_supertile_size_slide_px,
         max_workers=max_workers,
         brightness_cutoff=brightness_cutoff,
+        force_slide_mpp=force_slide_mpp,
     ):
         assert supertile.size[0] == supertile.size[1], "supertile needs to be square"
         assert supertile.size[0] % tile_size_px == 0, (
@@ -273,8 +280,9 @@ def _supertiles(
     max_supertile_size_slide_px: SlidePixels,
     max_workers: int,
     brightness_cutoff: int | None,
+    force_slide_mpp: float | None,
 ) -> Iterator[_Tile[Microns]]:
-    slide_mpp = get_slide_mpp_(slide)
+    slide_mpp = get_slide_mpp_(slide, forced_value=force_slide_mpp)
     if slide_mpp is None:
         raise MPPExtractionError()
 
@@ -368,19 +376,27 @@ def _tiles_from_cache_file(cache_file_path: Path) -> Iterator[_Tile]:
                 )
 
 
-def get_slide_mpp_(slide: openslide.AbstractSlide | Path) -> float | None:
-    """Returns the Microns per Slide Pixel of the WSI, or None if none could be found."""
+def get_slide_mpp_(
+    slide: openslide.AbstractSlide | Path, *, forced_value: float | None
+) -> float | None:
+    """Returns the Microns per Slide Pixel of the WSI,
+    forced_value if set, or None, if neither could be found."""
     if isinstance(slide, Path):
         slide = openslide.open_slide(slide)
 
     if openslide.PROPERTY_NAME_MPP_X in slide.properties:
-        return float(slide.properties[openslide.PROPERTY_NAME_MPP_X])
+        slide_mpp = float(slide.properties[openslide.PROPERTY_NAME_MPP_X])
     elif slide_mpp := _extract_mpp_from_comments(slide):
-        return slide_mpp
+        pass
     elif slide_mpp := _extract_mpp_from_metadata(slide):
-        return slide_mpp
-    else:
-        return None
+        pass
+
+    if slide_mpp is not None and forced_value is not None:
+        _logger.warning(
+            f"found mpp of {slide_mpp} in slide metadata, but forcing {forced_value} regardless."
+        )
+
+    return forced_value or slide_mpp
 
 
 def _extract_mpp_from_comments(slide: openslide.AbstractSlide) -> float | None:
@@ -395,7 +411,9 @@ def _extract_mpp_from_comments(slide: openslide.AbstractSlide) -> float | None:
 
 def _extract_mpp_from_metadata(slide: openslide.AbstractSlide) -> float | None:
     try:
-        xml_path = slide.properties["tiff.ImageDescription"]
+        xml_path = slide.properties.get("tiff.ImageDescription") or None
+        if xml_path is None:
+            return None
         doc = minidom.parseString(xml_path)
         collection = doc.documentElement
         images = collection.getElementsByTagName("Image")

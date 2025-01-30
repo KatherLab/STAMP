@@ -19,3 +19,6 @@ class HeatmapConfig(BaseModel):
 
     topk: int = 0
     bottomk: int = 0
+
+    force_slide_mpp: float | None = None
+    """Forces the MPP of the slide, ignoring eventual metadata"""

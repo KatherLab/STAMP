@@ -32,6 +32,9 @@ class PreprocessingConfig(BaseModel, arbitrary_types_allowed=True):
     max_workers: int = 8
     device: str = "cuda" if torch.cuda.is_available() else "cpu"
 
+    force_slide_mpp: float | None = None
+    """Force this MPP for all slides."""
+
     # Background rejection
     brightness_cutoff: int | None = Field(240, gt=0, lt=255)
     """Any tile brighter than this will be discarded as probable background.

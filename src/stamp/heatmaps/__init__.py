@@ -70,8 +70,10 @@ def _vals_to_im(
     return im
 
 
-def _show_thumb(slide, thumb_ax: Axes, attention: Tensor) -> np.ndarray:
-    mpp = get_slide_mpp_(slide)
+def _show_thumb(
+    slide, thumb_ax: Axes, attention: Tensor, forced_slide_mpp: float | None
+) -> np.ndarray:
+    mpp = get_slide_mpp_(slide, forced_value=forced_slide_mpp)
     dims_um = np.array(slide.dimensions) * mpp
     thumb = slide.get_thumbnail(np.round(dims_um * 8 / 256).astype(int))
     thumb_ax.imshow(np.array(thumb)[: attention.shape[0] * 8, : attention.shape[1] * 8])
@@ -104,6 +106,7 @@ def heatmaps_(
     output_dir: Path,
     slide_paths: Iterable[Path] | None,
     device: DeviceLikeType,
+    force_slide_mpp: float | None,
     # top tiles
     topk: int,
     bottomk: int,
@@ -130,7 +133,7 @@ def heatmaps_(
         _logger.info(f"creating heatmaps for {wsi_path.name}")
 
         slide = openslide.open_slide(wsi_path)
-        slide_mpp = get_slide_mpp_(slide)
+        slide_mpp = get_slide_mpp_(slide, forced_value=force_slide_mpp)
         assert slide_mpp is not None, "could not determine slide MPP"
 
         with h5py.File(h5_path) as h5:
@@ -304,6 +307,7 @@ def heatmaps_(
                 attention.unsqueeze(-1),
                 coords_norm,  # pyright: ignore[reportPossiblyUnboundVariable]
             ).squeeze(-1),
+            forced_slide_mpp=force_slide_mpp
         )
         Image.fromarray(thumb).save(slide_output_dir / f"thumbnail-{h5_path.stem}.png")
 
