@@ -41,6 +41,7 @@ def test_heatmap_integration(tmp_path: Path) -> None:
         device="cuda" if torch.cuda.is_available() else "cpu",
         topk=2,
         bottomk=2,
+        default_slide_mpp=None,
     )
 
     assert (tmp_path / "output" / "slide" / "overview-slide.png").is_file()

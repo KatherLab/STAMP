@@ -70,6 +70,7 @@ def _run_cli(args: argparse.Namespace) -> None:
                 extractor=config.preprocessing.extractor,
                 max_workers=config.preprocessing.max_workers,
                 device=config.preprocessing.device,
+                default_slide_mpp=config.preprocessing.default_slide_mpp,
                 brightness_cutoff=config.preprocessing.brightness_cutoff,
                 canny_cutoff=config.preprocessing.canny_cutoff,
             )
@@ -204,6 +205,7 @@ def _run_cli(args: argparse.Namespace) -> None:
                 device=config.heatmaps.device,
                 topk=config.heatmaps.topk,
                 bottomk=config.heatmaps.bottomk,
+                default_slide_mpp=config.heatmaps.default_slide_mpp,
             )
 
         case _:

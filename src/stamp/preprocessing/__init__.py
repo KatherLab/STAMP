@@ -24,6 +24,7 @@ from stamp.preprocessing.extractor import Extractor
 from stamp.preprocessing.tiling import (
     Microns,
     MPPExtractionError,
+    SlideMPP,
     SlidePixels,
     TilePixels,
     get_slide_mpp_,
@@ -34,6 +35,8 @@ __author__ = "Marko van Treeck"
 __copyright__ = "Copyright (C) 2022-2024 Marko van Treeck"
 __license__ = "MIT"
 
+# Our images can be rather large, so let's remove the decompression bomb warning
+Image.MAX_IMAGE_PIXELS = None
 
 supported_extensions = {
     ".czi",
@@ -50,7 +53,7 @@ supported_extensions = {
     ".qptiff",
 }
 
-logger = logging.getLogger("stamp")
+_logger = logging.getLogger("stamp")
 
 
 @cache
@@ -79,6 +82,7 @@ class _TileDataset(IterableDataset):
         max_workers: int,
         brightness_cutoff: int | None,
         canny_cutoff: float | None,
+        default_slide_mpp: SlideMPP | None,
     ) -> None:
         self.slide_path = slide_path
         self.cache_dir = cache_dir
@@ -89,11 +93,17 @@ class _TileDataset(IterableDataset):
         self.max_workers = max_workers
         self.brightness_cutoff = brightness_cutoff
         self.canny_cutoff = canny_cutoff
+        self.default_slide_mpp = default_slide_mpp
 
         # Already check if we can extract the MPP here.
         # We don't want to kill our dataloader later,
         # because that leads to _a lot_ of error messages which are difficult to read
-        if get_slide_mpp_(openslide.OpenSlide(slide_path)) is None:
+        if (
+            get_slide_mpp_(
+                openslide.open_slide(slide_path), default_mpp=default_slide_mpp
+            )
+            is None
+        ):
             raise MPPExtractionError()
 
     def __iter__(self) -> Iterator[tuple[Tensor, Microns, Microns]]:
@@ -108,6 +118,7 @@ class _TileDataset(IterableDataset):
                 max_workers=self.max_workers,
                 brightness_cutoff=self.brightness_cutoff,
                 canny_cutoff=self.canny_cutoff,
+                default_slide_mpp=self.default_slide_mpp,
             )
         )
 
@@ -122,9 +133,20 @@ def extract_(
     tile_size_um: Microns,
     max_workers: int,
     device: DeviceLikeType,
+    default_slide_mpp: SlideMPP | None,
     brightness_cutoff: int | None,
     canny_cutoff: float | None,
 ) -> None:
+    """
+    Extracts features from slides.
+    Build in a fail-safe way, i.e. slides for which feature extraction triggers an exception
+    are skipped.
+
+    Args:
+        default_slide_mpp:
+            If not `None`, ignore the slide metadata MPP, instead replacing it with this value.
+            Useful for slides without metadata.
+    """
     match extractor:
         case ExtractorName.CTRANSPATH:
             from stamp.preprocessing.extractor.ctranspath import ctranspath
@@ -165,7 +187,7 @@ def extract_(
     model = extractor.model.to(device).eval()
     extractor_id = f"{extractor.identifier}-{_get_preprocessing_code_hash()[:8]}"
 
-    logger.info(f"Using extractor {extractor.identifier}")
+    _logger.info(f"Using extractor {extractor.identifier}")
 
     if cache_dir:
         cache_dir.mkdir(parents=True, exist_ok=True)
@@ -183,13 +205,13 @@ def extract_(
 
     for slide_path in (progress := tqdm(slide_paths)):
         progress.set_description(str(slide_path.relative_to(wsi_dir)))
-        logger.debug(f"processing {slide_path}")
+        _logger.debug(f"processing {slide_path}")
 
         feature_output_path = feat_output_dir / slide_path.relative_to(
             wsi_dir
         ).with_suffix(".h5")
         if feature_output_path.exists():
-            logger.debug(
+            _logger.debug(
                 f"skipping {slide_path} because {feature_output_path} already exists"
             )
             continue
@@ -207,6 +229,7 @@ def extract_(
                 max_workers=max_workers,
                 brightness_cutoff=brightness_cutoff,
                 canny_cutoff=canny_cutoff,
+                default_slide_mpp=default_slide_mpp,
             )
             # Parallelism is implemented in the dataset iterator already, so one worker is enough!
             dl = DataLoader(ds, batch_size=64, num_workers=1, drop_last=False)
@@ -217,12 +240,18 @@ def extract_(
                     feats.append(model(tiles.to(device)).detach().half().cpu())
                 xs_um.append(xs.float())
                 ys_um.append(ys.float())
+        except MPPExtractionError:
+            _logger.exception(
+                "failed to extract MPP from slide. "
+                "You can try manually setting it by adding `preprocessing.default_slide_mpp = <MPP>` "
+            )
+            continue
         except Exception:
-            logger.exception(f"error while extracting features from {slide_path}")
+            _logger.exception(f"error while extracting features from {slide_path}")
             continue
 
         if len(feats) == 0:
-            logger.info(f"no tiles found in {slide_path}, skipping")
+            _logger.info(f"no tiles found in {slide_path}, skipping")
             continue
 
         coords = torch.stack([torch.concat(xs_um), torch.concat(ys_um)], dim=1).numpy()
@@ -241,13 +270,13 @@ def extract_(
                 h5_fp.attrs["unit"] = "um"
                 h5_fp.attrs["tile_size"] = tile_size_um
             except Exception:
-                logger.exception(f"error while writing {feature_output_path}")
+                _logger.exception(f"error while writing {feature_output_path}")
                 if tmp_h5_file is not None:
                     Path(tmp_h5_file.name).unlink(missing_ok=True)
                 continue
 
             Path(tmp_h5_file.name).rename(feature_output_path)
-            logger.debug(f"saved features to {feature_output_path}")
+            _logger.debug(f"saved features to {feature_output_path}")
 
         # Save rejection thumbnail
         thumbnail_path = feat_output_dir / slide_path.relative_to(wsi_dir).with_suffix(
@@ -255,25 +284,31 @@ def extract_(
         )
         thumbnail_path.parent.mkdir(exist_ok=True, parents=True)
         _get_rejection_thumb(
-            openslide.OpenSlide(str(slide_path)),
+            openslide.open_slide(str(slide_path)),
             size=(512, 512),
             coords_um=coords,
             tile_size_um=tile_size_um,
+            default_slide_mpp=default_slide_mpp,
         ).convert("RGB").save(thumbnail_path)
 
 
 def _get_rejection_thumb(
-    slide: openslide.OpenSlide,
+    slide: openslide.AbstractSlide,
     *,
     size: tuple[int, int],
     coords_um: npt.NDArray,
     tile_size_um: Microns,
+    default_slide_mpp: SlideMPP | None,
 ) -> Image.Image:
     """Creates a thumbnail of the slide"""
 
     inclusion_map = np.zeros(
         np.uint32(
-            np.ceil(np.array(slide.dimensions) * get_slide_mpp_(slide) / tile_size_um)
+            np.ceil(
+                np.array(slide.dimensions)
+                * get_slide_mpp_(slide, default_mpp=default_slide_mpp)
+                / tile_size_um
+            )
         ),
         dtype=bool,
     )
