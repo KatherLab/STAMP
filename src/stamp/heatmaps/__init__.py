@@ -71,9 +71,9 @@ def _vals_to_im(
 
 
 def _show_thumb(
-    slide, thumb_ax: Axes, attention: Tensor, forced_slide_mpp: SlideMPP | None
+    slide, thumb_ax: Axes, attention: Tensor, default_slide_mpp: SlideMPP | None
 ) -> np.ndarray:
-    mpp = get_slide_mpp_(slide, default_mpp=forced_slide_mpp)
+    mpp = get_slide_mpp_(slide, default_mpp=default_slide_mpp)
     dims_um = np.array(slide.dimensions) * mpp
     thumb = slide.get_thumbnail(np.round(dims_um * 8 / 256).astype(int))
     thumb_ax.imshow(np.array(thumb)[: attention.shape[0] * 8, : attention.shape[1] * 8])
@@ -307,7 +307,7 @@ def heatmaps_(
                 attention.unsqueeze(-1),
                 coords_norm,  # pyright: ignore[reportPossiblyUnboundVariable]
             ).squeeze(-1),
-            forced_slide_mpp=default_slide_mpp,
+            default_slide_mpp=default_slide_mpp,
         )
         Image.fromarray(thumb).save(slide_output_dir / f"thumbnail-{h5_path.stem}.png")
 

@@ -23,4 +23,4 @@ class HeatmapConfig(BaseModel):
     bottomk: int = 0
 
     default_slide_mpp: SlideMPP | None = None
-    """Forces the MPP of the slide, ignoring eventual metadata"""
+    """MPP of the slide to use if none can be inferred from the WSI"""

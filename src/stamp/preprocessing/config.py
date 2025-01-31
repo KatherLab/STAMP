@@ -33,7 +33,7 @@ class PreprocessingConfig(BaseModel, arbitrary_types_allowed=True):
     device: str = "cuda" if torch.cuda.is_available() else "cpu"
 
     default_slide_mpp: SlideMPP | None = None
-    """Force this MPP for all slides."""
+    """MPP of the slide to use if none can be inferred from the WSI"""
 
     # Background rejection
     brightness_cutoff: int | None = Field(240, gt=0, lt=255)
