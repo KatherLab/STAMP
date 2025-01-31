@@ -3,6 +3,8 @@ from pathlib import Path
 import torch
 from pydantic import BaseModel, ConfigDict
 
+from stamp.preprocessing.tiling import SlideMPP
+
 
 class HeatmapConfig(BaseModel):
     model_config = ConfigDict(extra="forbid")
@@ -20,5 +22,5 @@ class HeatmapConfig(BaseModel):
     topk: int = 0
     bottomk: int = 0
 
-    force_slide_mpp: float | None = None
+    default_slide_mpp: SlideMPP | None = None
     """Forces the MPP of the slide, ignoring eventual metadata"""

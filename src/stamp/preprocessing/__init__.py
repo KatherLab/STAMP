@@ -24,6 +24,7 @@ from stamp.preprocessing.extractor import Extractor
 from stamp.preprocessing.tiling import (
     Microns,
     MPPExtractionError,
+    SlideMPP,
     SlidePixels,
     TilePixels,
     get_slide_mpp_,
@@ -81,7 +82,7 @@ class _TileDataset(IterableDataset):
         max_workers: int,
         brightness_cutoff: int | None,
         canny_cutoff: float | None,
-        force_slide_mpp: float | None,
+        default_slide_mpp: SlideMPP | None,
     ) -> None:
         self.slide_path = slide_path
         self.cache_dir = cache_dir
@@ -92,14 +93,14 @@ class _TileDataset(IterableDataset):
         self.max_workers = max_workers
         self.brightness_cutoff = brightness_cutoff
         self.canny_cutoff = canny_cutoff
-        self.force_slide_mpp = force_slide_mpp
+        self.default_slide_mpp = default_slide_mpp
 
         # Already check if we can extract the MPP here.
         # We don't want to kill our dataloader later,
         # because that leads to _a lot_ of error messages which are difficult to read
         if (
             get_slide_mpp_(
-                openslide.open_slide(slide_path), forced_value=force_slide_mpp
+                openslide.open_slide(slide_path), default_mpp=default_slide_mpp
             )
             is None
         ):
@@ -117,7 +118,7 @@ class _TileDataset(IterableDataset):
                 max_workers=self.max_workers,
                 brightness_cutoff=self.brightness_cutoff,
                 canny_cutoff=self.canny_cutoff,
-                force_slide_mpp=self.force_slide_mpp,
+                default_slide_mpp=self.default_slide_mpp,
             )
         )
 
@@ -132,7 +133,7 @@ def extract_(
     tile_size_um: Microns,
     max_workers: int,
     device: DeviceLikeType,
-    force_slide_mpp: float | None,
+    default_slide_mpp: SlideMPP | None,
     brightness_cutoff: int | None,
     canny_cutoff: float | None,
 ) -> None:
@@ -142,7 +143,7 @@ def extract_(
     are skipped.
 
     Args:
-        force_slide_mpp:
+        default_slide_mpp:
             If not `None`, ignore the slide metadata MPP, instead replacing it with this value.
             Useful for slides without metadata.
     """
@@ -228,7 +229,7 @@ def extract_(
                 max_workers=max_workers,
                 brightness_cutoff=brightness_cutoff,
                 canny_cutoff=canny_cutoff,
-                force_slide_mpp=force_slide_mpp,
+                default_slide_mpp=default_slide_mpp,
             )
             # Parallelism is implemented in the dataset iterator already, so one worker is enough!
             dl = DataLoader(ds, batch_size=64, num_workers=1, drop_last=False)
@@ -242,7 +243,7 @@ def extract_(
         except MPPExtractionError:
             _logger.exception(
                 "failed to extract MPP from slide. "
-                "You can try manually setting it by adding `preprocessing.force_slide_mpp = <MPP>` "
+                "You can try manually setting it by adding `preprocessing.default_slide_mpp = <MPP>` "
             )
             continue
         except Exception:
@@ -287,7 +288,7 @@ def extract_(
             size=(512, 512),
             coords_um=coords,
             tile_size_um=tile_size_um,
-            force_slide_mpp=force_slide_mpp,
+            default_slide_mpp=default_slide_mpp,
         ).convert("RGB").save(thumbnail_path)
 
 
@@ -297,7 +298,7 @@ def _get_rejection_thumb(
     size: tuple[int, int],
     coords_um: npt.NDArray,
     tile_size_um: Microns,
-    force_slide_mpp: float | None,
+    default_slide_mpp: SlideMPP | None,
 ) -> Image.Image:
     """Creates a thumbnail of the slide"""
 
@@ -305,7 +306,7 @@ def _get_rejection_thumb(
         np.uint32(
             np.ceil(
                 np.array(slide.dimensions)
-                * get_slide_mpp_(slide, forced_value=force_slide_mpp)
+                * get_slide_mpp_(slide, default_mpp=default_slide_mpp)
                 / tile_size_um
             )
         ),

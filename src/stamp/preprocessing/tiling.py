@@ -39,6 +39,8 @@ SlidePixels = NewType("SlidePixels", int)
 TilePixels = NewType("TilePixels", int)
 """Pixels after resizing, i.e. how they appear on the final tile"""
 
+SlideMPP = NewType("SlideMPP", float)
+
 _Unit = TypeVar("_Unit")
 
 
@@ -69,7 +71,7 @@ def tiles_with_cache(
     max_workers: int,
     brightness_cutoff: int | None,
     canny_cutoff: float | None,
-    force_slide_mpp: float | None,
+    default_slide_mpp: SlideMPP | None,
 ) -> Iterator[_Tile[Microns]]:
     """Iterates over the tiles in a WSI, using or saving a cached version if applicable"""
 
@@ -83,7 +85,7 @@ def tiles_with_cache(
             max_workers=max_workers,
             brightness_cutoff=brightness_cutoff,
             canny_cutoff=canny_cutoff,
-            force_slide_mpp=force_slide_mpp,
+            default_slide_mpp=default_slide_mpp,
         )
         return
 
@@ -131,7 +133,7 @@ def tiles_with_cache(
                     max_workers=max_workers,
                     brightness_cutoff=brightness_cutoff,
                     canny_cutoff=canny_cutoff,
-                    force_slide_mpp=force_slide_mpp,
+                    default_slide_mpp=default_slide_mpp,
                 ):
                     with zip.open(
                         f"tile_({float(tile.coordinates.x)}, {float(tile.coordinates.y)}).jpg",
@@ -158,7 +160,7 @@ def _tiles_with_tissue(
     max_workers: int,
     brightness_cutoff: int | None,
     canny_cutoff: float | None,
-    force_slide_mpp: float | None,
+    default_slide_mpp: SlideMPP | None,
 ) -> Iterator[_Tile[Microns]]:
     """Yields all tiels from a WSI which (probably) show tissue"""
     for tile in _tiles(
@@ -168,7 +170,7 @@ def _tiles_with_tissue(
         max_supertile_size_slide_px=max_supertile_size_slide_px,
         max_workers=max_workers,
         brightness_cutoff=brightness_cutoff,
-        force_slide_mpp=force_slide_mpp,
+        default_slide_mpp=default_slide_mpp,
     ):
         if canny_cutoff is None or _has_enough_texture(tile.image, cutoff=canny_cutoff):
             yield tile
@@ -182,7 +184,7 @@ def _tiles(
     max_supertile_size_slide_px: SlidePixels,
     max_workers: int,
     brightness_cutoff: int | None,
-    force_slide_mpp: float | None,
+    default_slide_mpp: SlideMPP | None,
 ) -> Iterator[_Tile[Microns]]:
     """Yields tiles, excluding background.
 
@@ -199,7 +201,7 @@ def _tiles(
         max_supertile_size_slide_px=max_supertile_size_slide_px,
         max_workers=max_workers,
         brightness_cutoff=brightness_cutoff,
-        force_slide_mpp=force_slide_mpp,
+        default_slide_mpp=default_slide_mpp,
     ):
         assert supertile.size[0] == supertile.size[1], "supertile needs to be square"
         assert supertile.size[0] % tile_size_px == 0, (
@@ -280,11 +282,9 @@ def _supertiles(
     max_supertile_size_slide_px: SlidePixels,
     max_workers: int,
     brightness_cutoff: int | None,
-    force_slide_mpp: float | None,
+    default_slide_mpp: SlideMPP | None,
 ) -> Iterator[_Tile[Microns]]:
-    slide_mpp = get_slide_mpp_(slide, forced_value=force_slide_mpp)
-    if slide_mpp is None:
-        raise MPPExtractionError()
+    slide_mpp = cast(SlideMPP, get_slide_mpp_(slide, default_mpp=default_slide_mpp))
 
     # We calculate the `supertile_slide_px` such that they can hold a whole number of tiles
     # which, before scaling down, is still less than `max_supertile_slide_px`
@@ -377,39 +377,56 @@ def _tiles_from_cache_file(cache_file_path: Path) -> Iterator[_Tile]:
 
 
 def get_slide_mpp_(
-    slide: openslide.AbstractSlide | Path, *, forced_value: float | None
-) -> float | None:
-    """Returns the Microns per Slide Pixel of the WSI,
-    forced_value if set, or None, if neither could be found."""
+    slide: openslide.AbstractSlide | Path, *, default_mpp: SlideMPP | None
+) -> SlideMPP | None:
+    """
+    Retrieve the microns per pixel (MPP) value from a slide.
+    This function attempts to extract the MPP value from the given slide. If the slide
+    is provided as a file path, it will be opened using OpenSlide. The function first
+    checks for the MPP value in the slide's properties. If not found, it attempts to
+    extract the MPP value from the slide's comments and metadata. If all attempts fail
+    and a default MPP value is provided, it will use the default value. If no MPP value
+    can be determined and no default is provided, an MPPExtractionError is raised.
+    Args:
+        slide: The slide object or file path to the slide.
+        default_mpp: The default MPP value to use if extraction fails.
+    Returns:
+        The extracted or default MPP value, or None if extraction fails and no default is provided.
+    Raises:
+        MPPExtractionError: If the MPP value cannot be determined and no default is provided.
+    """
+
     if isinstance(slide, Path):
         slide = openslide.open_slide(slide)
 
     if openslide.PROPERTY_NAME_MPP_X in slide.properties:
-        slide_mpp = float(slide.properties[openslide.PROPERTY_NAME_MPP_X])
+        slide_mpp = SlideMPP(float(slide.properties[openslide.PROPERTY_NAME_MPP_X]))
     elif slide_mpp := _extract_mpp_from_comments(slide):
         pass
     elif slide_mpp := _extract_mpp_from_metadata(slide):
         pass
 
-    if slide_mpp is not None and forced_value is not None:
+    if slide_mpp is None and default_mpp:
         _logger.warning(
-            f"found mpp of {slide_mpp} in slide metadata, but forcing {forced_value} regardless."
+            f"could not infer slide MPP from metadata, using {default_mpp} instead."
         )
+    elif slide_mpp is None and default_mpp is None:
+        raise MPPExtractionError()
 
-    return forced_value or slide_mpp
+    return slide_mpp or default_mpp
 
 
-def _extract_mpp_from_comments(slide: openslide.AbstractSlide) -> float | None:
+def _extract_mpp_from_comments(slide: openslide.AbstractSlide) -> SlideMPP | None:
     slide_properties = slide.properties.get("openslide.comment", "")
     pattern = r"<PixelSizeMicrons>(.*?)</PixelSizeMicrons>"
     match = re.search(pattern, slide_properties)
     if match is not None and (mpp := match.group(1)) is not None:
-        return float(mpp)
+        return SlideMPP(float(mpp))
     else:
         return None
 
 
-def _extract_mpp_from_metadata(slide: openslide.AbstractSlide) -> float | None:
+def _extract_mpp_from_metadata(slide: openslide.AbstractSlide) -> SlideMPP | None:
     try:
         xml_path = slide.properties.get("tiff.ImageDescription") or None
         if xml_path is None:
@@ -422,4 +439,4 @@ def _extract_mpp_from_metadata(slide: openslide.AbstractSlide) -> float | None:
     except Exception:
         _logger.exception("failed to extract MPP from image description")
         return None
-    return mpp
+    return SlideMPP(mpp)

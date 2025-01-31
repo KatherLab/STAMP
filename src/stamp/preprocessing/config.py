@@ -4,7 +4,7 @@ from pathlib import Path
 import torch
 from pydantic import BaseModel, ConfigDict, Field
 
-from stamp.preprocessing.tiling import Microns, TilePixels
+from stamp.preprocessing.tiling import Microns, SlideMPP, TilePixels
 
 __author__ = "Marko van Treeck"
 __copyright__ = "Copyright (C) 2022-2025 Marko van Treeck"
@@ -32,7 +32,7 @@ class PreprocessingConfig(BaseModel, arbitrary_types_allowed=True):
     max_workers: int = 8
     device: str = "cuda" if torch.cuda.is_available() else "cpu"
 
-    force_slide_mpp: float | None = None
+    default_slide_mpp: SlideMPP | None = None
     """Force this MPP for all slides."""
 
     # Background rejection

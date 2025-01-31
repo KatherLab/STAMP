@@ -7,7 +7,6 @@ from pathlib import Path
 import yaml
 
 from stamp.config import StampConfig
-from stamp.preprocessing.tiling import MPPExtractionError
 
 STAMP_FACTORY_SETTINGS = Path(__file__).with_name("config.yaml")
 
@@ -71,7 +70,7 @@ def _run_cli(args: argparse.Namespace) -> None:
                 extractor=config.preprocessing.extractor,
                 max_workers=config.preprocessing.max_workers,
                 device=config.preprocessing.device,
-                force_slide_mpp=config.preprocessing.force_slide_mpp,
+                default_slide_mpp=config.preprocessing.default_slide_mpp,
                 brightness_cutoff=config.preprocessing.brightness_cutoff,
                 canny_cutoff=config.preprocessing.canny_cutoff,
             )
@@ -206,7 +205,7 @@ def _run_cli(args: argparse.Namespace) -> None:
                 device=config.heatmaps.device,
                 topk=config.heatmaps.topk,
                 bottomk=config.heatmaps.bottomk,
-                force_slide_mpp=config.heatmaps.force_slide_mpp,
+                default_slide_mpp=config.heatmaps.default_slide_mpp,
             )
 
         case _:
