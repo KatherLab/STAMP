@@ -33,6 +33,9 @@ from stamp.modeling.lightning_model import (
     EncodedTargets,
     LitVisionTransformer,
 )
+from stamp.modeling.lightning_cobra import (
+    LitCobra,
+)
 from stamp.modeling.transforms import VaryPrecisionTransform
 
 __author__ = "Marko van Treeck"
@@ -201,6 +204,7 @@ def setup_model_for_training(
     num_workers: int,
     train_transform: Callable[[torch.Tensor], torch.Tensor] | None,
     use_alibi: bool,
+    use_cobra: bool,
     # Metadata, has no effect on model training
     ground_truth_label: PandasLabel,
     clini_table: Path,
@@ -279,24 +283,63 @@ def setup_model_for_training(
             f"some categories do not have enough samples to meaningfully train a model: {underpopulated_categories}"
         )
 
-    # Train the model
-    model = LitVisionTransformer(
-        categories=train_categories,
-        category_weights=category_weights,
-        dim_input=dim_feats,
-        dim_model=512,
-        dim_feedforward=2048,
-        n_heads=8,
-        n_layers=2,
-        dropout=0.25,
-        use_alibi=use_alibi,
-        # Metadata, has no effect on model training
-        ground_truth_label=ground_truth_label,
-        train_patients=train_patients,
-        valid_patients=valid_patients,
-        clini_table=clini_table,
-        slide_table=slide_table,
-        feature_dir=feature_dir,
-    )
+    if use_cobra:
+        model = LitCobra(
+            categories=train_categories,
+            category_weights=category_weights,
+            #dim_input=dim_feats,
+            #dim_model=512,
+            #dim_feedforward=2048,
+            #n_heads=8,
+            #n_layers=2,
+            #dropout=0.25,
+            #use_alibi=use_alibi,
+            # Metadata, has no effect on model training
+            ground_truth_label=ground_truth_label,
+            train_patients=train_patients,
+            valid_patients=valid_patients,
+            clini_table=clini_table,
+            slide_table=slide_table,
+            feature_dir=feature_dir,
+        )
+    else:
+        model = LitVisionTransformer(
+            categories=train_categories,
+            category_weights=category_weights,
+            dim_input=dim_feats,
+            dim_model=512,
+            dim_feedforward=2048,
+            n_heads=8,
+            n_layers=2,
+            dropout=0.25,
+            use_alibi=use_alibi,
+            # Metadata, has no effect on model training
+            ground_truth_label=ground_truth_label,
+            train_patients=train_patients,
+            valid_patients=valid_patients,
+            clini_table=clini_table,
+            slide_table=slide_table,
+            feature_dir=feature_dir,
+        )
+
+    # # Train the model
+    # model = LitVisionTransformer(
+    #     categories=train_categories,
+    #     category_weights=category_weights,
+    #     dim_input=dim_feats,
+    #     dim_model=512,
+    #     dim_feedforward=2048,
+    #     n_heads=8,
+    #     n_layers=2,
+    #     dropout=0.25,
+    #     use_alibi=use_alibi,
+    #     # Metadata, has no effect on model training
+    #     ground_truth_label=ground_truth_label,
+    #     train_patients=train_patients,
+    #     valid_patients=valid_patients,
+    #     clini_table=clini_table,
+    #     slide_table=slide_table,
+    #     feature_dir=feature_dir,
+    # )
 
     return model, train_dl, valid_dl

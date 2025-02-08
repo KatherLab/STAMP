@@ -39,6 +39,8 @@ dependencies = [
     "torchmetrics>=1.6.0",
     "torchvision>=0.20.1",
     "tqdm>=4.66.6",
+    "hatchling>=1.27.0",
+    "editables>=0.5",
 ]
 
 [project.optional-dependencies]
@@ -64,8 +66,11 @@ virchow2 = [
     "timm>=0.9.11",
     "torch>=2.0.0",
 ]
+cobra = [
+    "cobra @ git+https://github.com/KatherLab/COBRA.git",
+]
 # Blanket target
-all = ["stamp[dinobloom,conch,ctranspath,uni,virchow2]"]
+all = ["stamp[dinobloom,conch,ctranspath,uni,virchow2,cobra]"]
 
 [project.scripts]
 "stamp" = "stamp.__main__:main"

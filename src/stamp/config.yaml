@@ -79,6 +79,9 @@ crossval:
   # Use ALiBi positional embedding
   # use_alibi: true
 
+  # Finetune pretrained COBRA II
+  use_cobra: true
+
 
 
 training:
