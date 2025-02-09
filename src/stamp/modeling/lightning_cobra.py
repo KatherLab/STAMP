@@ -49,6 +49,9 @@ class LitCobra(lightning.LightningModule):
         train_patients: Iterable[PatientId],
         valid_patients: Iterable[PatientId],
         stamp_version: Version = Version(stamp.__version__),
+        freeze_base: bool = False,
+        dropout: float = 0.25,
+        hidden_dim: int = 512,
         # Other metadata
         **metadata,
     ) -> None:
@@ -71,7 +74,12 @@ class LitCobra(lightning.LightningModule):
         self.cobra = get_cobraII(download_weights=(not os.path.exists(model_path)),
                                  checkpoint_path=model_path, local_dir=STAMP_CACHE_DIR)
         self.class_weights = category_weights
-        self.head = nn.Linear(feat_dim, len(categories))
+        self.head = nn.Sequential(
+                    nn.Linear(feat_dim, hidden_dim),
+                    nn.GELU(),
+                    nn.Dropout(dropout),
+                    nn.Linear(hidden_dim, len(categories))
+            )
         self.lr = lr
 
         # Check if version is compatible.
@@ -103,6 +111,15 @@ class LitCobra(lightning.LightningModule):
         _ = metadata  # unused, but saved in model
 
         self.save_hyperparameters()
+        
+        if freeze_base:
+            print("Freezing base of COBRA")
+            for param in self.cobra.embed.parameters():
+                param.requires_grad = False
+            for param in self.cobra.mamba_enc.parameters():
+                param.requires_grad = False
+            for param in self.cobra.norm.parameters():
+                param.requires_grad = False
 
     def forward(
         self,

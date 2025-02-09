@@ -66,6 +66,7 @@ def train_categorical_model_(
     use_alibi: bool,
     use_cobra: bool,
     lr: float,
+    freeze_base: bool,
 ) -> None:
     """Trains a model.
 
@@ -137,6 +138,7 @@ def train_categorical_model_(
         use_alibi=use_alibi,
         use_cobra=use_cobra,
         lr=lr,
+        freeze_base=freeze_base,
     )
     train_model_(
         output_dir=output_dir,
@@ -152,14 +154,14 @@ def train_categorical_model_(
 def train_model_(
     *,
     output_dir: Path,
-    model: LitVisionTransformer,
+    model: LitVisionTransformer | LitCobra,
     train_dl: DataLoader[tuple[Bags, CoordinatesBatch, BagSizes, EncodedTargets]],
     valid_dl: DataLoader[tuple[Bags, CoordinatesBatch, BagSizes, EncodedTargets]],
     max_epochs: int,
     patience: int,
     accelerator: str | Accelerator,
     use_cobra: bool,
-) -> [LitVisionTransformer,LitCobra]:
+) -> LitVisionTransformer | LitCobra:
     """Trains a model.
 
     Returns:
@@ -214,13 +216,14 @@ def setup_model_for_training(
     use_alibi: bool,
     use_cobra: bool,
     lr: float,
+    freeze_base: bool,
     # Metadata, has no effect on model training
     ground_truth_label: PandasLabel,
     clini_table: Path,
     slide_table: Path,
     feature_dir: Path,
 ) -> tuple[
-    [LitVisionTransformer,LitCobra],
+    LitVisionTransformer | LitCobra,
     DataLoader[tuple[Bags, CoordinatesBatch, BagSizes, EncodedTargets]],
     DataLoader[tuple[Bags, CoordinatesBatch, BagSizes, EncodedTargets]],
 ]:
@@ -301,11 +304,12 @@ def setup_model_for_training(
             #dim_feedforward=2048,
             #n_heads=8,
             #n_layers=2,
-            #dropout=0.25,
+            dropout=0.25,
             #use_alibi=use_alibi,
             # Metadata, has no effect on model training
             feat_dim=dim_feats,
             lr=lr,
+            freeze_base=freeze_base,
             ground_truth_label=ground_truth_label,
             train_patients=train_patients,
             valid_patients=valid_patients,
@@ -324,6 +328,7 @@ def setup_model_for_training(
             n_layers=2,
             dropout=0.25,
             use_alibi=use_alibi,
+            lr=lr,
             # Metadata, has no effect on model training
             ground_truth_label=ground_truth_label,
             train_patients=train_patients,

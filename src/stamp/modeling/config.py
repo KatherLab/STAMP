@@ -35,7 +35,8 @@ class TrainConfig(BaseModel):
     max_epochs: int = 64
     patience: int = 16
     accelerator: str = "gpu" if torch.cuda.is_available() else "cpu"
-    lr: float = 1e-5
+    lr: float = 1e-4
+    freeze_base: bool = True
     
     # Experimental features
     use_vary_precision_transform: bool = False

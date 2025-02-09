@@ -46,6 +46,7 @@ class LitVisionTransformer(lightning.LightningModule):
         train_patients: Iterable[PatientId],
         valid_patients: Iterable[PatientId],
         stamp_version: Version = Version(stamp.__version__),
+        lr: float = 1e-4,
         # Other metadata
         **metadata,
     ) -> None:
@@ -101,7 +102,7 @@ class LitVisionTransformer(lightning.LightningModule):
         self.valid_patients = valid_patients
 
         _ = metadata  # unused, but saved in model
-
+        self.lr = lr
         self.save_hyperparameters()
 
     def forward(
@@ -195,7 +196,7 @@ class LitVisionTransformer(lightning.LightningModule):
         )
 
     def configure_optimizers(self) -> optim.Optimizer:
-        optimizer = optim.Adam(self.parameters(), lr=1e-3)
+        optimizer = optim.Adam(self.parameters(), lr=self.lr)
         return optimizer
 
 
