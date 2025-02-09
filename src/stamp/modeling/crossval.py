@@ -65,6 +65,7 @@ def categorical_crossval_(
     use_cobra: bool,
     lr: float,
     freeze_base: bool,
+    freeze_cobra: bool,
 ) -> None:
     patient_to_ground_truth: Final[dict[PatientId, GroundTruth]] = (
         patient_to_ground_truth_from_clini_table_(
@@ -174,6 +175,7 @@ def categorical_crossval_(
                 use_cobra=use_cobra,
                 lr=lr,
                 freeze_base=freeze_base,
+                freeze_cobra=freeze_cobra,
             )
             model = train_model_(
                 output_dir=split_dir,

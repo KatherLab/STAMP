@@ -50,7 +50,8 @@ class LitCobra(lightning.LightningModule):
         valid_patients: Iterable[PatientId],
         stamp_version: Version = Version(stamp.__version__),
         freeze_base: bool = False,
-        dropout: float = 0.25,
+        freeze_cobra: bool = False,
+        dropout: float = 0.3,
         hidden_dim: int = 512,
         # Other metadata
         **metadata,
@@ -75,8 +76,9 @@ class LitCobra(lightning.LightningModule):
                                  checkpoint_path=model_path, local_dir=STAMP_CACHE_DIR)
         self.class_weights = category_weights
         self.head = nn.Sequential(
+                    nn.LayerNorm(feat_dim),
                     nn.Linear(feat_dim, hidden_dim),
-                    nn.GELU(),
+                    nn.SiLU(),
                     nn.Dropout(dropout),
                     nn.Linear(hidden_dim, len(categories))
             )
@@ -119,6 +121,10 @@ class LitCobra(lightning.LightningModule):
             for param in self.cobra.mamba_enc.parameters():
                 param.requires_grad = False
             for param in self.cobra.norm.parameters():
+                param.requires_grad = False
+        if freeze_cobra:
+            print("Freezing COBRA")
+            for param in self.cobra.parameters():
                 param.requires_grad = False
 
     def forward(

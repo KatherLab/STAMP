@@ -27,8 +27,8 @@ class TrainConfig(BaseModel):
     filename_label: PandasLabel = "FILENAME"
 
     # Dataset and -loader parameters
-    bag_size: int = 512
-    num_workers: int = min(os.cpu_count() or 1, 16)
+    bag_size: int = 1024
+    num_workers: int = min(os.cpu_count() or 1, 8)
 
     # Training paramenters
     batch_size: int = 64
@@ -37,6 +37,7 @@ class TrainConfig(BaseModel):
     accelerator: str = "gpu" if torch.cuda.is_available() else "cpu"
     lr: float = 1e-4
     freeze_base: bool = True
+    freeze_cobra: bool = False
     
     # Experimental features
     use_vary_precision_transform: bool = False
