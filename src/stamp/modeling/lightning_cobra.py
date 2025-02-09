@@ -148,6 +148,7 @@ class LitCobra(lightning.LightningModule):
                 on_step=False,
                 on_epoch=True,
                 sync_dist=True,
+                prog_bar=True,
             )
 
         return loss
