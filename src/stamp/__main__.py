@@ -106,6 +106,8 @@ def _run_cli(args: argparse.Namespace) -> None:
                 # Experimental features
                 use_vary_precision_transform=config.training.use_vary_precision_transform,
                 use_alibi=config.training.use_alibi,
+                use_cobra=config.training.use_cobra,
+                lr=config.training.lr,
             )
 
         case "deploy":
@@ -130,6 +132,7 @@ def _run_cli(args: argparse.Namespace) -> None:
                 filename_label=config.deployment.filename_label,
                 num_workers=config.deployment.num_workers,
                 accelerator=config.deployment.accelerator,
+                use_cobra=config.deployment.use_cobra,
             )
 
         case "crossval":
@@ -164,6 +167,8 @@ def _run_cli(args: argparse.Namespace) -> None:
                 # Experimental Features
                 use_vary_precision_transform=config.crossval.use_vary_precision_transform,
                 use_alibi=config.crossval.use_alibi,
+                use_cobra=config.crossval.use_cobra,
+                lr=config.crossval.lr,
             )
 
         case "statistics":

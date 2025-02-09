@@ -64,6 +64,8 @@ def train_categorical_model_(
     # Experimental features
     use_vary_precision_transform: bool,
     use_alibi: bool,
+    use_cobra: bool,
+    lr: float,
 ) -> None:
     """Trains a model.
 
@@ -133,6 +135,8 @@ def train_categorical_model_(
             else None
         ),
         use_alibi=use_alibi,
+        use_cobra=use_cobra,
+        lr=lr,
     )
     train_model_(
         output_dir=output_dir,
@@ -154,7 +158,8 @@ def train_model_(
     max_epochs: int,
     patience: int,
     accelerator: str | Accelerator,
-) -> LitVisionTransformer:
+    use_cobra: bool,
+) -> [LitVisionTransformer,LitCobra]:
     """Trains a model.
 
     Returns:
@@ -192,7 +197,10 @@ def train_model_(
     )
     shutil.copy(model_checkpoint.best_model_path, output_dir / "model.ckpt")
 
-    return LitVisionTransformer.load_from_checkpoint(model_checkpoint.best_model_path)
+    if use_cobra:
+        return LitCobra.load_from_checkpoint(model_checkpoint.best_model_path)
+    else:
+        return LitVisionTransformer.load_from_checkpoint(model_checkpoint.best_model_path)
 
 
 def setup_model_for_training(
@@ -205,13 +213,14 @@ def setup_model_for_training(
     train_transform: Callable[[torch.Tensor], torch.Tensor] | None,
     use_alibi: bool,
     use_cobra: bool,
+    lr: float,
     # Metadata, has no effect on model training
     ground_truth_label: PandasLabel,
     clini_table: Path,
     slide_table: Path,
     feature_dir: Path,
 ) -> tuple[
-    LitVisionTransformer,
+    [LitVisionTransformer,LitCobra],
     DataLoader[tuple[Bags, CoordinatesBatch, BagSizes, EncodedTargets]],
     DataLoader[tuple[Bags, CoordinatesBatch, BagSizes, EncodedTargets]],
 ]:
@@ -295,6 +304,8 @@ def setup_model_for_training(
             #dropout=0.25,
             #use_alibi=use_alibi,
             # Metadata, has no effect on model training
+            feat_dim=dim_feats,
+            lr=lr,
             ground_truth_label=ground_truth_label,
             train_patients=train_patients,
             valid_patients=valid_patients,

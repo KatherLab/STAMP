@@ -21,6 +21,7 @@ from stamp.modeling.data import (
 )
 from stamp.modeling.deploy import _predict, _to_prediction_df
 from stamp.modeling.lightning_model import LitVisionTransformer
+from stamp.modeling.lightning_cobra import LitCobra
 from stamp.modeling.train import setup_model_for_training, train_model_
 from stamp.modeling.transforms import VaryPrecisionTransform
 
@@ -61,6 +62,8 @@ def categorical_crossval_(
     # Experimental features
     use_vary_precision_transform: bool,
     use_alibi: bool,
+    use_cobra: bool,
+    lr: float,
 ) -> None:
     patient_to_ground_truth: Final[dict[PatientId, GroundTruth]] = (
         patient_to_ground_truth_from_clini_table_(
@@ -167,6 +170,8 @@ def categorical_crossval_(
                     else None
                 ),
                 use_alibi=use_alibi,
+                use_cobra=use_cobra,
+                lr=lr,
             )
             model = train_model_(
                 output_dir=split_dir,
@@ -176,9 +181,13 @@ def categorical_crossval_(
                 max_epochs=max_epochs,
                 patience=patience,
                 accelerator=accelerator,
+                use_cobra=use_cobra,
             )
         else:
-            model = LitVisionTransformer.load_from_checkpoint(split_dir / "model.ckpt")
+            if use_cobra:
+                model = LitCobra.load_from_checkpoint(split_dir / "model.ckpt")
+            else:
+                model = LitVisionTransformer.load_from_checkpoint(split_dir / "model.ckpt")
 
         # Deploy on test set
         if not (split_dir / "patient-preds.csv").exists():

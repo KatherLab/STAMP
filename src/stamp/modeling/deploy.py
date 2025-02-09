@@ -21,6 +21,7 @@ from stamp.modeling.data import (
     slide_to_patient_from_slide_table_,
 )
 from stamp.modeling.lightning_model import LitVisionTransformer
+from stamp.modeling.lightning_cobra import LitCobra
 
 __all__ = ["deploy_categorical_model_"]
 
@@ -45,13 +46,20 @@ def deploy_categorical_model_(
     filename_label: PandasLabel,
     num_workers: int,
     accelerator: str | Accelerator,
+    use_cobra: bool,
 ) -> None:
-    models = [
-        LitVisionTransformer.load_from_checkpoint(
-            checkpoint_path=checkpoint_path
-        ).eval()
-        for checkpoint_path in checkpoint_paths
-    ]
+    if use_cobra:
+        models = [
+            LitCobra.load_from_checkpoint(checkpoint_path=checkpoint_path).eval() 
+                  for checkpoint_path in checkpoint_paths
+        ]
+    else:
+        model = [
+            LitVisionTransformer.load_from_checkpoint(
+                checkpoint_path=checkpoint_path
+            ).eval()
+            for checkpoint_path in checkpoint_paths
+        ]
 
     # Ensure all models were trained on the same ground truth label
     if (

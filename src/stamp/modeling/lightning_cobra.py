@@ -2,7 +2,7 @@
 
 from collections.abc import Iterable, Sequence
 from typing import TypeAlias
-
+import os
 import lightning
 import numpy as np
 import torch
@@ -12,6 +12,7 @@ from torch import Tensor, nn, optim
 from torchmetrics.classification import MulticlassAUROC
 
 import stamp
+from stamp.cache import STAMP_CACHE_DIR
 from stamp.modeling.data import (
     Bags,
     BagSizes,
@@ -26,7 +27,7 @@ try:
 except ModuleNotFoundError as e:
     raise ModuleNotFoundError(
         "cobra dependencies not installed."
-        " Please update your venv using `uv sync --extra cobra --no-build-isolation`"
+        " Please update your venv using `uv sync --extra cobra`"
     ) from e
 Loss: TypeAlias = Float[Tensor, ""]
 
@@ -42,6 +43,8 @@ class LitCobra(lightning.LightningModule):
         # TODO remove default values for stamp 3; they're only here for backwards compatibility
         #use_alibi: bool = False,
         # Metadata used by other parts of stamp, but not by the model itself
+        feat_dim: int,
+        lr: float = 1e-5,
         ground_truth_label: PandasLabel,
         train_patients: Iterable[PatientId],
         valid_patients: Iterable[PatientId],
@@ -61,10 +64,15 @@ class LitCobra(lightning.LightningModule):
             raise ValueError(
                 "the number of category weights has to mathc the number of categories!"
             )
-
-        self.cobra = get_cobraII()
+        #if not os.path.exists("../../../weights/cobraII.pth.tar"): #FIXME
+        #project_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../"))
+        #weights_path = os.path.join(project_dir, "weights", "cobraII.pth.tar")
+        model_path =  STAMP_CACHE_DIR / "cobraII.pth.tar"
+        self.cobra = get_cobraII(download_weights=(not os.path.exists(model_path)),
+                                 checkpoint_path=model_path, local_dir=STAMP_CACHE_DIR)
         self.class_weights = category_weights
-        self.head = nn.Linear(768, len(categories))
+        self.head = nn.Linear(feat_dim, len(categories))
+        self.lr = lr
 
         # Check if version is compatible.
         # This should only happen when the model is loaded,
@@ -186,7 +194,7 @@ class LitCobra(lightning.LightningModule):
         return self.head(self.cobra(bags))
 
     def configure_optimizers(self) -> optim.Optimizer:
-        optimizer = optim.AdamW(self.parameters(), lr=5e-6)
+        optimizer = optim.AdamW(self.parameters(), lr=self.lr)
         return optimizer
 
 
