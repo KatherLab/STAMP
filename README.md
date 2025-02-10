@@ -1,6 +1,9 @@
 # STAMP: A Protocol for Solid Tumor Associative Modeling in Pathology
 
 <img src="docs/STAMP_logo.svg" width="250px" align="right"></img>
+
+![CI](https://github.com/KatherLab/STAMP/actions/workflows/ci.yml/badge.svg)
+
 This repository contains the accompanying code for the steps described in the [Nature Protocols paper][stamp paper]:
 "From Whole Slide Image to Biomarker Prediction:
 A Protocol for End-to-End Deep Learning in Computational Pathology".
@@ -21,7 +24,7 @@ To install stamp, run:
 python -m venv .venv
 . .venv/bin/activate
 
-pip install "stamp[all] @ git+https://github.com/KatherLab/stamp@v2"
+pip install "stamp[all] @ git+https://github.com/KatherLab/STAMP"
 ```
 
 If the installation was successful, running `stamp` in your terminal should yield the following output:
