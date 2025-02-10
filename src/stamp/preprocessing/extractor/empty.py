@@ -30,7 +30,7 @@ def empty() -> Extractor[_EmptyModel]:
         transform=torchvision.transforms.Compose(
             [
                 torchvision.transforms.PILToTensor(),
-                torchvision.transforms.Lambda(lambda x: x.float()),
+                torchvision.transforms.Lambda(torch.Tensor.float),
             ]
         ),
         identifier="empty",
