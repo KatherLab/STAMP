@@ -147,7 +147,8 @@ with contents as described below.
 Finally, `ground_truth_label` needs to contain the column name
 of the data we want to train our model on.
 Stamp only can be used to train neural networks for categorical targets.
-We recommend explicitly setting the possible classes using the `categories` field.
+We recommend explicitly setting the possible classes using the `categories` field. <br>
+You can choose between training a Transformer from scratch or utilizing the pretrained [COBRA](https://github.com/KatherLab/COBRA) model by setting the **use_cobra** flag in the config file.
 
 ```yaml
 # stamp-test-experiment/config.yaml
@@ -183,6 +184,7 @@ crossval:
 
   # Number of folds to split the data into for cross-validation
   #n_splits: 5
+  # use_cobra = False
 ```
 
 After specifying all the parameters of our cross-validation,
