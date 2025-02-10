@@ -4,7 +4,7 @@ from pathlib import Path
 import torch
 from pydantic import BaseModel, ConfigDict, Field
 
-from stamp.preprocessing.tiling import Microns, TilePixels
+from stamp.preprocessing.tiling import Microns, SlideMPP, TilePixels
 
 __author__ = "Marko van Treeck"
 __copyright__ = "Copyright (C) 2022-2025 Marko van Treeck"
@@ -31,6 +31,9 @@ class PreprocessingConfig(BaseModel, arbitrary_types_allowed=True):
     extractor: ExtractorName
     max_workers: int = 8
     device: str = "cuda" if torch.cuda.is_available() else "cpu"
+
+    default_slide_mpp: SlideMPP | None = None
+    """MPP of the slide to use if none can be inferred from the WSI"""
 
     # Background rejection
     brightness_cutoff: int | None = Field(240, gt=0, lt=255)

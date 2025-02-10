@@ -8,6 +8,7 @@ from stamp.preprocessing.config import (
     ExtractorName,
     Microns,
     PreprocessingConfig,
+    SlideMPP,
     TilePixels,
 )
 from stamp.statistics import StatsConfig
@@ -62,6 +63,7 @@ def test_config_parsing() -> None:
                 "slide_paths": None,
                 "topk": 5,
                 "wsi_dir": "wsis",
+                "default_slide_mpp": 1.0,
             },
             "preprocessing": {
                 "brightness_cutoff": 240,
@@ -74,6 +76,7 @@ def test_config_parsing() -> None:
                 "tile_size_px": 224,
                 "tile_size_um": 256.0,
                 "wsi_dir": "wsis",
+                "default_slide_mpp": 1.0,
             },
             "statistics": {
                 "ground_truth_label": "isMSIH",
@@ -120,6 +123,7 @@ def test_config_parsing() -> None:
             device="cuda",
             brightness_cutoff=240,
             canny_cutoff=0.02,
+            default_slide_mpp=SlideMPP(1.0),
         ),
         training=TrainConfig(
             output_dir=Path("test-alibi"),
@@ -207,5 +211,6 @@ def test_config_parsing() -> None:
             device="cuda",
             topk=5,
             bottomk=5,
+            default_slide_mpp=SlideMPP(1.0),
         ),
     )
