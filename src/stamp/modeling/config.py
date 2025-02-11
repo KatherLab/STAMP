@@ -38,13 +38,13 @@ class TrainConfig(BaseModel):
     lr: float = 1e-4
     freeze_base: bool = True
     freeze_cobra: bool = False
-    
+
     # Experimental features
     use_vary_precision_transform: bool = False
     use_alibi: bool = False
-    use_cobra: bool = False
+    use_cobra: bool = True
 
-    
+
 class CrossvalConfig(TrainConfig):
     n_splits: int = Field(5, ge=2)
 
