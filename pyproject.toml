@@ -67,7 +67,7 @@ virchow2 = [
     "torch>=2.0.0",
 ]
 cobra = [
-    "cobra @ git+https://github.com/KatherLab/COBRA.git",
+    "cobra @ git+https://github.com/KatherLab/COBRA.git@cbb1541c5d920bf1145f76008939072d9504258e",
 ]
 # Blanket target
 all = ["stamp[dinobloom,conch,ctranspath,uni,virchow2,cobra]"]
