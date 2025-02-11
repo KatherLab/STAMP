@@ -58,7 +58,7 @@ You can do so by specifying the feature extractor you want to use
 when installing stamp:
 ```sh
 # Install stamp including the dependencies for all feature extractors
-pip install "git+https://github.com/KatherLab/stamp@v2[all]"
+pip install "git+https://github.com/KatherLab/stamp[all]"
 ```
 
 Open the `stamp-test-experiment/config.yaml` we created in the last step
@@ -185,6 +185,8 @@ crossval:
   # Number of folds to split the data into for cross-validation
   #n_splits: 5
   # use_cobra = False
+  # freeze_base = True
+  # freeze_cobra = False
 ```
 
 After specifying all the parameters of our cross-validation,
