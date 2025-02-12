@@ -215,7 +215,7 @@ def train_model_(
         )
         precision="16-mixed"
     else:
-        precision="32-mixed"
+        precision="32-true"
         torch.set_float32_matmul_precision("high")
     
     trainer = lightning.Trainer(

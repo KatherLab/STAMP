@@ -176,10 +176,22 @@ def _predict(
         transform=None,
     )
 
+    if torch.cuda.get_device_capability()[0] < 8 and use_cobra:
+        _logger.warning(
+                f"\033[93mCOBRA (Mamba2) is designed to run on GPUs with compute capability 8.0 or higher!! "
+                f"Your GPU has compute capability {torch.cuda.get_device_capability()[0]}. "
+                f"We are forced to switch to mixed FP16 precision. This may lead to numerical instability and reduced performance!!\033[0m"
+        )
+        precision="16-mixed"
+    else:
+        precision="32-true"
+        torch.set_float32_matmul_precision("high")
+    
     trainer = lightning.Trainer(
         accelerator=accelerator,
         devices=1,  # Needs to be 1, otherwise half the predictions are missing for some reason
         logger=False,
+        precision=precision,
     )
     predictions = torch.softmax(
         torch.concat(
