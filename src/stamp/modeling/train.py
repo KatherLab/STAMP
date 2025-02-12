@@ -37,6 +37,8 @@ from stamp.modeling.lightning_cobra import (
     LitCobra,
 )
 from stamp.modeling.transforms import VaryPrecisionTransform
+import logging
+_logger = logging.getLogger("stamp")
 
 __author__ = "Marko van Treeck"
 __copyright__ = "Copyright (C) 2024 Marko van Treeck"
@@ -169,13 +171,53 @@ def train_model_(
     Returns:
         The model with the best validation loss during training.
     """
-    torch.set_float32_matmul_precision("high")
+    #if torch.cuda.get_device_capability()[0] >= 8 or not use_cobra:
+        
+    # if torch.cuda.get_device_capability()[0] < 8 and use_cobra:
+        #torch.set_default_tensor_type(torch.HalfTensor)
+        # original_collate_fn = train_dl.collate_fn
+
+        # def to_half_precision(batch):
+        #     bags, coords, bag_sizes, targets = batch
+        #     bags = bags.half()
+        #     if original_collate_fn is not None:
+        #         return original_collate_fn([bags, coords, bag_sizes, targets])
+        #     return bags, coords, bag_sizes, targets
+
+        # train_dl = DataLoader(
+        #     dataset=train_dl.dataset,
+        #     batch_size=train_dl.batch_size,
+        #     shuffle=isinstance(train_dl.sampler, torch.utils.data.sampler.RandomSampler),
+        #     num_workers=train_dl.num_workers,
+        #     collate_fn=to_half_precision,
+        # )
+
+        # valid_dl = DataLoader(
+        #     dataset=valid_dl.dataset,
+        #     batch_size=valid_dl.batch_size,
+        #     shuffle=False,
+        #     num_workers=valid_dl.num_workers,
+        #     collate_fn=lambda batch: to_half_precision,
+        # )
 
     model_checkpoint = ModelCheckpoint(
         monitor="validation_loss",
         mode="min",
         filename="checkpoint-{epoch:02d}-{validation_loss:0.3f}",
     )
+    # Modify the dataloader to return half precision tensors
+
+    if torch.cuda.get_device_capability()[0] < 8 and use_cobra:
+        _logger.warning(
+                f"\033[93mCOBRA (Mamba2) is designed to run on GPUs with compute capability 8.0 or higher!! "
+                f"Your GPU has compute capability {torch.cuda.get_device_capability()[0]}. "
+                f"We are forced to switch to mixed FP16 precision. This may lead to numerical instability and reduced performance!!\033[0m"
+        )
+        precision="16-mixed"
+    else:
+        precision="32-mixed"
+        torch.set_float32_matmul_precision("high")
+    
     trainer = lightning.Trainer(
         default_root_dir=output_dir,
         callbacks=[
@@ -193,6 +235,8 @@ def train_model_(
         gradient_clip_val=0.5,
         logger=CSVLogger(save_dir=output_dir),
         log_every_n_steps=len(train_dl),
+        #precision="16-mixed" if torch.cuda.get_device_capability()[0] < 8 and use_cobra else "32-mixed",
+        precision=precision,
     )
     trainer.fit(
         model=model,
@@ -321,6 +365,9 @@ def setup_model_for_training(
             slide_table=slide_table,
             feature_dir=feature_dir,
         )
+        
+        #model = model.half()
+            
     else:
         model = LitVisionTransformer(
             categories=train_categories,
