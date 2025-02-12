@@ -38,6 +38,7 @@ from stamp.modeling.lightning_cobra import (
 )
 from stamp.modeling.transforms import VaryPrecisionTransform
 import logging
+
 _logger = logging.getLogger("stamp")
 
 __author__ = "Marko van Treeck"
@@ -152,6 +153,7 @@ def train_categorical_model_(
         max_epochs=max_epochs,
         patience=patience,
         accelerator=accelerator,
+        use_cobra=use_cobra,
     )
 
 
@@ -171,34 +173,34 @@ def train_model_(
     Returns:
         The model with the best validation loss during training.
     """
-    #if torch.cuda.get_device_capability()[0] >= 8 or not use_cobra:
-        
+    # if torch.cuda.get_device_capability()[0] >= 8 or not use_cobra:
+
     # if torch.cuda.get_device_capability()[0] < 8 and use_cobra:
-        #torch.set_default_tensor_type(torch.HalfTensor)
-        # original_collate_fn = train_dl.collate_fn
+    # torch.set_default_tensor_type(torch.HalfTensor)
+    # original_collate_fn = train_dl.collate_fn
 
-        # def to_half_precision(batch):
-        #     bags, coords, bag_sizes, targets = batch
-        #     bags = bags.half()
-        #     if original_collate_fn is not None:
-        #         return original_collate_fn([bags, coords, bag_sizes, targets])
-        #     return bags, coords, bag_sizes, targets
+    # def to_half_precision(batch):
+    #     bags, coords, bag_sizes, targets = batch
+    #     bags = bags.half()
+    #     if original_collate_fn is not None:
+    #         return original_collate_fn([bags, coords, bag_sizes, targets])
+    #     return bags, coords, bag_sizes, targets
 
-        # train_dl = DataLoader(
-        #     dataset=train_dl.dataset,
-        #     batch_size=train_dl.batch_size,
-        #     shuffle=isinstance(train_dl.sampler, torch.utils.data.sampler.RandomSampler),
-        #     num_workers=train_dl.num_workers,
-        #     collate_fn=to_half_precision,
-        # )
+    # train_dl = DataLoader(
+    #     dataset=train_dl.dataset,
+    #     batch_size=train_dl.batch_size,
+    #     shuffle=isinstance(train_dl.sampler, torch.utils.data.sampler.RandomSampler),
+    #     num_workers=train_dl.num_workers,
+    #     collate_fn=to_half_precision,
+    # )
 
-        # valid_dl = DataLoader(
-        #     dataset=valid_dl.dataset,
-        #     batch_size=valid_dl.batch_size,
-        #     shuffle=False,
-        #     num_workers=valid_dl.num_workers,
-        #     collate_fn=lambda batch: to_half_precision,
-        # )
+    # valid_dl = DataLoader(
+    #     dataset=valid_dl.dataset,
+    #     batch_size=valid_dl.batch_size,
+    #     shuffle=False,
+    #     num_workers=valid_dl.num_workers,
+    #     collate_fn=lambda batch: to_half_precision,
+    # )
 
     model_checkpoint = ModelCheckpoint(
         monitor="validation_loss",
@@ -209,15 +211,15 @@ def train_model_(
 
     if torch.cuda.get_device_capability()[0] < 8 and use_cobra:
         _logger.warning(
-                f"\033[93mCOBRA (Mamba2) is designed to run on GPUs with compute capability 8.0 or higher!! "
-                f"Your GPU has compute capability {torch.cuda.get_device_capability()[0]}. "
-                f"We are forced to switch to mixed FP16 precision. This may lead to numerical instability and reduced performance!!\033[0m"
+            f"\033[93mCOBRA (Mamba2) is designed to run on GPUs with compute capability 8.0 or higher!! "
+            f"Your GPU has compute capability {torch.cuda.get_device_capability()[0]}. "
+            f"We are forced to switch to mixed FP16 precision. This may lead to numerical instability and reduced performance!!\033[0m"
         )
-        precision="16-mixed"
+        precision = "16-mixed"
     else:
-        precision="32-true"
+        precision = "32-true"
         torch.set_float32_matmul_precision("high")
-    
+
     trainer = lightning.Trainer(
         default_root_dir=output_dir,
         callbacks=[
@@ -235,7 +237,7 @@ def train_model_(
         gradient_clip_val=0.5,
         logger=CSVLogger(save_dir=output_dir),
         log_every_n_steps=len(train_dl),
-        #precision="16-mixed" if torch.cuda.get_device_capability()[0] < 8 and use_cobra else "32-mixed",
+        # precision="16-mixed" if torch.cuda.get_device_capability()[0] < 8 and use_cobra else "32-mixed",
         precision=precision,
     )
     trainer.fit(
@@ -248,7 +250,9 @@ def train_model_(
     if use_cobra:
         return LitCobra.load_from_checkpoint(model_checkpoint.best_model_path)
     else:
-        return LitVisionTransformer.load_from_checkpoint(model_checkpoint.best_model_path)
+        return LitVisionTransformer.load_from_checkpoint(
+            model_checkpoint.best_model_path
+        )
 
 
 def setup_model_for_training(
@@ -346,13 +350,13 @@ def setup_model_for_training(
         model = LitCobra(
             categories=train_categories,
             category_weights=category_weights,
-            #dim_input=dim_feats,
-            #dim_model=512,
-            #dim_feedforward=2048,
-            #n_heads=8,
-            #n_layers=2,
+            # dim_input=dim_feats,
+            # dim_model=512,
+            # dim_feedforward=2048,
+            # n_heads=8,
+            # n_layers=2,
             dropout=0.25,
-            #use_alibi=use_alibi,
+            # use_alibi=use_alibi,
             # Metadata, has no effect on model training
             feat_dim=dim_feats,
             lr=lr,
@@ -365,9 +369,9 @@ def setup_model_for_training(
             slide_table=slide_table,
             feature_dir=feature_dir,
         )
-        
-        #model = model.half()
-            
+
+        # model = model.half()
+
     else:
         model = LitVisionTransformer(
             categories=train_categories,
