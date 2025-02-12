@@ -21,7 +21,7 @@ To install stamp, run:
 python -m venv .venv
 . .venv/bin/activate
 
-pip install "stamp[all] @ git+https://github.com/KatherLab/stamp@v2"
+pip install "stamp[all] @ git+https://github.com/KatherLab/stamp"
 ```
 
 If the installation was successful, running `stamp` in your terminal should yield the following output:
