@@ -269,7 +269,7 @@ wheels = [
 [[package]]
 name = "cobra"
 version = "0.1.0"
-source = { git = "https://github.com/KatherLab/COBRA.git#671370f0ad115bbb1d0b9eb7ff3aaf9f50ec0b18" }
+source = { git = "https://github.com/KatherLab/COBRA.git#17f5cccc2252b71e5934020a49c808773028d6ce" }
 dependencies = [
     { name = "causal-conv1d" },
     { name = "einops" },

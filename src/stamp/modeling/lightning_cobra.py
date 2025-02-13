@@ -52,7 +52,7 @@ class LitCobra(lightning.LightningModule):
         stamp_version: Version = Version(stamp.__version__),
         freeze: str = "None",
         dropout: float = 0.5,
-        hidden_dim: int = 256,
+        hidden_dim: int = 512,
         # Other metadata
         **metadata,
     ) -> None:
