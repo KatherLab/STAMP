@@ -22,6 +22,7 @@ from stamp.modeling.data import (
     PandasLabel,
     PatientId,
 )
+
 try:
     from cobra.utils.load_cobra import get_cobraII
 except ModuleNotFoundError as e:
@@ -38,10 +39,10 @@ class LitCobra(lightning.LightningModule):
         *,
         categories: Sequence[Category],
         category_weights: Float[Tensor, "category_weight"],  # noqa: F821
-        #dropout: float,
+        # dropout: float,
         # Experimental features
         # TODO remove default values for stamp 3; they're only here for backwards compatibility
-        #use_alibi: bool = False,
+        # use_alibi: bool = False,
         # Metadata used by other parts of stamp, but not by the model itself
         feat_dim: int,
         lr: float = 1e-5,
@@ -49,10 +50,9 @@ class LitCobra(lightning.LightningModule):
         train_patients: Iterable[PatientId],
         valid_patients: Iterable[PatientId],
         stamp_version: Version = Version(stamp.__version__),
-        freeze_base: bool = False,
-        freeze_cobra: bool = False,
-        dropout: float = 0.3,
-        hidden_dim: int = 512,
+        freeze: str = "None",
+        dropout: float = 0.5,
+        hidden_dim: int = 256,
         # Other metadata
         **metadata,
     ) -> None:
@@ -68,20 +68,23 @@ class LitCobra(lightning.LightningModule):
             raise ValueError(
                 "the number of category weights has to mathc the number of categories!"
             )
-        #if not os.path.exists("../../../weights/cobraII.pth.tar"): #FIXME
-        #project_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../"))
-        #weights_path = os.path.join(project_dir, "weights", "cobraII.pth.tar")
-        model_path =  STAMP_CACHE_DIR / "cobraII.pth.tar"
-        self.cobra = get_cobraII(download_weights=(not os.path.exists(model_path)),
-                                 checkpoint_path=model_path, local_dir=STAMP_CACHE_DIR)
+        # if not os.path.exists("../../../weights/cobraII.pth.tar"): #FIXME
+        # project_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../"))
+        # weights_path = os.path.join(project_dir, "weights", "cobraII.pth.tar")
+        model_path = STAMP_CACHE_DIR / "cobraII.pth.tar"
+        self.cobra = get_cobraII(
+            download_weights=(not os.path.exists(model_path)),
+            checkpoint_path=model_path,
+            local_dir=STAMP_CACHE_DIR,
+        )
         self.class_weights = category_weights
         self.head = nn.Sequential(
-                    nn.LayerNorm(feat_dim),
-                    nn.Linear(feat_dim, hidden_dim),
-                    nn.SiLU(),
-                    nn.Dropout(dropout),
-                    nn.Linear(hidden_dim, len(categories))
-            )
+            nn.LayerNorm(feat_dim),
+            nn.Linear(feat_dim, hidden_dim),
+            nn.SiLU(),
+            nn.Dropout(dropout),
+            nn.Linear(hidden_dim, len(categories)),
+        )
         self.lr = lr
 
         # Check if version is compatible.
@@ -113,8 +116,8 @@ class LitCobra(lightning.LightningModule):
         _ = metadata  # unused, but saved in model
 
         self.save_hyperparameters()
-        
-        if freeze_base:
+
+        if freeze == "base":
             print("Freezing base of COBRA")
             for param in self.cobra.embed.parameters():
                 param.requires_grad = False
@@ -122,10 +125,18 @@ class LitCobra(lightning.LightningModule):
                 param.requires_grad = False
             for param in self.cobra.norm.parameters():
                 param.requires_grad = False
-        if freeze_cobra:
+        elif freeze == "emb":
+            print("Freezing embedding of COBRA")
+            for param in self.cobra.embed.parameters():
+                param.requires_grad = False
+        elif freeze == "full":
             print("Freezing COBRA")
             for param in self.cobra.parameters():
                 param.requires_grad = False
+        elif freeze != "None":
+            raise ValueError(
+                "Invalid freeze option, implemented options: 'None', 'base', 'emb', 'full'"
+            )
 
     def forward(
         self,

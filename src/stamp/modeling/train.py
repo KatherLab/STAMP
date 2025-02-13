@@ -69,8 +69,7 @@ def train_categorical_model_(
     use_alibi: bool,
     use_cobra: bool,
     lr: float,
-    freeze_base: bool,
-    freeze_cobra: bool,
+    freeze_base: str = "None",
 ) -> None:
     """Trains a model.
 
@@ -142,8 +141,7 @@ def train_categorical_model_(
         use_alibi=use_alibi,
         use_cobra=use_cobra,
         lr=lr,
-        freeze_base=freeze_base,
-        freeze_cobra=freeze_cobra,
+        freeze=freeze,
     )
     train_model_(
         output_dir=output_dir,
@@ -266,8 +264,7 @@ def setup_model_for_training(
     use_alibi: bool,
     use_cobra: bool,
     lr: float,
-    freeze_base: bool,
-    freeze_cobra: bool,
+    freeze: str,
     # Metadata, has no effect on model training
     ground_truth_label: PandasLabel,
     clini_table: Path,
@@ -360,8 +357,7 @@ def setup_model_for_training(
             # Metadata, has no effect on model training
             feat_dim=dim_feats,
             lr=lr,
-            freeze_base=freeze_base,
-            freeze_cobra=freeze_cobra,
+            freeze=freeze,
             ground_truth_label=ground_truth_label,
             train_patients=train_patients,
             valid_patients=valid_patients,

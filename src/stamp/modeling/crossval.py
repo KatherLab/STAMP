@@ -64,8 +64,7 @@ def categorical_crossval_(
     use_alibi: bool,
     use_cobra: bool,
     lr: float,
-    freeze_base: bool,
-    freeze_cobra: bool,
+    freeze: str,
 ) -> None:
     patient_to_ground_truth: Final[dict[PatientId, GroundTruth]] = (
         patient_to_ground_truth_from_clini_table_(
@@ -174,8 +173,7 @@ def categorical_crossval_(
                 use_alibi=use_alibi,
                 use_cobra=use_cobra,
                 lr=lr,
-                freeze_base=freeze_base,
-                freeze_cobra=freeze_cobra,
+                freeze=freeze,
             )
             model = train_model_(
                 output_dir=split_dir,
@@ -191,7 +189,9 @@ def categorical_crossval_(
             if use_cobra:
                 model = LitCobra.load_from_checkpoint(split_dir / "model.ckpt")
             else:
-                model = LitVisionTransformer.load_from_checkpoint(split_dir / "model.ckpt")
+                model = LitVisionTransformer.load_from_checkpoint(
+                    split_dir / "model.ckpt"
+                )
 
         # Deploy on test set
         if not (split_dir / "patient-preds.csv").exists():

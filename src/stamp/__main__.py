@@ -108,8 +108,7 @@ def _run_cli(args: argparse.Namespace) -> None:
                 use_alibi=config.training.use_alibi,
                 use_cobra=config.training.use_cobra,
                 lr=config.training.lr,
-                freeze_base=config.training.freeze_base,
-                freeze_cobra=config.training.freeze_cobra,
+                freeze=config.training.freeze,
             )
 
         case "deploy":
@@ -171,8 +170,7 @@ def _run_cli(args: argparse.Namespace) -> None:
                 use_alibi=config.crossval.use_alibi,
                 use_cobra=config.crossval.use_cobra,
                 lr=config.crossval.lr,
-                freeze_base=config.crossval.freeze_base,
-                freeze_cobra=config.crossval.freeze_cobra,
+                freeze=config.crossval.freeze,
             )
 
         case "statistics":

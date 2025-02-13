@@ -36,8 +36,7 @@ class TrainConfig(BaseModel):
     patience: int = 16
     accelerator: str = "gpu" if torch.cuda.is_available() else "cpu"
     lr: float = 1e-4
-    freeze_base: bool = True
-    freeze_cobra: bool = False
+    freeze: str = "base"
 
     # Experimental features
     use_vary_precision_transform: bool = False
@@ -65,4 +64,4 @@ class DeploymentConfig(BaseModel):
 
     num_workers: int = min(os.cpu_count() or 1, 16)
     accelerator: str = "gpu" if torch.cuda.is_available() else "cpu"
-    use_cobra: bool = False
+    use_cobra: bool = True
