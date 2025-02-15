@@ -6,7 +6,7 @@ import os
 from typing import Iterable, Optional
 import shutil
 
-NORMALIZATION_TEMPLATE_URL = "https://github.com/Avic3nna/STAMP/blob/main/resources/normalization_template.jpg?raw=true"
+NORMALIZATION_TEMPLATE_URL = "https://github.com/KatherLab/STAMP/blob/v1/resources/normalization_template.jpg?raw=true"
 CTRANSPATH_WEIGHTS_URL = "https://drive.google.com/u/0/uc?id=1DoDx_70_TLj98gTf6YTXnu4tFhsFocDX&export=download"
 DEFAULT_RESOURCES_DIR = Path(__file__).with_name("resources")
 DEFAULT_CONFIG_FILE = Path("config.yaml")
