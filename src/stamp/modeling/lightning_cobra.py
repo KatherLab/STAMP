@@ -75,7 +75,6 @@ class LitCobra(lightning.LightningModule):
         self.cobra = get_cobraII(
             download_weights=(not os.path.exists(model_path)),
             checkpoint_path=model_path,
-            local_dir=STAMP_CACHE_DIR,
         )
         self.class_weights = category_weights
         self.head = nn.Sequential(
