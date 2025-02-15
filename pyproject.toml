@@ -41,6 +41,8 @@ dependencies = [
     "tqdm>=4.66.6",
     "hatchling>=1.27.0",
     "editables>=0.5",
+    "timm>=1.0.14",
+    "einops-exts>=0.0.4",
 ]
 
 [project.optional-dependencies]

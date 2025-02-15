@@ -435,6 +435,18 @@ wheels = [
 ]
 
 [[package]]
+name = "einops-exts"
+version = "0.0.4"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "einops" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/3e/cc/f2b03b24894faaaa425cf46508e6b1f449d908841f61aeb7c14f0b18a3f3/einops-exts-0.0.4.tar.gz", hash = "sha256:616f145b3411f8e9e3be5da5c968bbe372e55c249de11faa909c7a4b74580a6c", size = 3548 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/78/01/8da8dd078b354a89602a875d310a0d725dad92b5b4d61069576e0a0e02e4/einops_exts-0.0.4-py3-none-any.whl", hash = "sha256:6d310a4c858e459ebff8288580f90255d354cfa3bde22a53b59baae64b48cb95", size = 3925 },
+]
+
+[[package]]
 name = "et-xmlfile"
 version = "2.0.0"
 source = { registry = "https://pypi.org/simple" }
@@ -2121,6 +2133,7 @@ dependencies = [
     { name = "beartype" },
     { name = "editables" },
     { name = "einops" },
+    { name = "einops-exts" },
     { name = "h5py" },
     { name = "hatchling" },
     { name = "jaxtyping" },
@@ -2135,6 +2148,7 @@ dependencies = [
     { name = "pydantic" },
     { name = "pyyaml" },
     { name = "scikit-learn" },
+    { name = "timm" },
     { name = "torch" },
     { name = "torchmetrics" },
     { name = "torchvision" },
@@ -2194,6 +2208,7 @@ requires-dist = [
     { name = "conch", marker = "extra == 'conch'", git = "https://github.com/Mahmoodlab/CONCH.git?rev=02d6ac59cc20874bff0f581de258c2b257f69a84#02d6ac59cc20874bff0f581de258c2b257f69a84" },
     { name = "editables", specifier = ">=0.5" },
     { name = "einops", specifier = ">=0.8.0" },
+    { name = "einops-exts", specifier = ">=0.0.4" },
     { name = "gdown", marker = "extra == 'ctranspath'", specifier = ">=5.2.0" },
     { name = "h5py", specifier = ">=3.12.1" },
     { name = "hatchling", specifier = ">=1.27.0" },
@@ -2213,6 +2228,7 @@ requires-dist = [
     { name = "pyyaml", specifier = ">=6.0.2" },
     { name = "scikit-learn", specifier = ">=1.5.2" },
     { name = "stamp", extras = ["dinobloom", "conch", "ctranspath", "uni", "virchow2", "cobra"], marker = "extra == 'all'" },
+    { name = "timm", specifier = ">=1.0.14" },
     { name = "timm", marker = "extra == 'virchow2'", specifier = ">=0.9.11" },
     { name = "torch", specifier = ">=2.5.1" },
     { name = "torch", marker = "extra == 'virchow2'", specifier = ">=2.0.0" },

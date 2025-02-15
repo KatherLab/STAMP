@@ -18,7 +18,10 @@ class ExtractorName(StrEnum):
     DINO_BLOOM = "dino-bloom"
     VIRCHOW2 = "virchow2"
     EMPTY = "empty"
-
+    CONCHV1_5 = "conchv1_5"
+    GIGAPATH = "gigapath"
+    H_OPTIMUS_0 = "h_optimus_0"
+    UNI2 = "uni2"
 
 class PreprocessingConfig(BaseModel, arbitrary_types_allowed=True):
     model_config = ConfigDict(extra="forbid")
