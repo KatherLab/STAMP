@@ -153,15 +153,30 @@ def extract_(
 
             extractor = ctranspath()
 
+        case ExtractorName.CHIEF_CTRANSPATH:
+            from stamp.preprocessing.extractor.chief_ctranspath import chief_ctranspath
+
+            extractor = chief_ctranspath()
+
         case ExtractorName.CONCH:
             from stamp.preprocessing.extractor.conch import conch
 
             extractor = conch()
 
+        case ExtractorName.CONCHV1_5:
+            from stamp.preprocessing.extractor.conchv1_5 import conchv1_5
+
+            extractor = conchv1_5()
+
         case ExtractorName.UNI:
             from stamp.preprocessing.extractor.uni import uni
 
             extractor = uni()
+
+        case ExtractorName.UNI_2:
+            from stamp.preprocessing.extractor.uni2 import uni2
+
+            extractor = uni2()
 
         case ExtractorName.DINO_BLOOM:
             from stamp.preprocessing.extractor.dinobloom import dino_bloom
@@ -172,6 +187,21 @@ def extract_(
             from stamp.preprocessing.extractor.virchow2 import virchow2
 
             extractor = virchow2()
+
+        case ExtractorName.H_OPTIMUS_0:
+            from stamp.preprocessing.extractor.h_optimus_0 import h_optimus_0
+
+            extractor = h_optimus_0()
+
+        case ExtractorName.H_OPTIMUS_1:
+            from stamp.preprocessing.extractor.h_optimus_1 import h_optimus_1
+
+            extractor = h_optimus_1()
+
+        case ExtractorName.GIGAPATH:
+            from stamp.preprocessing.extractor.gigapath import gigapath
+
+            extractor = gigapath()
 
         case ExtractorName.EMPTY:
             from stamp.preprocessing.extractor.empty import empty

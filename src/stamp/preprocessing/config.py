@@ -13,9 +13,15 @@ __license__ = "MIT"
 
 class ExtractorName(StrEnum):
     CTRANSPATH = "ctranspath"
+    CHIEF_CTRANSPATH = "chief_ctranspath"
     CONCH = "mahmood-conch"
+    CONCHV1_5 = "mahmood-conchv1_5"
     UNI = "mahmood-uni"
+    UNI2 = "mahmood-uni2"
     DINO_BLOOM = "dino-bloom"
+    GIGAPATH = "gigapath"
+    H_OPTIMUS_0 = "h-optimus-0"
+    H_OPTIMUS_1 = "h-optimus-1"
     VIRCHOW2 = "virchow2"
     EMPTY = "empty"
 
