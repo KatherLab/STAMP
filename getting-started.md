@@ -165,11 +165,14 @@ crossval:
   feature_dir: "/absolute/path/to/stamp-test-experiment/xiyuewang-ctranspath-7c998680-112fc79c"
 
   # A table (.xlsx or .csv) relating every patient to their feature files.
-  # The table must contain at least two columns, one titled "PATIENT",
-  # containing the patient ID (matching those in the `clini_table`), and one
-  # called "FILENAME", containing the feature file path relative to `feature_dir`.
-  # Patient IDs not present in the clini table as well as non-existent feature
-  # paths are ignored.
+  # The table must contain at least two columns,
+  # one titled with the value of `patient_label` (as defined below),
+  # containing the patient ID (matching those in the `clini_table`),
+  # and one titled according to `filename_label` (also defined below)
+  # containing the feature file path relative to `feature_dir`.
+  # Each feature filename must include .h5 extension
+  # Patient IDs not present in the clini table as well as
+  # non-existent feature paths are ignored.
   slide_table: "slide.csv"
 
   # Name of the column from the clini table to train on.
