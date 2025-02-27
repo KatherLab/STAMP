@@ -1,7 +1,5 @@
-from stamp.cache import STAMP_CACHE_DIR
+from stamp.cache import STAMP_CACHE_DIR, file_digest
 from pathlib import Path
-from typing import Optional, TypeVar, cast
-import hashlib
 
 try:
     import gdown
@@ -17,11 +15,6 @@ except ModuleNotFoundError as e:
 from stamp.preprocessing.extractor import Extractor, ctranspath
 
 
-def _file_digest(file: str | Path) -> str:
-    with open(file, "rb") as fp:
-        return hashlib.file_digest(fp, "sha256").hexdigest()
-
-
 def chief_ctranspath(model_path: Path | None = None) -> Extractor[ctranspath._SwinTransformer]:
     model_path = model_path or STAMP_CACHE_DIR / "chief_ctranspath.pth"
     if not model_path.is_file():
@@ -31,7 +24,7 @@ def chief_ctranspath(model_path: Path | None = None) -> Extractor[ctranspath._Sw
             str(model_path),
         )
 
-    digest = _file_digest(model_path)
+    digest = file_digest(model_path)
     assert (
         digest == "1646f23001214f74cf432ef0e80b808ee6605143802ae6ed53a87564ddc4924a"
     ), (
