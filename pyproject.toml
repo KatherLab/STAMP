@@ -53,14 +53,38 @@ conch = [
     "huggingface-hub>=0.26.2",
     "conch @ git+https://github.com/Mahmoodlab/CONCH.git@02d6ac59cc20874bff0f581de258c2b257f69a84",
 ]
+conch1_5 = [
+    "transformers>=4.45.2",
+]
 ctranspath = [
     "gdown>=5.2.0",
+    "torchvision>=0.20.1",
+]
+chief_ctranspath = [
+    "gdown>=5.2.0",
+    "torchvision>=0.20.1",
+    "torch>=2.0.0"
+]
+gigapath = [
+    "timm>=0.9.11",
+    "torchvision>=0.20.1",
+]
+h_optimus_0 = [
+    "timm>=0.9.11",
+    "torchvision>=0.20.1",
+]
+h_optimus_1 = [
+    "timm>=0.9.11",
     "torchvision>=0.20.1",
 ]
 uni = [
     "huggingface-hub>=0.26.2",
     #TODO change the git repo back to mahmoodlab's once our pull request has been accepted
     "uni @ git+https://github.com/KatherLab/uni.git@f37c299eb0bffa0e585f120974082cfec6ee6d53",
+]
+uni2 = [
+    "timm>=0.9.11",
+    "torch>=2.0.0",
 ]
 virchow2 = [
     "huggingface-hub>=0.27.1",

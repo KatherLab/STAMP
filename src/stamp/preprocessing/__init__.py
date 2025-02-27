@@ -164,9 +164,9 @@ def extract_(
             extractor = conch()
 
         case ExtractorName.CONCH1_5:
-            from stamp.preprocessing.extractor.conchv1_5 import conchv1_5
+            from stamp.preprocessing.extractor.conch1_5 import conch1_5
 
-            extractor = conchv1_5()
+            extractor = conch1_5()
 
         case ExtractorName.UNI:
             from stamp.preprocessing.extractor.uni import uni
