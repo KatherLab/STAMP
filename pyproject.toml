@@ -92,7 +92,7 @@ virchow2 = [
     "torch>=2.0.0",
 ]
 # Blanket target
-all = ["stamp[dinobloom,conch,ctranspath,uni,virchow2]"]
+all = ["stamp[dinobloom,conch,ctranspath,uni,virchow2, uni2, chief_ctranspath, conch1_5, gigapath, h_optimus_0, h_optimus_1]"]
 
 [project.scripts]
 "stamp" = "stamp.__main__:main"
