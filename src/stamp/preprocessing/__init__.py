@@ -163,7 +163,7 @@ def extract_(
 
             extractor = conch()
 
-        case ExtractorName.CONCHV1_5:
+        case ExtractorName.CONCH1_5:
             from stamp.preprocessing.extractor.conchv1_5 import conchv1_5
 
             extractor = conchv1_5()
@@ -173,7 +173,7 @@ def extract_(
 
             extractor = uni()
 
-        case ExtractorName.UNI_2:
+        case ExtractorName.UNI2:
             from stamp.preprocessing.extractor.uni2 import uni2
 
             extractor = uni2()
