@@ -2,6 +2,7 @@ from enum import StrEnum
 from pydantic import BaseModel, ConfigDict, Field
 from pathlib import Path
 from torch._prims_common import DeviceLikeType
+import torch
 
 class EncoderName(StrEnum):
     COBRA = "katherlab-cobra"
@@ -14,5 +15,5 @@ class SlideEncodingConfig(BaseModel, arbitrary_types_allowed=True):
     feat_dir: Path
     slide_table: Path
     device: DeviceLikeType
-    dtype: torch.dtype,
+    dtype: torch.dtype
     # TODO: Add this to the config yaml
