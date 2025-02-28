@@ -22,6 +22,4 @@ def conch1_5() -> Extractor:
         Callable[[Image], Tensor],
         create_transform(**resolve_data_config(model.pretrained_cfg, model=model)),
     )
-    return Extractor(
-        model=model, transform=transform, identifier="mahmood-conch1_5"
-    )
+    return Extractor(model=model, transform=transform, identifier="mahmood-conch1_5")
