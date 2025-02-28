@@ -10,7 +10,7 @@ except ModuleNotFoundError as e:
 from stamp.preprocessing.extractor import Extractor
 
 
-def gigapath():
+def gigapath() -> Extractor:
     """Extracts features from slide tiles using GigaPath tile encoder."""
 
     # Load the model structure
