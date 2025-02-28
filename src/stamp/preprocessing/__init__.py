@@ -1,7 +1,5 @@
-import hashlib
 import logging
 from collections.abc import Callable, Iterator
-from functools import cache
 from pathlib import Path
 from random import shuffle
 from tempfile import NamedTemporaryFile
@@ -30,6 +28,7 @@ from stamp.preprocessing.tiling import (
     get_slide_mpp_,
     tiles_with_cache,
 )
+from stamp.cache import get_processing_code_hash
 
 __author__ = "Marko van Treeck"
 __copyright__ = "Copyright (C) 2022-2024 Marko van Treeck"
@@ -54,20 +53,6 @@ supported_extensions = {
 }
 
 _logger = logging.getLogger("stamp")
-
-
-@cache
-def _get_preprocessing_code_hash() -> str:
-    """The hash of the entire preprocessing codebase.
-
-    It is used to assure that features extracted with different versions of this code base
-    can be identified as such after the fact.
-    """
-    hasher = hashlib.sha256()
-    for file_path in sorted(Path(__file__).parent.glob("*.py")):
-        with open(file_path, "rb") as fp:
-            hasher.update(fp.read())
-    return hasher.hexdigest()
 
 
 class _TileDataset(IterableDataset):
@@ -215,7 +200,7 @@ def extract_(
             assert_never(unreachable)
 
     model = extractor.model.to(device).eval()
-    extractor_id = f"{extractor.identifier}-{_get_preprocessing_code_hash()[:8]}"
+    extractor_id = f"{extractor.identifier}-{get_processing_code_hash(Path(__file__))[:8]}"
 
     _logger.info(f"Using extractor {extractor.identifier}")
 

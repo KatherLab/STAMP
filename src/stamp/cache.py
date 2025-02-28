@@ -4,6 +4,7 @@ import shutil
 import urllib.request
 from pathlib import Path
 from typing import Final
+from functools import cache
 
 STAMP_CACHE_DIR: Final[Path] = (
     Path(os.environ.get("XDG_CACHE_HOME") or (Path.home() / ".cache")) / "stamp"
@@ -36,3 +37,17 @@ def download_file(*, url: str, file_name: str, sha256sum: str) -> Path:
 def file_digest(file: str | Path) -> str:
     with open(file, "rb") as fp:
         return hashlib.file_digest(fp, "sha256").hexdigest()
+    
+
+@cache
+def get_processing_code_hash(file_path) -> str:
+    """The hash of the entire process codebase.
+
+    It is used to assure that features extracted with different versions of this code base
+    can be identified as such after the fact.
+    """
+    hasher = hashlib.sha256()
+    for file_path in sorted(file_path.parent.glob("*.py")):
+        with open(file_path, "rb") as fp:
+            hasher.update(fp.read())
+    return hasher.hexdigest()

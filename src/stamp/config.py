@@ -18,3 +18,5 @@ class StampConfig(BaseModel):
     statistics: StatsConfig | None = None
 
     heatmaps: HeatmapConfig | None = None
+
+    # TODO: Add slide encoding config

@@ -75,6 +75,8 @@ def _run_cli(args: argparse.Namespace) -> None:
                 canny_cutoff=config.preprocessing.canny_cutoff,
             )
 
+        #TODO: Add slide encoding command
+
         case "train":
             from stamp.modeling.train import train_categorical_model_
 
