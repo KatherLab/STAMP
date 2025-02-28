@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import hashlib
 import math
 import warnings
 from collections.abc import Iterable

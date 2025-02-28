@@ -23,5 +23,5 @@ def conch1_5() -> Extractor:
         create_transform(**resolve_data_config(model.pretrained_cfg, model=model)),
     )
     return Extractor(
-        model=model, transform=transform, identifier=f"mahmood-conch1_5"
+        model=model, transform=transform, identifier="mahmood-conch1_5"
     )
