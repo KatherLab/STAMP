@@ -4,6 +4,7 @@ from stamp.heatmaps.config import HeatmapConfig
 from stamp.modeling.config import CrossvalConfig, DeploymentConfig, TrainConfig
 from stamp.preprocessing.config import PreprocessingConfig
 from stamp.statistics import StatsConfig
+from stamp.slide_encoding.config import SlideEncodingConfig
 
 
 class StampConfig(BaseModel):
@@ -19,4 +20,4 @@ class StampConfig(BaseModel):
 
     heatmaps: HeatmapConfig | None = None
 
-    # TODO: Add slide encoding config
+    slide_encoding: SlideEncodingConfig | None = None

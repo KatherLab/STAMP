@@ -1,31 +1,36 @@
-from pathlib import Path
-import torch
-import h5py
 import os
+from pathlib import Path
+
+import h5py
 import pandas as pd
-from tqdm import tqdm
+import torch
 from torch._prims_common import DeviceLikeType
+from tqdm import tqdm
+
 from stamp.cache import get_processing_code_hash
 from stamp.slide_encoding.config import EncoderName
+from stamp.slide_encoding.encoder import Encoder
 
 
 def get_pat_embs(
-    encoder: EncoderName,
+    encoder_name: EncoderName,
     output_dir: Path,
     feat_dir: Path,
-    slide_table: Path,
+    slide_table_path: Path,
     device: DeviceLikeType,
-    dtype: torch.dtype,
-):
-    match encoder:
+) -> None:
+    """"""
+    match encoder_name:
         case EncoderName.COBRA:
             from stamp.slide_encoding.encoder.cobra import cobra
 
-            encoder = cobra()
-        
+            encoder: Encoder = cobra()
+
         # TODO: Add other encoders
 
-    slide_table = pd.read_csv(slide_table)
+    dtype = torch.float32
+
+    slide_table = pd.read_csv(slide_table_path)
     patient_groups = slide_table.groupby("PATIENT")
     slide_dict = {}
 
@@ -35,7 +40,6 @@ def get_pat_embs(
     if os.path.exists(output_file):
         tqdm.write(f"Output file {output_file} already exists, skipping")
         return
-
 
     for patient_id, group in tqdm(patient_groups, leave=False):
         all_feats_list = []
@@ -47,8 +51,7 @@ def get_pat_embs(
                 tqdm.write(f"File {h5_path} does not exist, skipping")
                 continue
             with h5py.File(h5_path, "r") as f:
-                feats = f["feats"][:]
-  
+                feats = f["feats"][:]  # type: ignore
 
             feats = torch.tensor(feats).to(device)
             all_feats_list.append(feats)
@@ -69,6 +72,7 @@ def get_pat_embs(
                     .cpu()
                     .numpy(),
                     "encoder": encoder.identifier,
+                    "precision": dtype,
                 }
         else:
             tqdm.write(f"No features found for patient {patient_id}, skipping")

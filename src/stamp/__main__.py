@@ -75,7 +75,24 @@ def _run_cli(args: argparse.Namespace) -> None:
                 canny_cutoff=config.preprocessing.canny_cutoff,
             )
 
-        #TODO: Add slide encoding command
+        case "encode":
+            from stamp.slide_encoding import get_pat_embs
+
+            if config.slide_encoding is None:
+                raise ValueError("no slide encoding configuration supplied")
+
+            _add_file_handle_(_logger, output_dir=config.slide_encoding.output_dir)
+            _logger.info(
+                "using the following configuration:\n"
+                f"{yaml.dump(config.slide_encoding.model_dump(mode='json'))}"
+            )
+            get_pat_embs(
+                encoder_name=config.slide_encoding.encoder,
+                output_dir=config.slide_encoding.output_dir,
+                feat_dir=config.slide_encoding.feat_dir,
+                slide_table_path=config.slide_encoding.slide_table,
+                device=config.slide_encoding.device,
+            )
 
         case "train":
             from stamp.modeling.train import train_categorical_model_

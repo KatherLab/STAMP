@@ -1,5 +1,6 @@
 from dataclasses import KW_ONLY, dataclass
 from typing import Generic, TypeVar
+
 from torch import nn
 
 EncoderModel = TypeVar("EncoderModel", bound=nn.Module)
