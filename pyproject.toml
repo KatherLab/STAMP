@@ -91,6 +91,10 @@ virchow2 = [
     "timm>=0.9.11",
     "torch>=2.0.0",
 ]
+cobra = [
+    "mamba-ssm>=2.2.2",
+    "torch>=2.4.1",
+]
 # Blanket target
 all = ["stamp[dinobloom,conch,ctranspath,uni,virchow2, uni2, chief_ctranspath, conch1_5, gigapath, h_optimus_0, h_optimus_1]"]
 

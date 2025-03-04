@@ -266,6 +266,10 @@ def main() -> None:
     commands.add_parser(
         "preprocess", help="Preprocess whole-slide images into feature vectors"
     )
+    commands.add_parser(
+        "encode",
+        help="Encode slide-level features into patient-level embeddings",
+    )
     commands.add_parser("train", help="Train a Vision Transformer model")
     commands.add_parser(
         "crossval",

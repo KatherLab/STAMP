@@ -8,6 +8,8 @@ from torch._prims_common import DeviceLikeType
 
 class EncoderName(StrEnum):
     COBRA = "katherlab-cobra"
+    CHIEF = "chief"
+    TITAN = "mahmood-titan"
 
 
 class SlideEncodingConfig(BaseModel, arbitrary_types_allowed=True):
@@ -18,5 +20,3 @@ class SlideEncodingConfig(BaseModel, arbitrary_types_allowed=True):
     feat_dir: Path
     slide_table: Path
     device: DeviceLikeType
-    dtype: torch.dtype
-    # TODO: Add this to the config yaml

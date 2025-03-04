@@ -25,10 +25,22 @@ def get_pat_embs(
             from stamp.slide_encoding.encoder.cobra import cobra
 
             encoder: Encoder = cobra()
+        case EncoderName.TITAN:
+            from stamp.slide_encoding.encoder.titan import titan
+
+            encoder: Encoder = titan()
+        case EncoderName.CHIEF:
+            from stamp.slide_encoding.encoder.chief import chief
+
+            encoder: Encoder = chief()
 
         # TODO: Add other encoders
 
     dtype = torch.float32
+    model = encoder.model.to(device).eval()
+    # TODO: dtype depends con CUDA capabilities. Check end of
+    # extract_feat_patients.py on how to handle this
+    # TODO: add logger
 
     slide_table = pd.read_csv(slide_table_path)
     patient_groups = slide_table.groupby("PATIENT")
@@ -64,7 +76,7 @@ def get_pat_embs(
                 assert all_feats_cat.ndim == 3, (
                     f"Expected 3D tensor, got {all_feats_cat.ndim}"
                 )
-                slide_feats = encoder.model(all_feats_cat.to(dtype))
+                slide_feats = model(all_feats_cat.to(dtype))
                 slide_dict[patient_id] = {
                     "feats": slide_feats.to(torch.float32)
                     .detach()
