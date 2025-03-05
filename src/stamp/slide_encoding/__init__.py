@@ -76,6 +76,7 @@ def get_pat_embs(
                 assert all_feats_cat.ndim == 3, (
                     f"Expected 3D tensor, got {all_feats_cat.ndim}"
                 )
+                print("all_feats_cat", all_feats_cat.shape)
                 slide_feats = model(all_feats_cat.to(dtype))
                 slide_dict[patient_id] = {
                     "feats": slide_feats.to(torch.float32)

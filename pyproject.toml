@@ -92,11 +92,10 @@ virchow2 = [
     "torch>=2.0.0",
 ]
 cobra = [
-    "mamba-ssm>=2.2.2",
-    "torch>=2.4.1",
+    "cobra @ git+https://github.com/KatherLab/COBRA.git",
 ]
 # Blanket target
-all = ["stamp[dinobloom,conch,ctranspath,uni,virchow2, uni2, chief_ctranspath, conch1_5, gigapath, h_optimus_0, h_optimus_1]"]
+all = ["stamp[dinobloom,conch,ctranspath,uni,virchow2,uni2,chief_ctranspath,conch1_5,gigapath,h_optimus_0,h_optimus_1,cobra]"]
 
 [project.scripts]
 "stamp" = "stamp.__main__:main"

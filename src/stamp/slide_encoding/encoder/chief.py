@@ -21,6 +21,8 @@ def chief() -> Encoder:
         )
 
     chief = torch.load(model_path)
+    if "organ_embedding" in chief:
+        del chief["organ_embedding"]
     model.load_state_dict(chief, strict=True)
 
     return Encoder(
@@ -92,17 +94,8 @@ class Attn_Net_Gated(nn.Module):
         a = self.attention_a(x)
         b = self.attention_b(x)
         A = a.mul(b)
-        A = self.attention_c(A)  # N x n_classes
+        A = self.attention_c(A)
         return A, x
-
-
-# clip_tokenizer = CLIPTokenizer.from_pretrained()
-#
-# clip_tokenizer = CLIPTokenizer.from_pretrained('./')
-#
-# text_encoder = CLIPTextModel.from_pretrained(
-#     './',
-#     subfolder="text_encoder")
 
 
 class CHIEF(nn.Module):
@@ -147,71 +140,26 @@ class CHIEF(nn.Module):
             nn.Linear(768, size[1]), nn.ReLU(), nn.Dropout(p=0.25)
         )
 
-        self.register_buffer("organ_embedding", torch.randn(19, 768))
-        word_emb_path = STAMP_CACHE_DIR / "Text_emdding.pth"
-        if not word_emb_path.is_file():
-            word_emb_path.parent.mkdir(parents=True, exist_ok=True)
-            gdown.download(
-                "https://drive.google.com/u/0/uc?id=1sVGmlTdnSJdcCK1vuswsuReKMUjvSEmX&export=download",
-                str(word_emb_path),
-            )
-        word_embedding = torch.load(word_emb_path)
-        self.organ_embedding.data = word_embedding.float()
-        self.text_to_vision = nn.Sequential(
-            nn.Linear(768, size[1]), nn.ReLU(), nn.Dropout(p=0.25)
-        )
-
     def relocate(self):
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.attention_net = self.attention_net.to(device)
         self.classifiers = self.classifiers.to(device)
         self.instance_classifiers = self.instance_classifiers.to(device)
 
-    def forward(self, h, x_anatomic):
-        batch = x_anatomic
+    def forward(self, h):
         h_ori = h
         A, h = self.attention_net(h)
         A = torch.transpose(A, 1, 0)
         A_raw = A
         A = F.softmax(A, dim=1)
-
-        embed_batch = self.organ_embedding[batch]
-        embed_batch = self.text_to_vision(embed_batch)
+        print("A", A.shape)
         WSI_feature = torch.mm(A, h)
         slide_embeddings = torch.mm(A, h_ori)
 
-        M = WSI_feature + embed_batch
-
-        logits = self.classifiers(M)
-
         result = {
-            "bag_logits": logits,
             "attention_raw": A_raw,
             "WSI_feature": slide_embeddings,
-            "WSI_feature_anatomical": M,
+            "WSI_feature_transformed": WSI_feature,
+            "tile_features_transformed": h,
         }
         return result
-
-    def patch_probs(self, h, x_anatomic):
-        batch = x_anatomic
-        A, h = self.attention_net(h)
-        A_raw = A
-        A = torch.transpose(A, 1, 0)
-        A = F.softmax(A, dim=1)
-
-        embed_batch = self.organ_embedding[batch]
-        embed_batch = self.text_to_vision(embed_batch)
-        M = torch.mm(A, h)
-        M = M + embed_batch
-        bag_logits = self.classifiers(M)
-        bag_prob = torch.softmax(bag_logits.squeeze(), dim=0)
-        patch_logits = self.classifiers(h + embed_batch)
-        patch_prob = (
-            torch.sigmoid(A_raw.squeeze()) * torch.softmax(patch_logits, dim=1)[:, 1]
-        )
-
-        return {
-            "bag_prob": bag_prob,
-            "patch_prob": patch_prob,
-            "attention_raw": A_raw.squeeze(),
-        }
