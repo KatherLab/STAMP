@@ -1,8 +1,8 @@
 preprocessing:
-  output_dir: "/mnt/bulk-sirius/juan/pap_screening/STAMP/DELETEEE/features"
-  wsi_dir: "/mnt/bulk-sirius/juan/pap_screening/STAMP/DELETEEE/wsi_dir"
+  output_dir: "/path/to/save/files/to"
+  wsi_dir: "/path/containing/whole/slide/images/to/extract/features/from"
   # Extractor to use for feature extractor.  Possible options are "ctranspath",
-  # "mahmood-uni", "mahmood-conch", "chief_ctranspath", "mahmood-conchv1_5",
+  # "mahmood-uni", "mahmood-conch", "chief_ctranspath", "mahmood-conch1_5",
   # "mahmood-uni2", "dino-bloom", "gigapath", "h-optimus-0", "h-optimus-1", "virchow2"
   # Some of them require requesting access to the respective authors beforehand.
   extractor: "ctranspath"
@@ -34,15 +34,15 @@ slide_encoding:
   encoder: "chief"
   
   # Directory to save the output files.
-  output_dir: "/mnt/bulk-sirius/juan/pap_screening/STAMP/DELETEEE"
+  output_dir: "/path/to/save/files/to"
   
   # Directory where the extracted features are stored.
-  feat_dir: "/mnt/bulk-sirius/juan/pap_screening/STAMP/DELETEEE/features/xiyuewang-ctranspath-7c998680-347671c2"
+  feat_dir: "/path/your/extracted/features/are/stored/in"
   
   # A table (.xlsx or .csv) relating every slide to their feature files.
   # The table must contain at least two columns, one titled "SLIDE",
   # containing the slide ID, and one called "FILENAME", containing the feature file path relative to `feat_dir`.
-  slide_table: "/mnt/bulk-sirius/juan/pap_screening/STAMP/DELETEEE/slide_table.csv"
+  slide_table: "/path/of/slide.csv"
   
   # Device to run slide encoding on ("cpu", "cuda", "cuda:0", etc.)
   device: "cuda"
