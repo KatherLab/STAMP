@@ -1,6 +1,3 @@
-from collections.abc import Callable
-from typing import cast
-
 try:
     from transformers import AutoModel
 except ModuleNotFoundError as e:
