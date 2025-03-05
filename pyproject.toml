@@ -55,6 +55,8 @@ conch = [
 ]
 conch1_5 = [
     "transformers>=4.45.2",
+    "einops-exts==0.0.4",
+    "torch>=2.0.0"
 ]
 ctranspath = [
     "gdown>=5.2.0",
