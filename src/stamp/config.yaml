@@ -2,7 +2,7 @@ preprocessing:
   output_dir: "/path/to/save/files/to"
   wsi_dir: "/path/containing/whole/slide/images/to/extract/features/from"
   # Extractor to use for feature extractor.  Possible options are "ctranspath",
-  # "mahmood-uni", "mahmood-conch", "chief_ctranspath", "mahmood-conchv1_5",
+  # "mahmood-uni", "mahmood-conch", "chief_ctranspath", "mahmood-conch1_5",
   # "mahmood-uni2", "dino-bloom", "gigapath", "h-optimus-0", "h-optimus-1", "virchow2"
   # Some of them require requesting access to the respective authors beforehand.
   extractor: "ctranspath"
