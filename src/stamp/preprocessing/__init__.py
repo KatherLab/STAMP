@@ -172,6 +172,11 @@ def extract_(
             from stamp.preprocessing.extractor.virchow2 import virchow2
 
             extractor = virchow2()
+        
+        case ExtractorName.UNI2:
+            from stamp.preprocessing.extractor.uni2 import uni2
+
+            extractor = uni2()
 
         case ExtractorName.EMPTY:
             from stamp.preprocessing.extractor.empty import empty

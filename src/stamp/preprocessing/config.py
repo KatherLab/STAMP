@@ -17,6 +17,7 @@ class ExtractorName(StrEnum):
     UNI = "mahmood-uni"
     DINO_BLOOM = "dino-bloom"
     VIRCHOW2 = "virchow2"
+    UNI2 = "mahmood-uni2"
     EMPTY = "empty"
 
 
