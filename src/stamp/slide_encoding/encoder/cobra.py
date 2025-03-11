@@ -1,5 +1,5 @@
 try:
-    from cobra.utils.load_cobra import get_cobraII
+    from cobra.utils.load_cobra import get_cobra
 except ModuleNotFoundError as e:
     raise ModuleNotFoundError(
         "cobra dependencies not installed."
@@ -9,8 +9,8 @@ from stamp.slide_encoding.encoder import Encoder
 
 
 def cobra() -> Encoder:
-    cobra = 
+    model = get_cobra(download_weights=True)
     return Encoder(
         model=model,
-        identifier="cobra",
+        identifier="katherlab-cobra",
     )
