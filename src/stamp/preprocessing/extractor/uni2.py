@@ -11,7 +11,7 @@ try:
 except ModuleNotFoundError as e:
     raise ModuleNotFoundError(
         "uni2 dependencies not installed."
-        " Please reinstall stamp using `pip install 'stamp[uni]'`"
+        " Please reinstall stamp using `pip install 'stamp[uni2]'`"
     ) from e
 
 from stamp.preprocessing.extractor import Extractor
