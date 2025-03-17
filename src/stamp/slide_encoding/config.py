@@ -1,7 +1,6 @@
 from enum import StrEnum
 from pathlib import Path
 
-import torch
 from pydantic import BaseModel, ConfigDict
 from torch._prims_common import DeviceLikeType
 

@@ -76,7 +76,7 @@ def _run_cli(args: argparse.Namespace) -> None:
             )
 
         case "encode":
-            from stamp.slide_encoding import get_pat_embs
+            from stamp.slide_encoding import get_slide_embs
 
             if config.slide_encoding is None:
                 raise ValueError("no slide encoding configuration supplied")
@@ -86,7 +86,7 @@ def _run_cli(args: argparse.Namespace) -> None:
                 "using the following configuration:\n"
                 f"{yaml.dump(config.slide_encoding.model_dump(mode='json'))}"
             )
-            get_pat_embs(
+            get_slide_embs(
                 encoder_name=config.slide_encoding.encoder,
                 output_dir=config.slide_encoding.output_dir,
                 feat_dir=config.slide_encoding.feat_dir,

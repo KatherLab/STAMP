@@ -200,7 +200,9 @@ def extract_(
             assert_never(unreachable)
 
     model = extractor.model.to(device).eval()
-    extractor_id = f"{extractor.identifier}-{get_processing_code_hash(Path(__file__))[:8]}"
+    extractor_id = (
+        f"{extractor.identifier}-{get_processing_code_hash(Path(__file__))[:8]}"
+    )
 
     _logger.info(f"Using extractor {extractor.identifier}")
 

@@ -1,4 +1,5 @@
 import os
+import pdb
 from pathlib import Path
 
 import h5py
@@ -76,7 +77,6 @@ def get_pat_embs(
                 assert all_feats_cat.ndim == 3, (
                     f"Expected 3D tensor, got {all_feats_cat.ndim}"
                 )
-                print("all_feats_cat", all_feats_cat.shape)
                 slide_feats = model(all_feats_cat.to(dtype))
                 slide_dict[patient_id] = {
                     "feats": slide_feats.to(torch.float32)
@@ -96,3 +96,35 @@ def get_pat_embs(
             f.create_dataset(f"{patient_id}", data=data["feats"])
             f.attrs["encoder"] = data["encoder"]
         tqdm.write(f"Finished encoding, saved to {output_file}")
+
+
+def get_slide_embs(
+    encoder_name: EncoderName,
+    output_dir: Path,
+    feat_dir: Path,
+    slide_table_path: Path,
+    device: DeviceLikeType,
+) -> None:
+    match encoder_name:
+        case EncoderName.TITAN:
+            from stamp.slide_encoding.encoder.titan import titan
+
+    encoder: Encoder = titan()
+
+    for tile_feats_filename in os.listdir(feat_dir):
+        h5_path = os.path.join(feat_dir, tile_feats_filename)
+        if not os.path.exists(h5_path):
+            tqdm.write(f"File {h5_path} does not exist, skipping")
+            continue
+        with h5py.File(h5_path, "r") as f:
+            feats = f["feats"][:]  # type: ignore
+            coords = f["coords"][:]  # type: ignore
+    feats = torch.tensor(feats).to(device)
+    coords = torch.tensor(coords).to(device)
+
+    with torch.autocast(device, torch.float16), torch.inference_mode():
+        pdb.set_trace()
+        slide_embedding = encoder.model.encode_slide_from_patch_features(
+            feats, coords, 512
+        )
+    print(slide_embedding.shape)

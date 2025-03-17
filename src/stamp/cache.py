@@ -2,9 +2,9 @@ import hashlib
 import os
 import shutil
 import urllib.request
+from functools import cache
 from pathlib import Path
 from typing import Final
-from functools import cache
 
 STAMP_CACHE_DIR: Final[Path] = (
     Path(os.environ.get("XDG_CACHE_HOME") or (Path.home() / ".cache")) / "stamp"
@@ -37,7 +37,7 @@ def download_file(*, url: str, file_name: str, sha256sum: str) -> Path:
 def file_digest(file: str | Path) -> str:
     with open(file, "rb") as fp:
         return hashlib.file_digest(fp, "sha256").hexdigest()
-    
+
 
 @cache
 def get_processing_code_hash(file_path) -> str:

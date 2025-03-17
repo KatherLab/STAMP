@@ -5,6 +5,7 @@ from torch import nn
 
 EncoderModel = TypeVar("EncoderModel", bound=nn.Module)
 
+
 @dataclass(frozen=True)
 class Encoder(Generic[EncoderModel]):
     _: KW_ONLY
