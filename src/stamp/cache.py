@@ -31,3 +31,8 @@ def download_file(*, url: str, file_name: str, sha256sum: str) -> Path:
         shutil.move(filename, outfile_path)
 
     return outfile_path
+
+
+def file_digest(file: str | Path) -> str:
+    with open(file, "rb") as fp:
+        return hashlib.file_digest(fp, "sha256").hexdigest()
