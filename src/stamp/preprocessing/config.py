@@ -4,7 +4,7 @@ from pathlib import Path
 import torch
 from pydantic import BaseModel, ConfigDict, Field
 
-from stamp.preprocessing.tiling import Microns, SlideMPP, TilePixels
+from stamp.preprocessing.tiling import ImageExtension, Microns, SlideMPP, TilePixels
 
 __author__ = "Marko van Treeck"
 __copyright__ = "Copyright (C) 2022-2025 Marko van Treeck"
@@ -32,6 +32,7 @@ class PreprocessingConfig(BaseModel, arbitrary_types_allowed=True):
     output_dir: Path
     wsi_dir: Path
     cache_dir: Path | None = None
+    cache_tiles_ext: ImageExtension = "png"
     tile_size_um: Microns = Microns(256.0)
     tile_size_px: TilePixels = TilePixels(224)
     extractor: ExtractorName

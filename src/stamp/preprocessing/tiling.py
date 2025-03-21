@@ -3,12 +3,22 @@ import json
 import logging
 import re
 import xml.dom.minidom as minidom
-from collections.abc import Iterator
+from collections.abc import Iterator, Mapping
 from concurrent import futures
 from dataclasses import dataclass
 from pathlib import Path
 from tempfile import NamedTemporaryFile
-from typing import Final, Generic, NamedTuple, NewType, TypedDict, TypeVar, cast
+from typing import (
+    Final,
+    Generic,
+    Literal,
+    NamedTuple,
+    NewType,
+    TypeAlias,
+    TypedDict,
+    TypeVar,
+    cast,
+)
 from zipfile import ZipFile
 
 import cv2
@@ -41,6 +51,12 @@ TilePixels = NewType("TilePixels", int)
 
 SlideMPP = NewType("SlideMPP", float)
 
+ImageExtension: TypeAlias = Literal["png", "jpg"]
+EXTENSION_TO_FORMAT: Final[Mapping[ImageExtension, str]] = {
+    "png": "png",
+    "jpg": "jpeg",
+}
+
 _Unit = TypeVar("_Unit")
 
 
@@ -65,6 +81,7 @@ def tiles_with_cache(
     slide_path: Path,
     *,
     cache_dir: Path | None,
+    cache_tiles_ext: ImageExtension,
     tile_size_um: Microns,
     tile_size_px: TilePixels,
     max_supertile_size_slide_px: SlidePixels,
@@ -96,6 +113,7 @@ def tiles_with_cache(
         "max_supertile_size_slide_px": max_supertile_size_slide_px,
         "brightness_cutoff": brightness_cutoff,
         "code_sha256": _CODE_HASH,
+        "tile_ext": cache_tiles_ext,
     }
     tiler_params_hash = hashlib.sha256(
         json.dumps(tiler_params, sort_keys=True).encode()
@@ -136,10 +154,12 @@ def tiles_with_cache(
                     default_slide_mpp=default_slide_mpp,
                 ):
                     with zip.open(
-                        f"tile_({float(tile.coordinates.x)}, {float(tile.coordinates.y)}).jpg",
+                        f"tile_({float(tile.coordinates.x)}, {float(tile.coordinates.y)}).{cache_tiles_ext}",
                         "w",
                     ) as tile_zip_fp:
-                        tile.image.save(tile_zip_fp, format="jpeg")
+                        tile.image.save(
+                            tile_zip_fp, format=EXTENSION_TO_FORMAT[cache_tiles_ext]
+                        )
 
                     yield tile
             except Exception as e:
@@ -354,13 +374,22 @@ class _TilerParams(TypedDict):
     # if we change the tile rejection strategy,
     # the cache also gets invalidated
 
+    tile_ext: ImageExtension
+    """The extension of the cached tiles"""
+
 
 def _tiles_from_cache_file(cache_file_path: Path) -> Iterator[_Tile]:
     with ZipFile(cache_file_path, "r") as zip_fp:
-        tiler_params = json.loads(zip_fp.read("tiler_params.json").decode())
+        tiler_params: _TilerParams = json.loads(
+            zip_fp.read("tiler_params.json").decode()
+        )
 
+        # Use jpg as default for backwards compatibility
+        cache_tiles_ext = tiler_params.get("tile_ext", "jpg")
         for name in zip_fp.namelist():
-            match = re.match(r"tile_\((\d+\.\d+), (\d+\.\d+)\).jpg", name)
+            match = re.match(
+                rf"tile_\((\d+\.\d+), (\d+\.\d+)\).{cache_tiles_ext}", name
+            )
             if match is None:
                 continue
 
