@@ -116,15 +116,27 @@ def get_slide_embs(
         if not os.path.exists(h5_path):
             tqdm.write(f"File {h5_path} does not exist, skipping")
             continue
-        with h5py.File(h5_path, "r") as f:
-            feats = f["feats"][:]  # type: ignore
-            coords = f["coords"][:]  # type: ignore
-    feats = torch.tensor(feats).to(device)
-    coords = torch.tensor(coords).to(device)
+        if h5_path.endswith(".h5"):
+            with h5py.File(h5_path, "r") as f:
+                feats = f["feats"][:]  # type: ignore
+                coords = f["coords"][:]  # type: ignore
+                breakpoint()
 
-    with torch.autocast(device, torch.float16), torch.inference_mode():
-        pdb.set_trace()
-        slide_embedding = encoder.model.encode_slide_from_patch_features(
-            feats, coords, 512
-        )
-    print(slide_embedding.shape)
+    # Convert coordinates from microns to pixels
+    mpp = 1.14  # microns per pixel
+    coords = coords / mpp  # Convert to pixels
+    coords = torch.tensor(coords, dtype=torch.float32).to(device)
+    coords = coords.to(torch.int64).to(device)  # Convert to integer
+
+    feats = torch.tensor(feats, dtype=torch.float32).to(device)
+
+    # Ensure model weights and biases are on the same device as the input
+    model = encoder.model.to(device)
+
+    with torch.autocast(device, torch.float32), torch.inference_mode():
+        breakpoint()
+        slide_embedding = model.encode_slide_from_patch_features(feats, coords, 512)
+
+    # TODO: Get the mpp from the new data function, it will throw an error if there is no tile_size px attribute
+    # needed for the calculation
+    # TODO: Calculate the patch_size_lvl0 using the proportion knowing that x20 is 0.5 um/px
