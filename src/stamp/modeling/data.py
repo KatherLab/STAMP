@@ -17,6 +17,7 @@ from torch import Tensor
 from torch.utils.data import DataLoader, Dataset
 
 import stamp
+from stamp.preprocessing.tiling import Microns, SlideMPP, SlidePixels
 
 _logger = logging.getLogger("stamp")
 
@@ -166,7 +167,7 @@ class BagDataset(Dataset[tuple[_Bag, _Coordinates, BagSize, _EncodedTarget]]):
                 feats.append(
                     torch.from_numpy(h5["feats"][:])  # pyright: ignore[reportIndexIssue]
                 )
-                coords_um.append(_get_coords_um(h5))
+                coords_um.append(get_coords(h5).coords_um)
 
         feats = torch.concat(feats).float()
         coords_um = torch.concat(coords_um).float()
@@ -189,30 +190,61 @@ class BagDataset(Dataset[tuple[_Bag, _Coordinates, BagSize, _EncodedTarget]]):
             )
 
 
-def _get_coords_um(feature_h5: h5py.File) -> Tensor:
-    """Get coordinates in um from h5 file"""
-    coords = torch.from_numpy(feature_h5["coords"][:]).float()  # pyright: ignore[reportIndexIssue]
-    stride = cast(float, feature_h5.attrs.get("tile_size", get_stride(coords)))
+@dataclass
+class CoordsInfo:
+    coords_um: Tensor
+    tile_size_um: Microns
+    tile_size_px: SlidePixels | None
 
-    if feature_h5.attrs.get("unit") == "um":
+    @property
+    def mpp(self) -> SlideMPP:
+        if not self.tile_size_px:
+            raise RuntimeError(
+                "tile size in pixels is not available. Please reextract them using `stamp preprocess`."
+            )
+        return SlideMPP(self.tile_size_um / self.tile_size_px)
+
+
+def get_coords(feature_h5: h5py.File) -> CoordsInfo:
+    coords = torch.from_numpy(feature_h5["coords"][:]).float()  # pyright: ignore[reportIndexIssue]
+    coords_um: Tensor | None = None
+    tile_size_um: Microns | None = None
+    tile_size_px: SlidePixels | None = None
+    if (tile_size := feature_h5.attrs.get("tile_size", None)) and feature_h5.attrs.get(
+        "unit", None
+    ) == "um":
+        # STAMP v2 format
+        tile_size_um = Microns(tile_size)
         coords_um = coords
-    elif round(stride) == 224:
+    elif tile_size := feature_h5.attrs.get("tile_size_um", None):
+        # Newer STAMP format
+        tile_size_um = Microns(tile_size)
+        coords_um = coords
+    elif round(feature_h5.attrs.get("tile_size", get_stride(coords))) == 224:
+        # Historic STAMP format
         _logger.info(
             f"{feature_h5.filename}: tile stride is roughly 224, assuming coordinates have unit 256um/224px (historic STAMP format)"
         )
+        tile_size_um = Microns(256.0)
+        tile_size_px = SlidePixels(224)
         coords_um = coords / 224 * 256
-    elif (version_str := feature_h5.attrs.get("stamp_version")) and (
+
+    if (version_str := feature_h5.attrs.get("stamp_version")) and (
         extraction_version := Version(version_str)
     ) > Version(stamp.__version__):
         raise RuntimeError(
             f"features were extracted with a newer version of stamp, please update your stamp to at least version {extraction_version}."
         )
-    else:
+
+    if not tile_size_px and "tile_size_px" in feature_h5.attrs:
+        tile_size_px = SlidePixels(feature_h5.attrs["tile_size_px"])  # pyright: ignore[reportArgumentType]
+
+    if not tile_size_um or coords_um is None:
         raise RuntimeError(
             "unable to infer coordinates from feature file. Please reextract them using `stamp preprocess`."
         )
 
-    return coords_um
+    return CoordsInfo(coords_um, tile_size_um, tile_size_px)
 
 
 def _to_fixed_size_bag(

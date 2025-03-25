@@ -1,20 +1,25 @@
 import tempfile
+from io import BytesIO
 from pathlib import Path
 
+import h5py
 import pytest
 import torch
-from random_data import make_feature_file
+from random_data import make_feature_file, make_old_feature_file
 from torch.utils.data import DataLoader
 
 from stamp.modeling.data import (
     BagDataset,
     BagSize,
+    CoordsInfo,
     FeaturePath,
     GroundTruth,
     PatientData,
     PatientId,
     filter_complete_patient_data_,
+    get_coords,
 )
+from stamp.preprocessing.tiling import Microns, SlideMPP, SlidePixels
 
 
 @pytest.mark.filterwarnings("ignore:some patients have no associated slides")
@@ -75,17 +80,17 @@ def test_dataset(
     ds = BagDataset(
         bags=[
             [
-                make_feature_file(
+                make_old_feature_file(
                     feats=torch.rand((12, dim_feats)), coords=torch.rand(12, 2)
                 )
             ],
             [
-                make_feature_file(
+                make_old_feature_file(
                     feats=torch.rand((8, dim_feats)), coords=torch.rand(8, 2)
                 )
             ],
             [
-                make_feature_file(
+                make_old_feature_file(
                     feats=torch.rand((34, dim_feats)), coords=torch.rand(34, 2)
                 )
             ],
@@ -109,3 +114,61 @@ def test_dataset(
     assert bag.shape == (batch_size, bag_size, dim_feats)
     assert coords.shape == (batch_size, bag_size, 2)
     assert (bag_sizes <= bag_size).all()
+
+
+def test_get_coords_with_mpp() -> None:
+    # Test new feature file with valid mpp calculation
+    file_bytes = make_feature_file(
+        feats=torch.rand((34, 34)),
+        coords=torch.rand(34, 2),
+        tile_size_um=Microns(2508.0),
+        tile_size_px=SlidePixels(512),
+    )
+    with h5py.File(file_bytes, "r") as h5:
+        coords_info = get_coords(h5)
+        assert type(coords_info) is CoordsInfo
+        from math import isclose
+
+        assert isclose(coords_info.mpp, (2508.0 / 512), rel_tol=1e-9)
+
+    # Test old feature file without mpp calculation
+    file_bytes = make_old_feature_file(
+        feats=torch.rand((34, 34)),
+        coords=torch.rand(34, 2),
+        tile_size_um=Microns(2508.0),
+    )
+    with h5py.File(file_bytes, "r") as h5:
+        coords_info = get_coords(h5)
+        assert type(coords_info) is CoordsInfo
+        assert coords_info.tile_size_um == Microns(2508.0)
+        assert coords_info.tile_size_px is None
+        with pytest.raises(RuntimeError, match="tile size in pixels is not available"):
+            _ = coords_info.mpp
+
+
+def test_get_coords_invalid_file() -> None:
+    # Test invalid feature file with missing attributes
+    file_bytes = BytesIO()
+    with h5py.File(file_bytes, "w") as h5:
+        h5.create_dataset("coords", data=torch.rand(34, 2).numpy())
+    with h5py.File(file_bytes, "r") as h5:
+        with pytest.raises(RuntimeError, match="unable to infer coordinates"):
+            get_coords(h5)
+
+
+def test_get_coords_historic_format() -> None:
+    # Test historic STAMP format with inferred mpp
+    file_bytes = make_old_feature_file(
+        feats=torch.rand((34, 34)),
+        coords=torch.rand(34, 2),
+    )
+    with h5py.File(file_bytes, "w") as h5:
+        h5.attrs["tile_size"] = 224
+        h5.attrs["unit"] = "px"
+        h5.create_dataset("coords_historic", data=torch.rand(34, 2).numpy())
+    with h5py.File(file_bytes, "r") as h5:
+        coords_info = get_coords(h5)
+        assert type(coords_info) is CoordsInfo
+        assert coords_info.tile_size_um == Microns(256.0)
+        assert coords_info.tile_size_px == SlidePixels(224)
+        assert coords_info.mpp == SlideMPP(256.0 / 224)

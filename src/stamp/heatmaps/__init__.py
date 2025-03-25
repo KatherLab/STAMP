@@ -16,7 +16,7 @@ from torch import Tensor
 from torch._prims_common import DeviceLikeType
 from torch.func import jacrev  # pyright: ignore[reportPrivateImportUsage]
 
-from stamp.modeling.data import _get_coords_um, get_stride
+from stamp.modeling.data import get_coords, get_stride
 from stamp.modeling.lightning_model import LitVisionTransformer
 from stamp.modeling.vision_transformer import VisionTransformer
 from stamp.preprocessing import supported_extensions
@@ -144,7 +144,7 @@ def heatmaps_(
                 .float()
                 .to(device)
             )
-            coords_um = _get_coords_um(h5)
+            coords_um = get_coords(h5).coords_um
             stride_um = Microns(get_stride(coords_um))
 
             if h5.attrs.get("unit") == "um":
