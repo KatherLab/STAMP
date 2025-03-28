@@ -19,7 +19,7 @@ from stamp.modeling.data import (
     filter_complete_patient_data_,
     get_coords,
 )
-from stamp.preprocessing.tiling import Microns, SlideMPP, SlidePixels
+from stamp.preprocessing.tiling import Microns, SlideMPP, TilePixels
 
 
 @pytest.mark.filterwarnings("ignore:some patients have no associated slides")
@@ -127,7 +127,7 @@ def test_get_coords_with_mpp() -> None:
         feats=torch.rand((34, 34)),
         coords=torch.rand(34, 2),
         tile_size_um=Microns(2508.0),
-        tile_size_px=SlidePixels(512),
+        tile_size_px=TilePixels(512),
     )
     with h5py.File(file_bytes, "r") as h5:
         coords_info = get_coords(h5)
@@ -175,5 +175,5 @@ def test_get_coords_historic_format() -> None:
         coords_info = get_coords(h5)
         assert type(coords_info) is CoordsInfo
         assert coords_info.tile_size_um == Microns(256.0)
-        assert coords_info.tile_size_px == SlidePixels(224)
+        assert coords_info.tile_size_px == TilePixels(224)
         assert coords_info.mpp == SlideMPP(256.0 / 224)

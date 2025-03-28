@@ -17,7 +17,7 @@ from torch import Tensor
 from torch.utils.data import DataLoader, Dataset
 
 import stamp
-from stamp.preprocessing.tiling import Microns, SlideMPP, SlidePixels
+from stamp.preprocessing.tiling import Microns, SlideMPP, TilePixels
 
 _logger = logging.getLogger("stamp")
 
@@ -194,7 +194,7 @@ class BagDataset(Dataset[tuple[_Bag, _Coordinates, BagSize, _EncodedTarget]]):
 class CoordsInfo:
     coords_um: Tensor
     tile_size_um: Microns
-    tile_size_px: SlidePixels | None
+    tile_size_px: TilePixels | None
 
     @property
     def mpp(self) -> SlideMPP:
@@ -209,7 +209,7 @@ def get_coords(feature_h5: h5py.File) -> CoordsInfo:
     coords = torch.from_numpy(feature_h5["coords"][:]).float()  # pyright: ignore[reportIndexIssue]
     coords_um: Tensor | None = None
     tile_size_um: Microns | None = None
-    tile_size_px: SlidePixels | None = None
+    tile_size_px: TilePixels | None = None
     if (tile_size := feature_h5.attrs.get("tile_size", None)) and feature_h5.attrs.get(
         "unit", None
     ) == "um":
@@ -226,7 +226,7 @@ def get_coords(feature_h5: h5py.File) -> CoordsInfo:
             f"{feature_h5.filename}: tile stride is roughly 224, assuming coordinates have unit 256um/224px (historic STAMP format)"
         )
         tile_size_um = Microns(256.0)
-        tile_size_px = SlidePixels(224)
+        tile_size_px = TilePixels(224)
         coords_um = coords / 224 * 256
 
     if (version_str := feature_h5.attrs.get("stamp_version")) and (
@@ -237,7 +237,7 @@ def get_coords(feature_h5: h5py.File) -> CoordsInfo:
         )
 
     if not tile_size_px and "tile_size_px" in feature_h5.attrs:
-        tile_size_px = SlidePixels(feature_h5.attrs["tile_size_px"])  # pyright: ignore[reportArgumentType]
+        tile_size_px = TilePixels(feature_h5.attrs["tile_size_px"])  # pyright: ignore[reportArgumentType]
 
     if not tile_size_um or coords_um is None:
         raise RuntimeError(

@@ -20,7 +20,7 @@ from stamp.modeling.data import (
     Category,
     PatientId,
 )
-from stamp.preprocessing.tiling import Microns, SlidePixels
+from stamp.preprocessing.tiling import Microns, TilePixels
 
 CliniPath: TypeAlias = Path
 SlidePath: TypeAlias = Path
@@ -175,7 +175,7 @@ def make_feature_file(
     feats: Float[Tensor, "tile feat_d"],
     coords: Float[Tensor, "tile 2"],
     tile_size_um: Microns = Microns(2508),
-    tile_size_px: SlidePixels = SlidePixels(512),
+    tile_size_px: TilePixels = TilePixels(512),
 ) -> io.BytesIO:
     """Creates a feature file from the given data"""
     file = io.BytesIO()
