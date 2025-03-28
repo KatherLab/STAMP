@@ -72,7 +72,12 @@ def test_get_cohort_df(tmp_path: Path) -> None:
         }
 
 
+@pytest.mark.parametrize(
+    "feature_file_creator",
+    [make_feature_file, make_old_feature_file],
+)
 def test_dataset(
+    feature_file_creator,
     bag_size: BagSize = BagSize(5),
     dim_feats: int = 34,
     batch_size: int = 2,
@@ -80,17 +85,17 @@ def test_dataset(
     ds = BagDataset(
         bags=[
             [
-                make_old_feature_file(
+                feature_file_creator(
                     feats=torch.rand((12, dim_feats)), coords=torch.rand(12, 2)
                 )
             ],
             [
-                make_old_feature_file(
+                feature_file_creator(
                     feats=torch.rand((8, dim_feats)), coords=torch.rand(8, 2)
                 )
             ],
             [
-                make_old_feature_file(
+                feature_file_creator(
                     feats=torch.rand((34, dim_feats)), coords=torch.rand(34, 2)
                 )
             ],

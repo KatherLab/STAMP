@@ -298,7 +298,7 @@ def extract_(
                 h5_fp.attrs["stamp_version"] = stamp.__version__
                 h5_fp.attrs["extractor"] = extractor_id
                 h5_fp.attrs["unit"] = "um"
-                h5_fp.attrs["tile_size_um"] = tile_size_um
+                h5_fp.attrs["tile_size_um"] = tile_size_um  # changed in v2.1.0
                 h5_fp.attrs["tile_size_px"] = tile_size_px
             except Exception:
                 _logger.exception(f"error while writing {feature_output_path}")
