@@ -1,3 +1,4 @@
+import math
 import os
 import pdb
 from pathlib import Path
@@ -141,7 +142,7 @@ def get_slide_embs(
 
             # Convert coordinates from microns to pixels
             mpp = 1.14  # microns per pixel
-            patch_size_lvl0 = 256 / mpp  # Inferred from TITAN docs
+            patch_size_lvl0 = math.floor(256 / mpp)  # Inferred from TITAN docs
             coords = coords / mpp  # Convert to pixels
             coords = torch.tensor(coords, dtype=torch.float32).to(device)
             coords = coords.to(torch.int64).to(device)  # Convert to integer
