@@ -2,7 +2,7 @@ import numpy as np
 import numpy.typing as npt
 import pytest
 import torch
-from random_data import make_feature_file
+from random_data import make_old_feature_file
 
 from stamp.modeling.data import GroundTruth, PatientData, PatientId
 from stamp.modeling.deploy import _predict, _to_prediction_df
@@ -34,7 +34,7 @@ def test_predict(
         PatientId("pat5"): PatientData(
             ground_truth=GroundTruth("foo"),
             feature_files={
-                make_feature_file(
+                make_old_feature_file(
                     feats=torch.rand(23, dim_input), coords=torch.rand(23, 2)
                 )
             },
@@ -58,7 +58,7 @@ def test_predict(
         PatientId("pat6"): PatientData(
             ground_truth=GroundTruth("bar"),
             feature_files={
-                make_feature_file(
+                make_old_feature_file(
                     feats=torch.rand(12, dim_input), coords=torch.rand(12, 2)
                 )
             },
@@ -67,7 +67,7 @@ def test_predict(
         PatientId("pat7"): PatientData(
             ground_truth=GroundTruth("baz"),
             feature_files={
-                make_feature_file(
+                make_old_feature_file(
                     feats=torch.rand(56, dim_input), coords=torch.rand(56, 2)
                 )
             },

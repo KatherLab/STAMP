@@ -20,7 +20,7 @@ from stamp.modeling.data import (
     Category,
     PatientId,
 )
-from stamp.preprocessing.tiling import Microns
+from stamp.preprocessing.tiling import Microns, TilePixels
 
 CliniPath: TypeAlias = Path
 SlidePath: TypeAlias = Path
@@ -151,11 +151,31 @@ def random_string(len: int) -> str:
     return "".join(random.choices(string.ascii_uppercase + string.digits, k=len))
 
 
+def make_old_feature_file(
+    *,
+    feats: Float[Tensor, "tile feat_d"],
+    coords: Float[Tensor, "tile 2"],
+    tile_size_um: Microns = Microns(2508),
+) -> io.BytesIO:
+    """Creates a feature file with historic format from the given data"""
+    file = io.BytesIO()
+    with h5py.File(file, "w") as h5:
+        h5["feats"] = feats
+        h5["coords"] = coords * tile_size_um
+        h5.attrs["stamp_version"] = stamp.__version__
+        h5.attrs["extractor"] = "random-test-generator"
+        h5.attrs["unit"] = "um"
+        h5.attrs["tile_size"] = tile_size_um
+
+    return file
+
+
 def make_feature_file(
     *,
     feats: Float[Tensor, "tile feat_d"],
     coords: Float[Tensor, "tile 2"],
     tile_size_um: Microns = Microns(2508),
+    tile_size_px: TilePixels = TilePixels(512),
 ) -> io.BytesIO:
     """Creates a feature file from the given data"""
     file = io.BytesIO()
@@ -165,6 +185,7 @@ def make_feature_file(
         h5.attrs["stamp_version"] = stamp.__version__
         h5.attrs["extractor"] = "random-test-generator"
         h5.attrs["unit"] = "um"
-        h5.attrs["tile_size"] = tile_size_um
+        h5.attrs["tile_size_um"] = tile_size_um
+        h5.attrs["tile_size_px"] = tile_size_px
 
     return file
