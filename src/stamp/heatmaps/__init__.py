@@ -16,11 +16,11 @@ from torch import Tensor
 from torch._prims_common import DeviceLikeType
 from torch.func import jacrev  # pyright: ignore[reportPrivateImportUsage]
 
-from stamp.modeling.data import _get_coords_um, get_stride
+from stamp.modeling.data import get_coords, get_stride
 from stamp.modeling.lightning_model import LitVisionTransformer
 from stamp.modeling.vision_transformer import VisionTransformer
 from stamp.preprocessing import supported_extensions
-from stamp.preprocessing.tiling import Microns, SlideMPP, SlidePixels, get_slide_mpp_
+from stamp.preprocessing.tiling import Microns, SlideMPP, TilePixels, get_slide_mpp_
 
 _logger = logging.getLogger("stamp")
 
@@ -144,15 +144,15 @@ def heatmaps_(
                 .float()
                 .to(device)
             )
-            coords_um = _get_coords_um(h5)
+            coords_um = get_coords(h5).coords_um
             stride_um = Microns(get_stride(coords_um))
 
             if h5.attrs.get("unit") == "um":
-                tile_size_slide_px = SlidePixels(
+                tile_size_slide_px = TilePixels(
                     int(round(cast(float, h5.attrs["tile_size"]) / slide_mpp))
                 )
             else:
-                tile_size_slide_px = SlidePixels(int(round(256 / slide_mpp)))
+                tile_size_slide_px = TilePixels(int(round(256 / slide_mpp)))
 
         # grid coordinates, i.e. the top-left most tile is (0, 0), the one to its right (0, 1) etc.
         coords_norm = (coords_um / stride_um).round().long()
