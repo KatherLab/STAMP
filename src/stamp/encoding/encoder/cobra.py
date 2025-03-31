@@ -4,12 +4,10 @@ from pathlib import Path
 import h5py
 import pandas as pd
 import torch
-from torch._prims_common import DeviceLikeType
 from tqdm import tqdm
 
 from stamp.cache import get_processing_code_hash
-from stamp.slide_encoding.config import EncoderName
-from stamp.slide_encoding.encoder import Encoder
+from stamp.encoding.encoder import Encoder
 
 # TODO: Check which are the necessary imports and add them to cobra package
 
@@ -20,22 +18,64 @@ except ModuleNotFoundError as e:
         "cobra dependencies not installed."
         " Please update your venv using `uv sync --extra cobra`"
     ) from e
-from stamp.slide_encoding.encoder import Encoder
-
 
 class Cobra(Encoder):
-    def __init__(self):
-        super().__init__(
-            model=get_cobra(download_weights=True), identifier="katherlab-cobra"
-        )
+    def __init__(self) -> None:
+        model = get_cobra(download_weights=True)
+        super().__init__(model=model, identifier="katherlab-cobra")
 
-    def encode_slides(self, slide_feats, *args, **kwargs):
+    def _get_tile_embs(self, h5_path, device):
+        with h5py.File(h5_path, "r") as f:
+            feats = f["feats"][:]
+
+        feats = torch.tensor(feats).to(device)
+        return feats.unsqueeze(0)
+
+    def encode_slides(self, output_dir, feat_dir, device) -> None:
         """Encode slides from patch features."""
-        raise NotImplementedError("This method needs to be implemented.")
+        slide_dict = {}
+        self.model.to(device).eval()
+        dtype: torch.dtype = torch.float32
+        # TODO: dtype depends con CUDA capabilities. Check end of
+        # extract_feat_patients.py on how to handle this
+
+        for tile_feats_filename in tqdm(os.listdir(feat_dir), desc="Processing slides"):
+            h5_path = os.path.join(feat_dir, tile_feats_filename)
+            slide_name = Path(tile_feats_filename).stem
+            if not os.path.exists(h5_path) or not h5_path.endswith(".h5"):
+                tqdm.write(
+                    f"File {h5_path} does not exist or is not an h5 file, skipping"
+                )
+                continue
+
+            tile_embs = self._get_tile_embs(h5_path, device)
+
+            with torch.inference_mode():
+                assert tile_embs.ndim == 3, f"Expected 3D tensor, got {tile_embs.ndim}"
+                slide_feats = self.model(tile_embs.to(dtype))
+                slide_dict[slide_name] = {
+                    "feats": slide_feats.to(torch.float32)
+                    .detach()
+                    .squeeze()
+                    .cpu()
+                    .numpy(),
+                    "encoder": f"{self.identifier}",
+                    "precision": dtype,
+                }
+        output_name = (
+            f"{self.identifier}-slide-{get_processing_code_hash(Path(__file__))[:8]}.h5"
+        )
+        output_file = os.path.join(output_dir, output_name)
+        os.makedirs(os.path.dirname(output_file), exist_ok=True)
+        with h5py.File(output_file, "w") as f:
+            for slide_name, data in slide_dict.items():
+                f.create_dataset(f"{slide_name}", data=data["feats"])
+                f.attrs["encoder"] = data["encoder"]
+            tqdm.write(f"Finished extraction, saved to {output_file}")
 
     def encode_patients(self, output_dir, feat_dir, slide_table_path, device) -> None:
         """Encode patients from slide features."""
-        dtype = torch.float32
+        dtype: torch.dtype = torch.float32
         self.model.to(device).eval()
         # TODO: dtype depends con CUDA capabilities. Check end of
         # extract_feat_patients.py on how to handle this
@@ -45,7 +85,7 @@ class Cobra(Encoder):
         slide_dict = {}
 
         output_name = (
-            f"{self.identifier}-{get_processing_code_hash(Path(__file__))[:8]}"
+            f"{self.identifier}-pat-{get_processing_code_hash(Path(__file__))[:8]}.h5"
         )
         output_file = os.path.join(output_dir, output_name)
 

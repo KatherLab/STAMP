@@ -90,7 +90,6 @@ def _run_cli(args: argparse.Namespace) -> None:
                 encoder_name=config.slide_encoding.encoder,
                 output_dir=config.slide_encoding.output_dir,
                 feat_dir=config.slide_encoding.feat_dir,
-                slide_table_path=config.slide_encoding.slide_table,
                 device=config.slide_encoding.device,
             )
 
@@ -286,8 +285,12 @@ def main() -> None:
         "preprocess", help="Preprocess whole-slide images into feature vectors"
     )
     commands.add_parser(
-        "encode",
-        help="Encode slide-level features into patient-level embeddings",
+        "encode_slides",
+        help="Encode patch-level features into slide-level embeddings",
+    )
+    commands.add_parser(
+        "encode_patients",
+        help="Encode features into patient-level embeddings",
     )
     commands.add_parser("train", help="Train a Vision Transformer model")
     commands.add_parser(

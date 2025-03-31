@@ -17,7 +17,6 @@ class SlideEncodingConfig(BaseModel, arbitrary_types_allowed=True):
     encoder: EncoderName
     output_dir: Path
     feat_dir: Path
-    slide_table: Path
     device: DeviceLikeType
 
 
