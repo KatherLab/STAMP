@@ -48,6 +48,25 @@ slide_encoding:
   device: "cuda"
 
 
+patient_encoding:
+  # Encoder to use for patient encoding. Possible options are "katherlab-cobra".
+  encoder: "chief"
+  
+  # Directory to save the output files.
+  output_dir: "/path/to/save/files/to"
+  
+  # Directory where the extracted features are stored.
+  feat_dir: "/path/your/extracted/features/are/stored/in"
+  
+  # A table (.xlsx or .csv) relating every slide to their feature files.
+  # The table must contain at least two columns, one titled "SLIDE",
+  # containing the slide ID, and one called "FILENAME", containing the feature file path relative to `feat_dir`.
+  slide_table: "/path/of/slide.csv"
+  
+  # Device to run slide encoding on ("cpu", "cuda", "cuda:0", etc.)
+  device: "cuda"
+
+
 crossval:
   output_dir: "/path/to/save/files/to"
 
@@ -98,7 +117,6 @@ crossval:
 
   # Use ALiBi positional embedding
   # use_alibi: true
-
 
 
 training:
@@ -205,6 +223,7 @@ statistics:
   #- "/path/to/split-2/patient-preds.csv"
   #- "/path/to/split-3/patient-preds.csv"
   #- "/path/to/split-4/patient-preds.csv"
+
 
 heatmaps:
   output_dir: "/path/to/save/files/to"

@@ -4,7 +4,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from stamp.cache import STAMP_CACHE_DIR
-from stamp.slide_encoding.encoder import Encoder
+from stamp.encoding.encoder import Encoder
 
 """authors: https://github.com/hms-dbmi/CHIEF"""
 

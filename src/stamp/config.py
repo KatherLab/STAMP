@@ -1,9 +1,9 @@
 from pydantic import BaseModel, ConfigDict
 
+from stamp.encoding.config import PatientEncodingConfig, SlideEncodingConfig
 from stamp.heatmaps.config import HeatmapConfig
 from stamp.modeling.config import CrossvalConfig, DeploymentConfig, TrainConfig
 from stamp.preprocessing.config import PreprocessingConfig
-from stamp.slide_encoding.config import SlideEncodingConfig
 from stamp.statistics import StatsConfig
 
 
@@ -21,3 +21,5 @@ class StampConfig(BaseModel):
     heatmaps: HeatmapConfig | None = None
 
     slide_encoding: SlideEncodingConfig | None = None
+
+    patient_encoding: PatientEncodingConfig | None = None

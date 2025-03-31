@@ -75,8 +75,8 @@ def _run_cli(args: argparse.Namespace) -> None:
                 canny_cutoff=config.preprocessing.canny_cutoff,
             )
 
-        case "encode":
-            from stamp.slide_encoding import get_slide_embs
+        case "encode_slides":
+            from stamp.encoding import get_slide_embs
 
             if config.slide_encoding is None:
                 raise ValueError("no slide encoding configuration supplied")
@@ -92,6 +92,25 @@ def _run_cli(args: argparse.Namespace) -> None:
                 feat_dir=config.slide_encoding.feat_dir,
                 slide_table_path=config.slide_encoding.slide_table,
                 device=config.slide_encoding.device,
+            )
+
+        case "encode_patients":
+            from stamp.encoding import get_pat_embs
+
+            if config.patient_encoding is None:
+                raise ValueError("no patient encoding configuration supplied")
+
+            _add_file_handle_(_logger, output_dir=config.patient_encoding.output_dir)
+            _logger.info(
+                "using the following configuration:\n"
+                f"{yaml.dump(config.patient_encoding.model_dump(mode='json'))}"
+            )
+            get_pat_embs(
+                encoder_name=config.patient_encoding.encoder,
+                output_dir=config.patient_encoding.output_dir,
+                feat_dir=config.patient_encoding.feat_dir,
+                slide_table_path=config.patient_encoding.slide_table,
+                device=config.patient_encoding.device,
             )
 
         case "train":
