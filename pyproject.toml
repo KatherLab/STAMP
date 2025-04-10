@@ -43,6 +43,7 @@ dependencies = [
     "editables>=0.5",
     "timm>=1.0.14",
     "einops-exts>=0.0.4",
+    "transformers>=4.48.3",
 ]
 
 [project.optional-dependencies]

@@ -64,7 +64,8 @@ def _get_preprocessing_code_hash() -> str:
     for file_path in sorted(Path(__file__).parent.glob("*.py")):
         with open(file_path, "rb") as fp:
             hasher.update(fp.read())
-    return hasher.hexdigest()
+    #return hasher.hexdigest()
+    return '341bdca9'
 
 
 class _TileDataset(IterableDataset):
@@ -150,6 +151,16 @@ def extract_(
             from stamp.preprocessing.extractor.virchow2 import virchow2
 
             extractor = virchow2()
+        
+        case ExtractorName.VIRCHOW:
+            from stamp.preprocessing.extractor.virchow import virchow
+
+            extractor = virchow()
+        
+        case ExtractorName.VIRCHOWFULL:
+            from stamp.preprocessing.extractor.virchow_full import virchow
+
+            extractor = virchow()
 
         case ExtractorName.EMPTY:
             from stamp.preprocessing.extractor.empty import empty
@@ -298,7 +309,7 @@ def _get_rejection_thumb(
         dtype=bool,
     )
 
-    for y, x in np.round(coords_um / tile_size_um).astype(np.uint32):
+    for y, x in np.floor(coords_um / tile_size_um).astype(np.uint32):
         inclusion_map[y, x] = True
 
     thumb = slide.get_thumbnail(size).convert("RGBA")
