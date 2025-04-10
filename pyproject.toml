@@ -1,6 +1,6 @@
 [project]
 name = "stamp"
-version = "2.0.0"
+version = "2.1.0"
 authors = [
     { name = "Omar El Nahhas", email = "omar.el_nahhas@tu-dresden.de" },
     { name = "Marko van Treeck", email = "markovantreeck@gmail.com" },
@@ -55,6 +55,8 @@ conch = [
 ]
 conch1_5 = [
     "transformers>=4.45.2",
+    "einops-exts==0.0.4",
+    "torch>=2.0.0"
 ]
 ctranspath = [
     "gdown>=5.2.0",

@@ -1,8 +1,8 @@
 try:
     import timm
-    from timm.data import resolve_data_config
-    from timm.data.transforms_factory import create_transform
     import torch
+    from timm.data import resolve_data_config  # type: ignore
+    from timm.data.transforms_factory import create_transform
 except ModuleNotFoundError as e:
     raise ModuleNotFoundError(
         "uni2 dependencies not installed."

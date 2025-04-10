@@ -10,7 +10,7 @@ except ModuleNotFoundError as e:
 from stamp.preprocessing.extractor import Extractor
 
 
-def h_optimus_1():
+def h_optimus_1() -> Extractor:
     model = timm.create_model(
         "hf-hub:bioptimus/H-optimus-1",
         pretrained=True,
