@@ -9,26 +9,91 @@ from stamp.encoding.encoder import Encoder
 """authors: https://github.com/hms-dbmi/CHIEF"""
 
 
-def chief() -> Encoder:
-    model = CHIEF(size_arg="small", dropout=True, n_classes=2)
+class CHIEFModel(nn.Module):
+    def __init__(
+        self,
+        gate=True,
+        size_arg="large",
+        dropout=True,
+        n_classes=2,
+        instance_loss_fn=nn.CrossEntropyLoss(),
+        **kwargs,
+    ):
+        super(CHIEFModel, self).__init__()
+        self.size_dict = {
+            "xs": [384, 256, 256],
+            "small": [768, 512, 256],
+            "big": [1024, 512, 384],
+            "large": [2048, 1024, 512],
+        }
+        size = self.size_dict[size_arg]
+        print(size)
+        fc = [nn.Linear(size[0], size[1]), nn.ReLU()]
+        if dropout:
+            fc.append(nn.Dropout(0.25))
+        if gate:
+            attention_net = Attn_Net_Gated(
+                L=size[1], D=size[2], dropout=dropout, n_classes=1
+            )
+        else:
+            attention_net = Attn_Net(L=size[1], D=size[2], dropout=dropout, n_classes=1)
+        fc.append(attention_net)
+        self.attention_net = nn.Sequential(*fc)
+        self.classifiers = nn.Linear(size[1], n_classes)
+        instance_classifiers = [nn.Linear(size[1], 2) for i in range(n_classes)]
+        self.instance_classifiers = nn.ModuleList(instance_classifiers)
+        self.instance_loss_fn = instance_loss_fn
+        self.n_classes = n_classes
+        initialize_weights(self)
 
-    model_path = STAMP_CACHE_DIR / "CHIEF_pretraining.pth"
-    if not model_path.is_file():
-        model_path.parent.mkdir(parents=True, exist_ok=True)
-        gdown.download(
-            "https://drive.google.com/u/0/uc?id=10bJq_ayX97_1w95omN8_mESrYAGIBAPb&export=download",
-            str(model_path),
+        self.att_head = Att_Head(size[1], size[2])
+        self.text_to_vision = nn.Sequential(
+            nn.Linear(768, size[1]), nn.ReLU(), nn.Dropout(p=0.25)
         )
 
-    chief = torch.load(model_path)
-    if "organ_embedding" in chief:
-        del chief["organ_embedding"]
-    model.load_state_dict(chief, strict=True)
+    def relocate(self):
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.attention_net = self.attention_net.to(device)
+        self.classifiers = self.classifiers.to(device)
+        self.instance_classifiers = self.instance_classifiers.to(device)
 
-    return Encoder(
-        model=model,
-        identifier="chief",
-    )
+    def forward(self, h):
+        h_ori = h
+        A, h = self.attention_net(h)
+        A = torch.transpose(A, 1, 0)
+        A_raw = A
+        A = F.softmax(A, dim=1)
+        print("A", A.shape)
+        WSI_feature = torch.mm(A, h)
+        slide_embeddings = torch.mm(A, h_ori)
+
+        result = {
+            "attention_raw": A_raw,
+            "WSI_feature": slide_embeddings,
+            "WSI_feature_transformed": WSI_feature,
+            "tile_features_transformed": h,
+        }
+        return result
+
+
+class CHIEF(Encoder):
+    def __init__(self) -> None:
+        model = CHIEFModel(size_arg="small", dropout=True, n_classes=2)
+        model_path = STAMP_CACHE_DIR / "CHIEF_pretraining.pth"
+        if not model_path.is_file():
+            model_path.parent.mkdir(parents=True, exist_ok=True)
+            gdown.download(
+                "https://drive.google.com/u/0/uc?id=10bJq_ayX97_1w95omN8_mESrYAGIBAPb&export=download",
+                str(model_path),
+            )
+
+        # TODO: check digest
+
+        chief = torch.load(model_path)
+        if "organ_embedding" in chief:
+            del chief["organ_embedding"]
+        model.load_state_dict(chief, strict=True)
+        super().__init__(model=model, identifier="chief")
 
 
 def initialize_weights(module):
@@ -96,70 +161,3 @@ class Attn_Net_Gated(nn.Module):
         A = a.mul(b)
         A = self.attention_c(A)
         return A, x
-
-
-class CHIEF(nn.Module):
-    def __init__(
-        self,
-        gate=True,
-        size_arg="large",
-        dropout=True,
-        n_classes=2,
-        instance_loss_fn=nn.CrossEntropyLoss(),
-        **kwargs,
-    ):
-        super(CHIEF, self).__init__()
-        self.size_dict = {
-            "xs": [384, 256, 256],
-            "small": [768, 512, 256],
-            "big": [1024, 512, 384],
-            "large": [2048, 1024, 512],
-        }
-        size = self.size_dict[size_arg]
-        print(size)
-        fc = [nn.Linear(size[0], size[1]), nn.ReLU()]
-        if dropout:
-            fc.append(nn.Dropout(0.25))
-        if gate:
-            attention_net = Attn_Net_Gated(
-                L=size[1], D=size[2], dropout=dropout, n_classes=1
-            )
-        else:
-            attention_net = Attn_Net(L=size[1], D=size[2], dropout=dropout, n_classes=1)
-        fc.append(attention_net)
-        self.attention_net = nn.Sequential(*fc)
-        self.classifiers = nn.Linear(size[1], n_classes)
-        instance_classifiers = [nn.Linear(size[1], 2) for i in range(n_classes)]
-        self.instance_classifiers = nn.ModuleList(instance_classifiers)
-        self.instance_loss_fn = instance_loss_fn
-        self.n_classes = n_classes
-        initialize_weights(self)
-
-        self.att_head = Att_Head(size[1], size[2])
-        self.text_to_vision = nn.Sequential(
-            nn.Linear(768, size[1]), nn.ReLU(), nn.Dropout(p=0.25)
-        )
-
-    def relocate(self):
-        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.attention_net = self.attention_net.to(device)
-        self.classifiers = self.classifiers.to(device)
-        self.instance_classifiers = self.instance_classifiers.to(device)
-
-    def forward(self, h):
-        h_ori = h
-        A, h = self.attention_net(h)
-        A = torch.transpose(A, 1, 0)
-        A_raw = A
-        A = F.softmax(A, dim=1)
-        print("A", A.shape)
-        WSI_feature = torch.mm(A, h)
-        slide_embeddings = torch.mm(A, h_ori)
-
-        result = {
-            "attention_raw": A_raw,
-            "WSI_feature": slide_embeddings,
-            "WSI_feature_transformed": WSI_feature,
-            "tile_features_transformed": h,
-        }
-        return result
