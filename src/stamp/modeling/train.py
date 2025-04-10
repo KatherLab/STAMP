@@ -69,7 +69,7 @@ def train_categorical_model_(
     use_alibi: bool,
     use_cobra: bool,
     lr: float,
-    freeze_base: str = "None",
+    freeze: str = "None",
 ) -> None:
     """Trains a model.
 
