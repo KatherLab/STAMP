@@ -19,6 +19,7 @@ except ModuleNotFoundError as e:
         " Please update your venv using `uv sync --extra cobra`"
     ) from e
 
+
 class Cobra(Encoder):
     def __init__(self) -> None:
         model = get_cobra(download_weights=True)
