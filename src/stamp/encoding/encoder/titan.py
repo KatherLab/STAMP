@@ -10,6 +10,7 @@ from transformers import AutoModel
 import stamp
 from stamp.cache import get_processing_code_hash
 from stamp.encoding.encoder import Encoder
+from stamp.modeling.data import CoordsInfo, get_coords
 
 
 class Titan(Encoder):
@@ -48,20 +49,21 @@ class Titan(Encoder):
 
                 with h5py.File(h5_path, "r") as f:
                     feats = f["feats"][:]  # type: ignore
-                    coords = f["coords"][:]  # type: ignore
+                    coords: CoordsInfo = get_coords(f)  # type: ignore
 
                 # Convert coordinates from microns to pixels
-                mpp = 1.14  # microns per pixel
-                patch_size_lvl0 = math.floor(256 / mpp)  # Inferred from TITAN docs
-                coords = coords / mpp  # Convert to pixels
-                coords = torch.tensor(coords, dtype=torch.float32).to(device)
-                coords = coords.to(torch.int64).to(device)  # Convert to integer
+                patch_size_lvl0 = math.floor(
+                    256 / coords.mpp
+                )  # Inferred from TITAN docs
+                coords_px = coords.coords_um / coords.mpp  # Convert to pixels
+                coords_px = torch.tensor(coords_px, dtype=torch.float32).to(device)
+                coords_px = coords_px.to(torch.int64).to(device)  # Convert to integer
 
                 feats = torch.tensor(feats, dtype=torch.float32).to(device)
 
                 with torch.inference_mode():
                     slide_embedding = self.model.encode_slide_from_patch_features(
-                        feats, coords, patch_size_lvl0
+                        feats, coords_px, patch_size_lvl0
                     )
                     slide_embedding = (
                         slide_embedding.to(torch.float32)
