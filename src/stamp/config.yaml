@@ -49,8 +49,9 @@ slide_encoding:
 
 
 patient_encoding:
-  # Encoder to use for patient encoding. Possible options are "katherlab-cobra".
-  encoder: "chief"
+  # Encoder to use for patient encoding. Possible options are "katherlab-cobra",
+  # "katherlab-eagle".
+  encoder: "katherlab-eagle"
   
   # Directory to save the output files.
   output_dir: "/path/to/save/files/to"
@@ -65,6 +66,11 @@ patient_encoding:
   
   # Device to run slide encoding on ("cpu", "cuda", "cuda:0", etc.)
   device: "cuda"
+
+  # Optional settings:
+  # Directory where the aggregated features are stored. Needed for
+  # some encoders such as eagle (it requires virchow2 features).
+  #agg_feat_dir: "/path/your/aggregated/features/are/stored/in"
 
 
 crossval:

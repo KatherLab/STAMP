@@ -7,6 +7,7 @@ from torch._prims_common import DeviceLikeType
 
 class EncoderName(StrEnum):
     COBRA = "katherlab-cobra"
+    EAGLE = "katherlab-eagle"
     CHIEF = "chief"
     TITAN = "mahmood-titan"
 
@@ -28,3 +29,4 @@ class PatientEncodingConfig(BaseModel, arbitrary_types_allowed=True):
     feat_dir: Path
     slide_table: Path
     device: DeviceLikeType
+    agg_feat_dir: Path | None = None

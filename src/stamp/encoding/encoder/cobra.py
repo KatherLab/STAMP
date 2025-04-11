@@ -74,7 +74,9 @@ class Cobra(Encoder):
                 f.attrs["encoder"] = data["encoder"]
             tqdm.write(f"Finished extraction, saved to {output_file}")
 
-    def encode_patients(self, output_dir, feat_dir, slide_table_path, device) -> None:
+    def encode_patients(
+        self, output_dir, feat_dir, slide_table_path, device, **kwargs
+    ) -> None:
         """Encode patients from slide features."""
         dtype: torch.dtype = torch.float32
         self.model.to(device).eval()

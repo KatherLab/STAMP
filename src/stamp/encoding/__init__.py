@@ -20,6 +20,7 @@ def get_pat_embs(
     feat_dir: Path,
     slide_table_path: Path,
     device: DeviceLikeType,
+    agg_feat_dir: Path | None = None,
 ) -> None:
     """"""
     match encoder_name:
@@ -27,9 +28,16 @@ def get_pat_embs(
             from stamp.encoding.encoder.cobra import Cobra
 
             encoder: Encoder = Cobra()
-    # TODO: Add other encoders
 
-    encoder.encode_patients(output_dir, feat_dir, slide_table_path, device)
+        case EncoderName.EAGLE:
+            from stamp.encoding.encoder.eagle import Eagle
+
+            encoder: Encoder = Eagle()
+    # TODO: Add other encoders and empty case
+
+    encoder.encode_patients(
+        output_dir, feat_dir, slide_table_path, device, agg_feat_dir=agg_feat_dir
+    )
 
 
 def get_slide_embs(

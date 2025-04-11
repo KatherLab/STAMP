@@ -110,6 +110,7 @@ def _run_cli(args: argparse.Namespace) -> None:
                 feat_dir=config.patient_encoding.feat_dir,
                 slide_table_path=config.patient_encoding.slide_table,
                 device=config.patient_encoding.device,
+                agg_feat_dir=config.patient_encoding.agg_feat_dir,
             )
 
         case "train":

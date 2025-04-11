@@ -95,6 +95,14 @@ class CHIEF(Encoder):
         model.load_state_dict(chief, strict=True)
         super().__init__(model=model, identifier="chief")
 
+    def encode_slides(self, feats, coords, patch_size_lvl0, *args, **kwargs) -> None:
+        pass
+
+    def encode_patients(
+        self, output_dir, feat_dir, slide_table_path, device, **kwargs
+    ) -> None:
+        pass
+
 
 def initialize_weights(module):
     for m in module.modules():

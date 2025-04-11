@@ -19,11 +19,13 @@ class Encoder(ABC, Generic[EncoderModel]):
     """
 
     @abstractmethod
-    def encode_slides(self, feats, coords, patch_size_lvl0, *args, **kwargs):
+    def encode_slides(self, feats, coords, patch_size_lvl0, *args, **kwargs) -> None:
         """Abstract method to encode slide from patch features."""
         pass
 
     @abstractmethod
-    def encode_patients(self, output_dir, feat_dir, slide_table_path, device):
+    def encode_patients(
+        self, output_dir, feat_dir, slide_table_path, device, **kwargs
+    ) -> None:
         """Abstract method to encode patient from slide features."""
         pass

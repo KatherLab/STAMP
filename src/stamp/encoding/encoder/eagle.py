@@ -16,15 +16,21 @@ from stamp.encoding.encoder.chief import CHIEF
 
 class Eagle(Encoder):
     def __init__(self) -> None:
-        # TODO: load chief model
-        pass
+        model = CHIEF().model
+        super().__init__(model=model, identifier="katherlab-eagle")
 
     def encode_patients(
-        self, output_dir, feat_dir, agg_feat_dir, slide_table_path, device
+        self, output_dir, feat_dir, slide_table_path, device, **kwargs
     ) -> None:
+        """Encode patients from slide features."""
+        agg_feat_dir: Path | None = kwargs.get("agg_feat_dir")
+        if not agg_feat_dir:
+            raise ValueError("agg_feat_dir is required for Eagle's encode_patients")
+
         slide_table = pd.read_csv(slide_table_path)
         patient_groups = slide_table.groupby("PATIENT")
         slide_dict = {}
+        self.model.to(device).eval()
 
         output_name = (
             f"{self.identifier}-pat-{get_processing_code_hash(Path(__file__))[:8]}.h5"
@@ -38,7 +44,6 @@ class Eagle(Encoder):
         for patient_id, group in tqdm(patient_groups, leave=False):
             feats_list = []
             agg_feats_list = []
-            coords_list = []
             slide_ids_list = []
 
             for _, row in group.iterrows():
@@ -54,14 +59,11 @@ class Eagle(Encoder):
                 try:
                     with h5py.File(h5_ctp, "r") as f:
                         feats = torch.tensor(f["feats"][:], dtype=torch.float32)
-                        coords = torch.tensor(f["coords"][:], dtype=torch.int)
                 except Exception as e:
                     print(f"Error reading {h5_ctp}: {e}")
                     continue
 
                 # Read virchow2 features used for aggregation
-                # Coords are not used as they are the same as ctranspath
-                # TODO: Ask if this is correct
                 if not os.path.exists(h5_vir2):
                     print(f"File {h5_vir2} does not exist, skipping")
                     continue
@@ -77,19 +79,45 @@ class Eagle(Encoder):
 
                 feats_list.append(feats)
                 agg_feats_list.append(agg_feats)
-                coords_list.append(coords)
                 slide_ids_list.extend([slide_id] * feats.shape[0])
             if not feats_list:
                 print(f"No ctranspath features for patient {patient_id}")
                 return
             all_feats = torch.cat(feats_list, dim=0).to(device)
-            all_coords = torch.cat(coords_list, dim=0)
-            slide_ids_arr = np.array(slide_ids_list)
+            all_agg_feats = torch.cat(agg_feats_list, dim=0).to(device)
             with torch.no_grad():
-                result = CHIEF.model(all_feats)
+                result = self.model(all_feats)
                 attention_raw = result["attention_raw"].squeeze(0).cpu()
             k = min(25, attention_raw.shape[0])
-            topk_values, topk_indices = torch.topk(attention_raw, k)
+            _, topk_indices = torch.topk(attention_raw, k)
             top_indices = topk_indices.numpy()
-            top_slide_ids = slide_ids_arr[top_indices]
-            # Do the indices from ctranspath work for virchow2? I suppose so
+
+            # Get top virchow2 features using the top indices from
+            # ctranspath features
+            top_agg_feats = []
+            for i in top_indices:
+                top_agg_feats.append(all_agg_feats[i])
+            top_agg_feats = torch.stack(top_agg_feats).to(device)
+            eagle_embedding = torch.mean(top_agg_feats, dim=0)
+            slide_dict[patient_id] = {
+                "feats": eagle_embedding.to(torch.float32)
+                .detach()
+                .squeeze()
+                .cpu()
+                .numpy(),
+                "encoder": self.identifier,
+                "precision": torch.float32,
+            }
+
+        os.makedirs(os.path.dirname(output_file), exist_ok=True)
+        with h5py.File(output_file, "w") as f:
+            for patient_id, data in slide_dict.items():
+                f.create_dataset(f"{patient_id}", data=data["feats"])
+                f.attrs["encoder"] = data["encoder"]
+            tqdm.write(f"Finished encoding, saved to {output_file}")
+
+    def encode_slides(
+        self, output_dir, feat_dir, patch_size_lvl0, *args, **kwargs
+    ) -> None:
+        """Encode slide from patch features."""
+        pass
