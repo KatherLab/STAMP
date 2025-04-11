@@ -75,7 +75,6 @@ class Eagle(Encoder):
                     continue
                 # TODO: Check that the features have ctranspath id
                 # TODO: Check that agg features have virchow2 id
-                # TODO: Check that the features have the same number of rows
 
                 feats_list.append(feats)
                 agg_feats_list.append(agg_feats)
@@ -85,6 +84,11 @@ class Eagle(Encoder):
                 return
             all_feats = torch.cat(feats_list, dim=0).to(device)
             all_agg_feats = torch.cat(agg_feats_list, dim=0).to(device)
+            breakpoint()
+            if all_feats.shape[0] != all_agg_feats.shape[0]:
+                raise ValueError(
+                    f"Number of ctranspath features and virchow2 features do not match: {all_feats.shape[0]} != {all_agg_feats.shape[0]}"
+                )
             with torch.no_grad():
                 result = self.model(all_feats)
                 attention_raw = result["attention_raw"].squeeze(0).cpu()
