@@ -27,7 +27,6 @@ class CHIEFModel(nn.Module):
             "large": [2048, 1024, 512],
         }
         size = self.size_dict[size_arg]
-        print(size)
         fc = [nn.Linear(size[0], size[1]), nn.ReLU()]
         if dropout:
             fc.append(nn.Dropout(0.25))
@@ -63,7 +62,6 @@ class CHIEFModel(nn.Module):
         A = torch.transpose(A, 1, 0)
         A_raw = A
         A = F.softmax(A, dim=1)
-        print("A", A.shape)
         WSI_feature = torch.mm(A, h)
         slide_embeddings = torch.mm(A, h_ori)
 
