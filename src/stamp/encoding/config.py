@@ -2,7 +2,7 @@ from enum import StrEnum
 from pathlib import Path
 
 from pydantic import BaseModel, ConfigDict
-from torch._prims_common import DeviceLikeType
+from torch._prims_common import DeviceLikeType  # type: ignore
 
 
 class EncoderName(StrEnum):
@@ -19,6 +19,7 @@ class SlideEncodingConfig(BaseModel, arbitrary_types_allowed=True):
     output_dir: Path
     feat_dir: Path
     device: DeviceLikeType
+    agg_feat_dir: Path | None = None
 
 
 class PatientEncodingConfig(BaseModel, arbitrary_types_allowed=True):

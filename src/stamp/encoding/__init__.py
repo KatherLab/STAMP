@@ -1,21 +1,14 @@
-import math
-import os
 from pathlib import Path
+from typing import assert_never
 
-import h5py
-import pandas as pd
-import torch
-from torch._prims_common import DeviceLikeType
-from tqdm import tqdm
+from torch._prims_common import DeviceLikeType  # type: ignore
 
-import stamp
-from stamp.cache import get_processing_code_hash
 from stamp.encoding.config import EncoderName
 from stamp.encoding.encoder import Encoder
 
 
 def get_pat_embs(
-    encoder_name: EncoderName,
+    encoder: EncoderName | Encoder,
     output_dir: Path,
     feat_dir: Path,
     slide_table_path: Path,
@@ -23,37 +16,56 @@ def get_pat_embs(
     agg_feat_dir: Path | None = None,
 ) -> None:
     """"""
-    match encoder_name:
+    match encoder:
         case EncoderName.COBRA:
             from stamp.encoding.encoder.cobra import Cobra
 
-            encoder: Encoder = Cobra()
+            selected_encoder: Encoder = Cobra()
 
         case EncoderName.EAGLE:
             from stamp.encoding.encoder.eagle import Eagle
 
-            encoder: Encoder = Eagle()
-    # TODO: Add other encoders and empty case
+            selected_encoder: Encoder = Eagle()
 
-    encoder.encode_patients(
+        case Encoder():
+            selected_encoder = encoder
+
+        case _ as unreachable:
+            assert_never(unreachable)
+
+    selected_encoder.encode_patients(
         output_dir, feat_dir, slide_table_path, device, agg_feat_dir=agg_feat_dir
     )
 
 
 def get_slide_embs(
-    encoder_name: EncoderName,
+    encoder: EncoderName | Encoder,
     output_dir: Path,
     feat_dir: Path,
     device: DeviceLikeType,
+    agg_feat_dir: Path | None = None,
 ) -> None:
-    match encoder_name:
+    match encoder:
         case EncoderName.TITAN:
             from stamp.encoding.encoder.titan import Titan
 
-            encoder: Encoder = Titan()
+            selected_encoder: Encoder = Titan()
         case EncoderName.COBRA:
             from stamp.encoding.encoder.cobra import Cobra
 
-            encoder: Encoder = Cobra()
+            selected_encoder: Encoder = Cobra()
 
-    encoder.encode_slides(output_dir, feat_dir, device)
+        case EncoderName.EAGLE:
+            from stamp.encoding.encoder.eagle import Eagle
+
+            selected_encoder: Encoder = Eagle()
+
+        case Encoder():
+            selected_encoder = encoder
+
+        case _ as unreachable:
+            assert_never(unreachable)
+
+    selected_encoder.encode_slides(
+        output_dir, feat_dir, device, agg_feat_dir=agg_feat_dir
+    )

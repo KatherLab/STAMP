@@ -87,10 +87,11 @@ def _run_cli(args: argparse.Namespace) -> None:
                 f"{yaml.dump(config.slide_encoding.model_dump(mode='json'))}"
             )
             get_slide_embs(
-                encoder_name=config.slide_encoding.encoder,
+                encoder=config.slide_encoding.encoder,
                 output_dir=config.slide_encoding.output_dir,
                 feat_dir=config.slide_encoding.feat_dir,
                 device=config.slide_encoding.device,
+                agg_feat_dir=config.slide_encoding.agg_feat_dir,
             )
 
         case "encode_patients":
@@ -105,7 +106,7 @@ def _run_cli(args: argparse.Namespace) -> None:
                 f"{yaml.dump(config.patient_encoding.model_dump(mode='json'))}"
             )
             get_pat_embs(
-                encoder_name=config.patient_encoding.encoder,
+                encoder=config.patient_encoding.encoder,
                 output_dir=config.patient_encoding.output_dir,
                 feat_dir=config.patient_encoding.feat_dir,
                 slide_table_path=config.patient_encoding.slide_table,

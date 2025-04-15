@@ -30,8 +30,9 @@ preprocessing:
 
 
 slide_encoding:
-  # Encoder to use for slide encoding. Possible options are "katherlab-cobra".
-  encoder: "chief"
+  # Encoder to use for slide encoding. Possible options are "katherlab-cobra",
+  # "katherlab-eagle", "mahmood-titan".
+  encoder: "katherlab-eagle"
   
   # Directory to save the output files.
   output_dir: "/path/to/save/files/to"
@@ -39,13 +40,13 @@ slide_encoding:
   # Directory where the extracted features are stored.
   feat_dir: "/path/your/extracted/features/are/stored/in"
   
-  # A table (.xlsx or .csv) relating every slide to their feature files.
-  # The table must contain at least two columns, one titled "SLIDE",
-  # containing the slide ID, and one called "FILENAME", containing the feature file path relative to `feat_dir`.
-  slide_table: "/path/of/slide.csv"
-  
   # Device to run slide encoding on ("cpu", "cuda", "cuda:0", etc.)
   device: "cuda"
+
+  # Optional settings:
+  # Directory where the aggregated features are stored. Needed for
+  # some encoders such as eagle (it requires virchow2 features).
+  #agg_feat_dir: "/path/your/aggregated/features/are/stored/in"
 
 
 patient_encoding:
