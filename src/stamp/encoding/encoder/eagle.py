@@ -24,7 +24,7 @@ class Eagle(Encoder):
 
     def _read_h5(self, h5_path: str) -> tuple[Tensor, CoordsInfo, str]:
         if not os.path.exists(h5_path) or not h5_path.endswith(".h5"):
-            tqdm.write(f"File {h5_path} does not exist or is not an h5 file, skipping")
+            raise FileNotFoundError("File does not exist or is not an h5 file")
         with h5py.File(h5_path, "r") as f:
             feats: Tensor = torch.tensor(f["feats"][:], dtype=torch.float32)  # type: ignore
             coords: CoordsInfo = get_coords(f)
@@ -207,7 +207,7 @@ class Eagle(Encoder):
                     h5_ctp, h5_vir2, slide_name
                 )
             except Exception as e:
-                tqdm.write(str(e))
+                tqdm.write(s=str(e))
                 continue
 
             eagle_embedding = self.create_eagle_embedding(feats, agg_feats, device)
@@ -222,7 +222,9 @@ class Eagle(Encoder):
             for slide_name, data in slide_dict.items():
                 f.create_dataset(f"{slide_name}", data=data["feats"])
                 f.attrs["encoder"] = data["encoder"]
+            # Check if the file is empty
+            if len(f) == 0:
+                tqdm.write("Extraction failed: file empty")
+                os.remove(output_file)
+                return
             tqdm.write(f"Finished extraction, saved to {output_file}")
-
-
-# TODO: Remove annoying print of A size

@@ -25,7 +25,7 @@ class Titan(Encoder):
         self.model.to(device).eval()
 
         output_name = (
-            f"{self.identifier}-{get_processing_code_hash(Path(__file__))[:8]}.h5"
+            f"{self.identifier}-slide-{get_processing_code_hash(Path(__file__))[:8]}.h5"
         )
         output_file = os.path.join(output_dir, output_name)
 
