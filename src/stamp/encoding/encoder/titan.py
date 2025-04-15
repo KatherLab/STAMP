@@ -20,7 +20,7 @@ class Titan(Encoder):
 
     # TODO: Check precision
 
-    def encode_slides(self, output_dir, feat_dir, device):
+    def encode_slides(self, output_dir, feat_dir, device, **kwargs) -> None:
         # Ensure model weights and biases are on the same device as the input
         self.model.to(device).eval()
 

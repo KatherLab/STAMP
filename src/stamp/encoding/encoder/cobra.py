@@ -27,12 +27,12 @@ class Cobra(Encoder):
 
     def _get_tile_embs(self, h5_path, device):
         with h5py.File(h5_path, "r") as f:
-            feats = f["feats"][:]
+            feats = f["feats"][:]  # type: ignore
 
         feats = torch.tensor(feats).to(device)
         return feats.unsqueeze(0)
 
-    def encode_slides(self, output_dir, feat_dir, device) -> None:
+    def encode_slides(self, output_dir, feat_dir, device, **kwargs) -> None:
         """Encode slides from patch features."""
         slide_dict = {}
         self.model.to(device).eval()
