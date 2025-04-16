@@ -6,6 +6,7 @@ import pandas as pd
 import torch
 from tqdm import tqdm
 
+import stamp
 from stamp.cache import get_processing_code_hash
 from stamp.encoding.encoder import Encoder
 
@@ -59,9 +60,7 @@ class Cobra(Encoder):
                     .detach()
                     .squeeze()
                     .cpu()
-                    .numpy(),
-                    "encoder": f"{self.identifier}",
-                    "precision": dtype,
+                    .numpy()
                 }
         output_name = (
             f"{self.identifier}-slide-{get_processing_code_hash(Path(__file__))[:8]}.h5"
@@ -71,7 +70,9 @@ class Cobra(Encoder):
         with h5py.File(output_file, "w") as f:
             for slide_name, data in slide_dict.items():
                 f.create_dataset(f"{slide_name}", data=data["feats"])
-                f.attrs["encoder"] = data["encoder"]
+                f.attrs["version"] = stamp.__version__
+                f.attrs["encoder"] = self.identifier
+                f.attrs["precision"] = dtype
             tqdm.write(f"Finished extraction, saved to {output_file}")
 
     def encode_patients(
@@ -126,8 +127,6 @@ class Cobra(Encoder):
                         .squeeze()
                         .cpu()
                         .numpy(),
-                        "encoder": self.identifier,
-                        "precision": dtype,
                     }
             else:
                 tqdm.write(f"No features found for patient {patient_id}, skipping")
@@ -136,5 +135,7 @@ class Cobra(Encoder):
         with h5py.File(output_file, "w") as f:
             for patient_id, data in slide_dict.items():
                 f.create_dataset(f"{patient_id}", data=data["feats"])
-                f.attrs["encoder"] = data["encoder"]
+                f.attrs["version"] = stamp.__version__
+                f.attrs["encoder"] = self.identifier
+                f.attrs["precision"] = dtype
             tqdm.write(f"Finished encoding, saved to {output_file}")

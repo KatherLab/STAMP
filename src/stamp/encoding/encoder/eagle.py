@@ -6,9 +6,10 @@ import numpy as np
 import pandas as pd
 import torch
 from torch import Tensor
-from torch._prims_common import DeviceLikeType
+from torch._prims_common import DeviceLikeType  # type: ignore
 from tqdm import tqdm
 
+import stamp
 from stamp.cache import get_processing_code_hash
 from stamp.encoding.encoder import Encoder
 from stamp.encoding.encoder.chief import CHIEF
@@ -31,13 +32,10 @@ class Eagle(Encoder):
             extractor: str = f.attrs.get("extractor", "no extractor name")
             return feats, coords, extractor
 
-    def validate_and_read_features(
+    def _validate_and_read_features(
         self, h5_ctp: str, h5_vir2: str, slide_name: str
     ) -> tuple[Tensor, Tensor]:
-        try:
-            feats, coords, extractor = self._read_h5(h5_ctp)
-        except Exception as e:
-            raise RuntimeError(f"Error reading {h5_ctp}: {e}")
+        feats, coords, extractor = self._read_h5(h5_ctp)
 
         if "ctranspath" not in extractor:
             raise ValueError(
@@ -45,10 +43,7 @@ class Eagle(Encoder):
                 f"Features located in {h5_ctp} are extracted with {extractor}"
             )
 
-        try:
-            agg_feats, agg_coords, extractor = self._read_h5(h5_vir2)
-        except Exception as e:
-            raise RuntimeError(f"Error reading {h5_vir2}: {e}")
+        agg_feats, agg_coords, extractor = self._read_h5(h5_vir2)
 
         if "virchow2" not in extractor:
             raise ValueError(
@@ -72,7 +67,7 @@ class Eagle(Encoder):
 
         return feats, agg_feats
 
-    def create_eagle_embedding(
+    def _create_eagle_embedding(
         self,
         feats: Tensor,
         agg_feats: Tensor,
@@ -115,7 +110,7 @@ class Eagle(Encoder):
 
         slide_table = pd.read_csv(slide_table_path)
         patient_groups = slide_table.groupby("PATIENT")
-        slide_dict = {}
+        patient_dict = {}
         self.model.to(device).eval()
 
         output_name = (
@@ -139,10 +134,10 @@ class Eagle(Encoder):
 
                 # Validate and read features
                 try:
-                    feats, agg_feats = self.validate_and_read_features(
+                    feats, agg_feats = self._validate_and_read_features(
                         h5_ctp, h5_vir2, slide_name
                     )
-                except Exception as e:
+                except FileNotFoundError as e:
                     tqdm.write(str(e))
                     continue
 
@@ -155,20 +150,20 @@ class Eagle(Encoder):
             all_feats = torch.cat(feats_list, dim=0).to(device)
             all_agg_feats = torch.cat(agg_feats_list, dim=0).to(device)
 
-            eagle_embedding = self.create_eagle_embedding(
+            eagle_embedding = self._create_eagle_embedding(
                 all_feats, all_agg_feats, device
             )
-            slide_dict[patient_id] = {
+            patient_dict[patient_id] = {
                 "feats": eagle_embedding,
-                "encoder": self.identifier,
-                "precision": torch.float32,
             }
 
         os.makedirs(os.path.dirname(output_file), exist_ok=True)
         with h5py.File(output_file, "w") as f:
-            for patient_id, data in slide_dict.items():
+            for patient_id, data in patient_dict.items():
                 f.create_dataset(f"{patient_id}", data=data["feats"])
-                f.attrs["encoder"] = data["encoder"]
+                f.attrs["version"] = stamp.__version__
+                f.attrs["encoder"] = self.identifier
+                f.attrs["precision"] = torch.float32
             tqdm.write(f"Finished encoding, saved to {output_file}")
 
     def encode_slides(
@@ -203,28 +198,28 @@ class Eagle(Encoder):
             slide_name: str = Path(tile_feats_filename).stem
 
             try:
-                feats, agg_feats = self.validate_and_read_features(
+                feats, agg_feats = self._validate_and_read_features(
                     h5_ctp, h5_vir2, slide_name
                 )
-            except Exception as e:
+            except FileNotFoundError as e:
                 tqdm.write(s=str(e))
                 continue
 
-            eagle_embedding = self.create_eagle_embedding(feats, agg_feats, device)
+            eagle_embedding = self._create_eagle_embedding(feats, agg_feats, device)
             slide_dict[slide_name] = {
                 "feats": eagle_embedding,
-                "encoder": self.identifier,
-                "precision": torch.float32,
             }
 
         os.makedirs(os.path.dirname(output_file), exist_ok=True)
         with h5py.File(output_file, "w") as f:
             for slide_name, data in slide_dict.items():
                 f.create_dataset(f"{slide_name}", data=data["feats"])
-                f.attrs["encoder"] = data["encoder"]
+                f.attrs["version"] = stamp.__version__
+                f.attrs["encoder"] = self.identifier
+                f.attrs["precision"] = torch.float32
             # Check if the file is empty
             if len(f) == 0:
-                tqdm.write("Extraction failed: file empty")
+                tqdm.write("Encoding failed: file empty")
                 os.remove(output_file)
                 return
-            tqdm.write(f"Finished extraction, saved to {output_file}")
+            tqdm.write(f"Finished Encoding, saved to {output_file}")

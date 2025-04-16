@@ -12,7 +12,7 @@ import openslide
 import torch
 from PIL import Image
 from torch import Tensor
-from torch._prims_common import DeviceLikeType
+from torch._prims_common import DeviceLikeType  # type: ignore
 from torch.utils.data import DataLoader, IterableDataset
 from tqdm import tqdm
 
