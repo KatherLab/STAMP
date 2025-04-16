@@ -3,6 +3,7 @@ import os
 from pathlib import Path
 
 import h5py
+import numpy as np
 import pandas as pd
 import torch
 from torch import Tensor
@@ -32,30 +33,29 @@ class Titan(Encoder):
 
     def _validate_and_read_features(self, h5_path) -> tuple[Tensor, CoordsInfo]:
         feats, coords, extractor = self._read_h5(h5_path)
-        if "titan" not in extractor:
+        if "conch1_5" not in extractor:
             raise ValueError(
-                f"Features must be extracted with titan. "
+                f"Features must be extracted with conch1_5. "
                 f"Features located in {h5_path} are extracted with {extractor}"
             )
         return feats, coords
 
     def _encode_slide(
         self, feats: Tensor, coords: CoordsInfo, device: DeviceLikeType
-    ) -> torch.Tensor:
+    ) -> np.ndarray:
         """Helper method to encode a single slide."""
         # Convert coordinates from microns to pixels
         patch_size_lvl0 = math.floor(256 / coords.mpp)  # Inferred from TITAN docs
         coords_px = coords.coords_um / coords.mpp  # Convert to pixels
-        coords_px = torch.tensor(coords_px, dtype=torch.float32).to(device)
         coords_px = coords_px.to(torch.int64).to(device)  # Convert to integer
 
-        feats = torch.tensor(feats, dtype=torch.float32).to(device)
+        feats = feats.to(device)
 
         with torch.inference_mode():
             slide_embedding = self.model.encode_slide_from_patch_features(
                 feats, coords_px, patch_size_lvl0
             )
-            return slide_embedding.to(torch.float32).detach().squeeze()
+            return slide_embedding.to(torch.float32).detach().squeeze().cpu().numpy()
 
     def encode_slides(
         self,
@@ -97,12 +97,11 @@ class Titan(Encoder):
                 f.create_dataset(f"{slide_name}", data=data["feats"])
                 f.attrs["version"] = stamp.__version__
                 f.attrs["encoder"] = self.identifier
-                f.attrs["precision"] = torch.float32
+                f.attrs["precision"] = str(torch.float32)
             # Check if the file is empty
             if len(f) == 0:
                 tqdm.write("Extraction failed: file empty")
                 os.remove(output_file)
-                return
             tqdm.write(f"Finished encoding, saved to {output_file}")
 
     def encode_patients(self, output_dir, feat_dir, slide_table_path, device, **kwargs):

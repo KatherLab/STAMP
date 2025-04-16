@@ -72,8 +72,12 @@ class Cobra(Encoder):
                 f.create_dataset(f"{slide_name}", data=data["feats"])
                 f.attrs["version"] = stamp.__version__
                 f.attrs["encoder"] = self.identifier
-                f.attrs["precision"] = dtype
-            tqdm.write(f"Finished extraction, saved to {output_file}")
+                f.attrs["precision"] = str(dtype)
+            if len(f) == 0:
+                tqdm.write("Encoding failed: file empty")
+                os.remove(output_file)
+                return
+            tqdm.write(f"Finished encoding, saved to {output_file}")
 
     def encode_patients(
         self, output_dir, feat_dir, slide_table_path, device, **kwargs
@@ -137,5 +141,8 @@ class Cobra(Encoder):
                 f.create_dataset(f"{patient_id}", data=data["feats"])
                 f.attrs["version"] = stamp.__version__
                 f.attrs["encoder"] = self.identifier
-                f.attrs["precision"] = dtype
+                f.attrs["precision"] = str(dtype)
+            if len(f) == 0:
+                tqdm.write("Encoding failed: file empty")
+                os.remove(output_file)
             tqdm.write(f"Finished encoding, saved to {output_file}")

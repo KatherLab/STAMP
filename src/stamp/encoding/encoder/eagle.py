@@ -163,7 +163,11 @@ class Eagle(Encoder):
                 f.create_dataset(f"{patient_id}", data=data["feats"])
                 f.attrs["version"] = stamp.__version__
                 f.attrs["encoder"] = self.identifier
-                f.attrs["precision"] = torch.float32
+                f.attrs["precision"] = str(torch.float32)
+            if len(f) == 0:
+                tqdm.write("Encoding failed: file empty")
+                os.remove(output_file)
+                return
             tqdm.write(f"Finished encoding, saved to {output_file}")
 
     def encode_slides(
@@ -216,7 +220,7 @@ class Eagle(Encoder):
                 f.create_dataset(f"{slide_name}", data=data["feats"])
                 f.attrs["version"] = stamp.__version__
                 f.attrs["encoder"] = self.identifier
-                f.attrs["precision"] = torch.float32
+                f.attrs["precision"] = str(torch.float32)
             # Check if the file is empty
             if len(f) == 0:
                 tqdm.write("Encoding failed: file empty")
