@@ -27,6 +27,11 @@ def get_pat_embs(
 
             selected_encoder: Encoder = Eagle()
 
+        case EncoderName.TITAN:
+            from stamp.encoding.encoder.titan import Titan
+
+            selected_encoder: Encoder = Titan()
+
         case Encoder():
             selected_encoder = encoder
 
