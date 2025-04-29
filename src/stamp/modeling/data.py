@@ -192,7 +192,7 @@ class BagDataset(Dataset[tuple[_Bag, _Coordinates, BagSize, _EncodedTarget]]):
 
 @dataclass
 class CoordsInfo:
-    coords_um: Tensor
+    coords_um: np.ndarray
     tile_size_um: Microns
     tile_size_px: TilePixels | None
 
@@ -206,8 +206,8 @@ class CoordsInfo:
 
 
 def get_coords(feature_h5: h5py.File) -> CoordsInfo:
-    coords = torch.from_numpy(feature_h5["coords"][:]).float()  # pyright: ignore[reportIndexIssue]
-    coords_um: Tensor | None = None
+    coords: np.ndarray = feature_h5["coords"][:]  # type: ignore
+    coords_um: np.ndarray | None = None
     tile_size_um: Microns | None = None
     tile_size_px: TilePixels | None = None
     if (tile_size := feature_h5.attrs.get("tile_size", None)) and feature_h5.attrs.get(
