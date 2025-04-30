@@ -70,6 +70,7 @@ chief_ctranspath = [
 gigapath = [
     "timm>=0.9.11",
     "torchvision>=0.20.1",
+    "gigapath @ git+https://github.com/prov-gigapath/prov-gigapath.git@53d67708d6b19e9738d1341bb011390ffe2039f1"
 ]
 h_optimus_0 = [
     "timm>=0.9.11",
