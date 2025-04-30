@@ -10,6 +10,7 @@ class EncoderName(StrEnum):
     EAGLE = "katherlab-eagle"
     CHIEF = "chief"
     TITAN = "mahmood-titan"
+    GIGAPATH = "gigapath"
 
 
 class SlideEncodingConfig(BaseModel, arbitrary_types_allowed=True):
