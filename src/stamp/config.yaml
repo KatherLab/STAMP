@@ -31,7 +31,7 @@ preprocessing:
 
 slide_encoding:
   # Encoder to use for slide encoding. Possible options are "katherlab-cobra",
-  # "katherlab-eagle", "mahmood-titan".
+  # "katherlab-eagle", "mahmood-titan", "gigapath".
   encoder: "katherlab-eagle"
   
   # Directory to save the output files.
@@ -51,7 +51,7 @@ slide_encoding:
 
 patient_encoding:
   # Encoder to use for patient encoding. Possible options are "katherlab-cobra",
-  # "katherlab-eagle".
+  # "katherlab-eagle", "mahmood-titan".
   encoder: "katherlab-eagle"
   
   # Directory to save the output files.
