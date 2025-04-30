@@ -28,6 +28,10 @@ preprocessing:
   # from feature extraction.
   #brightness_cutoff: 240
 
+  # Add a hash of the entire preprocessing codebase in the feature folder name.
+  # Used to distinguish features extracted with different code versions.
+  #generate_hash: True
+
 
 crossval:
   output_dir: "/path/to/save/files/to"

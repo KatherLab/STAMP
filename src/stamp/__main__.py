@@ -73,6 +73,7 @@ def _run_cli(args: argparse.Namespace) -> None:
                 default_slide_mpp=config.preprocessing.default_slide_mpp,
                 brightness_cutoff=config.preprocessing.brightness_cutoff,
                 canny_cutoff=config.preprocessing.canny_cutoff,
+                generate_hash=config.preprocessing.generate_hash,
             )
 
         case "train":

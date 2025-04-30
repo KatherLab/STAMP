@@ -37,6 +37,7 @@ class PreprocessingConfig(BaseModel, arbitrary_types_allowed=True):
     extractor: ExtractorName
     max_workers: int = 8
     device: str = "cuda" if torch.cuda.is_available() else "cpu"
+    generate_hash: bool = True
 
     default_slide_mpp: SlideMPP | None = None
     """MPP of the slide to use if none can be inferred from the WSI"""
