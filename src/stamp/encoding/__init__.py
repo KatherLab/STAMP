@@ -70,6 +70,11 @@ def get_slide_embs(
 
             selected_encoder: Encoder = Gigapath()
 
+        case EncoderName.CHIEF:
+            from stamp.encoding.encoder.chief import CHIEF
+
+            selected_encoder: Encoder = CHIEF()
+
         case Encoder():
             selected_encoder = encoder
 

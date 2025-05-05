@@ -31,7 +31,7 @@ preprocessing:
 
 slide_encoding:
   # Encoder to use for slide encoding. Possible options are "katherlab-cobra",
-  # "katherlab-eagle", "mahmood-titan", "gigapath".
+  # "katherlab-eagle", "mahmood-titan", "gigapath", "chief".
   encoder: "katherlab-eagle"
   
   # Directory to save the output files.

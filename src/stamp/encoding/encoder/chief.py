@@ -1,9 +1,17 @@
+import os
+from pathlib import Path
+
 import gdown
+import h5py
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from torch import Tensor
+from torch._prims_common import DeviceLikeType  # type: ignore
+from tqdm import tqdm
 
-from stamp.cache import STAMP_CACHE_DIR
+import stamp
+from stamp.cache import STAMP_CACHE_DIR, get_processing_code_hash
 from stamp.encoding.encoder import Encoder
 
 """authors: https://github.com/hms-dbmi/CHIEF"""
@@ -93,8 +101,77 @@ class CHIEF(Encoder):
         model.load_state_dict(chief, strict=True)
         super().__init__(model=model, identifier="chief")
 
-    def encode_slides(self, feats, coords, patch_size_lvl0, *args, **kwargs) -> None:
-        pass
+    def _read_h5(self, h5_path: str) -> tuple[Tensor, str]:
+        if not os.path.exists(h5_path) or not h5_path.endswith(".h5"):
+            raise FileNotFoundError("File does not exist or is not an h5 file")
+        with h5py.File(h5_path, "r") as f:
+            feats: Tensor = torch.tensor(f["feats"][:], dtype=torch.float32)  # type: ignore
+            extractor: str = f.attrs.get("extractor", "no extractor name")
+            return feats, extractor
+
+    def _validate_and_read_features(self, h5_path) -> Tensor:
+        feats, extractor = self._read_h5(h5_path)
+        if "ctranspath" not in extractor:
+            raise ValueError(
+                f"Features must be extracted with ctranspath or chief_ctranspath. "
+                f"Features located in {h5_path} are extracted with {extractor}"
+            )
+        return feats
+
+    def encode_slides(
+        self,
+        output_dir: Path,
+        feat_dir: Path,
+        device: DeviceLikeType,
+        **kwargs,
+    ) -> None:
+        output_name = (
+            f"{self.identifier}-slide-{get_processing_code_hash(Path(__file__))[:8]}.h5"
+        )
+        output_file = os.path.join(output_dir, output_name)
+
+        slide_dict = {}
+        self.model.to(device).eval()
+
+        if os.path.exists(output_file):
+            tqdm.write(f"Output file {output_file} already exists, skipping")
+            return
+
+        for tile_feats_filename in tqdm(os.listdir(feat_dir), desc="Processing slides"):
+            h5_path = os.path.join(feat_dir, tile_feats_filename)
+            slide_name: str = Path(tile_feats_filename).stem
+
+            try:
+                feats: Tensor = self._validate_and_read_features(h5_path)
+            except FileNotFoundError as e:
+                tqdm.write(s=str(e))
+                continue
+
+            slide_embedding = (
+                self.model(feats.to(device))["WSI_feature"]
+                .detach()
+                .squeeze()
+                .cpu()
+                .numpy()
+            )
+            slide_dict[slide_name] = {
+                "feats": slide_embedding,
+            }
+
+        # TODO: Reutilice this function
+        # TODO: Add codebase hash to h5 file
+        os.makedirs(os.path.dirname(output_file), exist_ok=True)
+        with h5py.File(output_file, "w") as f:
+            for slide_name, data in slide_dict.items():
+                f.create_dataset(f"{slide_name}", data=data["feats"])
+                f.attrs["version"] = stamp.__version__
+                f.attrs["encoder"] = self.identifier
+                f.attrs["precision"] = str(torch.float32)
+            # Check if the file is empty
+            if len(f) == 0:
+                tqdm.write("Extraction failed: file empty")
+                os.remove(output_file)
+            tqdm.write(f"Finished encoding, saved to {output_file}")
 
     def encode_patients(
         self, output_dir, feat_dir, slide_table_path, device, **kwargs
