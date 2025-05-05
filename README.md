@@ -8,7 +8,7 @@ This repository contains the accompanying code for the steps described in the [N
 "From Whole Slide Image to Biomarker Prediction:
 A Protocol for End-to-End Deep Learning in Computational Pathology".
 
-> **Note**
+> [!NOTE]
 > This repo contains an updated version of the codebase.
 > For a version compatible with the instructions in the paper,
 > please check out [version 1 of STAMP][stamp v1].
@@ -26,6 +26,19 @@ python -m venv .venv
 
 pip install "stamp[all] @ git+https://github.com/KatherLab/STAMP"
 ```
+
+> [!IMPORTANT]
+> STAMP additionally requires OpenSlide to be installed, as well as OpenCV dependencies.
+>
+> For Ubuntu < 23.10:
+> ```bash
+> apt update && apt install -y openslide-tools libgl1-mesa-glx  # libgl1-mesa-glx is needed for OpenCV
+> ```
+>
+> For Ubuntu >= 23.10:
+> ```bash
+> apt update && apt install -y openslide-tools libgl1 libglx-mesa0 libglib2.0-0  # libgl1, libglx-mesa0, libglib2.0-0 are needed for OpenCV
+> ```
 
 If the installation was successful, running `stamp` in your terminal should yield the following output:
 ```

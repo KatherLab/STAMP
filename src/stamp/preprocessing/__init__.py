@@ -141,6 +141,7 @@ def extract_(
     default_slide_mpp: SlideMPP | None,
     brightness_cutoff: int | None,
     canny_cutoff: float | None,
+    generate_hash: bool,
 ) -> None:
     """
     Extracts features from slides.
@@ -220,7 +221,13 @@ def extract_(
             assert_never(unreachable)
 
     model = extractor.model.to(device).eval()
-    extractor_id = f"{extractor.identifier}-{_get_preprocessing_code_hash()[:8]}"
+
+    code_hash = _get_preprocessing_code_hash()[:8]
+
+    extractor_id = extractor.identifier
+
+    if generate_hash:
+        extractor_id += f"-{code_hash}"
 
     _logger.info(f"Using extractor {extractor.identifier}")
 
@@ -306,6 +313,7 @@ def extract_(
                 h5_fp.attrs["unit"] = "um"
                 h5_fp.attrs["tile_size_um"] = tile_size_um  # changed in v2.1.0
                 h5_fp.attrs["tile_size_px"] = tile_size_px
+                h5_fp.attrs["code_hash"] = code_hash
             except Exception:
                 _logger.exception(f"error while writing {feature_output_path}")
                 if tmp_h5_file is not None:
