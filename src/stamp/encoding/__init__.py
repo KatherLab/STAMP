@@ -32,6 +32,11 @@ def get_pat_embs(
 
             selected_encoder: Encoder = Titan()
 
+        case EncoderName.GIGAPATH:
+            from stamp.encoding.encoder.gigapath import Gigapath
+
+            selected_encoder: Encoder = Gigapath()
+
         case Encoder():
             selected_encoder = encoder
 
