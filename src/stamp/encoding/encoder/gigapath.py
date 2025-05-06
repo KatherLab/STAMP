@@ -17,18 +17,25 @@ from stamp.modeling.data import CoordsInfo, get_coords
 
 class Gigapath(Encoder):
     def __init__(self) -> None:
-        # TODO: Implement caching as done by peter
-        model = slide_encoder.create_model(
-            "hf_hub:prov-gigapath/prov-gigapath", "gigapath_slide_enc12l768d", 1536
-        )
+        try:
+            model = slide_encoder.create_model(
+                "hf_hub:prov-gigapath/prov-gigapath", "gigapath_slide_enc12l768d", 1536
+            )
+        except AssertionError:
+            raise ModuleNotFoundError(
+                "Gigapath requires flash-attn. "
+                "Install it with: pip install flash-attn --no-build-isolation"
+            )
+        # I cant add flash-attn to the pyproject.toml because it requires torch
+        # beforehand, I add torch to build-system requires but throws the
+        # same bloody error
         super().__init__(model=model, identifier="gigapath")
-
     # TODO: Make this a shared function for all encoders.
     def _read_h5(self, h5_path: str) -> tuple[Tensor, CoordsInfo, str]:
         if not os.path.exists(h5_path) or not h5_path.endswith(".h5"):
             raise FileNotFoundError("File does not exist or is not an h5 file")
         with h5py.File(h5_path, "r") as f:
-            feats: Tensor = torch.tensor(f["feats"][:], dtype=torch.float32)  # type: ignore
+            feats: Tensor = torch.tensor(f["feats"][:], dtype=torch.float16)  # type: ignore
             coords: CoordsInfo = get_coords(f)
             extractor: str = f.attrs.get("extractor", "no extractor name")
             return feats, coords, extractor
@@ -79,7 +86,7 @@ class Gigapath(Encoder):
         output_file = os.path.join(output_dir, output_name)
 
         slide_dict = {}
-        self.model.to(device).eval()
+        self.model.to(device).half().eval()
 
         if os.path.exists(output_file):
             tqdm.write(f"Output file {output_file} already exists, skipping")
@@ -109,10 +116,22 @@ class Gigapath(Encoder):
                 coords.coords_um, slide_width, slide_height, n_grid, current_x_offset=0
             )
 
-            norm_coords = torch.tensor(norm_coords, dtype=torch.float32)
+            norm_coords = (
+                torch.tensor(norm_coords, dtype=torch.float32)
+                .unsqueeze(1)
+                .to(device)
+                .half()
+            )
+            feats = feats.unsqueeze(1).half().to(device)
 
-            self.model.eval()
-            slide_embedding = self.model(feats, norm_coords).squeeze()
+            with torch.inference_mode():
+                slide_embedding = self.model(feats, norm_coords)
+
+            if isinstance(slide_embedding, list):  # Ensure slide_feats is not a list
+                slide_embedding = torch.cat(slide_embedding, dim=0)
+
+            slide_embedding = slide_embedding.detach().squeeze().cpu().numpy()
+
             slide_dict[slide_name] = {
                 "feats": slide_embedding,
             }
@@ -125,7 +144,7 @@ class Gigapath(Encoder):
                 f.create_dataset(f"{slide_name}", data=data["feats"])
                 f.attrs["version"] = stamp.__version__
                 f.attrs["encoder"] = self.identifier
-                f.attrs["precision"] = str(torch.float32)
+                f.attrs["precision"] = str(torch.float16)
             # Check if the file is empty
             if len(f) == 0:
                 tqdm.write("Extraction failed: file empty")
