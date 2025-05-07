@@ -352,7 +352,7 @@ def _get_rejection_thumb(
         dtype=bool,
     )
 
-    for y, x in np.round(coords_um / tile_size_um).astype(np.uint32):
+    for y, x in np.floor(coords_um / tile_size_um).astype(np.uint32):
         inclusion_map[y, x] = True
 
     thumb = slide.get_thumbnail(size).convert("RGBA")
