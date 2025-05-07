@@ -6,7 +6,6 @@ import pandas as pd
 import torch
 from tqdm import tqdm
 
-import stamp
 from stamp.cache import get_processing_code_hash
 from stamp.encoding.encoder import Encoder
 
@@ -66,18 +65,7 @@ class Cobra(Encoder):
             f"{self.identifier}-slide-{get_processing_code_hash(Path(__file__))[:8]}.h5"
         )
         output_file = os.path.join(output_dir, output_name)
-        os.makedirs(os.path.dirname(output_file), exist_ok=True)
-        with h5py.File(output_file, "w") as f:
-            for slide_name, data in slide_dict.items():
-                f.create_dataset(f"{slide_name}", data=data["feats"])
-                f.attrs["version"] = stamp.__version__
-                f.attrs["encoder"] = self.identifier
-                f.attrs["precision"] = str(dtype)
-            if len(f) == 0:
-                tqdm.write("Encoding failed: file empty")
-                os.remove(output_file)
-                return
-            tqdm.write(f"Finished encoding, saved to {output_file}")
+        self._save_features(output_file, entry_dict=slide_dict, precision=torch.float32)
 
     def encode_patients(
         self, output_dir, feat_dir, slide_table_path, device, **kwargs
@@ -90,7 +78,7 @@ class Cobra(Encoder):
 
         slide_table = pd.read_csv(slide_table_path)
         patient_groups = slide_table.groupby("PATIENT")
-        slide_dict = {}
+        patient_dict = {}
 
         output_name = (
             f"{self.identifier}-pat-{get_processing_code_hash(Path(__file__))[:8]}.h5"
@@ -124,9 +112,9 @@ class Cobra(Encoder):
                     assert all_feats_cat.ndim == 3, (
                         f"Expected 3D tensor, got {all_feats_cat.ndim}"
                     )
-                    slide_feats = self.model(all_feats_cat.to(dtype))
-                    slide_dict[patient_id] = {
-                        "feats": slide_feats.to(torch.float32)
+                    patient_feats = self.model(all_feats_cat.to(dtype))
+                    patient_dict[patient_id] = {
+                        "feats": patient_feats.to(torch.float32)
                         .detach()
                         .squeeze()
                         .cpu()
@@ -135,14 +123,6 @@ class Cobra(Encoder):
             else:
                 tqdm.write(f"No features found for patient {patient_id}, skipping")
 
-        os.makedirs(os.path.dirname(output_file), exist_ok=True)
-        with h5py.File(output_file, "w") as f:
-            for patient_id, data in slide_dict.items():
-                f.create_dataset(f"{patient_id}", data=data["feats"])
-                f.attrs["version"] = stamp.__version__
-                f.attrs["encoder"] = self.identifier
-                f.attrs["precision"] = str(dtype)
-            if len(f) == 0:
-                tqdm.write("Encoding failed: file empty")
-                os.remove(output_file)
-            tqdm.write(f"Finished encoding, saved to {output_file}")
+        self._save_features(
+            output_file, entry_dict=patient_dict, precision=torch.float32
+        )

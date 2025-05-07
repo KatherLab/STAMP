@@ -1,7 +1,6 @@
 import os
 from pathlib import Path
 
-import h5py
 import numpy as np
 import pandas as pd
 import torch
@@ -9,11 +8,10 @@ from torch import Tensor
 from torch._prims_common import DeviceLikeType  # type: ignore
 from tqdm import tqdm
 
-import stamp
 from stamp.cache import get_processing_code_hash
 from stamp.encoding.encoder import Encoder
 from stamp.encoding.encoder.chief import CHIEF
-from stamp.modeling.data import CoordsInfo, get_coords
+from stamp.modeling.data import CoordsInfo
 
 """From https://github.com/KatherLab/EAGLE/blob/main/eagle/main_feature_extraction.py"""
 
@@ -23,19 +21,13 @@ class Eagle(Encoder):
         model = CHIEF().model
         super().__init__(model=model, identifier="katherlab-eagle")
 
-    def _read_h5(self, h5_path: str) -> tuple[Tensor, CoordsInfo, str]:
-        if not os.path.exists(h5_path) or not h5_path.endswith(".h5"):
-            raise FileNotFoundError("File does not exist or is not an h5 file")
-        with h5py.File(h5_path, "r") as f:
-            feats: Tensor = torch.tensor(f["feats"][:], dtype=torch.float32)  # type: ignore
-            coords: CoordsInfo = get_coords(f)
-            extractor: str = f.attrs.get("extractor", "no extractor name")
-            return feats, coords, extractor
-
-    def _validate_and_read_features(
+    def _validate_and_read_features_with_agg(
         self, h5_ctp: str, h5_vir2: str, slide_name: str
     ) -> tuple[Tensor, Tensor]:
-        feats, coords, extractor = self._read_h5(h5_ctp)
+        feats: Tensor
+        coords: CoordsInfo
+        extractor: str
+        feats, coords, extractor = self._read_h5(h5_ctp, torch.float32)
 
         if "ctranspath" not in extractor:
             raise ValueError(
@@ -43,7 +35,7 @@ class Eagle(Encoder):
                 f"Features located in {h5_ctp} are extracted with {extractor}"
             )
 
-        agg_feats, agg_coords, extractor = self._read_h5(h5_vir2)
+        agg_feats, agg_coords, extractor = self._read_h5(h5_vir2, torch.float32)
 
         if "virchow2" not in extractor:
             raise ValueError(
@@ -57,9 +49,7 @@ class Eagle(Encoder):
                 f" {feats.shape[0]} != {agg_feats.shape[0]}"
             )
 
-        if not torch.allclose(
-            coords.coords_um, agg_coords.coords_um, atol=1e-5, rtol=0
-        ):
+        if not np.allclose(coords.coords_um, agg_coords.coords_um, atol=1e-5, rtol=0):
             raise ValueError(
                 f"Coordinates mismatch between ctranspath and virchow2"
                 f" features for slide {slide_name}. Ensure that both are aligned."
@@ -134,7 +124,7 @@ class Eagle(Encoder):
 
                 # Validate and read features
                 try:
-                    feats, agg_feats = self._validate_and_read_features(
+                    feats, agg_feats = self._validate_and_read_features_with_agg(
                         h5_ctp, h5_vir2, slide_name
                     )
                 except FileNotFoundError as e:
@@ -157,18 +147,9 @@ class Eagle(Encoder):
                 "feats": eagle_embedding,
             }
 
-        os.makedirs(os.path.dirname(output_file), exist_ok=True)
-        with h5py.File(output_file, "w") as f:
-            for patient_id, data in patient_dict.items():
-                f.create_dataset(f"{patient_id}", data=data["feats"])
-                f.attrs["version"] = stamp.__version__
-                f.attrs["encoder"] = self.identifier
-                f.attrs["precision"] = str(torch.float32)
-            if len(f) == 0:
-                tqdm.write("Encoding failed: file empty")
-                os.remove(output_file)
-                return
-            tqdm.write(f"Finished encoding, saved to {output_file}")
+        self._save_features(
+            output_file, entry_dict=patient_dict, precision=torch.float32
+        )
 
     def encode_slides(
         self,
@@ -202,7 +183,7 @@ class Eagle(Encoder):
             slide_name: str = Path(tile_feats_filename).stem
 
             try:
-                feats, agg_feats = self._validate_and_read_features(
+                feats, agg_feats = self._validate_and_read_features_with_agg(
                     h5_ctp, h5_vir2, slide_name
                 )
             except FileNotFoundError as e:
@@ -214,16 +195,4 @@ class Eagle(Encoder):
                 "feats": eagle_embedding,
             }
 
-        os.makedirs(os.path.dirname(output_file), exist_ok=True)
-        with h5py.File(output_file, "w") as f:
-            for slide_name, data in slide_dict.items():
-                f.create_dataset(f"{slide_name}", data=data["feats"])
-                f.attrs["version"] = stamp.__version__
-                f.attrs["encoder"] = self.identifier
-                f.attrs["precision"] = str(torch.float32)
-            # Check if the file is empty
-            if len(f) == 0:
-                tqdm.write("Encoding failed: file empty")
-                os.remove(output_file)
-                return
-            tqdm.write(f"Finished Encoding, saved to {output_file}")
+        self._save_features(output_file, entry_dict=slide_dict, precision=torch.float32)

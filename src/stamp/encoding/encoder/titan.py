@@ -2,7 +2,6 @@ import math
 import os
 from pathlib import Path
 
-import h5py
 import numpy as np
 import pandas as pd
 import torch
@@ -11,10 +10,8 @@ from torch._prims_common import DeviceLikeType  # type: ignore
 from tqdm import tqdm
 from transformers import AutoModel
 
-import stamp
 from stamp.cache import get_processing_code_hash
 from stamp.encoding.encoder import Encoder
-from stamp.modeling.data import CoordsInfo, get_coords
 from stamp.preprocessing.tiling import SlideMPP
 
 
@@ -22,24 +19,6 @@ class Titan(Encoder):
     def __init__(self) -> None:
         model = AutoModel.from_pretrained("MahmoodLab/TITAN", trust_remote_code=True)
         super().__init__(model=model, identifier="mahmood-titan")
-
-    def _read_h5(self, h5_path: str) -> tuple[Tensor, CoordsInfo, str]:
-        if not os.path.exists(h5_path) or not h5_path.endswith(".h5"):
-            raise FileNotFoundError("File does not exist or is not an h5 file")
-        with h5py.File(h5_path, "r") as f:
-            feats: Tensor = torch.tensor(f["feats"][:], dtype=torch.float32)  # type: ignore
-            coords: CoordsInfo = get_coords(f)
-            extractor: str = f.attrs.get("extractor", "no extractor name")
-            return feats, coords, extractor
-
-    def _validate_and_read_features(self, h5_path) -> tuple[Tensor, CoordsInfo]:
-        feats, coords, extractor = self._read_h5(h5_path)
-        if "conch1_5" not in extractor:
-            raise ValueError(
-                f"Features must be extracted with conch1_5. "
-                f"Features located in {h5_path} are extracted with {extractor}"
-            )
-        return feats, coords
 
     def _encode_slide(
         self, feats: Tensor, coords_um: Tensor, mpp: SlideMPP, device: DeviceLikeType
@@ -82,7 +61,9 @@ class Titan(Encoder):
             slide_name: str = Path(tile_feats_filename).stem
 
             try:
-                feats, coords = self._validate_and_read_features(h5_path)
+                feats, coords = self._validate_and_read_features(
+                    h5_path=h5_path, extractor_name="conch1_5", precision=torch.float32
+                )
             except FileNotFoundError as e:
                 tqdm.write(s=str(e))
                 continue
@@ -96,18 +77,7 @@ class Titan(Encoder):
                 "feats": slide_embedding,
             }
 
-        os.makedirs(os.path.dirname(output_file), exist_ok=True)
-        with h5py.File(output_file, "w") as f:
-            for slide_name, data in slide_dict.items():
-                f.create_dataset(f"{slide_name}", data=data["feats"])
-                f.attrs["version"] = stamp.__version__
-                f.attrs["encoder"] = self.identifier
-                f.attrs["precision"] = str(torch.float32)
-            # Check if the file is empty
-            if len(f) == 0:
-                tqdm.write("Extraction failed: file empty")
-                os.remove(output_file)
-            tqdm.write(f"Finished encoding, saved to {output_file}")
+        self._save_features(output_file, entry_dict=slide_dict, precision=torch.float32)
 
     def encode_patients(
         self, output_dir, feat_dir, slide_table_path, device, **kwargs
@@ -141,7 +111,11 @@ class Titan(Encoder):
                 h5_path = os.path.join(feat_dir, slide_filename)
 
                 try:
-                    feats, coords = self._validate_and_read_features(h5_path)
+                    feats, coords = self._validate_and_read_features(
+                        h5_path=h5_path,
+                        extractor_name="conch1_5",
+                        precision=torch.float32,
+                    )
                 except FileNotFoundError as e:
                     tqdm.write(s=str(e))
                     continue
@@ -185,15 +159,6 @@ class Titan(Encoder):
                 "feats": patient_embedding,
             }
 
-        os.makedirs(os.path.dirname(output_file), exist_ok=True)
-        with h5py.File(output_file, "w") as f:
-            for slide_name, data in patient_dict.items():
-                f.create_dataset(f"{slide_name}", data=data["feats"])
-                f.attrs["version"] = stamp.__version__
-                f.attrs["encoder"] = self.identifier
-                f.attrs["precision"] = str(torch.float32)
-            # Check if the file is empty
-            if len(f) == 0:
-                tqdm.write("Extraction failed: file empty")
-                os.remove(output_file)
-            tqdm.write(f"Finished encoding, saved to {output_file}")
+        self._save_features(
+            output_file, entry_dict=patient_dict, precision=torch.float32
+        )
