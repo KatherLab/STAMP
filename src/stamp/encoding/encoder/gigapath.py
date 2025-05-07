@@ -123,11 +123,11 @@ class Gigapath(Encoder):
 
             norm_coords = (
                 torch.tensor(norm_coords, dtype=torch.float32)
-                .unsqueeze(1)
+                .unsqueeze(0)
                 .to(device)
                 .half()
             )
-            feats = feats.unsqueeze(1).half().to(device)
+            feats = feats.unsqueeze(0).half().to(device)
 
             with torch.inference_mode():
                 slide_embedding = self.model(feats, norm_coords)
@@ -220,7 +220,7 @@ class Gigapath(Encoder):
             for wsi_width, wsi_height, feats, coords in slide_info:
                 all_feats = (
                     torch.tensor(feats, dtype=torch.float16)
-                    .unsqueeze(1)
+                    .unsqueeze(0)
                     .to(device)
                     .half()
                     .detach()
@@ -241,7 +241,7 @@ class Gigapath(Encoder):
 
                 norm_coords = (
                     torch.tensor(norm_coords, dtype=torch.float32)
-                    .unsqueeze(1)
+                    .unsqueeze(0)
                     .to(device)
                     .half()
                 )
@@ -253,10 +253,8 @@ class Gigapath(Encoder):
                 tqdm.write(f"No features found for patient {patient_id}, skipping.")
                 continue
 
-            all_feats_cat = torch.cat(all_feats_list, dim=0).unsqueeze(0)
-            all_coords_cat = torch.cat(all_coords_list, dim=0).unsqueeze(0)
-
-            breakpoint()
+            all_feats_cat = torch.cat(all_feats_list, dim=1)
+            all_coords_cat = torch.cat(all_coords_list, dim=1)
 
             with torch.inference_mode():
                 patient_embedding = self.model(all_feats_cat, all_coords_cat)
@@ -269,3 +267,18 @@ class Gigapath(Encoder):
             patient_dict[patient_id] = {
                 "feats": patient_embedding,
             }
+
+        # TODO: Reutilice this function
+        # TODO: Add codebase hash to h5 file
+        os.makedirs(os.path.dirname(output_file), exist_ok=True)
+        with h5py.File(output_file, "w") as f:
+            for slide_name, data in patient_dict.items():
+                f.create_dataset(f"{slide_name}", data=data["feats"])
+                f.attrs["version"] = stamp.__version__
+                f.attrs["encoder"] = self.identifier
+                f.attrs["precision"] = str(torch.float16)
+            # Check if the file is empty
+            if len(f) == 0:
+                tqdm.write("Extraction failed: file empty")
+                os.remove(output_file)
+            tqdm.write(f"Finished encoding, saved to {output_file}")

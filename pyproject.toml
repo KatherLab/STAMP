@@ -70,7 +70,17 @@ chief_ctranspath = [
 gigapath = [
     "timm>=0.9.11",
     "torchvision>=0.20.1",
-    "gigapath @ git+https://github.com/prov-gigapath/prov-gigapath.git@53d67708d6b19e9738d1341bb011390ffe2039f1"
+    "fvcore",
+    "iopath",
+    "monai",
+    "scikit-image",
+    "webdataset",
+    "lifelines",
+    "scikit-survival",
+    "fairscale",
+    "wandb",
+    "ninja==1.11.1.1",
+    "gigapath @ git+https://github.com/EzicStar/prov-gigapath.git"
 ]
 h_optimus_0 = [
     "timm>=0.9.11",
