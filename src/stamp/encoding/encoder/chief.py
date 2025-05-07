@@ -2,15 +2,13 @@ import os
 from pathlib import Path
 
 import gdown
-import h5py
+import pandas as pd
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch import Tensor
 from torch._prims_common import DeviceLikeType  # type: ignore
 from tqdm import tqdm
 
-import stamp
 from stamp.cache import STAMP_CACHE_DIR, get_processing_code_hash
 from stamp.encoding.encoder import Encoder
 
@@ -101,23 +99,6 @@ class CHIEF(Encoder):
         model.load_state_dict(chief, strict=True)
         super().__init__(model=model, identifier="chief")
 
-    def _read_h5(self, h5_path: str) -> tuple[Tensor, str]:
-        if not os.path.exists(h5_path) or not h5_path.endswith(".h5"):
-            raise FileNotFoundError("File does not exist or is not an h5 file")
-        with h5py.File(h5_path, "r") as f:
-            feats: Tensor = torch.tensor(f["feats"][:], dtype=torch.float32)  # type: ignore
-            extractor: str = f.attrs.get("extractor", "no extractor name")
-            return feats, extractor
-
-    def _validate_and_read_features(self, h5_path) -> Tensor:
-        feats, extractor = self._read_h5(h5_path)
-        if "ctranspath" not in extractor:
-            raise ValueError(
-                f"Features must be extracted with ctranspath or chief_ctranspath. "
-                f"Features located in {h5_path} are extracted with {extractor}"
-            )
-        return feats
-
     def encode_slides(
         self,
         output_dir: Path,
@@ -142,7 +123,9 @@ class CHIEF(Encoder):
             slide_name: str = Path(tile_feats_filename).stem
 
             try:
-                feats: Tensor = self._validate_and_read_features(h5_path)
+                feats, _ = self._validate_and_read_features(
+                    h5_path, "ctranspath", torch.float32
+                )
             except FileNotFoundError as e:
                 tqdm.write(s=str(e))
                 continue
@@ -158,14 +141,68 @@ class CHIEF(Encoder):
                 "feats": slide_embedding,
             }
 
-        self.save_features(
-            output_file=output_file, slide_dict=slide_dict, precision=torch.float32
+        self._save_features(
+            output_file=output_file, entry_dict=slide_dict, precision=torch.float32
         )
 
     def encode_patients(
         self, output_dir, feat_dir, slide_table_path, device, **kwargs
     ) -> None:
-        pass
+        output_name = (
+            f"{self.identifier}-pat-{get_processing_code_hash(Path(__file__))[:8]}.h5"
+        )
+        slide_table = pd.read_csv(slide_table_path)
+        patient_groups = slide_table.groupby("PATIENT")
+
+        output_file = os.path.join(output_dir, output_name)
+
+        patient_dict = {}
+        self.model.to(device).eval()
+
+        if os.path.exists(output_file):
+            tqdm.write(f"Output file {output_file} already exists, skipping")
+            return
+
+        for patient_id, group in tqdm(patient_groups, leave=False):
+            feats_list = []
+
+            # Concatenate all slides over x axis adding the offset to each feature x coordinate.
+            for _, row in group.iterrows():
+                slide_filename = row["FILENAME"]
+                h5_path = os.path.join(feat_dir, slide_filename)
+
+                try:
+                    feats, _ = self._validate_and_read_features(
+                        h5_path=h5_path,
+                        extractor_name="ctranspath",
+                        precision=torch.float32,
+                    )
+                except FileNotFoundError as e:
+                    tqdm.write(s=str(e))
+                    continue
+
+                feats_list.append(feats)
+
+            if not feats_list:
+                tqdm.write(f"No features found for patient {patient_id}, skipping.")
+                continue
+
+            all_feats = torch.cat(feats_list, dim=0).to(device)
+
+            patient_embedding = (
+                self.model(all_feats.to(device))["WSI_feature"]
+                .detach()
+                .squeeze()
+                .cpu()
+                .numpy()
+            )
+            patient_dict[patient_id] = {
+                "feats": patient_embedding,
+            }
+
+        self._save_features(
+            output_file=output_file, entry_dict=patient_dict, precision=torch.float32
+        )
 
 
 def initialize_weights(module):
