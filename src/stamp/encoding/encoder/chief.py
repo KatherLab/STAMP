@@ -158,20 +158,9 @@ class CHIEF(Encoder):
                 "feats": slide_embedding,
             }
 
-        # TODO: Reutilice this function
-        # TODO: Add codebase hash to h5 file
-        os.makedirs(os.path.dirname(output_file), exist_ok=True)
-        with h5py.File(output_file, "w") as f:
-            for slide_name, data in slide_dict.items():
-                f.create_dataset(f"{slide_name}", data=data["feats"])
-                f.attrs["version"] = stamp.__version__
-                f.attrs["encoder"] = self.identifier
-                f.attrs["precision"] = str(torch.float32)
-            # Check if the file is empty
-            if len(f) == 0:
-                tqdm.write("Extraction failed: file empty")
-                os.remove(output_file)
-            tqdm.write(f"Finished encoding, saved to {output_file}")
+        self.save_features(
+            output_file=output_file, slide_dict=slide_dict, precision=torch.float32
+        )
 
     def encode_patients(
         self, output_dir, feat_dir, slide_table_path, device, **kwargs

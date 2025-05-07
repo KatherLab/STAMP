@@ -1,8 +1,13 @@
+import os
 from abc import ABC, abstractmethod
 from dataclasses import KW_ONLY, dataclass
 from typing import Generic, TypeVar
 
+import h5py
 from torch import nn
+from tqdm import tqdm
+
+import stamp
 
 EncoderModel = TypeVar("EncoderModel", bound=nn.Module)
 
@@ -29,3 +34,18 @@ class Encoder(ABC, Generic[EncoderModel]):
     ) -> None:
         """Abstract method to encode patient from slide features."""
         pass
+
+    def save_features(self, output_file, slide_dict, precision) -> None:
+        os.makedirs(os.path.dirname(output_file), exist_ok=True)
+        with h5py.File(output_file, "w") as f:
+            for slide_name, data in slide_dict.items():
+                f.create_dataset(f"{slide_name}", data=data["feats"])
+                f.attrs["version"] = stamp.__version__
+                f.attrs["encoder"] = self.identifier
+                f.attrs["precision"] = precision
+            # Check if the file is empty
+            if len(f) == 0:
+                tqdm.write("Extraction failed: file empty")
+                os.remove(output_file)
+            tqdm.write(f"Finished encoding, saved to {output_file}")
+            # TODO: Add codebase hash to h5 file
