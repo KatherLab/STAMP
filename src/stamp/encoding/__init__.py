@@ -42,6 +42,11 @@ def get_pat_embs(
 
             selected_encoder: Encoder = CHIEF()
 
+        case EncoderName.PRISM:
+            from stamp.encoding.encoder.prism import Prism
+
+            selected_encoder: Encoder = Prism()
+
         case Encoder():
             selected_encoder = encoder
 
@@ -84,6 +89,11 @@ def get_slide_embs(
             from stamp.encoding.encoder.chief import CHIEF
 
             selected_encoder: Encoder = CHIEF()
+
+        case EncoderName.PRISM:
+            from stamp.encoding.encoder.prism import Prism
+
+            selected_encoder: Encoder = Prism()
 
         case Encoder():
             selected_encoder = encoder
