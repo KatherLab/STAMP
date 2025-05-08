@@ -198,6 +198,11 @@ def extract_(
 
             extractor = gigapath()
 
+        case ExtractorName.MUSK:
+            from stamp.preprocessing.extractor.musk import musk
+
+            extractor = musk()
+
         case ExtractorName.EMPTY:
             from stamp.preprocessing.extractor.empty import empty
 
