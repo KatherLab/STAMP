@@ -41,7 +41,7 @@ class Prism(Encoder):
 
             try:
                 feats, _ = self._validate_and_read_features(
-                    h5_path, "virchow2", torch.float32
+                    h5_path, "virchow", torch.float32
                 )
             except FileNotFoundError as e:
                 tqdm.write(s=str(e))
@@ -49,7 +49,7 @@ class Prism(Encoder):
 
             with torch.autocast(str(device), torch.float16), torch.inference_mode():
                 slide_embedding = (
-                    self.model.slide_representations(feats.to(device))[
+                    self.model.slide_representations(feats.unsqueeze(0).to(device))[
                         "image_embedding"
                     ]
                     .detach()
