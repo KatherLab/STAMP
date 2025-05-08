@@ -41,7 +41,7 @@ class Prism(Encoder):
 
             try:
                 feats, _ = self._validate_and_read_features(
-                    h5_path, "virchow", torch.float32
+                    h5_path, "virchow_full", torch.float32
                 )
             except FileNotFoundError as e:
                 tqdm.write(s=str(e))
