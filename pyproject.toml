@@ -118,7 +118,7 @@ musk = [
     "musk @ git+https://github.com/lilab-stanford/MUSK.git@e1699c27687f44bbf6d4adfcbb2abe89795d347f",
 ]
 # Blanket target
-all = ["stamp[dinobloom,conch,ctranspath,uni,virchow2,uni2,chief_ctranspath,conch1_5,gigapath,h_optimus_0,h_optimus_1,cobra,prism]"]
+all = ["stamp[dinobloom,conch,ctranspath,uni,virchow2,uni2,chief_ctranspath,conch1_5,gigapath,h_optimus_0,h_optimus_1,cobra,prism,musk]"]
 
 [project.scripts]
 "stamp" = "stamp.__main__:main"

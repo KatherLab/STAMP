@@ -10,7 +10,7 @@ try:
 except ModuleNotFoundError as e:
     raise ModuleNotFoundError(
         "virchow dependencies not installed."
-        " Please reinstall stamp using `pip install 'stamp[virchow2]'`"
+        " Please reinstall stamp using `pip install 'stamp[musk]'`"
     ) from e
 
 __author__ = "Juan Pablo Ricapito"
