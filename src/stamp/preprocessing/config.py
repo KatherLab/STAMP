@@ -22,6 +22,8 @@ class ExtractorName(StrEnum):
     GIGAPATH = "gigapath"
     H_OPTIMUS_0 = "h-optimus-0"
     H_OPTIMUS_1 = "h-optimus-1"
+    VIRCHOW = "virchow"
+    VIRCHOW_FULL = "virchow_full"
     VIRCHOW2 = "virchow2"
     EMPTY = "empty"
 

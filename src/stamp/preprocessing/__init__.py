@@ -168,6 +168,16 @@ def extract_(
 
             extractor = dino_bloom()
 
+        case ExtractorName.VIRCHOW:
+            from stamp.preprocessing.extractor.virchow import virchow
+
+            extractor = virchow()
+
+        case ExtractorName.VIRCHOW_FULL:
+            from stamp.preprocessing.extractor.virchow_full import virchow_full
+
+            extractor = virchow_full()
+
         case ExtractorName.VIRCHOW2:
             from stamp.preprocessing.extractor.virchow2 import virchow2
 
