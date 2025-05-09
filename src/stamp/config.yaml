@@ -16,10 +16,10 @@ preprocessing:
   # e.g. with different feature extractors.  Optional.
   #cache_dir: "/path/to/save/cache/files/to"
 
-  # The extension of the tiles to cache. Use "png" for lossless compression (recommended and default),
-  # or "jpg" for lossy compression (requires less memory, but you may encounter reproducibility
-  # issues in subsequent runs).
-  #cache_tiles_ext: "png"
+  # The extension of the tiles to cache. Use "png" for lossless compression,
+  # or "jpg" for lossy compression (requires around x100 less memory, 
+  # but you may encounter reproducibility issues in subsequent runs).
+  #cache_tiles_ext: "jpg"
 
   # Tiler parameters.  The defaults work well for most domains and feature extractors.
   #tile_size_um: 256.0

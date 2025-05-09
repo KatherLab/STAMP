@@ -32,7 +32,7 @@ class PreprocessingConfig(BaseModel, arbitrary_types_allowed=True):
     output_dir: Path
     wsi_dir: Path
     cache_dir: Path | None = None
-    cache_tiles_ext: ImageExtension = "png"
+    cache_tiles_ext: ImageExtension = "jpg"
     tile_size_um: Microns = Microns(256.0)
     tile_size_px: TilePixels = TilePixels(224)
     extractor: ExtractorName
