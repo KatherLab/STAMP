@@ -22,6 +22,7 @@ import stamp
 from stamp.preprocessing.config import ExtractorName
 from stamp.preprocessing.extractor import Extractor
 from stamp.preprocessing.tiling import (
+    ImageExtension,
     Microns,
     MPPExtractionError,
     SlideMPP,
@@ -75,6 +76,7 @@ class _TileDataset(IterableDataset):
         self,
         slide_path: Path,
         cache_dir: Path | None,
+        cache_tiles_ext: ImageExtension,
         transform: Callable[[Image.Image], torch.Tensor],
         tile_size_um: Microns,
         tile_size_px: TilePixels,
@@ -86,6 +88,7 @@ class _TileDataset(IterableDataset):
     ) -> None:
         self.slide_path = slide_path
         self.cache_dir = cache_dir
+        self.cache_tiles_ext: ImageExtension = cache_tiles_ext
         self.transform = transform
         self.tile_size_um = tile_size_um
         self.tile_size_px = tile_size_px
@@ -112,6 +115,7 @@ class _TileDataset(IterableDataset):
             for tile in tiles_with_cache(
                 self.slide_path,
                 cache_dir=self.cache_dir,
+                cache_tiles_ext=self.cache_tiles_ext,
                 tile_size_um=self.tile_size_um,
                 tile_size_px=self.tile_size_px,
                 max_supertile_size_slide_px=self.max_supertile_size_slide_px,
@@ -128,6 +132,7 @@ def extract_(
     wsi_dir: Path,
     output_dir: Path,
     cache_dir: Path | None,
+    cache_tiles_ext: ImageExtension,
     extractor: ExtractorName | Extractor,
     tile_size_px: TilePixels,
     tile_size_um: Microns,
@@ -259,6 +264,7 @@ def extract_(
             ds = _TileDataset(
                 slide_path=slide_path,
                 cache_dir=cache_dir,
+                cache_tiles_ext=cache_tiles_ext,
                 transform=extractor.transform,
                 tile_size_um=tile_size_um,
                 tile_size_px=tile_size_px,
