@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import openslide
 import torch
+import napari
 from jaxtyping import Float, Integer
 from matplotlib.axes import Axes
 from matplotlib.patches import Patch
@@ -21,6 +22,7 @@ from stamp.modeling.lightning_model import LitVisionTransformer
 from stamp.modeling.vision_transformer import VisionTransformer
 from stamp.preprocessing import supported_extensions
 from stamp.preprocessing.tiling import Microns, SlideMPP, TilePixels, get_slide_mpp_
+from stamp.heatmaps.attention_ui import show_attention_ui
 
 _logger = logging.getLogger("stamp")
 
@@ -316,3 +318,43 @@ def heatmaps_(
 
         fig.savefig(slide_output_dir / f"overview-{h5_path.stem}.png")
         plt.close(fig)
+
+
+
+
+def attention_ui_(
+    *,
+    feature_dir: Path,
+    wsi_dir: Path,
+    checkpoint_path: Path,
+    output_dir: Path,
+    slide_paths: Iterable[Path] | None,
+    device: DeviceLikeType,
+    default_slide_mpp: SlideMPP | None
+) -> None:
+
+    with torch.no_grad():
+
+        # Collect slides to generate attention maps for
+        if slide_paths is not None:
+            wsis_to_process_all = (wsi_dir / slide for slide in slide_paths)
+        else:
+            wsis_to_process_all = (
+                p for ext in supported_extensions for p in wsi_dir.glob(f"**/*{ext}")
+            ) 
+
+        # Check of a corresponding feature file exists
+        wsis_to_process = []
+        for wsi_path in wsis_to_process_all:
+            h5_path = feature_dir / wsi_path.with_suffix(".h5").name
+
+            if not h5_path.exists():
+                _logger.info(f"could not find matching h5 file at {h5_path}. Skipping...")
+                continue
+
+            wsis_to_process.append(str(wsi_path))
+
+        
+        # Launch the UI
+        viewer = show_attention_ui(feature_dir, wsis_to_process, checkpoint_path, output_dir, slide_paths, device, default_slide_mpp)
+        napari.run()
