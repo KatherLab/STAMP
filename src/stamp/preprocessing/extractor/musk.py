@@ -3,8 +3,7 @@ from stamp.preprocessing.extractor import Extractor
 try:
     import torch
     import torchvision
-    from musk import modeling, utils
-    from PIL import Image
+    from musk import utils
     from timm.data.constants import IMAGENET_INCEPTION_MEAN, IMAGENET_INCEPTION_STD
     from timm.models import create_model
 except ModuleNotFoundError as e:
@@ -41,7 +40,7 @@ def musk() -> Extractor:
 
     transform = torchvision.transforms.Compose(
         [
-            torchvision.transforms.Resize(384, interpolation=3, antialias=True),
+            torchvision.transforms.Resize(384, interpolation=3, antialias=True),  # type: ignore
             torchvision.transforms.CenterCrop((384, 384)),
             torchvision.transforms.ToTensor(),
             torchvision.transforms.Normalize(
