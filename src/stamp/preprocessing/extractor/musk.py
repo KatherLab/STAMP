@@ -9,7 +9,7 @@ try:
     from timm.models import create_model
 except ModuleNotFoundError as e:
     raise ModuleNotFoundError(
-        "virchow dependencies not installed."
+        "musk dependencies not installed."
         " Please reinstall stamp using `pip install 'stamp[musk]'`"
     ) from e
 
