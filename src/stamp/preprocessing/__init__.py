@@ -208,6 +208,11 @@ def extract_(
 
             extractor = mstar()
 
+        case ExtractorName.PLIP:
+            from stamp.preprocessing.extractor.plip import plip
+
+            extractor = plip()
+
         case ExtractorName.EMPTY:
             from stamp.preprocessing.extractor.empty import empty
 
