@@ -203,6 +203,11 @@ def extract_(
 
             extractor = musk()
 
+        case ExtractorName.MSTAR:
+            from stamp.preprocessing.extractor.mstar import mstar
+
+            extractor = mstar()
+
         case ExtractorName.EMPTY:
             from stamp.preprocessing.extractor.empty import empty
 

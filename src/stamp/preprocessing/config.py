@@ -26,6 +26,7 @@ class ExtractorName(StrEnum):
     VIRCHOW_FULL = "virchow_full"
     VIRCHOW2 = "virchow2"
     MUSK = "musk"
+    MSTAR = "mstar"
     EMPTY = "empty"
 
 
