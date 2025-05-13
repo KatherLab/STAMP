@@ -220,7 +220,7 @@ heatmaps:
   #bottomk: 5
 
 
-attention_ui:
+attentionui:
   output_dir: "/path/to/save/files/to"
 
   # Directory the extracted features are saved in.

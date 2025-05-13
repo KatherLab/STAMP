@@ -1,4 +1,11 @@
 import napari
+from qtpy.QtGui import QPixmap, QImage
+from qtpy.QtWidgets import (
+    QComboBox, QPushButton, QVBoxLayout, QWidget, QLabel, QScrollArea,
+    QListWidget, QApplication, QSlider, QHBoxLayout, QFrame
+)
+from qtpy.QtCore import Qt
+
 import torch
 import time
 from torch import Tensor
@@ -13,12 +20,6 @@ import openslide
 import h5py
 from scipy.spatial.distance import cdist
 from typing import Union
-from qtpy.QtGui import QPixmap, QImage
-from qtpy.QtWidgets import (
-    QComboBox, QPushButton, QVBoxLayout, QWidget, QLabel, QScrollArea,
-    QListWidget, QApplication, QSlider, QHBoxLayout, QFrame
-)
-from qtpy.QtCore import Qt
 from stamp.modeling.lightning_model import LitVisionTransformer
 from stamp.preprocessing.tiling import Microns, SlideMPP, SlidePixels, get_slide_mpp_
 from stamp.modeling.data import get_coords, get_stride
@@ -26,6 +27,9 @@ from stamp.modeling.data import get_coords, get_stride
 # Define a generic integer type that can be either Python int or numpy int64
 IntType = Union[int, np.int64, np.int32]
 
+__author__ = "Dennis Eschweiler"
+__copyright__ = "Copyright (C) 2025 Dennis Eschweiler"
+__license__ = "MIT"
 
 def _vals_to_im(
     scores: Float[Tensor, "tile feat"],
@@ -132,10 +136,7 @@ class AttentionViewer:
             self.image, 
             name='Image'
         )
-        if len(self.image.shape) == 3 and self.image.shape[2] in [3, 4]:  # RGB or RGBA
-            self.height, self.width = self.image.shape[0], self.image.shape[1]
-        else:  # Grayscale
-            self.height, self.width = self.image.shape
+        self.height, self.width = self.image.shape[0], self.image.shape[1]
 
         # Initialize other attributes
         self.slide = None
@@ -477,9 +478,10 @@ class AttentionViewer:
 
     def _adjust_slider(self, value=1, ui_element=None):
         """Adjust the slider value by a given amount"""
-        current = ui_element.value()
-        if (value>0 and current < ui_element.maximum()) or (value<0 and current > ui_element.minimum()):
-            ui_element.setValue(current + value)
+        if not ui_element is None:
+            current = ui_element.value()
+            if (value>0 and current < ui_element.maximum()) or (value<0 and current > ui_element.minimum()):
+                ui_element.setValue(current + value)
             
 
     def _update_viewer_image(self, new_image: np.ndarray):
@@ -522,7 +524,6 @@ class AttentionViewer:
         
         print(f"Viewer updated with new image")
 
-    
     
 
 
@@ -582,7 +583,7 @@ class AttentionViewer:
 
                     if h5.attrs.get("unit") == "um":
                         self.tile_size_slide_px = SlidePixels(
-                            int(round(cast(float, h5.attrs["tile_size_um"]) / slide_mpp))
+                            int(round(cast(float, h5.attrs["tile_size"]) / slide_mpp))
                         )
                     else:
                         self.tile_size_slide_px = SlidePixels(int(round(256 / slide_mpp)))
@@ -621,62 +622,63 @@ class AttentionViewer:
     
     def load_selected_attention_map(self):
 
-        # Get attention weights
-        # Choose layer
-        self.attention_map = self.attention_weights[self.num_layer]  # Shape: [batch, heads, tokens, tokens])
-        # Choose head (or average)
-        if self.num_head == -1:
-            # Average over heads
-            self.attention_map = self.attention_map.mean(dim=1)
-        else:
-            self.attention_map = self.attention_map[:,self.num_head,...]  # Shape: [batch, tokens, tokens]
-        # Cut out batch dimension
-        self.attention_map = self.attention_map[0,...]  # Shape: [tokens, tokens]
+        if not self.attention_weights is None:
+            # Get attention weights
+            # Choose layer
+            self.attention_map = self.attention_weights[self.num_layer]  # Shape: [batch, heads, tokens, tokens])
+            # Choose head (or average)
+            if self.num_head == -1:
+                # Average over heads
+                self.attention_map = self.attention_map.mean(dim=1)
+            else:
+                self.attention_map = self.attention_map[:,self.num_head,...]  # Shape: [batch, tokens, tokens]
+            # Cut out batch dimension
+            self.attention_map = self.attention_map[0,...]  # Shape: [tokens, tokens]
 
-        # Normalize attention map to [0, 1] by using percentiles (not considering cls token)
-        percentile_low = np.percentile(self.attention_map[1:,1:], 0.5)
-        percentile_high = np.percentile(self.attention_map[1:,1:], 99.5)
-        self.attention_map = (self.attention_map - percentile_low) / (percentile_high - percentile_low + 1e-8)
+            # Normalize attention map to [0, 1] by using percentiles (not considering cls token)
+            percentile_low = np.percentile(self.attention_map[1:,1:], 0.5)
+            percentile_high = np.percentile(self.attention_map[1:,1:], 99.5)
+            self.attention_map = (self.attention_map - percentile_low) / (percentile_high - percentile_low + 1e-8)
         
 
 
     def highlight_top_k_tiles(self):
 
-        if self.selected_token_idx is None:
-            print("No token selected. Click on the image first.")
-            return
-                
-        # Create a new highlight mask
-        k = min(self.topk_slider.value(), len(self.token_attn))
-        highlight_mask = np.zeros((self.height, self.width, 4), dtype=float)
+        if not self.selected_token_idx is None and\
+           not self.token_attn is None and\
+           not self.map_coords is None:
+                    
+            # Create a new highlight mask
+            k = min(self.topk_slider.value(), len(self.token_attn))
+            highlight_mask = np.zeros((self.height, self.width, 4), dtype=float)
 
-        if k > 0:       
-            # Get top k indices with highest attention
-            top_k_values, top_k_indices = torch.topk(self.token_attn, k)
+            if k > 0:       
+                # Get top k indices with highest attention
+                top_k_values, top_k_indices = torch.topk(self.token_attn, k)
+                
+                # For each top tile, add a colored rectangle to the mask
+                for i, (score, idx) in enumerate(zip(top_k_values.cpu().numpy(), top_k_indices.cpu().numpy())):
+                    # Get tile coordinates
+                    x, y = self.map_coords[idx].cpu().numpy()
+                    
+                    # Convert to image coordinates (scaled by 8)
+                    x_img, y_img = x * 8, y * 8
+                    tile_size = 8  # Assuming 8x8 pixels per tile
+                    
+                    # Create rectangular highlight for this tile
+                    # Use a different color intensity based on rank (1st is most intense)
+                    min_opacity = 0.5
+                    intensity = 1.0 - (i * min_opacity / k)  # Decreasing intensity for lower ranks
+                    
+                    # Define rectangle in the highlight mask
+                    y_start, y_end = max(0, y_img), min(self.height, y_img + tile_size)
+                    x_start, x_end = max(0, x_img), min(self.width, x_img + tile_size)
+                    
+                    # Red with alpha based on score
+                    highlight_mask[y_start:y_end, x_start:x_end] = [0.0, 0.6, 0.0, min(min_opacity, intensity + score * 0.3)]
             
-            # For each top tile, add a colored rectangle to the mask
-            for i, (score, idx) in enumerate(zip(top_k_values.cpu().numpy(), top_k_indices.cpu().numpy())):
-                # Get tile coordinates
-                x, y = self.map_coords[idx].cpu().numpy()
-                
-                # Convert to image coordinates (scaled by 8)
-                x_img, y_img = x * 8, y * 8
-                tile_size = 8  # Assuming 8x8 pixels per tile
-                
-                # Create rectangular highlight for this tile
-                # Use a different color intensity based on rank (1st is most intense)
-                min_opacity = 0.5
-                intensity = 1.0 - (i * min_opacity / k)  # Decreasing intensity for lower ranks
-                
-                # Define rectangle in the highlight mask
-                y_start, y_end = max(0, y_img), min(self.height, y_img + tile_size)
-                x_start, x_end = max(0, x_img), min(self.width, x_img + tile_size)
-                
-                # Red with alpha based on score
-                highlight_mask[y_start:y_end, x_start:x_end] = [0.0, 0.6, 0.0, min(min_opacity, intensity + score * 0.3)]
-        
-        self.highlight_mask = highlight_mask
-        self.highlight_layer.data = self.highlight_mask
+            self.highlight_mask = highlight_mask
+            self.highlight_layer.data = self.highlight_mask
 
     
 
@@ -943,7 +945,7 @@ def show_attention_ui(
         slide_paths: Iterable[Path] | None,
         device: DeviceLikeType,
         default_slide_mpp: SlideMPP | None
-    ) -> AttentionViewer:
+    ):
     """
     Launch the attention UI.
     
@@ -963,13 +965,8 @@ def show_attention_ui(
         Device to run model on
     default_slide_mpp : SlideMPP | None
         Default slide microns per pixel
-    
-    Returns:
-    --------
-    AttentionViewer
-        The viewer instance for attention exploration
     """
-    viewer = AttentionViewer(
+    AttentionViewer(
         feature_dir,
         wsis_to_process,
         checkpoint_path,
@@ -978,4 +975,4 @@ def show_attention_ui(
         device,
         default_slide_mpp
     )
-    return viewer
+    napari.run()

@@ -18,4 +18,4 @@ class StampConfig(BaseModel):
     statistics: StatsConfig | None = None
 
     heatmaps: HeatmapConfig | None = None
-    attention_ui: AttentionUIConfig | None = None
+    attentionui: AttentionUIConfig | None = None

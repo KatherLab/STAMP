@@ -26,7 +26,6 @@ dependencies = [
     "jaxtyping>=0.2.36",
     "lightning>=2.4.0",
     "matplotlib>=3.9.2",
-    "napari>=0.6.0",
     "numpy>=2.2.2",
     "opencv-python>=4.10.0.84",
     "openpyxl>=3.1.5",
@@ -36,7 +35,6 @@ dependencies = [
     "pandas>=2.2.3",
     "pillow>=11.1.0",
     "pydantic>=2.10.3",
-    "pyqt5>=5.15.11",
     "pyyaml>=6.0.2",
     "scikit-learn>=1.5.2",
     "scipy>=1.15.1",
@@ -94,6 +92,10 @@ virchow2 = [
     "huggingface-hub>=0.27.1",
     "timm>=0.9.11",
     "torch>=2.0.0",
+]
+attentionui =[
+    "napari>=0.6.0",
+    "pyqt5>=5.15.11",
 ]
 # Blanket target
 all = ["stamp[dinobloom,conch,ctranspath,uni,virchow2]"]

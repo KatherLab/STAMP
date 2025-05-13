@@ -8,7 +8,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 import openslide
 import torch
-import napari
 from jaxtyping import Float, Integer
 from matplotlib.axes import Axes
 from matplotlib.patches import Patch
@@ -22,7 +21,6 @@ from stamp.modeling.lightning_model import LitVisionTransformer
 from stamp.modeling.vision_transformer import VisionTransformer
 from stamp.preprocessing import supported_extensions
 from stamp.preprocessing.tiling import Microns, SlideMPP, TilePixels, get_slide_mpp_
-from stamp.heatmaps.attention_ui import show_attention_ui
 
 _logger = logging.getLogger("stamp")
 
@@ -332,6 +330,14 @@ def attention_ui_(
     device: DeviceLikeType,
     default_slide_mpp: SlideMPP | None
 ) -> None:
+    
+    try:
+        from stamp.heatmaps.attention_ui import show_attention_ui
+    except ImportError as e:
+        raise ImportError(
+            "Attention UI dependencies not installed. "
+            "Please reinstall stamp using `pip install 'stamp[attentionui]'`"
+        ) from e
 
     with torch.no_grad():
 
@@ -356,5 +362,4 @@ def attention_ui_(
 
         
         # Launch the UI
-        viewer = show_attention_ui(feature_dir, wsis_to_process, checkpoint_path, output_dir, slide_paths, device, default_slide_mpp)
-        napari.run()
+        show_attention_ui(feature_dir, wsis_to_process, checkpoint_path, output_dir, slide_paths, device, default_slide_mpp)

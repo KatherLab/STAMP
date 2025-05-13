@@ -57,7 +57,6 @@ positional arguments:
     statistics          Generate AUROCs and AUPRCs with 95%CI for a trained Vision Transformer model
     config              Print the loaded configuration
     heatmaps            Generate heatmaps for a trained model
-    attention_ui        Provides an interactive UI for exploring attention maps
 
 options:
   -h, --help            show this help message and exit
