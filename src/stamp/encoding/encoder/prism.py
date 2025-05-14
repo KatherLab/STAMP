@@ -41,7 +41,7 @@ class Prism(Encoder):
 
             try:
                 feats, _ = self._validate_and_read_features(
-                    h5_path, "virchow_full", torch.float32
+                    h5_path, "virchow_full", torch.float16
                 )
             except FileNotFoundError as e:
                 tqdm.write(s=str(e))
@@ -62,7 +62,7 @@ class Prism(Encoder):
                 }
 
         self._save_features(
-            output_file=output_file, entry_dict=slide_dict, precision=torch.float32
+            output_file=output_file, entry_dict=slide_dict, precision=torch.float16
         )
 
     def encode_patients(
@@ -94,7 +94,7 @@ class Prism(Encoder):
                 try:
                     feats, _ = self._validate_and_read_features(
                         h5_path=h5_path,
-                        extractor_name="virchow2",
+                        extractor_name="virchow_full",
                         precision=torch.float32,
                     )
                 except FileNotFoundError as e:
@@ -110,7 +110,7 @@ class Prism(Encoder):
             all_feats = torch.cat(feats_list, dim=0).to(device)
 
             patient_embedding = (
-                self.model.slide_representations(all_feats.to(device))[
+                self.model.slide_representations(all_feats.unsqueeze(0).to(device))[
                     "image_embedding"
                 ]
                 .detach()
