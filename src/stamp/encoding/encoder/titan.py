@@ -12,21 +12,36 @@ from transformers import AutoModel
 
 from stamp.cache import get_processing_code_hash
 from stamp.encoding.encoder import Encoder
-from stamp.preprocessing.tiling import SlideMPP
+from stamp.modeling.data import CoordsInfo
+from stamp.preprocessing.tiling import Microns, SlideMPP
 
 
 class Titan(Encoder):
     def __init__(self) -> None:
         model = AutoModel.from_pretrained("MahmoodLab/TITAN", trust_remote_code=True)
-        super().__init__(model=model, identifier="mahmood-titan")
+        super().__init__(
+            model=model,
+            identifier="mahmood-titan",
+            precision=torch.float32,
+            required_extractor="conch1_5",
+        )
 
-    def _encode_slide(
-        self, feats: Tensor, coords_um: Tensor, mpp: SlideMPP, device: DeviceLikeType
+    def _generate_slide_embedding(
+        self,
+        feats: Tensor,
+        device: DeviceLikeType,
+        coords: CoordsInfo | None = None,
+        **kwargs,
     ) -> np.ndarray:
         """Helper method to encode a single slide."""
+        if coords is None:
+            raise ValueError("Coords must be provided.")
+
+        coords_tensor = torch.tensor(coords.coords_um, dtype=self.precision)
+
         # Convert coordinates from microns to pixels
-        patch_size_lvl0 = math.floor(256 / mpp)  # Inferred from TITAN docs
-        coords_px = coords_um / mpp  # Convert to pixels
+        patch_size_lvl0 = math.floor(256 / coords.mpp)  # Inferred from TITAN docs
+        coords_px = coords_tensor / coords.mpp  # Convert to pixels
         coords_px = coords_px.to(torch.int64).to(device)  # Convert to integer
 
         feats = feats.to(device)
@@ -35,49 +50,31 @@ class Titan(Encoder):
             slide_embedding = self.model.encode_slide_from_patch_features(
                 feats, coords_px, patch_size_lvl0
             )
-            return slide_embedding.to(torch.float32).detach().squeeze().cpu().numpy()
+            return slide_embedding.detach().squeeze().cpu().numpy()
 
-    def encode_slides(
+    def _generate_patient_embedding(
         self,
-        output_dir: Path,
-        feat_dir: Path,
+        feats_list: list,
         device: DeviceLikeType,
+        coords_list: list[CoordsInfo] | None = None,
         **kwargs,
-    ) -> None:
-        output_name = (
-            f"{self.identifier}-slide-{get_processing_code_hash(Path(__file__))[:8]}.h5"
-        )
-        output_file = os.path.join(output_dir, output_name)
+    ) -> np.ndarray:
+        if coords_list is None:
+            raise ValueError("coords_list must be provided.")
 
-        slide_dict = {}
-        self.model.to(device).eval()
+        # Concatenate all feature to a single slide tensor
+        all_feats_cat = torch.cat(feats_list, dim=0).unsqueeze(0)
 
-        if os.path.exists(output_file):
-            tqdm.write(f"Output file {output_file} already exists, skipping")
-            return
+        # Create a single CoordsInfo item for the virtual slide
+        # Already validated that mpp values are all equal within patient slides
+        tile_size_um: Microns = coords_list[0].tile_size_um
+        tile_size_px = coords_list[0].tile_size_px
+        # Combine all slide coords to a single virtual slide set of coordinates
+        coords_um = np.concatenate([coord.coords_um for coord in coords_list], axis=0)
+        # Create virtual slide's Coords Info object
+        coords = CoordsInfo(coords_um, tile_size_um, tile_size_px)
 
-        for tile_feats_filename in tqdm(os.listdir(feat_dir), desc="Processing slides"):
-            h5_path = os.path.join(feat_dir, tile_feats_filename)
-            slide_name: str = Path(tile_feats_filename).stem
-
-            try:
-                feats, coords = self._validate_and_read_features(
-                    h5_path=h5_path, extractor_name="conch1_5", precision=torch.float32
-                )
-            except FileNotFoundError as e:
-                tqdm.write(s=str(e))
-                continue
-
-            coords_tensor = torch.tensor(coords.coords_um, dtype=torch.float32)
-
-            slide_embedding = self._encode_slide(
-                feats, coords_tensor, coords.mpp, device
-            )
-            slide_dict[slide_name] = {
-                "feats": slide_embedding,
-            }
-
-        self._save_features(output_file, entry_dict=slide_dict, precision=torch.float32)
+        return self._generate_slide_embedding(all_feats_cat, device, coords)
 
     def encode_patients(
         self, output_dir, feat_dir, slide_table_path, device, **kwargs
@@ -111,11 +108,7 @@ class Titan(Encoder):
                 h5_path = os.path.join(feat_dir, slide_filename)
 
                 try:
-                    feats, coords = self._validate_and_read_features(
-                        h5_path=h5_path,
-                        extractor_name="conch1_5",
-                        precision=torch.float32,
-                    )
+                    feats, coords = self._validate_and_read_features(h5_path=h5_path)
                 except FileNotFoundError as e:
                     tqdm.write(s=str(e))
                     continue
@@ -139,26 +132,19 @@ class Titan(Encoder):
                 # point. With that you get the total width of the slide.
                 current_x_offset = max(coords.coords_um[:, 0]) + coords.tile_size_um
 
-                coords_tensor = torch.tensor(coords.coords_um, dtype=torch.float32)
-
                 # Add tile feats and coords to the patient virtual slide
                 all_feats_list.append(feats)
-                all_coords_list.append(coords_tensor)
+                all_coords_list.append(coords)
 
             if not all_feats_list:
                 tqdm.write(f"No features found for patient {patient_id}, skipping.")
                 continue
 
-            all_feats_cat = torch.cat(all_feats_list, dim=0).unsqueeze(0)
-            all_coords_cat = torch.cat(all_coords_list, dim=0).unsqueeze(0)
-
-            patient_embedding = self._encode_slide(
-                all_feats_cat, all_coords_cat, slides_mpp, device
+            patient_embedding = self._generate_patient_embedding(
+                all_feats_list, device, all_coords_list
             )
             patient_dict[patient_id] = {
                 "feats": patient_embedding,
             }
 
-        self._save_features(
-            output_file, entry_dict=patient_dict, precision=torch.float32
-        )
+        self._save_features(output_file, entry_dict=patient_dict)

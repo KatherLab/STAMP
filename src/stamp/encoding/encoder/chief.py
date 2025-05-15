@@ -6,7 +6,7 @@ import pandas as pd
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch._prims_common import DeviceLikeType  # type: ignore
+from numpy import ndarray
 from tqdm import tqdm
 
 from stamp.cache import STAMP_CACHE_DIR, get_processing_code_hash
@@ -97,53 +97,26 @@ class CHIEF(Encoder):
         if "organ_embedding" in chief:
             del chief["organ_embedding"]
         model.load_state_dict(chief, strict=True)
-        super().__init__(model=model, identifier="chief")
-
-    def encode_slides(
-        self,
-        output_dir: Path,
-        feat_dir: Path,
-        device: DeviceLikeType,
-        **kwargs,
-    ) -> None:
-        output_name = (
-            f"{self.identifier}-slide-{get_processing_code_hash(Path(__file__))[:8]}.h5"
+        super().__init__(
+            model=model,
+            identifier="chief",
+            precision=torch.float32,
+            required_extractor="ctranspath",
         )
-        output_file = os.path.join(output_dir, output_name)
 
-        slide_dict = {}
-        self.model.to(device).eval()
+    def _generate_slide_embedding(
+        self, feats: torch.Tensor, device, **kwargs
+    ) -> ndarray:
+        slide_embedding = self.model(feats.to(device))["WSI_feature"]
+        return slide_embedding.detach().squeeze().cpu().numpy()
 
-        if os.path.exists(output_file):
-            tqdm.write(f"Output file {output_file} already exists, skipping")
-            return
+    def _generate_patient_embedding(
+        self, feats_list: list, device, **kwargs
+    ) -> ndarray:
+        all_feats = torch.cat(feats_list, dim=0).to(device)
 
-        for tile_feats_filename in tqdm(os.listdir(feat_dir), desc="Processing slides"):
-            h5_path = os.path.join(feat_dir, tile_feats_filename)
-            slide_name: str = Path(tile_feats_filename).stem
-
-            try:
-                feats, _ = self._validate_and_read_features(
-                    h5_path, "ctranspath", torch.float32
-                )
-            except FileNotFoundError as e:
-                tqdm.write(s=str(e))
-                continue
-
-            slide_embedding = (
-                self.model(feats.to(device))["WSI_feature"]
-                .detach()
-                .squeeze()
-                .cpu()
-                .numpy()
-            )
-            slide_dict[slide_name] = {
-                "feats": slide_embedding,
-            }
-
-        self._save_features(
-            output_file=output_file, entry_dict=slide_dict, precision=torch.float32
-        )
+        patient_embedding = self.model(all_feats.to(device))["WSI_feature"]
+        return patient_embedding.detach().squeeze().cpu().numpy()
 
     def encode_patients(
         self, output_dir, feat_dir, slide_table_path, device, **kwargs
@@ -172,11 +145,7 @@ class CHIEF(Encoder):
                 h5_path = os.path.join(feat_dir, slide_filename)
 
                 try:
-                    feats, _ = self._validate_and_read_features(
-                        h5_path=h5_path,
-                        extractor_name="ctranspath",
-                        precision=torch.float32,
-                    )
+                    feats, _ = self._validate_and_read_features(h5_path=h5_path)
                 except FileNotFoundError as e:
                     tqdm.write(s=str(e))
                     continue
@@ -200,9 +169,7 @@ class CHIEF(Encoder):
                 "feats": patient_embedding,
             }
 
-        self._save_features(
-            output_file=output_file, entry_dict=patient_dict, precision=torch.float32
-        )
+        self._save_features(output_file=output_file, entry_dict=patient_dict)
 
 
 def initialize_weights(module):

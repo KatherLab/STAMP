@@ -6,11 +6,11 @@ import numpy as np
 import pandas as pd
 import torch
 from gigapath import slide_encoder
-from torch._prims_common import DeviceLikeType  # type: ignore
 from tqdm import tqdm
 
 from stamp.cache import get_processing_code_hash
 from stamp.encoding.encoder import Encoder
+from stamp.modeling.data import CoordsInfo
 from stamp.preprocessing.tiling import SlideMPP
 
 
@@ -25,100 +25,45 @@ class Gigapath(Encoder):
                 "Gigapath requires flash-attn. "
                 "Install it with: pip install flash-attn --no-build-isolation"
             )
-        # I cant add flash-attn to the pyproject.toml because it requires torch
-        # beforehand, I add torch to build-system requires but throws the
-        # same bloody error
-        super().__init__(model=model, identifier="gigapath")
-
-    def _convert_coords(
-        self,
-        coords,
-        total_wsi_width,
-        max_wsi_height,
-        n_grid,
-        current_x_offset,
-    ):
-        """
-        Normalize the x and y coordinates relative to the total WSI width and max height, using the same grid [0, 1000].
-        Thanks Peter!
-        """
-        # Normalize x-coordinates based on total WSI width (taking into account the current x offset)
-        normalized_x = (coords[:, 0] + current_x_offset) / total_wsi_width * n_grid
-
-        # Normalize y-coordinates based on the maximum WSI height
-        normalized_y = coords[:, 1] / max_wsi_height * n_grid
-
-        # Stack normalized x and y coordinates
-        converted_coords = np.stack([normalized_x, normalized_y], axis=-1)
-
-        return np.array(converted_coords, dtype=np.float32)
-
-    def encode_slides(
-        self,
-        output_dir: Path,
-        feat_dir: Path,
-        device: DeviceLikeType,
-        **kwargs,
-    ) -> None:
-        output_name = (
-            f"{self.identifier}-slide-{get_processing_code_hash(Path(__file__))[:8]}.h5"
+        super().__init__(
+            model=model,
+            identifier="gigapath",
+            precision=torch.float16,
+            required_extractor="gigapath",
         )
-        output_file = os.path.join(output_dir, output_name)
 
-        slide_dict = {}
-        self.model.to(device).half().eval()
+    def _generate_slide_embedding(
+        self, feats, device, coords: CoordsInfo | None = None, **kwargs
+    ):
+        if not coords:
+            raise ValueError("Tile coords are required for encoding")
 
-        if os.path.exists(output_file):
-            tqdm.write(f"Output file {output_file} already exists, skipping")
-            return
+        # Calculate slide dimensions
+        slide_width = max(coords.coords_um[:, 0]) + coords.tile_size_um
+        slide_height = max(coords.coords_um[:, 1]) + coords.tile_size_um
 
-        for tile_feats_filename in tqdm(os.listdir(feat_dir), desc="Processing slides"):
-            h5_path = os.path.join(feat_dir, tile_feats_filename)
-            slide_name: str = Path(tile_feats_filename).stem
+        # Normalize coordinates to a [0, 1000] grid
+        n_grid = 1000
+        norm_coords = self._convert_coords(
+            coords.coords_um, slide_width, slide_height, n_grid, current_x_offset=0
+        )
+        norm_coords = (
+            torch.tensor(norm_coords, dtype=torch.float32)
+            .unsqueeze(0)
+            .to(device)
+            .half()
+        )
+        feats = feats.unsqueeze(0).half().to(device)
 
-            try:
-                feats, coords = self._validate_and_read_features(
-                    h5_path=h5_path, extractor_name="gigapath", precision=torch.float16
-                )
-            except FileNotFoundError as e:
-                tqdm.write(s=str(e))
-                continue
+        self.model.to(self.precision)
 
-            # Calculated obtaining the tile with rightmost x coord
-            # and the tile width is added as the coord is from top left
-            slide_width = max(coords.coords_um[:, 0]) + coords.tile_size_um
-            slide_height = max(coords.coords_um[:, 1]) + coords.tile_size_um
+        with torch.inference_mode():
+            slide_embedding = self.model(feats, norm_coords)
 
-            # For some reason gigapaths requires normalized coords in a
-            # [0,1000] grid
-            n_grid = 1000
+        if isinstance(slide_embedding, list):  # Ensure slide_embedding is not a list
+            slide_embedding = torch.cat(slide_embedding, dim=0)
 
-            # TODO: Check np.stack behaviour
-            norm_coords = self._convert_coords(
-                coords.coords_um, slide_width, slide_height, n_grid, current_x_offset=0
-            )
-
-            norm_coords = (
-                torch.tensor(norm_coords, dtype=torch.float32)
-                .unsqueeze(0)
-                .to(device)
-                .half()
-            )
-            feats = feats.unsqueeze(0).half().to(device)
-
-            with torch.inference_mode():
-                slide_embedding = self.model(feats, norm_coords)
-
-            if isinstance(slide_embedding, list):  # Ensure slide_feats is not a list
-                slide_embedding = torch.cat(slide_embedding, dim=0)
-
-            slide_embedding = slide_embedding.detach().squeeze().cpu().numpy()
-
-            slide_dict[slide_name] = {
-                "feats": slide_embedding,
-            }
-
-        self._save_features(output_file, entry_dict=slide_dict, precision=torch.float16)
+        return slide_embedding.detach().squeeze().cpu().numpy()
 
     def encode_patients(
         self, output_dir, feat_dir, slide_table_path, device, **kwargs
@@ -154,11 +99,7 @@ class Gigapath(Encoder):
                 h5_path = os.path.join(feat_dir, slide_filename)
 
                 try:
-                    feats, coords = self._validate_and_read_features(
-                        h5_path=h5_path,
-                        extractor_name="gigapath",
-                        precision=torch.float16,
-                    )
+                    feats, coords = self._validate_and_read_features(h5_path=h5_path)
                 except FileNotFoundError as e:
                     tqdm.write(s=str(e))
                     continue
@@ -219,21 +160,51 @@ class Gigapath(Encoder):
                 tqdm.write(f"No features found for patient {patient_id}, skipping.")
                 continue
 
-            all_feats_cat = torch.cat(all_feats_list, dim=1)
-            all_coords_cat = torch.cat(all_coords_list, dim=1)
-
-            with torch.inference_mode():
-                patient_embedding = self.model(all_feats_cat, all_coords_cat)
-
-            if isinstance(patient_embedding, list):  # Ensure slide_feats is not a list
-                patient_embedding = torch.cat(patient_embedding, dim=0)
-
-            patient_embedding = patient_embedding.detach().squeeze().cpu().numpy()
+            patient_embedding = self._generate_patient_embedding(
+                all_feats_list, device, coords_list=all_coords_list
+            )
 
             patient_dict[patient_id] = {
                 "feats": patient_embedding,
             }
 
-        self._save_features(
-            output_file, entry_dict=patient_dict, precision=torch.float16
-        )
+        self._save_features(output_file, entry_dict=patient_dict)
+
+    def _generate_patient_embedding(
+        self, feats_list, device, coords_list: list | None = None, **kwargs
+    ) -> np.ndarray:
+        if not coords_list:
+            raise ValueError("Tile coords are required for encoding")
+        all_feats_cat = torch.cat(feats_list, dim=1)
+        all_coords_cat = torch.cat(coords_list, dim=1)
+
+        with torch.inference_mode():
+            patient_embedding = self.model(all_feats_cat, all_coords_cat)
+
+        if isinstance(patient_embedding, list):  # Ensure slide_feats is not a list
+            patient_embedding = torch.cat(patient_embedding, dim=0)
+
+        return patient_embedding.detach().squeeze().cpu().numpy()
+
+    def _convert_coords(
+        self,
+        coords,
+        total_wsi_width,
+        max_wsi_height,
+        n_grid,
+        current_x_offset,
+    ):
+        """
+        Normalize the x and y coordinates relative to the total WSI width and max height, using the same grid [0, 1000].
+        Thanks Peter!
+        """
+        # Normalize x-coordinates based on total WSI width (taking into account the current x offset)
+        normalized_x = (coords[:, 0] + current_x_offset) / total_wsi_width * n_grid
+
+        # Normalize y-coordinates based on the maximum WSI height
+        normalized_y = coords[:, 1] / max_wsi_height * n_grid
+
+        # Stack normalized x and y coordinates
+        converted_coords = np.stack([normalized_x, normalized_y], axis=-1)
+
+        return np.array(converted_coords, dtype=np.float32)

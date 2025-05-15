@@ -19,7 +19,12 @@ from stamp.modeling.data import CoordsInfo
 class Eagle(Encoder):
     def __init__(self) -> None:
         model = CHIEF().model
-        super().__init__(model=model, identifier="katherlab-eagle")
+        super().__init__(
+            model=model,
+            identifier="katherlab-eagle",
+            precision=torch.float32,
+            required_extractor="ctranspath",
+        )
 
     def _validate_and_read_features_with_agg(
         self, h5_ctp: str, h5_vir2: str, slide_name: str
@@ -27,7 +32,7 @@ class Eagle(Encoder):
         feats: Tensor
         coords: CoordsInfo
         extractor: str
-        feats, coords, extractor = self._read_h5(h5_ctp, torch.float32)
+        feats, coords, extractor = self._read_h5(h5_ctp)
 
         if "ctranspath" not in extractor:
             raise ValueError(
@@ -35,7 +40,7 @@ class Eagle(Encoder):
                 f"Features located in {h5_ctp} are extracted with {extractor}"
             )
 
-        agg_feats, agg_coords, extractor = self._read_h5(h5_vir2, torch.float32)
+        agg_feats, agg_coords, extractor = self._read_h5(h5_vir2)
 
         if "virchow2" not in extractor:
             raise ValueError(
@@ -57,13 +62,18 @@ class Eagle(Encoder):
 
         return feats, agg_feats
 
-    def _create_eagle_embedding(
+    def _generate_slide_embedding(
         self,
         feats: Tensor,
-        agg_feats: Tensor,
         device: DeviceLikeType,
+        agg_feats: Tensor | None = None,
+        **kwargs,
     ) -> np.ndarray:
         """Process features, compute attention, and create an embedding."""
+
+        if agg_feats is None:
+            raise ValueError("agg_feats is required for slide embedding")
+
         with torch.no_grad():
             result = self.model(feats.to(device))
             attention_raw = result["attention_raw"].squeeze(0).cpu()
@@ -81,6 +91,66 @@ class Eagle(Encoder):
         eagle_embedding = torch.mean(top_agg_feats, dim=0)
 
         return eagle_embedding.to(torch.float32).detach().squeeze().cpu().numpy()
+
+    def _generate_patient_embedding(
+        self,
+        feats_list: list[Tensor],
+        device: DeviceLikeType,
+        agg_feats_list: list[Tensor] | None = None,
+        **kwargs,
+    ) -> np.ndarray:
+        if agg_feats_list is None:
+            raise ValueError("agg_feats_list is required for patient embedding")
+        all_feats = torch.cat(feats_list, dim=0).to(device)
+        all_agg_feats = torch.cat(agg_feats_list, dim=0).to(device)
+        return self._generate_slide_embedding(all_feats, device, all_agg_feats)
+
+    def encode_slides(
+        self,
+        output_dir: Path,
+        feat_dir: Path,
+        device: DeviceLikeType,
+        **kwargs,
+    ) -> None:
+        """Encode slide from patch features."""
+        agg_feat_dir: Path | None = kwargs.get("agg_feat_dir")
+        if not agg_feat_dir:
+            raise ValueError(
+                "agg_feat_dir that contains virchow2 features"
+                " is required for Eagle's encode_patients"
+            )
+
+        output_name = (
+            f"{self.identifier}-slide-{get_processing_code_hash(Path(__file__))[:8]}.h5"
+        )
+        output_file = os.path.join(output_dir, output_name)
+        if os.path.exists(output_file):
+            tqdm.write(f"Output file {output_file} already exists, skipping")
+            return
+
+        slide_dict = {}
+        self.model.to(device).eval()
+
+        for tile_feats_filename in tqdm(os.listdir(feat_dir), desc="Processing slides"):
+            h5_ctp = os.path.join(feat_dir, tile_feats_filename)
+            h5_vir2 = os.path.join(agg_feat_dir, tile_feats_filename)
+            slide_name: str = Path(tile_feats_filename).stem
+
+            try:
+                feats, agg_feats = self._validate_and_read_features_with_agg(
+                    h5_ctp, h5_vir2, slide_name
+                )
+            except FileNotFoundError as e:
+                tqdm.write(s=str(e))
+                continue
+
+            eagle_embedding = self._generate_slide_embedding(feats, device, agg_feats)
+
+            slide_dict[slide_name] = {
+                "feats": eagle_embedding,
+            }
+
+        self._save_features(output_file, entry_dict=slide_dict)
 
     def encode_patients(
         self,
@@ -137,62 +207,12 @@ class Eagle(Encoder):
             if not feats_list:
                 tqdm.write(f"No ctranspath features for patient {patient_id}")
                 continue
-            all_feats = torch.cat(feats_list, dim=0).to(device)
-            all_agg_feats = torch.cat(agg_feats_list, dim=0).to(device)
 
-            eagle_embedding = self._create_eagle_embedding(
-                all_feats, all_agg_feats, device
+            eagle_embedding = self._generate_patient_embedding(
+                feats_list, device, agg_feats_list
             )
             patient_dict[patient_id] = {
                 "feats": eagle_embedding,
             }
 
-        self._save_features(
-            output_file, entry_dict=patient_dict, precision=torch.float32
-        )
-
-    def encode_slides(
-        self,
-        output_dir: Path,
-        feat_dir: Path,
-        device: DeviceLikeType,
-        **kwargs,
-    ) -> None:
-        """Encode slide from patch features."""
-        agg_feat_dir: Path | None = kwargs.get("agg_feat_dir")
-        if not agg_feat_dir:
-            raise ValueError(
-                "agg_feat_dir that contains virchow2 features"
-                " is required for Eagle's encode_patients"
-            )
-
-        output_name = (
-            f"{self.identifier}-slide-{get_processing_code_hash(Path(__file__))[:8]}.h5"
-        )
-        output_file = os.path.join(output_dir, output_name)
-        if os.path.exists(output_file):
-            tqdm.write(f"Output file {output_file} already exists, skipping")
-            return
-
-        slide_dict = {}
-        self.model.to(device).eval()
-
-        for tile_feats_filename in tqdm(os.listdir(feat_dir), desc="Processing slides"):
-            h5_ctp = os.path.join(feat_dir, tile_feats_filename)
-            h5_vir2 = os.path.join(agg_feat_dir, tile_feats_filename)
-            slide_name: str = Path(tile_feats_filename).stem
-
-            try:
-                feats, agg_feats = self._validate_and_read_features_with_agg(
-                    h5_ctp, h5_vir2, slide_name
-                )
-            except FileNotFoundError as e:
-                tqdm.write(s=str(e))
-                continue
-
-            eagle_embedding = self._create_eagle_embedding(feats, agg_feats, device)
-            slide_dict[slide_name] = {
-                "feats": eagle_embedding,
-            }
-
-        self._save_features(output_file, entry_dict=slide_dict, precision=torch.float32)
+        self._save_features(output_file, entry_dict=patient_dict)

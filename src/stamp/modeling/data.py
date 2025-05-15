@@ -194,7 +194,7 @@ class BagDataset(Dataset[tuple[_Bag, _Coordinates, BagSize, _EncodedTarget]]):
 class CoordsInfo:
     coords_um: np.ndarray
     tile_size_um: Microns
-    tile_size_px: TilePixels | None
+    tile_size_px: TilePixels | None = None
 
     @property
     def mpp(self) -> SlideMPP:

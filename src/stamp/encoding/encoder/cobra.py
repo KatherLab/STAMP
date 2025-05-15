@@ -1,12 +1,6 @@
-import os
-from pathlib import Path
-
-import h5py
-import pandas as pd
 import torch
-from tqdm import tqdm
+from numpy import ndarray
 
-from stamp.cache import get_processing_code_hash
 from stamp.encoding.encoder import Encoder
 
 # TODO: Check which are the necessary imports and add them to cobra package
@@ -23,106 +17,36 @@ except ModuleNotFoundError as e:
 class Cobra(Encoder):
     def __init__(self) -> None:
         model = get_cobra(download_weights=True)
-        super().__init__(model=model, identifier="katherlab-cobra")
-
-    def _get_tile_embs(self, h5_path, device):
-        with h5py.File(h5_path, "r") as f:
-            feats = f["feats"][:]  # type: ignore
-
-        feats = torch.tensor(feats).to(device)
-        return feats.unsqueeze(0)
-
-    def encode_slides(self, output_dir, feat_dir, device, **kwargs) -> None:
-        """Encode slides from patch features."""
-        slide_dict = {}
-        self.model.to(device).eval()
-        dtype: torch.dtype = torch.float32
-        # TODO: dtype depends con CUDA capabilities. Check end of
-        # extract_feat_patients.py on how to handle this
-
-        for tile_feats_filename in tqdm(os.listdir(feat_dir), desc="Processing slides"):
-            h5_path = os.path.join(feat_dir, tile_feats_filename)
-            slide_name = Path(tile_feats_filename).stem
-            if not os.path.exists(h5_path) or not h5_path.endswith(".h5"):
-                tqdm.write(
-                    f"File {h5_path} does not exist or is not an h5 file, skipping"
-                )
-                continue
-
-            tile_embs = self._get_tile_embs(h5_path, device)
-
-            with torch.inference_mode():
-                assert tile_embs.ndim == 3, f"Expected 3D tensor, got {tile_embs.ndim}"
-                slide_feats = self.model(tile_embs.to(dtype))
-                slide_dict[slide_name] = {
-                    "feats": slide_feats.to(torch.float32)
-                    .detach()
-                    .squeeze()
-                    .cpu()
-                    .numpy()
-                }
-        output_name = (
-            f"{self.identifier}-slide-{get_processing_code_hash(Path(__file__))[:8]}.h5"
+        if torch.cuda.get_device_capability()[0] < 8:
+            print(
+                f"\033[93mCOBRA (Mamba2) is designed to run on GPUs with compute capability 8.0 or higher!! "
+                f"Your GPU has compute capability {torch.cuda.get_device_capability()[0]}. "
+                f"We are forced to switch to mixed FP16 precision. This may lead to numerical instability and reduced performance!!\033[0m"
+            )
+            precision = torch.float16
+        else:
+            precision = torch.float32
+        super().__init__(
+            model=model,
+            identifier="katherlab-cobra",
+            precision=precision,
+            required_extractor="",
         )
-        output_file = os.path.join(output_dir, output_name)
-        self._save_features(output_file, entry_dict=slide_dict, precision=torch.float32)
 
-    def encode_patients(
-        self, output_dir, feat_dir, slide_table_path, device, **kwargs
-    ) -> None:
-        """Encode patients from slide features."""
-        dtype: torch.dtype = torch.float32
-        self.model.to(device).eval()
-        # TODO: dtype depends con CUDA capabilities. Check end of
-        # extract_feat_patients.py on how to handle this
+    def _generate_slide_embedding(
+        self, feats: torch.Tensor, device, **kwargs
+    ) -> ndarray:
+        feats = feats.unsqueeze(0).to(device)
+        assert feats.ndim == 3, f"Expected 3D tensor, got {feats.ndim}"
+        with torch.inference_mode():
+            slide_embedding = self.model(feats)
+        return slide_embedding.detach().squeeze().cpu().numpy()
 
-        slide_table = pd.read_csv(slide_table_path)
-        patient_groups = slide_table.groupby("PATIENT")
-        patient_dict = {}
-
-        output_name = (
-            f"{self.identifier}-pat-{get_processing_code_hash(Path(__file__))[:8]}.h5"
-        )
-        output_file = os.path.join(output_dir, output_name)
-
-        if os.path.exists(output_file):
-            tqdm.write(f"Output file {output_file} already exists, skipping")
-            return
-
-        for patient_id, group in tqdm(patient_groups, leave=False):
-            all_feats_list = []
-
-            for _, row in group.iterrows():
-                slide_filename = row["FILENAME"]
-                h5_path = os.path.join(feat_dir, slide_filename)
-                if not os.path.exists(h5_path):
-                    tqdm.write(f"File {h5_path} does not exist, skipping")
-                    continue
-                with h5py.File(h5_path, "r") as f:
-                    feats = f["feats"][:]  # type: ignore
-
-                feats = torch.tensor(feats).to(device)
-                all_feats_list.append(feats)
-
-            if all_feats_list:
-                # Concatenate all features for this patient along the second dimension
-                all_feats_cat = torch.cat(all_feats_list, dim=0).unsqueeze(0)
-
-                with torch.inference_mode():
-                    assert all_feats_cat.ndim == 3, (
-                        f"Expected 3D tensor, got {all_feats_cat.ndim}"
-                    )
-                    patient_feats = self.model(all_feats_cat.to(dtype))
-                    patient_dict[patient_id] = {
-                        "feats": patient_feats.to(torch.float32)
-                        .detach()
-                        .squeeze()
-                        .cpu()
-                        .numpy(),
-                    }
-            else:
-                tqdm.write(f"No features found for patient {patient_id}, skipping")
-
-        self._save_features(
-            output_file, entry_dict=patient_dict, precision=torch.float32
-        )
+    def _generate_patient_embedding(
+        self, feats_list: list, device, **kwargs
+    ) -> ndarray:
+        all_feats = torch.cat(feats_list, dim=0).unsqueeze(0)
+        assert all_feats.ndim == 3, f"Expected 3D tensor, got {all_feats.ndim}"
+        with torch.inference_mode():
+            slide_embedding = self.model(all_feats.to(device))
+        return slide_embedding.detach().squeeze().cpu().numpy()
