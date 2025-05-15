@@ -12,6 +12,8 @@ class EncoderName(StrEnum):
     TITAN = "mahmood-titan"
     GIGAPATH = "gigapath"
     PRISM = "paigeai-prism"
+    MADELEINE = "mahmood-madeleine"
+    THREADS = "mahmood-threads"
 
 
 class SlideEncodingConfig(BaseModel, arbitrary_types_allowed=True):

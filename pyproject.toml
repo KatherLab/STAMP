@@ -111,6 +111,9 @@ prism = [
     "sacremoses==0.1.1",
     "environs==11.0.0",
 ]
+madeleine = [
+    "madeleine @ git+https://github.com/mahmoodlab/MADELEINE.git@de7c85acc2bdad352e6df8eee5694f8b6f288012"
+]
 musk = [
     "timm>=0.9.11",
     "musk @ git+https://github.com/lilab-stanford/MUSK.git@e1699c27687f44bbf6d4adfcbb2abe89795d347f",
@@ -120,7 +123,7 @@ plip = [
 ]
 
 # Blanket target
-all = ["stamp[dinobloom,conch,ctranspath,uni,virchow2,uni2,chief_ctranspath,conch1_5,gigapath,h_optimus_0,h_optimus_1,cobra,prism,musk,plip]"]
+all = ["stamp[dinobloom,conch,ctranspath,uni,virchow2,uni2,chief_ctranspath,conch1_5,gigapath,h_optimus_0,h_optimus_1,cobra,prism,madeleine,musk,plip]"]
 
 [project.scripts]
 "stamp" = "stamp.__main__:main"
