@@ -149,7 +149,7 @@ def heatmaps_(
 
             if h5.attrs.get("unit") == "um":
                 tile_size_slide_px = TilePixels(
-                    int(round(cast(float, h5.attrs["tile_size"]) / slide_mpp))
+                    int(round(cast(float, h5.attrs["tile_size_um"]) / slide_mpp))
                 )
             else:
                 tile_size_slide_px = TilePixels(int(round(256 / slide_mpp)))
