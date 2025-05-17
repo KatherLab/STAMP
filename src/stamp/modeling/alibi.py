@@ -8,8 +8,8 @@ class _RunningMeanScaler(nn.Module):
 
     def __init__(self, dtype=torch.float32) -> None:
         super().__init__()
-        self.running_mean = nn.Buffer(torch.ones(1, dtype=dtype))
-        self.items_so_far = nn.Buffer(torch.ones(1, dtype=dtype))
+        self.register_buffer("running_mean", torch.ones(1, dtype=dtype))
+        self.register_buffer("items_so_far", torch.ones(1, dtype=dtype))
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         if self.training:
