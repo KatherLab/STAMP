@@ -144,15 +144,13 @@ def heatmaps_(
                 .float()
                 .to(device)
             )
-            coords_um = get_coords(h5).coords_um
+            coords_info = get_coords(h5)
+            coords_um = coords_info.coords_um
             stride_um = Microns(get_stride(coords_um))
 
-            if h5.attrs.get("unit") == "um":
-                tile_size_slide_px = TilePixels(
-                    int(round(cast(float, h5.attrs["tile_size_um"]) / slide_mpp))
-                )
-            else:
-                tile_size_slide_px = TilePixels(int(round(256 / slide_mpp)))
+            tile_size_slide_px = TilePixels(
+                int(round(float(coords_info.tile_size_um) / slide_mpp))
+            )
 
         # grid coordinates, i.e. the top-left most tile is (0, 0), the one to its right (0, 1) etc.
         coords_norm = (coords_um / stride_um).round().long()
