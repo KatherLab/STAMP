@@ -21,6 +21,7 @@ from stamp.cache import get_processing_code_hash
 from stamp.preprocessing.config import ExtractorName
 from stamp.preprocessing.extractor import Extractor
 from stamp.preprocessing.tiling import (
+    ImageExtension,
     Microns,
     MPPExtractionError,
     SlideMPP,
@@ -60,6 +61,7 @@ class _TileDataset(IterableDataset):
         self,
         slide_path: Path,
         cache_dir: Path | None,
+        cache_tiles_ext: ImageExtension,
         transform: Callable[[Image.Image], torch.Tensor],
         tile_size_um: Microns,
         tile_size_px: TilePixels,
@@ -71,6 +73,7 @@ class _TileDataset(IterableDataset):
     ) -> None:
         self.slide_path = slide_path
         self.cache_dir = cache_dir
+        self.cache_tiles_ext: ImageExtension = cache_tiles_ext
         self.transform = transform
         self.tile_size_um = tile_size_um
         self.tile_size_px = tile_size_px
@@ -97,6 +100,7 @@ class _TileDataset(IterableDataset):
             for tile in tiles_with_cache(
                 self.slide_path,
                 cache_dir=self.cache_dir,
+                cache_tiles_ext=self.cache_tiles_ext,
                 tile_size_um=self.tile_size_um,
                 tile_size_px=self.tile_size_px,
                 max_supertile_size_slide_px=self.max_supertile_size_slide_px,
@@ -113,6 +117,7 @@ def extract_(
     wsi_dir: Path,
     output_dir: Path,
     cache_dir: Path | None,
+    cache_tiles_ext: ImageExtension,
     extractor: ExtractorName | Extractor,
     tile_size_px: TilePixels,
     tile_size_um: Microns,
@@ -121,6 +126,7 @@ def extract_(
     default_slide_mpp: SlideMPP | None,
     brightness_cutoff: int | None,
     canny_cutoff: float | None,
+    generate_hash: bool,
 ) -> None:
     """
     Extracts features from slides.
@@ -225,9 +231,13 @@ def extract_(
             assert_never(unreachable)
 
     model = extractor.model.to(device).eval()
-    extractor_id = (
-        f"{extractor.identifier}-{get_processing_code_hash(Path(__file__))[:8]}"
-    )
+
+    code_hash = get_processing_code_hash()[:8]
+
+    extractor_id = extractor.identifier
+
+    if generate_hash:
+        extractor_id += f"-{code_hash}"
 
     _logger.info(f"Using extractor {extractor.identifier}")
 
@@ -264,6 +274,7 @@ def extract_(
             ds = _TileDataset(
                 slide_path=slide_path,
                 cache_dir=cache_dir,
+                cache_tiles_ext=cache_tiles_ext,
                 transform=extractor.transform,
                 tile_size_um=tile_size_um,
                 tile_size_px=tile_size_px,
@@ -312,6 +323,7 @@ def extract_(
                 h5_fp.attrs["unit"] = "um"
                 h5_fp.attrs["tile_size_um"] = tile_size_um  # changed in v2.1.0
                 h5_fp.attrs["tile_size_px"] = tile_size_px
+                h5_fp.attrs["code_hash"] = code_hash
             except Exception:
                 _logger.exception(f"error while writing {feature_output_path}")
                 if tmp_h5_file is not None:
@@ -356,7 +368,7 @@ def _get_rejection_thumb(
         dtype=bool,
     )
 
-    for y, x in np.round(coords_um / tile_size_um).astype(np.uint32):
+    for y, x in np.floor(coords_um / tile_size_um).astype(np.uint32):
         inclusion_map[y, x] = True
 
     thumb = slide.get_thumbnail(size).convert("RGBA")

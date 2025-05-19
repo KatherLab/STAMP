@@ -214,11 +214,11 @@ def get_coords(feature_h5: h5py.File) -> CoordsInfo:
         "unit", None
     ) == "um":
         # STAMP v2 format
-        tile_size_um = Microns(tile_size)
+        tile_size_um = Microns(float(tile_size))
         coords_um = coords
     elif tile_size := feature_h5.attrs.get("tile_size_um", None):
         # Newer STAMP format
-        tile_size_um = Microns(tile_size)
+        tile_size_um = Microns(float(tile_size))
         coords_um = coords
     elif round(feature_h5.attrs.get("tile_size", get_stride(coords))) == 224:
         # Historic STAMP format
@@ -237,7 +237,7 @@ def get_coords(feature_h5: h5py.File) -> CoordsInfo:
         )
 
     if not tile_size_px and "tile_size_px" in feature_h5.attrs:
-        tile_size_px = TilePixels(feature_h5.attrs["tile_size_px"])  # pyright: ignore[reportArgumentType]
+        tile_size_px = TilePixels(int(feature_h5.attrs["tile_size_px"]))  # pyright: ignore[reportArgumentType]
 
     if not tile_size_um or coords_um is None:
         raise RuntimeError(

@@ -55,6 +55,7 @@ def test_if_feature_extraction_crashes(
             output_dir=tmp_path / "output",
             extractor=extractor,
             cache_dir=None,
+            cache_tiles_ext="png",
             tile_size_px=TilePixels(224),
             tile_size_um=Microns(256.0),
             max_workers=min(os.cpu_count() or 1, 16),
@@ -62,6 +63,7 @@ def test_if_feature_extraction_crashes(
             canny_cutoff=0.02,
             device="cuda" if torch.cuda.is_available() else "cpu",
             default_slide_mpp=None,
+            generate_hash=True,
         )
     except ModuleNotFoundError:
         pytest.skip(f"dependencies for {extractor} not installed")
@@ -111,6 +113,7 @@ def test_backward_compatability(tmp_path: Path) -> None:
             output_dir=tmp_path / "output",
             extractor=extractor,
             cache_dir=None,
+            cache_tiles_ext="png",
             tile_size_px=TilePixels(224),
             tile_size_um=Microns(256.0),
             max_workers=min(os.cpu_count() or 1, 16),
@@ -118,6 +121,7 @@ def test_backward_compatability(tmp_path: Path) -> None:
             canny_cutoff=0.02,
             device="cuda" if torch.cuda.is_available() else "cpu",
             default_slide_mpp=None,
+            generate_hash=True,
         )
     except ModuleNotFoundError:
         pytest.skip(f"dependencies for {extractor} not installed")

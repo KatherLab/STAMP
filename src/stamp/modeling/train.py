@@ -1,3 +1,4 @@
+import logging
 import shutil
 from collections.abc import Callable, Mapping, Sequence
 from pathlib import Path
@@ -38,6 +39,8 @@ from stamp.modeling.transforms import VaryPrecisionTransform
 __author__ = "Marko van Treeck"
 __copyright__ = "Copyright (C) 2024 Marko van Treeck"
 __license__ = "MIT"
+
+_logger = logging.getLogger("stamp")
 
 
 def train_categorical_model_(
@@ -275,8 +278,9 @@ def setup_model_for_training(
             for category, count in zip(train_categories, category_counts, strict=True)
             if count < 16
         }
-        raise ValueError(
-            f"some categories do not have enough samples to meaningfully train a model: {underpopulated_categories}"
+        _logger.warning(
+            f"Some categories do not have enough samples to meaningfully train a model: {underpopulated_categories}. "
+            "You may want to consider removing these categories; the model will likely overfit on the few samples available."
         )
 
     # Train the model

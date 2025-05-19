@@ -3,7 +3,8 @@ preprocessing:
   wsi_dir: "/path/containing/whole/slide/images/to/extract/features/from"
   # Extractor to use for feature extractor.  Possible options are "ctranspath",
   # "mahmood-uni", "mahmood-conch", "chief-ctranspath", "mahmood-conch1_5",
-  # "mahmood-uni2", "dino-bloom", "gigapath", "h-optimus-0", "h-optimus-1", "virchow2"
+  # "mahmood-uni2", "dino-bloom", "gigapath", "h-optimus-0", "h-optimus-1", "virchow2",
+  # "virchow", "virchow_full", "musk", "mstar", "plip"
   # Some of them require requesting access to the respective authors beforehand.
   extractor: "ctranspath"
 
@@ -15,6 +16,11 @@ preprocessing:
   # Having a cache dir will speed up extracting features multiple times,
   # e.g. with different feature extractors.  Optional.
   #cache_dir: "/path/to/save/cache/files/to"
+
+  # The extension of the tiles to cache. Use "png" for lossless compression,
+  # or "jpg" for lossy compression (requires around x100 less memory, 
+  # but you may encounter reproducibility issues in subsequent runs).
+  #cache_tiles_ext: "jpg"
 
   # Tiler parameters.  The defaults work well for most domains and feature extractors.
   #tile_size_um: 256.0
@@ -28,10 +34,15 @@ preprocessing:
   # from feature extraction.
   #brightness_cutoff: 240
 
+  # Add a hash of the entire preprocessing codebase in the feature folder name.
+  # Used to distinguish features extracted with different code versions.
+  #generate_hash: True
+
 
 slide_encoding:
   # Encoder to use for slide encoding. Possible options are "katherlab-cobra",
-  # "katherlab-eagle", "mahmood-titan", "gigapath", "chief".
+  # "katherlab-eagle", "mahmood-titan", "gigapath", "chief", "pageai-prism",
+  # "mahmood-madeleine".
   encoder: "katherlab-eagle"
   
   # Directory to save the output files.
@@ -51,7 +62,8 @@ slide_encoding:
 
 patient_encoding:
   # Encoder to use for patient encoding. Possible options are "katherlab-cobra",
-  # "katherlab-eagle", "mahmood-titan".
+  # "katherlab-eagle", "mahmood-titan", "gigapath", "chief", "pageai-prism",
+  # "mahmood-madeleine".
   encoder: "katherlab-eagle"
   
   # Directory to save the output files.
