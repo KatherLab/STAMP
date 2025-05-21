@@ -1,19 +1,19 @@
 import torch
 from transformers import AutoModel
 
+from stamp.encoding.config import EncoderName
 from stamp.encoding.encoder import Encoder
+from stamp.preprocessing.config import ExtractorName
 
 
 class Prism(Encoder):
     def __init__(self) -> None:
         model = AutoModel.from_pretrained("paige-ai/Prism", trust_remote_code=True)
-        precision = torch.float16
-        required_extractor = "virchow_full"
         super().__init__(
             model=model,
-            identifier="paigeai-prism",
-            precision=precision,
-            required_extractor=required_extractor,
+            identifier=EncoderName.PRISM,
+            precision=torch.float16,
+            required_extractor=[ExtractorName.VIRCHOW_FULL],
         )
 
     def _generate_slide_embedding(self, feats, device, **kwargs):

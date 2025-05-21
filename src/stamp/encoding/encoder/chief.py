@@ -10,7 +10,9 @@ from numpy import ndarray
 from tqdm import tqdm
 
 from stamp.cache import STAMP_CACHE_DIR, get_processing_code_hash
+from stamp.encoding.config import EncoderName
 from stamp.encoding.encoder import Encoder
+from stamp.preprocessing.config import ExtractorName
 
 """authors: https://github.com/hms-dbmi/CHIEF"""
 
@@ -99,9 +101,9 @@ class CHIEF(Encoder):
         model.load_state_dict(chief, strict=True)
         super().__init__(
             model=model,
-            identifier="chief",
+            identifier=EncoderName.CHIEF,
             precision=torch.float32,
-            required_extractor="ctranspath",
+            required_extractor=[ExtractorName.CHIEF_CTRANSPATH],
         )
 
     def _generate_slide_embedding(

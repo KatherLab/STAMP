@@ -9,8 +9,10 @@ from gigapath import slide_encoder
 from tqdm import tqdm
 
 from stamp.cache import get_processing_code_hash
+from stamp.encoding.config import EncoderName
 from stamp.encoding.encoder import Encoder
 from stamp.modeling.data import CoordsInfo
+from stamp.preprocessing.config import ExtractorName
 from stamp.preprocessing.tiling import SlideMPP
 
 
@@ -27,9 +29,9 @@ class Gigapath(Encoder):
             )
         super().__init__(
             model=model,
-            identifier="gigapath",
+            identifier=EncoderName.GIGAPATH,
             precision=torch.float16,
-            required_extractor="gigapath",
+            required_extractor=[ExtractorName.GIGAPATH],
         )
 
     def _generate_slide_embedding(

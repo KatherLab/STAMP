@@ -9,21 +9,26 @@ from torch._prims_common import DeviceLikeType  # type: ignore
 from tqdm import tqdm
 
 from stamp.cache import get_processing_code_hash
+from stamp.encoding.config import EncoderName
 from stamp.encoding.encoder import Encoder
 from stamp.encoding.encoder.chief import CHIEF
 from stamp.modeling.data import CoordsInfo
+from stamp.preprocessing.config import ExtractorName
 
 """From https://github.com/KatherLab/EAGLE/blob/main/eagle/main_feature_extraction.py"""
 
 
 class Eagle(Encoder):
     def __init__(self) -> None:
-        model = CHIEF().model
+        self.required_agg_extractor = ExtractorName.VIRCHOW2
         super().__init__(
-            model=model,
-            identifier="katherlab-eagle",
+            model=CHIEF().model,
+            identifier=EncoderName.EAGLE,
             precision=torch.float32,
-            required_extractor="ctranspath",
+            required_extractor=[
+                ExtractorName.CTRANSPATH,
+                ExtractorName.CHIEF_CTRANSPATH,
+            ],
         )
 
     def _validate_and_read_features_with_agg(
@@ -34,17 +39,20 @@ class Eagle(Encoder):
         extractor: str
         feats, coords, extractor = self._read_h5(h5_ctp)
 
-        if "ctranspath" not in extractor:
+        # TODO: Eagle requires ctranspath features extracted with 2mpp
+        # magnification. Validate this.
+
+        if extractor not in self.required_extractor:
             raise ValueError(
-                f"Features must be extracted with ctranspath or chief-ctranspath. "
+                f"Features must be extracted with one of {self.required_extractor}. "
                 f"Features located in {h5_ctp} are extracted with {extractor}"
             )
 
         agg_feats, agg_coords, extractor = self._read_h5(h5_vir2)
 
-        if "virchow2" not in extractor:
+        if extractor == self.required_agg_extractor:
             raise ValueError(
-                f"Aggregated features must be extracted with virchow2 "
+                f"Aggregated features must be extracted with {self.required_agg_extractor} "
                 f"Features located in {h5_vir2} are extracted with {extractor}"
             )
 

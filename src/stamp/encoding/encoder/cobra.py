@@ -1,7 +1,9 @@
 import torch
 from numpy import ndarray
 
+from stamp.encoding.config import EncoderName
 from stamp.encoding.encoder import Encoder
+from stamp.preprocessing.config import ExtractorName
 
 # TODO: Check which are the necessary imports and add them to cobra package
 
@@ -28,9 +30,14 @@ class Cobra(Encoder):
             precision = torch.float32
         super().__init__(
             model=model,
-            identifier="katherlab-cobra",
+            identifier=EncoderName.COBRA,
             precision=precision,
-            required_extractor="",
+            required_extractor=[
+                ExtractorName.CTRANSPATH,
+                ExtractorName.UNI,
+                ExtractorName.VIRCHOW2,
+                ExtractorName.H_OPTIMUS_0,
+            ],
         )
 
     def _generate_slide_embedding(

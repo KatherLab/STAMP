@@ -11,8 +11,10 @@ from tqdm import tqdm
 from transformers import AutoModel
 
 from stamp.cache import get_processing_code_hash
+from stamp.encoding.config import EncoderName
 from stamp.encoding.encoder import Encoder
 from stamp.modeling.data import CoordsInfo
+from stamp.preprocessing.config import ExtractorName
 from stamp.preprocessing.tiling import Microns, SlideMPP
 
 
@@ -21,9 +23,9 @@ class Titan(Encoder):
         model = AutoModel.from_pretrained("MahmoodLab/TITAN", trust_remote_code=True)
         super().__init__(
             model=model,
-            identifier="mahmood-titan",
+            identifier=EncoderName.TITAN,
             precision=torch.float32,
-            required_extractor="conch1_5",
+            required_extractor=[ExtractorName.CONCH1_5],
         )
 
     def _generate_slide_embedding(

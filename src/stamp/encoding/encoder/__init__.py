@@ -13,14 +13,20 @@ from tqdm import tqdm
 
 import stamp
 from stamp.cache import get_processing_code_hash
+from stamp.encoding.config import EncoderName
 from stamp.modeling.data import CoordsInfo, get_coords
+from stamp.preprocessing.config import ExtractorName
 
 EncoderModel = TypeVar("EncoderModel", bound=nn.Module)
 
 
 class Encoder(ABC):
     def __init__(
-        self, model, identifier: str, precision: torch.dtype, required_extractor: str
+        self,
+        model,
+        identifier: EncoderName,
+        precision: torch.dtype,
+        required_extractor: list[ExtractorName],
     ):
         self.model = model
         self.identifier = identifier
@@ -142,9 +148,9 @@ class Encoder(ABC):
 
     def _validate_and_read_features(self, h5_path: str) -> tuple[Tensor, CoordsInfo]:
         feats, coords, extractor = self._read_h5(h5_path)
-        if self.required_extractor not in extractor:
+        if extractor not in self.required_extractor:
             raise ValueError(
-                f"Features must be extracted with {self.required_extractor}. "
+                f"Features must be extracted with one of {self.required_extractor}. "
                 f"Features located in {h5_path} are extracted with {extractor}"
             )
         return feats, coords

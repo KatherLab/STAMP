@@ -4,7 +4,9 @@ import torch
 from numpy import ndarray
 
 from stamp.cache import STAMP_CACHE_DIR
+from stamp.encoding.config import EncoderName
 from stamp.encoding.encoder import Encoder
+from stamp.preprocessing.config import ExtractorName
 
 try:
     from madeleine.models.factory import create_model_from_pretrained
@@ -25,9 +27,9 @@ class Madeleine(Encoder):
             precision = torch.float16
         super().__init__(
             model=model,
-            identifier="mahmood-madeleine",
+            identifier=EncoderName.MADELEINE,
             precision=precision,
-            required_extractor="conch",
+            required_extractor=[ExtractorName.CONCH],
         )
 
     def _generate_slide_embedding(
