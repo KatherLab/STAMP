@@ -173,7 +173,7 @@ class Encoder(ABC):
             for entry_name, data in entry_dict.items():
                 f.create_dataset(f"{entry_name}", data=data["feats"])
                 f.attrs["version"] = stamp.__version__
-                f.attrs["encoder"] = self.identifier
+                f.attrs["encoder"] = str(self.identifier)
                 f.attrs["precision"] = str(self.precision)
             if len(f) == 0:
                 tqdm.write("Extraction failed: file empty")
