@@ -112,6 +112,8 @@ def _run_cli(args: argparse.Namespace) -> None:
                 output_dir=config.patient_encoding.output_dir,
                 feat_dir=config.patient_encoding.feat_dir,
                 slide_table_path=config.patient_encoding.slide_table,
+                patient_label=config.patient_encoding.patient_label,
+                filename_label=config.patient_encoding.filename_label,
                 device=config.patient_encoding.device,
                 agg_feat_dir=config.patient_encoding.agg_feat_dir,
             )

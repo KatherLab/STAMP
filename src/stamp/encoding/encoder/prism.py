@@ -1,3 +1,4 @@
+import numpy as np
 import torch
 from transformers import AutoModel
 
@@ -16,7 +17,7 @@ class Prism(Encoder):
             required_extractor=[ExtractorName.VIRCHOW_FULL],
         )
 
-    def _generate_slide_embedding(self, feats, device, **kwargs):
+    def _generate_slide_embedding(self, feats, device, **kwargs) -> np.ndarray:
         with torch.autocast(device, dtype=self.precision), torch.inference_mode():
             return (
                 self.model.slide_representations(feats.unsqueeze(0).to(device))[
@@ -28,7 +29,7 @@ class Prism(Encoder):
                 .numpy()
             )
 
-    def _generate_patient_embedding(self, feats_list, device, **kwargs):
+    def _generate_patient_embedding(self, feats_list, device, **kwargs) -> np.ndarray:
         all_feats = torch.cat(feats_list, dim=0).to(device)
         with torch.inference_mode():
             return (

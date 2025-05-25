@@ -4,6 +4,8 @@ from pathlib import Path
 from pydantic import BaseModel, ConfigDict
 from torch._prims_common import DeviceLikeType  # type: ignore
 
+from stamp.modeling.data import PandasLabel  # type: ignore
+
 
 class EncoderName(StrEnum):
     COBRA = "katherlab-cobra"
@@ -32,5 +34,7 @@ class PatientEncodingConfig(BaseModel, arbitrary_types_allowed=True):
     output_dir: Path
     feat_dir: Path
     slide_table: Path
+    patient_label: PandasLabel = "PATIENT"
+    filename_label: PandasLabel = "FILENAME"
     device: DeviceLikeType
     agg_feat_dir: Path | None = None

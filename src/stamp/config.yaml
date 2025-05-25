@@ -81,6 +81,9 @@ patient_encoding:
   device: "cuda"
 
   # Optional settings:
+  patient_label: "PATIENT"
+  filename_label: "FILENAME"
+  
   # Directory where the aggregated features are stored. Needed for
   # some encoders such as eagle (it requires virchow2 features).
   #agg_feat_dir: "/path/your/aggregated/features/are/stored/in"

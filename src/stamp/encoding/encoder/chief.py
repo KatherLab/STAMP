@@ -7,11 +7,13 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from numpy import ndarray
+from torch._prims_common import DeviceLikeType  # type: ignore
 from tqdm import tqdm
 
 from stamp.cache import STAMP_CACHE_DIR, get_processing_code_hash
 from stamp.encoding.config import EncoderName
 from stamp.encoding.encoder import Encoder
+from stamp.modeling.data import PandasLabel
 from stamp.preprocessing.config import ExtractorName
 
 """authors: https://github.com/hms-dbmi/CHIEF"""
@@ -121,13 +123,20 @@ class CHIEF(Encoder):
         return patient_embedding.detach().squeeze().cpu().numpy()
 
     def encode_patients(
-        self, output_dir, feat_dir, slide_table_path, device, **kwargs
+        self,
+        output_dir: Path,
+        feat_dir: Path,
+        slide_table_path: Path,
+        patient_label: PandasLabel,
+        filename_label: PandasLabel,
+        device: DeviceLikeType,
+        **kwargs,
     ) -> None:
         output_name = (
             f"{self.identifier}-pat-{get_processing_code_hash(Path(__file__))[:8]}.h5"
         )
         slide_table = pd.read_csv(slide_table_path)
-        patient_groups = slide_table.groupby("PATIENT")
+        patient_groups = slide_table.groupby(patient_label)
 
         output_file = os.path.join(output_dir, output_name)
 
@@ -143,7 +152,7 @@ class CHIEF(Encoder):
 
             # Concatenate all slides over x axis adding the offset to each feature x coordinate.
             for _, row in group.iterrows():
-                slide_filename = row["FILENAME"]
+                slide_filename = row[filename_label]
                 h5_path = os.path.join(feat_dir, slide_filename)
 
                 try:
@@ -215,7 +224,7 @@ class Attn_Net(nn.Module):
         self.module = nn.Sequential(*self.module)
 
     def forward(self, x):
-        return self.module(x), x  # N x 1, N * D
+        return self.module(x), x  # type: ignore # N x 1, N * D
 
 
 class Attn_Net_Gated(nn.Module):
@@ -234,8 +243,8 @@ class Attn_Net_Gated(nn.Module):
         self.attention_c = nn.Linear(D, n_classes)
 
     def forward(self, x):
-        a = self.attention_a(x)
-        b = self.attention_b(x)
+        a = self.attention_a(x)  # type: ignore
+        b = self.attention_b(x)  # type: ignore
         A = a.mul(b)
         A = self.attention_c(A)
         return A, x

@@ -13,7 +13,7 @@ from transformers import AutoModel
 from stamp.cache import get_processing_code_hash
 from stamp.encoding.config import EncoderName
 from stamp.encoding.encoder import Encoder
-from stamp.modeling.data import CoordsInfo
+from stamp.modeling.data import CoordsInfo, PandasLabel
 from stamp.preprocessing.config import ExtractorName
 from stamp.preprocessing.tiling import Microns, SlideMPP
 
@@ -80,7 +80,14 @@ class Titan(Encoder):
         return self._generate_slide_embedding(all_feats_cat, device, coords)
 
     def encode_patients(
-        self, output_dir, feat_dir, slide_table_path, device, **kwargs
+        self,
+        output_dir: Path,
+        feat_dir: Path,
+        slide_table_path: Path,
+        patient_label: PandasLabel,
+        filename_label: PandasLabel,
+        device,
+        **kwargs,
     ) -> None:
         """Generate one virtual slide concatenating all the slides of a
         patient over the x axis."""
@@ -88,7 +95,7 @@ class Titan(Encoder):
             f"{self.identifier}-pat-{get_processing_code_hash(Path(__file__))[:8]}.h5"
         )
         slide_table = pd.read_csv(slide_table_path)
-        patient_groups = slide_table.groupby("PATIENT")
+        patient_groups = slide_table.groupby(patient_label)
 
         output_file = os.path.join(output_dir, output_name)
 
@@ -107,7 +114,7 @@ class Titan(Encoder):
 
             # Concatenate all slides over x axis adding the offset to each feature x coordinate.
             for _, row in group.iterrows():
-                slide_filename = row["FILENAME"]
+                slide_filename = row[filename_label]
                 h5_path = os.path.join(feat_dir, slide_filename)
 
                 try:

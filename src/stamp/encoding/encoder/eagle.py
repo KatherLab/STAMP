@@ -12,7 +12,7 @@ from stamp.cache import get_processing_code_hash
 from stamp.encoding.config import EncoderName
 from stamp.encoding.encoder import Encoder
 from stamp.encoding.encoder.chief import CHIEF
-from stamp.modeling.data import CoordsInfo
+from stamp.modeling.data import CoordsInfo, PandasLabel
 from stamp.preprocessing.config import ExtractorName
 
 """From https://github.com/KatherLab/EAGLE/blob/main/eagle/main_feature_extraction.py"""
@@ -165,6 +165,8 @@ class Eagle(Encoder):
         output_dir: Path,
         feat_dir: Path,
         slide_table_path: Path,
+        patient_label: PandasLabel,
+        filename_label: PandasLabel,
         device: DeviceLikeType,
         **kwargs,
     ) -> None:
@@ -177,7 +179,7 @@ class Eagle(Encoder):
             )
 
         slide_table = pd.read_csv(slide_table_path)
-        patient_groups = slide_table.groupby("PATIENT")
+        patient_groups = slide_table.groupby(patient_label)
         patient_dict = {}
         self.model.to(device).eval()
 
@@ -195,7 +197,7 @@ class Eagle(Encoder):
             agg_feats_list = []
 
             for _, row in group.iterrows():
-                slide_filename = row["FILENAME"]
+                slide_filename = row[filename_label]
                 slide_name = Path(slide_filename).stem
                 h5_ctp = os.path.join(feat_dir, slide_filename)
                 h5_vir2 = os.path.join(agg_feat_dir, slide_filename)

@@ -11,7 +11,7 @@ from tqdm import tqdm
 from stamp.cache import get_processing_code_hash
 from stamp.encoding.config import EncoderName
 from stamp.encoding.encoder import Encoder
-from stamp.modeling.data import CoordsInfo
+from stamp.modeling.data import CoordsInfo, PandasLabel
 from stamp.preprocessing.config import ExtractorName
 from stamp.preprocessing.tiling import SlideMPP
 
@@ -36,7 +36,7 @@ class Gigapath(Encoder):
 
     def _generate_slide_embedding(
         self, feats, device, coords: CoordsInfo | None = None, **kwargs
-    ):
+    ) -> np.ndarray:
         if not coords:
             raise ValueError("Tile coords are required for encoding")
 
@@ -68,7 +68,14 @@ class Gigapath(Encoder):
         return slide_embedding.detach().squeeze().cpu().numpy()
 
     def encode_patients(
-        self, output_dir, feat_dir, slide_table_path, device, **kwargs
+        self,
+        output_dir: Path,
+        feat_dir: Path,
+        slide_table_path: Path,
+        patient_label: PandasLabel,
+        filename_label: PandasLabel,
+        device,
+        **kwargs,
     ) -> None:
         """Generate one virtual slide concatenating all the slides of a
         patient over the x axis."""
@@ -76,7 +83,7 @@ class Gigapath(Encoder):
             f"{self.identifier}-pat-{get_processing_code_hash(Path(__file__))[:8]}.h5"
         )
         slide_table = pd.read_csv(slide_table_path)
-        patient_groups = slide_table.groupby("PATIENT")
+        patient_groups = slide_table.groupby(patient_label)
 
         output_file = os.path.join(output_dir, output_name)
 
@@ -97,7 +104,7 @@ class Gigapath(Encoder):
             slide_info = []
             # Concatenate all slides over x axis adding the offset to each feature x coordinate.
             for _, row in group.iterrows():
-                slide_filename = row["FILENAME"]
+                slide_filename = row[filename_label]
                 h5_path = os.path.join(feat_dir, slide_filename)
 
                 try:
@@ -195,7 +202,7 @@ class Gigapath(Encoder):
         max_wsi_height,
         n_grid,
         current_x_offset,
-    ):
+    ) -> np.ndarray:
         """
         Normalize the x and y coordinates relative to the total WSI width and max height, using the same grid [0, 1000].
         Thanks Peter!

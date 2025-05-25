@@ -14,7 +14,7 @@ from tqdm import tqdm
 import stamp
 from stamp.cache import get_processing_code_hash
 from stamp.encoding.config import EncoderName
-from stamp.modeling.data import CoordsInfo, get_coords
+from stamp.modeling.data import CoordsInfo, PandasLabel, get_coords
 from stamp.preprocessing.config import ExtractorName
 
 EncoderModel = TypeVar("EncoderModel", bound=nn.Module)
@@ -78,6 +78,8 @@ class Encoder(ABC):
         output_dir: Path,
         feat_dir: Path,
         slide_table_path: Path,
+        patient_label: PandasLabel,
+        filename_label: PandasLabel,
         device: DeviceLikeType,
         **kwargs,
     ) -> None:
@@ -99,13 +101,13 @@ class Encoder(ABC):
             return
 
         slide_table = self._read_slide_table(slide_table_path)
-        patient_groups = slide_table.groupby("PATIENT")
+        patient_groups = slide_table.groupby(patient_label)
 
         for patient_id, group in tqdm(patient_groups, leave=False):
             feats_list = []
 
             for _, row in group.iterrows():
-                h5_path = os.path.join(feat_dir, row["FILENAME"])
+                h5_path = os.path.join(feat_dir, filename_label)
                 try:
                     feats, _ = self._validate_and_read_features(h5_path)
                 except FileNotFoundError as e:

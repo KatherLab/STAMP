@@ -5,6 +5,7 @@ from torch._prims_common import DeviceLikeType  # type: ignore
 
 from stamp.encoding.config import EncoderName
 from stamp.encoding.encoder import Encoder
+from stamp.modeling.data import PandasLabel
 
 
 def get_pat_embs(
@@ -12,6 +13,8 @@ def get_pat_embs(
     output_dir: Path,
     feat_dir: Path,
     slide_table_path: Path,
+    patient_label: PandasLabel,
+    filename_label: PandasLabel,
     device: DeviceLikeType,
     agg_feat_dir: Path | None = None,
 ) -> None:
@@ -59,7 +62,13 @@ def get_pat_embs(
             assert_never(unreachable)
 
     selected_encoder.encode_patients(
-        output_dir, feat_dir, slide_table_path, device, agg_feat_dir=agg_feat_dir
+        output_dir=output_dir,
+        feat_dir=feat_dir,
+        slide_table_path=slide_table_path,
+        patient_label=patient_label,
+        filename_label=filename_label,
+        device=device,
+        agg_feat_dir=agg_feat_dir,
     )
 
 
