@@ -105,7 +105,8 @@ def create_random_feature_file(
     min_tiles: int,
     max_tiles: int,
     feat_dim: int,
-    tile_size_um: Microns = Microns(2508),
+    tile_size_um: Microns = Microns(256),
+    tile_size_px: TilePixels = TilePixels(224),
     extractor_name: ExtractorName | str = "random-test-generator",
     feat_filename: str | None = None,
 ) -> Path:
@@ -123,13 +124,18 @@ def create_random_feature_file(
         feat_filename = random_string(16)  # Generate a random filename
     feature_file_path = tmp_path / f"{feat_filename}.h5"
     with h5py.File(feature_file_path, "w") as h5_file:
-        h5_file["feats"] = torch.rand(n_tiles, feat_dim) * 1000 * tile_size_um
-        h5_file["coords"] = torch.rand(n_tiles, 2)
+        rand_feats = torch.rand(n_tiles, feat_dim) * 1000 * tile_size_um
+        mean = rand_feats.mean()
+        std = rand_feats.std()
+        norm_feats = (rand_feats - mean) / std
+        h5_file["feats"] = norm_feats.numpy()
+        h5_file["coords"] = torch.rand(n_tiles, 2).numpy()
 
         h5_file.attrs["stamp_version"] = stamp.__version__
         h5_file.attrs["extractor"] = str(extractor_name)
         h5_file.attrs["unit"] = "um"
-        h5_file.attrs["tile_size"] = tile_size_um
+        h5_file.attrs["tile_size_um"] = tile_size_um
+        h5_file.attrs["tile_size_px"] = tile_size_px
         return Path(feature_file_path)
 
 
