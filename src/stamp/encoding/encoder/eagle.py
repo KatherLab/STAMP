@@ -50,7 +50,7 @@ class Eagle(Encoder):
 
         agg_feats, agg_coords, extractor = self._read_h5(h5_vir2)
 
-        if extractor == self.required_agg_extractor:
+        if extractor != self.required_agg_extractor:
             raise ValueError(
                 f"Aggregated features must be extracted with {self.required_agg_extractor} "
                 f"Features located in {h5_vir2} are extracted with {extractor}"

@@ -1,6 +1,7 @@
 import random
 from pathlib import Path
 
+import h5py
 import numpy as np
 import pandas as pd
 import pytest
@@ -38,7 +39,7 @@ used_extractor = {
 
 
 @pytest.mark.slow
-@pytest.mark.parametrize("encoder", [EncoderName.TITAN])
+@pytest.mark.parametrize("encoder", [EncoderName.EAGLE])
 @pytest.mark.filterwarnings("ignore:Importing from timm.models.layers is deprecated")
 @pytest.mark.filterwarnings(
     "ignore:You are using `torch.load` with `weights_only=False`"
@@ -58,7 +59,7 @@ def test_if_encoding_crashes(*, tmp_path: Path, encoder: EncoderName):
         dir=tmp_path,
         n_patients=2,
         min_slides_per_patient=2,
-        max_slides_per_patient=3,
+        max_slides_per_patient=2,
         min_tiles_per_slide=32,
         max_tiles_per_slide=32,
         feat_dim=input_dims[used_extractor[encoder]],
@@ -71,19 +72,26 @@ def test_if_encoding_crashes(*, tmp_path: Path, encoder: EncoderName):
         agg_feat_dir = tmp_path / "agg_output"
         agg_feat_dir.mkdir()
         slide_df = pd.read_csv(slide_path)
-        feature_filenames = [Path(path).name for path in slide_df["slide_path"]]
+        feature_filenames = [Path(path).stem for path in slide_df["slide_path"]]
 
         for feat_filename in feature_filenames:
+            # Read the coordinates from the ctranspath feature file
+            ctranspath_file = feature_dir / f"{feat_filename}.h5"
+            with h5py.File(ctranspath_file, "r") as h5_file:
+                coords: np.ndarray = h5_file["coords"][:]  # type: ignore
             create_random_feature_file(
-                tmp_path=tmp_path,
+                tmp_path=agg_feat_dir,
                 min_tiles=32,
                 max_tiles=32,
                 feat_dim=input_dims[ExtractorName.VIRCHOW2],
                 extractor_name=ExtractorName.VIRCHOW2,
+                feat_filename=feat_filename,
+                coords=coords,
             )
     elif encoder == EncoderName.TITAN:
         # A random conch1_5 feature does not work with titan so we just download
         # a real one
+        # TODO: Download it from github
         feature_dir = "/mnt/bulk-sirius/juan/pap_screening/datasets/example/features/mahmood-conch1_5-df7541f1"
         slide_df = pd.read_csv(slide_path)
         slide_df.assign(slide_path=feature_dir)
@@ -100,10 +108,37 @@ def test_if_encoding_crashes(*, tmp_path: Path, encoder: EncoderName):
             agg_feat_dir=agg_feat_dir,
         )
 
-        # TODO: test patient encoding
+        get_pat_embs(
+            encoder=encoder,
+            output_dir=output_dir,
+            feat_dir=Path(feature_dir),
+            slide_table_path=slide_path,
+            patient_label="patient",
+            filename_label="slide_path",
+            device="cuda" if torch.cuda.is_available() else "cpu",
+            agg_feat_dir=agg_feat_dir,
+        )
     except ModuleNotFoundError:
         pytest.skip(f"dependencies for {encoder} not installed")
     except GatedRepoError:
         pytest.skip(f"cannot access gated repo for {encoder}")
 
-    # TODO: test that the contents are not empty
+    # Check if the slide file file has any contents
+    with h5py.File(next((tmp_path / "output").glob(pattern="*-slide-*.h5"))) as h5_file:
+        slide_datasets = list(h5_file.keys())
+        # Check that the amount of slides feats is 6 (2 patients, 3 slides per patient)
+        assert len(slide_datasets) == 4
+        for slide_dataset in slide_datasets:
+            # Check feature contents
+            assert len(h5_file[slide_dataset][:]) > 0  # type: ignore
+
+    # breakpoint()
+
+    # Check if the patient file file has any contents
+    with h5py.File(next((tmp_path / "output").glob(pattern="*-pat-*.h5"))) as h5_file:
+        slide_datasets = list(h5_file.keys())
+        # Check that the amount of patient feats is 2
+        assert len(slide_datasets) == 2
+        for slide_dataset in slide_datasets:
+            # Check feature contents
+            assert len(h5_file[slide_dataset][:]) > 0  # type: ignore

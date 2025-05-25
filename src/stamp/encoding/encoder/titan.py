@@ -49,7 +49,6 @@ class Titan(Encoder):
         feats = feats.to(device=device)
 
         with torch.inference_mode():
-            breakpoint()
             slide_embedding = self.model.encode_slide_from_patch_features(
                 feats, coords_px, patch_size_lvl0
             )

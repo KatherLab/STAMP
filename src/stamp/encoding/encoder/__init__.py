@@ -107,7 +107,8 @@ class Encoder(ABC):
             feats_list = []
 
             for _, row in group.iterrows():
-                h5_path = os.path.join(feat_dir, filename_label)
+                slide_filename = row[filename_label]
+                h5_path = os.path.join(feat_dir, slide_filename)
                 try:
                     feats, _ = self._validate_and_read_features(h5_path)
                 except FileNotFoundError as e:
@@ -178,7 +179,7 @@ class Encoder(ABC):
                 f.attrs["encoder"] = str(self.identifier)
                 f.attrs["precision"] = str(self.precision)
             if len(f) == 0:
-                tqdm.write("Extraction failed: file empty")
+                tqdm.write("Encoding failed: file empty")
                 os.remove(output_file)
             else:
                 tqdm.write(f"Finished encoding, saved to {output_file}")

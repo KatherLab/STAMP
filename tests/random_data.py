@@ -109,6 +109,7 @@ def create_random_feature_file(
     tile_size_px: TilePixels = TilePixels(224),
     extractor_name: ExtractorName | str = "random-test-generator",
     feat_filename: str | None = None,
+    coords: np.ndarray | None = None,
 ) -> Path:
     """Creates a h5 file with random contents.
 
@@ -129,8 +130,10 @@ def create_random_feature_file(
         std = rand_feats.std()
         norm_feats = (rand_feats - mean) / std
         h5_file["feats"] = norm_feats.numpy()
-        h5_file["coords"] = torch.rand(n_tiles, 2).numpy()
-
+        if coords is not None:
+            h5_file["coords"] = coords
+        else:
+            h5_file["coords"] = torch.rand(n_tiles, 2).numpy()
         h5_file.attrs["stamp_version"] = stamp.__version__
         h5_file.attrs["extractor"] = str(extractor_name)
         h5_file.attrs["unit"] = "um"
