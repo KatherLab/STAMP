@@ -86,17 +86,17 @@ class Titan(Encoder):
         patient_label: PandasLabel,
         filename_label: PandasLabel,
         device,
+        generate_hash: bool,
         **kwargs,
     ) -> None:
         """Generate one virtual slide concatenating all the slides of a
         patient over the x axis."""
-        output_name = (
-            f"{self.identifier}-pat-{get_processing_code_hash(Path(__file__))[:8]}.h5"
-        )
         slide_table = pd.read_csv(slide_table_path)
         patient_groups = slide_table.groupby(patient_label)
 
-        output_file = os.path.join(output_dir, output_name)
+        output_file = self._generate_output_path(
+            output_dir=output_dir, generate_hash=generate_hash
+        )
 
         patient_dict = {}
         self.model.to(device).eval()

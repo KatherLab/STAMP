@@ -25,6 +25,7 @@ class SlideEncodingConfig(BaseModel, arbitrary_types_allowed=True):
     feat_dir: Path
     device: DeviceLikeType
     agg_feat_dir: Path | None = None
+    generate_hash: bool = True
 
 
 class PatientEncodingConfig(BaseModel, arbitrary_types_allowed=True):
@@ -38,3 +39,4 @@ class PatientEncodingConfig(BaseModel, arbitrary_types_allowed=True):
     filename_label: PandasLabel = "FILENAME"
     device: DeviceLikeType
     agg_feat_dir: Path | None = None
+    generate_hash: bool = True

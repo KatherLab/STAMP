@@ -38,13 +38,13 @@ class Encoder(ABC):
         output_dir: Path,
         feat_dir: Path,
         device: DeviceLikeType,
+        generate_hash: bool,
         **kwargs,
     ) -> None:
         """General method to encode slides."""
-        output_name = (
-            f"{self.identifier}-slide-{get_processing_code_hash(Path(__file__))[:8]}.h5"
+        output_file = self._generate_output_path(
+            output_dir=output_dir, generate_hash=generate_hash
         )
-        output_file = os.path.join(output_dir, output_name)
 
         slide_dict = {}
         self.model.to(device).eval()
@@ -81,14 +81,14 @@ class Encoder(ABC):
         patient_label: PandasLabel,
         filename_label: PandasLabel,
         device: DeviceLikeType,
+        generate_hash: bool,
         **kwargs,
     ) -> None:
         """General method to encode patients with features only.
         Override this method if coords are needed for encoding"""
-        output_name = (
-            f"{self.identifier}-pat-{get_processing_code_hash(Path(__file__))[:8]}.h5"
+        output_file = self._generate_output_path(
+            output_dir=output_dir, generate_hash=generate_hash
         )
-        output_file = os.path.join(output_dir, output_name)
 
         patient_dict = {}
         self.model.to(device).eval()
@@ -183,3 +183,10 @@ class Encoder(ABC):
                 os.remove(output_file)
             else:
                 tqdm.write(f"Finished encoding, saved to {output_file}")
+
+    def _generate_output_path(self, output_dir: Path, generate_hash: bool) -> str:
+        if generate_hash:
+            output_name = f"{self.identifier}-slide-{get_processing_code_hash(Path(__file__))[:8]}.h5"
+        else:
+            output_name = f"{self.identifier}-slide-.h5"
+        return os.path.join(output_dir, output_name)

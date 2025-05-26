@@ -94,6 +94,7 @@ def _run_cli(args: argparse.Namespace) -> None:
                 feat_dir=config.slide_encoding.feat_dir,
                 device=config.slide_encoding.device,
                 agg_feat_dir=config.slide_encoding.agg_feat_dir,
+                generate_hash=config.slide_encoding.generate_hash,
             )
 
         case "encode_patients":
@@ -116,6 +117,7 @@ def _run_cli(args: argparse.Namespace) -> None:
                 filename_label=config.patient_encoding.filename_label,
                 device=config.patient_encoding.device,
                 agg_feat_dir=config.patient_encoding.agg_feat_dir,
+                generate_hash=config.patient_encoding.generate_hash,
             )
 
         case "train":

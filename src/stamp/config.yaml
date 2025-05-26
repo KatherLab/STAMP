@@ -59,6 +59,9 @@ slide_encoding:
   # some encoders such as eagle (it requires virchow2 features).
   #agg_feat_dir: "/path/your/aggregated/features/are/stored/in"
 
+  # Add a hash of the entire preprocessing codebase in the feature folder name.
+  #generate_hash: True
+
 
 patient_encoding:
   # Encoder to use for patient encoding. Possible options are "katherlab-cobra",
@@ -87,6 +90,9 @@ patient_encoding:
   # Directory where the aggregated features are stored. Needed for
   # some encoders such as eagle (it requires virchow2 features).
   #agg_feat_dir: "/path/your/aggregated/features/are/stored/in"
+
+  # Add a hash of the entire preprocessing codebase in the feature folder name.
+  #generate_hash: True
 
 
 crossval:

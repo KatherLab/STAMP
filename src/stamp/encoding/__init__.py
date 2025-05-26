@@ -17,6 +17,7 @@ def get_pat_embs(
     filename_label: PandasLabel,
     device: DeviceLikeType,
     agg_feat_dir: Path | None = None,
+    generate_hash: bool = True,
 ) -> None:
     """"""
     match encoder:
@@ -69,6 +70,7 @@ def get_pat_embs(
         filename_label=filename_label,
         device=device,
         agg_feat_dir=agg_feat_dir,
+        generate_hash=generate_hash,
     )
 
 
@@ -78,6 +80,7 @@ def get_slide_embs(
     feat_dir: Path,
     device: DeviceLikeType,
     agg_feat_dir: Path | None = None,
+    generate_hash: bool = True,
 ) -> None:
     match encoder:
         case EncoderName.TITAN:
@@ -121,5 +124,9 @@ def get_slide_embs(
             assert_never(unreachable)
 
     selected_encoder.encode_slides(
-        output_dir, feat_dir, device, agg_feat_dir=agg_feat_dir
+        output_dir=output_dir,
+        feat_dir=feat_dir,
+        device=device,
+        agg_feat_dir=agg_feat_dir,
+        generate_hash=generate_hash,
     )

@@ -118,6 +118,7 @@ class Eagle(Encoder):
         output_dir: Path,
         feat_dir: Path,
         device: DeviceLikeType,
+        generate_hash: bool,
         **kwargs,
     ) -> None:
         """Encode slide from patch features."""
@@ -128,10 +129,10 @@ class Eagle(Encoder):
                 " is required for Eagle's encode_patients"
             )
 
-        output_name = (
-            f"{self.identifier}-slide-{get_processing_code_hash(Path(__file__))[:8]}.h5"
+        output_file = self._generate_output_path(
+            output_dir=output_dir, generate_hash=generate_hash
         )
-        output_file = os.path.join(output_dir, output_name)
+
         if os.path.exists(output_file):
             tqdm.write(f"Output file {output_file} already exists, skipping")
             return
@@ -168,6 +169,7 @@ class Eagle(Encoder):
         patient_label: PandasLabel,
         filename_label: PandasLabel,
         device: DeviceLikeType,
+        generate_hash: bool,
         **kwargs,
     ) -> None:
         """Encode patients from slide features."""
@@ -183,10 +185,9 @@ class Eagle(Encoder):
         patient_dict = {}
         self.model.to(device).eval()
 
-        output_name = (
-            f"{self.identifier}-pat-{get_processing_code_hash(Path(__file__))[:8]}.h5"
+        output_file = self._generate_output_path(
+            output_dir=output_dir, generate_hash=generate_hash
         )
-        output_file: str = os.path.join(output_dir, output_name)
 
         if os.path.exists(output_file):
             tqdm.write(f"Output file {output_file} already exists, skipping")
