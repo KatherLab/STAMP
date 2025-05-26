@@ -105,6 +105,7 @@ virchow2 = [
     "torch>=2.0.0",
 ]
 cobra = [
+    "jinja2>=3.1.4",
     "cobra @ git+https://github.com/KatherLab/COBRA.git",
 ]
 prism = [

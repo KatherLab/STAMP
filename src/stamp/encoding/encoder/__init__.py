@@ -62,7 +62,7 @@ class Encoder(ABC):
 
             try:
                 feats, coords = self._validate_and_read_features(h5_path)
-            except FileNotFoundError as e:
+            except ValueError as e:
                 tqdm.write(s=str(e))
                 continue
 
@@ -109,12 +109,7 @@ class Encoder(ABC):
             for _, row in group.iterrows():
                 slide_filename = row[filename_label]
                 h5_path = os.path.join(feat_dir, slide_filename)
-                try:
-                    feats, _ = self._validate_and_read_features(h5_path)
-                except FileNotFoundError as e:
-                    tqdm.write(s=str(e))
-                    continue
-
+                feats, _ = self._validate_and_read_features(h5_path)
                 feats_list.append(feats)
 
             if not feats_list:
@@ -162,8 +157,10 @@ class Encoder(ABC):
         self,
         h5_path: str,
     ) -> tuple[Tensor, CoordsInfo, str]:
-        if not os.path.exists(h5_path) or not h5_path.endswith(".h5"):
-            raise FileNotFoundError("File does not exist or is not an h5 file")
+        if not os.path.exists(h5_path):
+            raise FileNotFoundError(f"File does not exist: {h5_path}")
+        elif not h5_path.endswith(".h5"):
+            raise ValueError(f"File is not of type .h5: {os.path.basename(h5_path)}")
         with h5py.File(h5_path, "r") as f:
             feats: Tensor = torch.tensor(f["feats"][:], dtype=self.precision)  # type: ignore
             coords: CoordsInfo = get_coords(f)
@@ -188,5 +185,5 @@ class Encoder(ABC):
         if generate_hash:
             output_name = f"{self.identifier}-slide-{get_processing_code_hash(Path(__file__))[:8]}.h5"
         else:
-            output_name = f"{self.identifier}-slide-.h5"
+            output_name = f"{self.identifier}-slide.h5"
         return os.path.join(output_dir, output_name)

@@ -8,7 +8,7 @@ import pandas as pd
 import pytest
 import torch
 from huggingface_hub.errors import GatedRepoError
-from random_data import create_random_dataset, create_random_feature_file
+from random_data import create_random_dataset, create_random_feature_file, random_string
 
 from stamp.cache import download_file
 from stamp.encoding import EncoderName, get_pat_embs, get_slide_embs
@@ -112,13 +112,16 @@ def test_if_encoding_crashes(*, tmp_path: Path, encoder: EncoderName):
         slide_df = slide_df.assign(slide_path=str(feat_path))
         slide_df.to_csv(slide_path)
 
-    output_dir = tmp_path / "output"
-    output_dir.mkdir(exist_ok=True)
+    # Create random subdirectories for slide and patient features
+    slide_output_dir = tmp_path / f"slide_output_{random_string(16)}"
+    patient_output_dir = tmp_path / f"patient_output_{random_string(16)}"
+    slide_output_dir.mkdir(exist_ok=True)
+    patient_output_dir.mkdir(exist_ok=True)
 
     try:
         get_slide_embs(
             encoder=encoder,
-            output_dir=output_dir,
+            output_dir=slide_output_dir,
             feat_dir=Path(feature_dir),
             device="cuda" if torch.cuda.is_available() else "cpu",
             agg_feat_dir=agg_feat_dir,
@@ -126,7 +129,7 @@ def test_if_encoding_crashes(*, tmp_path: Path, encoder: EncoderName):
 
         get_pat_embs(
             encoder=encoder,
-            output_dir=output_dir,
+            output_dir=patient_output_dir,
             feat_dir=Path(feature_dir),
             slide_table_path=slide_path,
             patient_label="patient",
@@ -139,20 +142,26 @@ def test_if_encoding_crashes(*, tmp_path: Path, encoder: EncoderName):
     except GatedRepoError:
         pytest.skip(f"cannot access gated repo for {encoder}")
 
-    # Check if the slide file file has any contents
-    with h5py.File(next((tmp_path / "output").glob(pattern="*-slide-*.h5"))) as h5_file:
-        slide_datasets = list(h5_file.keys())
-        # Check that there are slides
-        assert len(slide_datasets) > 0
-        for slide_dataset in slide_datasets:
-            # Check feature contents
-            assert len(h5_file[slide_dataset][:]) > 0  # type: ignore
+    # Check if the slide file has any contents
+    slide_files = list(slide_output_dir.glob("*.h5"))
+    assert len(slide_files) > 0, "No slide feature files were generated."
+    for slide_file in slide_files:
+        with h5py.File(slide_file, "r") as h5_file:
+            slide_datasets = list(h5_file.keys())
+            # Check that there are slides
+            assert len(slide_datasets) > 0
+            for slide_dataset in slide_datasets:
+                # Check feature contents
+                assert len(h5_file[slide_dataset][:]) > 0  # type: ignore
 
-    # Check if the patient file file has any contents
-    with h5py.File(next((tmp_path / "output").glob(pattern="*-pat-*.h5"))) as h5_file:
-        slide_datasets = list(h5_file.keys())
-        # Check that the amount of patient feats is 2
-        assert len(slide_datasets) == 2
-        for slide_dataset in slide_datasets:
-            # Check feature contents
-            assert len(h5_file[slide_dataset][:]) > 0  # type: ignore
+    # Check if the patient file has any contents
+    patient_files = list(patient_output_dir.glob("*.h5"))
+    assert len(patient_files) > 0, "No patient feature files were generated."
+    for patient_file in patient_files:
+        with h5py.File(patient_file, "r") as h5_file:
+            patient_datasets = list(h5_file.keys())
+            # Check that the amount of patient feats is 2
+            assert len(patient_datasets) == 2
+            for patient_dataset in patient_datasets:
+                # Check feature contents
+                assert len(h5_file[patient_dataset][:]) > 0  # type: ignore

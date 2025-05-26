@@ -159,13 +159,7 @@ class CHIEF(Encoder):
             for _, row in group.iterrows():
                 slide_filename = row[filename_label]
                 h5_path = os.path.join(feat_dir, slide_filename)
-
-                try:
-                    feats, _ = self._validate_and_read_features(h5_path=h5_path)
-                except FileNotFoundError as e:
-                    tqdm.write(s=str(e))
-                    continue
-
+                feats, _ = self._validate_and_read_features(h5_path=h5_path)
                 feats_list.append(feats)
 
             if not feats_list:

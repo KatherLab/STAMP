@@ -1,3 +1,4 @@
+import math
 import os
 from pathlib import Path
 
@@ -37,9 +38,6 @@ class Eagle(Encoder):
         coords: CoordsInfo
         extractor: str
         feats, coords, extractor = self._read_h5(h5_ctp)
-
-        # TODO: Eagle requires ctranspath features extracted with 2mpp
-        # magnification. Validate this.
 
         if extractor not in self.required_extractor:
             raise ValueError(
@@ -148,7 +146,7 @@ class Eagle(Encoder):
                 feats, agg_feats = self._validate_and_read_features_with_agg(
                     h5_ctp, h5_vir2, slide_name
                 )
-            except FileNotFoundError as e:
+            except ValueError as e:
                 tqdm.write(s=str(e))
                 continue
 
@@ -202,15 +200,9 @@ class Eagle(Encoder):
                 h5_ctp = os.path.join(feat_dir, slide_filename)
                 h5_vir2 = os.path.join(agg_feat_dir, slide_filename)
 
-                # Validate and read features
-                try:
-                    feats, agg_feats = self._validate_and_read_features_with_agg(
-                        h5_ctp, h5_vir2, slide_name
-                    )
-                except FileNotFoundError as e:
-                    tqdm.write(str(e))
-                    continue
-
+                feats, agg_feats = self._validate_and_read_features_with_agg(
+                    h5_ctp, h5_vir2, slide_name
+                )
                 feats_list.append(feats)
                 agg_feats_list.append(agg_feats)
 

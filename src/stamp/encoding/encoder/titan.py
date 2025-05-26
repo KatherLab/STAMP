@@ -115,11 +115,7 @@ class Titan(Encoder):
                 slide_filename = row[filename_label]
                 h5_path = os.path.join(feat_dir, slide_filename)
 
-                try:
-                    feats, coords = self._validate_and_read_features(h5_path=h5_path)
-                except FileNotFoundError as e:
-                    tqdm.write(s=str(e))
-                    continue
+                feats, coords = self._validate_and_read_features(h5_path=h5_path)
 
                 # Get the mpp of one slide and check that the rest have the same
                 if slides_mpp < 0:
