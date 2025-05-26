@@ -125,6 +125,7 @@ plip = [
 
 # Blanket target
 all = ["stamp[dinobloom,conch,ctranspath,uni,virchow2,uni2,chief_ctranspath,conch1_5,gigapath,h_optimus_0,h_optimus_1,cobra,prism,madeleine,musk,plip]"]
+cpu = ["stamp[dinobloom,conch,ctranspath,uni,virchow2,uni2,chief_ctranspath,conch1_5,gigapath,h_optimus_0,h_optimus_1,prism,madeleine,musk,plip]"]
 
 [project.scripts]
 "stamp" = "stamp.__main__:main"
@@ -157,3 +158,18 @@ markers = [
 
 [tool.ruff]
 lint.ignore = ["F722"] # https://docs.kidger.site/jaxtyping/faq/#flake8-or-ruff-are-throwing-an-error
+
+# Hack to get dependencies installed for cobra and causal-conv1d
+# More info: https://docs.astral.sh/uv/concepts/projects/config/#build-isolation
+[[tool.uv.dependency-metadata]]
+name = "cobra"
+version = "0.1.0"
+requires-dist = ["torch", "packaging", "ninja", "hatchling", "setuptools"]
+
+[[tool.uv.dependency-metadata]]
+name = "causal-conv1d"
+version = "1.5.0.post8"
+requires-dist = ["torch", "packaging", "ninja", "hatchling", "setuptools"]
+
+[tool.uv]
+no-build-isolation-package = ["cobra", "causal-conv1d"]
