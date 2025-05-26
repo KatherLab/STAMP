@@ -9,7 +9,7 @@ from stamp.heatmaps import heatmaps_
 
 @pytest.mark.filterwarnings("ignore:There is a performance drop")
 def test_heatmap_integration(tmp_path: Path) -> None:
-    example_chekpoint_path = download_file(
+    example_checkpoint_path = download_file(
         url="https://github.com/KatherLab/STAMP/releases/download/2.0.0-dev8/example-model.ckpt",
         file_name="example-model.ckpt",
         sha256sum="a71dffd4b5fdb82acd5f84064880efd3382e200b07e5a008cb53e03197b6de56",
@@ -35,7 +35,7 @@ def test_heatmap_integration(tmp_path: Path) -> None:
     heatmaps_(
         feature_dir=feature_dir,
         wsi_dir=wsi_dir,
-        checkpoint_path=example_chekpoint_path,
+        checkpoint_path=example_checkpoint_path,
         output_dir=tmp_path / "output",
         slide_paths=None,
         device="cuda" if torch.cuda.is_available() else "cpu",
