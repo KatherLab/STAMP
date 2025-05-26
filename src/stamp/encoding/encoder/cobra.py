@@ -1,13 +1,11 @@
-import torch
 from numpy import ndarray
 
 from stamp.encoding.config import EncoderName
 from stamp.encoding.encoder import Encoder
 from stamp.preprocessing.config import ExtractorName
 
-# TODO: Check which are the necessary imports and add them to cobra package
-
 try:
+    import torch
     from cobra.utils.load_cobra import get_cobra
 except ModuleNotFoundError as e:
     raise ModuleNotFoundError(

@@ -10,7 +10,7 @@ from numpy import ndarray
 from torch._prims_common import DeviceLikeType  # type: ignore
 from tqdm import tqdm
 
-from stamp.cache import STAMP_CACHE_DIR, get_processing_code_hash
+from stamp.cache import STAMP_CACHE_DIR, file_digest
 from stamp.encoding.config import EncoderName
 from stamp.encoding.encoder import Encoder
 from stamp.modeling.data import PandasLabel
@@ -94,8 +94,13 @@ class CHIEF(Encoder):
                 "https://drive.google.com/u/0/uc?id=10bJq_ayX97_1w95omN8_mESrYAGIBAPb&export=download",
                 str(model_path),
             )
-
-        # TODO: check digest
+            digest = file_digest(model_path)
+            assert (
+                digest
+                == "6a46d200b32a65e5ce4774611b889b5f1bbf7a39f9111321a2a1b5dbdb9996b8"
+            ), (
+                f"The digest of the downloaded checkpoint ({model_path}) did not match the expected value."
+            )
 
         chief = torch.load(model_path)
         if "organ_embedding" in chief:

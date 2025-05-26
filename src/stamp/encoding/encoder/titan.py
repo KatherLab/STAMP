@@ -10,7 +10,6 @@ from torch._prims_common import DeviceLikeType  # type: ignore
 from tqdm import tqdm
 from transformers import AutoModel
 
-from stamp.cache import get_processing_code_hash
 from stamp.encoding.config import EncoderName
 from stamp.encoding.encoder import Encoder
 from stamp.modeling.data import CoordsInfo, PandasLabel

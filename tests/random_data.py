@@ -3,7 +3,6 @@
 import io
 import random
 import string
-import tempfile
 from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import TypeAlias

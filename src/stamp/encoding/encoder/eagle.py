@@ -8,7 +8,6 @@ from torch import Tensor
 from torch._prims_common import DeviceLikeType  # type: ignore
 from tqdm import tqdm
 
-from stamp.cache import get_processing_code_hash
 from stamp.encoding.config import EncoderName
 from stamp.encoding.encoder import Encoder
 from stamp.encoding.encoder.chief import CHIEF
