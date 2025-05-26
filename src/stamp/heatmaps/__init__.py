@@ -144,7 +144,7 @@ def heatmaps_(
                 .float()
                 .to(device)
             )
-            coords_um = get_coords(h5).coords_um
+            coords_um = torch.from_numpy(get_coords(h5).coords_um).float()
             stride_um = Microns(get_stride(coords_um))
 
             if h5.attrs.get("unit") == "um":

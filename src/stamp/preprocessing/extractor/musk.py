@@ -3,7 +3,7 @@ from stamp.preprocessing.extractor import Extractor
 try:
     import torch
     import torchvision
-    from musk import utils
+    from musk import modeling, utils
     from timm.data.constants import IMAGENET_INCEPTION_MEAN, IMAGENET_INCEPTION_STD
     from timm.models import create_model
 except ModuleNotFoundError as e:
@@ -15,6 +15,7 @@ except ModuleNotFoundError as e:
 __author__ = "Juan Pablo Ricapito"
 __copyright__ = "Copyright (C) 2022-2025 Juan Pablo Ricapito"
 __license__ = "MIT"
+__all__ = ["modeling"]
 
 
 class Musk(torch.nn.Module):
