@@ -19,6 +19,10 @@ from stamp.preprocessing.config import ExtractorName
 
 EncoderModel = TypeVar("EncoderModel", bound=nn.Module)
 
+__author__ = "Juan Pablo Ricapito"
+__copyright__ = "Copyright (C) 2025 Juan Pablo Ricapito"
+__license__ = "MIT"
+
 
 class Encoder(ABC):
     def __init__(

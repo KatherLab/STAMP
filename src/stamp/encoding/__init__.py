@@ -7,6 +7,9 @@ from stamp.encoding.config import EncoderName
 from stamp.encoding.encoder import Encoder
 from stamp.modeling.data import PandasLabel
 
+__author__ = "Juan Pablo Ricapito"
+__copyright__ = "Copyright (C) 2025 Juan Pablo Ricapito"
+__license__ = "MIT"
 
 def get_pat_embs(
     encoder: EncoderName | Encoder,

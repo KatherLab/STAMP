@@ -39,7 +39,6 @@ used_extractor = {
 }
 
 
-
 @pytest.mark.slow
 @pytest.mark.parametrize("encoder", EncoderName)
 @pytest.mark.filterwarnings("ignore:Importing from timm.models.layers is deprecated")
