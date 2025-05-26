@@ -134,14 +134,6 @@ class Gigapath(Encoder):
             current_x_offset = 0
 
             for wsi_width, wsi_height, feats, coords in slide_info:
-                all_feats = (
-                    torch.tensor(feats, dtype=torch.float16)
-                    .unsqueeze(0)
-                    .to(device)
-                    .half()
-                    .detach()
-                )
-
                 norm_coords = self._convert_coords(
                     coords=coords.coords_um,
                     total_wsi_width=total_wsi_width,
@@ -162,7 +154,7 @@ class Gigapath(Encoder):
                     .half()
                 )
 
-                all_feats_list.append(all_feats)
+                all_feats_list.append(feats.unsqueeze(dim=0).to(device))
                 all_coords_list.append(norm_coords)
 
             if not all_feats_list:
