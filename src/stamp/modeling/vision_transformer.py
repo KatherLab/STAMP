@@ -112,7 +112,7 @@ class SelfAttention(nn.Module):
                             return_attention=True,
                         )
                         self.last_attn_weights = attn_weights
-                    except:
+                    except (TypeError, ValueError, RuntimeError) as e:
                         # If the return_attention param exists but fails, fall back
                         attn_output = self.mhsa(
                             q=x,
@@ -125,7 +125,7 @@ class SelfAttention(nn.Module):
                         )
                         # Create dummy attention weights to satisfy type checking
                         if return_attention:
-                            print("Warning: Failed to return attention weights. Creating dummy weights.")
+                            print(f"Warning: Failed to return attention weights ({type(e).__name__}: {e}). Creating dummy weights.")
                             batch_size, seq_len, _ = x.shape
                             self.last_attn_weights = torch.zeros(
                                 batch_size, self.heads, seq_len, seq_len, 

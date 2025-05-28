@@ -478,7 +478,7 @@ class AttentionViewer:
 
     def _adjust_slider(self, value=1, ui_element=None):
         """Adjust the slider value by a given amount"""
-        if not ui_element is None:
+        if ui_element is not None:
             current = ui_element.value()
             if (value>0 and current < ui_element.maximum()) or (value<0 and current > ui_element.minimum()):
                 ui_element.setValue(current + value)
@@ -522,7 +522,7 @@ class AttentionViewer:
         self.viewer.layers.selection.active = self.points_layer
         self.points_layer.mode = 'add'
         
-        print(f"Viewer updated with new image")
+        print("Viewer updated with new image")
 
     
 
@@ -622,7 +622,7 @@ class AttentionViewer:
     
     def load_selected_attention_map(self):
 
-        if not self.attention_weights is None:
+        if self.attention_weights is not None:
             # Get attention weights
             # Choose layer
             self.attention_map = self.attention_weights[self.num_layer]  # Shape: [batch, heads, tokens, tokens])
@@ -644,9 +644,9 @@ class AttentionViewer:
 
     def highlight_top_k_tiles(self):
 
-        if not self.selected_token_idx is None and\
-           not self.token_attn is None and\
-           not self.map_coords is None:
+        if self.selected_token_idx is not None and\
+           self.token_attn is not None and\
+           self.map_coords is not None:
                     
             # Create a new highlight mask
             k = min(self.topk_slider.value(), len(self.token_attn))
@@ -787,7 +787,7 @@ class AttentionViewer:
 
     def _on_add_point(self):
         """Handle points being added to the points layer"""
-        if not self.map_coords is None:
+        if self.map_coords is not None:
             # Prevent recursive calls
             if self._updating_points:
                 return
