@@ -24,7 +24,7 @@ from stamp.modeling.data import (
 )
 
 try:
-    from cobra.utils.load_cobra import get_cobraII
+    from cobra.utils.load_cobra import get_cobraII, get_cobra
 except ModuleNotFoundError as e:
     raise ModuleNotFoundError(
         "cobra dependencies not installed."
@@ -53,6 +53,7 @@ class LitCobra(lightning.LightningModule):
         freeze: str = "None",
         dropout: float = 0.5,
         hidden_dim: int = 512,
+        cobra_version: int = 2,
         # Other metadata
         **metadata,
     ) -> None:
@@ -72,10 +73,16 @@ class LitCobra(lightning.LightningModule):
         # project_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../"))
         # weights_path = os.path.join(project_dir, "weights", "cobraII.pth.tar")
         model_path = STAMP_CACHE_DIR / "cobraII.pth.tar"
-        self.cobra = get_cobraII(
-            download_weights=(not os.path.exists(model_path)),
-            checkpoint_path=model_path,
-        )
+        if cobra_version == 2:
+            self.cobra = get_cobraII(
+                download_weights=(not os.path.exists(model_path)),
+                checkpoint_path=model_path,
+            )
+        elif cobra_version == 1:
+            self.cobra = get_cobra(
+                download_weights=(not os.path.exists(model_path)),
+                checkpoint_path=model_path,
+            )
         self.class_weights = category_weights
         self.head = nn.Sequential(
             nn.LayerNorm(feat_dim),

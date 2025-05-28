@@ -29,7 +29,7 @@ preprocessing:
 
 
 crossval:
-  output_dir: "/path/to/save/files/to"
+  output_dir: "/data/horse/ws/s1787956-cobra-demo/data/stamp-output/cobraI-20x-TCGA-BRCA-ESR1-full"
 
   # An excel (.xlsx) or CSV (.csv) table containing the clinical information of
   # patients.  Patients not present in this file will be ignored during training.
@@ -38,10 +38,10 @@ crossval:
   # containing a unique ID for each patient,
   # and one with the value of `ground_truth_label` (also defined below),
   # containing the ground truth corresponding to that patient.
-  clini_table: "/path/of/clini.csv"
+  clini_table: "/data/horse/ws/s1787956-cobra-demo/data/targets/tcga_brca.csv"
 
   # Directory the extracted features are saved in.
-  feature_dir: "/path/your/extracted/features/are/stored/in"
+  feature_dir: "/data/horse/ws/s1787956-TCGA/features/features-20x/virchow2/TCGA-BRCA/virchow2-stamp-maru-21-12-24"
 
   # A table (.xlsx or .csv) relating every patient to their feature files.
   # The table must contain at least two columns,
@@ -52,10 +52,10 @@ crossval:
   # Patient IDs not present in the clini table
   # as well as non-existent feature paths
   # are ignored.
-  slide_table: "/path/of/slide.csv"
+  slide_table: "/data/horse/ws/s1787956-cobra-demo/data/targets/slide_table_tcga_brca.csv"
 
   # Name of the column from the clini table to train on.
-  ground_truth_label: "KRAS"
+  ground_truth_label: "ESR1"
 
   # Optional settings:
   patient_label: "PATIENT"
@@ -79,8 +79,10 @@ crossval:
   # Use ALiBi positional embedding
   # use_alibi: true
 
-  # Finetune pretrained COBRA II
+  # Finetune pretrained COBRA
+  freeze: "None"
   use_cobra: true
+  cobra_version: 1
 
 
 
@@ -167,19 +169,23 @@ deployment:
 
 
 statistics:
-  output_dir: "/path/to/save/files/to"
+  output_dir: "/data/horse/ws/s1787956-cobra-demo/data/stamp-output/cobraII-20x-TCGA-BRCA-ESR1/statistics"
 
   # Name of the target label.
-  ground_truth_label: "KRAS"
+  ground_truth_label: "ESR1"
 
   # A lot of the statistics are computed "one-vs-all", i.e. there needs to be
   # a positive class to calculate the statistics for.
-  true_class: "mutated"
+  true_class: "positive"
 
   # The patient predictions to generate the statistics from.
   # For a single deployment, it could look like this:
   pred_csvs:
-  - "/path/to/patient-preds.csv"
+  - "/data/horse/ws/s1787956-cobra-demo/data/stamp-output/cobraII-20x-TCGA-BRCA-ESR1/split-0/patient-preds.csv"
+  - "/data/horse/ws/s1787956-cobra-demo/data/stamp-output/cobraII-20x-TCGA-BRCA-ESR1/split-1/patient-preds.csv"
+  - "/data/horse/ws/s1787956-cobra-demo/data/stamp-output/cobraII-20x-TCGA-BRCA-ESR1/split-2/patient-preds.csv"
+  - "/data/horse/ws/s1787956-cobra-demo/data/stamp-output/cobraII-20x-TCGA-BRCA-ESR1/split-3/patient-preds.csv" 
+  - "/data/horse/ws/s1787956-cobra-demo/data/stamp-output/cobraII-20x-TCGA-BRCA-ESR1/split-4/patient-preds.csv" 
 
   # For a cross-validation with five folds, it could look like this:
   #pred_csvs:

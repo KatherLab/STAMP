@@ -68,6 +68,7 @@ def train_categorical_model_(
     use_vary_precision_transform: bool,
     use_alibi: bool,
     use_cobra: bool,
+    cobra_version: int = 2,
     lr: float,
     freeze_base: str = "None",
 ) -> None:
@@ -140,6 +141,7 @@ def train_categorical_model_(
         ),
         use_alibi=use_alibi,
         use_cobra=use_cobra,
+        cobra_version=cobra_version,
         lr=lr,
         freeze=freeze,
     )
@@ -263,6 +265,7 @@ def setup_model_for_training(
     train_transform: Callable[[torch.Tensor], torch.Tensor] | None,
     use_alibi: bool,
     use_cobra: bool,
+    cobra_version: int = 2,
     lr: float,
     freeze: str,
     # Metadata, has no effect on model training
@@ -364,6 +367,7 @@ def setup_model_for_training(
             clini_table=clini_table,
             slide_table=slide_table,
             feature_dir=feature_dir,
+            cobra_version=cobra_version,
         )
 
         # model = model.half()

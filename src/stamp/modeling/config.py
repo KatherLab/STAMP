@@ -42,6 +42,7 @@ class TrainConfig(BaseModel):
     use_vary_precision_transform: bool = False
     use_alibi: bool = False
     use_cobra: bool = True
+    cobra_version: int = 2
 
 
 class CrossvalConfig(TrainConfig):

@@ -107,6 +107,7 @@ def _run_cli(args: argparse.Namespace) -> None:
                 use_vary_precision_transform=config.training.use_vary_precision_transform,
                 use_alibi=config.training.use_alibi,
                 use_cobra=config.training.use_cobra,
+                cobra_version=config.training.cobra_version,
                 lr=config.training.lr,
                 freeze=config.training.freeze,
             )
@@ -169,6 +170,7 @@ def _run_cli(args: argparse.Namespace) -> None:
                 use_vary_precision_transform=config.crossval.use_vary_precision_transform,
                 use_alibi=config.crossval.use_alibi,
                 use_cobra=config.crossval.use_cobra,
+                cobra_version=config.crossval.cobra_version,
                 lr=config.crossval.lr,
                 freeze=config.crossval.freeze,
             )

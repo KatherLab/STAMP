@@ -184,8 +184,9 @@ crossval:
 
   # Number of folds to split the data into for cross-validation
   #n_splits: 5
-  # use_cobra = True
-  # freeze = "base", what parts of cobra should be frozen, available options: 'emb', 'base', 'full', 'None'
+  # use_cobra: True
+  # freeze: "base", what parts of cobra should be frozen, available options: 'emb', 'base', 'full', 'None'
+  # cobra_version: 2, version of cobra (options: 1, 2)
 ```
 
 After specifying all the parameters of our cross-validation,
