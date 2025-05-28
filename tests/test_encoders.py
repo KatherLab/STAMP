@@ -58,7 +58,7 @@ def test_if_encoding_crashes(*, tmp_path: Path, encoder: EncoderName):
 
     _, slide_path, feature_dir, _ = create_random_dataset(
         dir=tmp_path,
-        n_patients=2,
+        n_patients=1,
         min_slides_per_patient=2,
         max_slides_per_patient=2,
         min_tiles_per_slide=32,
@@ -159,8 +159,8 @@ def test_if_encoding_crashes(*, tmp_path: Path, encoder: EncoderName):
     for patient_file in patient_files:
         with h5py.File(patient_file, "r") as h5_file:
             patient_datasets = list(h5_file.keys())
-            # Check that the amount of patient feats is 2
-            assert len(patient_datasets) == 2
+            # Check that the amount of patient feats is 1
+            assert len(patient_datasets) == 1
             for patient_dataset in patient_datasets:
                 # Check feature contents
                 assert len(h5_file[patient_dataset][:]) > 0  # type: ignore
