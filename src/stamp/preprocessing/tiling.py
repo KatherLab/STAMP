@@ -158,7 +158,16 @@ def tiles_with_cache(
                         "w",
                     ) as tile_zip_fp:
                         tile.image.save(
-                            tile_zip_fp, format=EXTENSION_TO_FORMAT[cache_tiles_ext]
+                            tile_zip_fp,
+                            format=EXTENSION_TO_FORMAT[cache_tiles_ext],
+                            **(
+                                # Remove ICC profile for PNG images because that sometimes produces >1MB metadata,
+                                # causing "ValueError: Decompressed data too large for PngImagePlugin.MAX_TEXT_CHUNK".
+                                # Importantly, this does NOT affect the contents of np.array(tile.image).
+                                dict(icc_profile=None)
+                                if cache_tiles_ext == "png"
+                                else {}
+                            ),
                         )
 
                     yield tile
