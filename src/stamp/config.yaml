@@ -62,7 +62,7 @@ crossval:
   # containing the feature file path relative to `feature_dir`.
   # Patient IDs not present in the clini table
   # as well as non-existent feature paths
-  # are ignored.
+  # are ignored. NOTE: Don't forget to add the .h5 file extension.
   slide_table: "/path/of/slide.csv"
 
   # Name of the column from the clini table to train on.
