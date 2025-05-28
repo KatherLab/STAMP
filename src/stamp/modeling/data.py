@@ -167,7 +167,7 @@ class BagDataset(Dataset[tuple[_Bag, _Coordinates, BagSize, _EncodedTarget]]):
                 feats.append(
                     torch.from_numpy(h5["feats"][:])  # pyright: ignore[reportIndexIssue]
                 )
-                coords_um.append(get_coords(h5).coords_um)
+                coords_um.append(torch.from_numpy(get_coords(h5).coords_um))
 
         feats = torch.concat(feats).float()
         coords_um = torch.concat(coords_um).float()
@@ -192,9 +192,9 @@ class BagDataset(Dataset[tuple[_Bag, _Coordinates, BagSize, _EncodedTarget]]):
 
 @dataclass
 class CoordsInfo:
-    coords_um: Tensor
+    coords_um: np.ndarray
     tile_size_um: Microns
-    tile_size_px: TilePixels | None
+    tile_size_px: TilePixels | None = None
 
     @property
     def mpp(self) -> SlideMPP:
@@ -206,8 +206,8 @@ class CoordsInfo:
 
 
 def get_coords(feature_h5: h5py.File) -> CoordsInfo:
-    coords = torch.from_numpy(feature_h5["coords"][:]).float()  # pyright: ignore[reportIndexIssue]
-    coords_um: Tensor | None = None
+    coords: np.ndarray = feature_h5["coords"][:]  # type: ignore
+    coords_um: np.ndarray | None = None
     tile_size_um: Microns | None = None
     tile_size_px: TilePixels | None = None
     if (tile_size := feature_h5.attrs.get("tile_size", None)) and feature_h5.attrs.get(
@@ -220,7 +220,14 @@ def get_coords(feature_h5: h5py.File) -> CoordsInfo:
         # Newer STAMP format
         tile_size_um = Microns(float(tile_size))
         coords_um = coords
-    elif round(feature_h5.attrs.get("tile_size", get_stride(coords))) == 224:
+    elif (
+        round(
+            feature_h5.attrs.get(
+                "tile_size", get_stride(torch.from_numpy(coords).float())
+            )
+        )
+        == 224
+    ):
         # Historic STAMP format
         _logger.info(
             f"{feature_h5.filename}: tile stride is roughly 224, assuming coordinates have unit 256um/224px (historic STAMP format)"

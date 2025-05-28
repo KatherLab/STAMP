@@ -13,7 +13,7 @@ from matplotlib.axes import Axes
 from matplotlib.patches import Patch
 from PIL import Image
 from torch import Tensor
-from torch._prims_common import DeviceLikeType
+from torch._prims_common import DeviceLikeType  # type: ignore
 from torch.func import jacrev  # pyright: ignore[reportPrivateImportUsage]
 
 from stamp.modeling.data import get_coords, get_stride
@@ -145,7 +145,7 @@ def heatmaps_(
                 .to(device)
             )
             coords_info = get_coords(h5)
-            coords_um = coords_info.coords_um
+            coords_um = torch.from_numpy(coords_info.coords_um).float()
             stride_um = Microns(get_stride(coords_um))
 
             tile_size_slide_px = TilePixels(
