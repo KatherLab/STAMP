@@ -93,6 +93,10 @@ virchow2 = [
     "timm>=0.9.11",
     "torch>=2.0.0",
 ]
+attentionui =[
+    "napari>=0.6.0",
+    "pyqt5>=5.15.11",
+]
 # Blanket target
 all = ["stamp[dinobloom,conch,ctranspath,uni,virchow2]"]
 
