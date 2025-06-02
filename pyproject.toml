@@ -47,7 +47,6 @@ dependencies = [
 [project.optional-dependencies]
 dinobloom = [
     "torchvision>=0.20.1",
-    "xformers>=0.0.28.post3",
 ]
 conch = [
     "huggingface-hub>=0.26.2",
@@ -92,8 +91,7 @@ h_optimus_1 = [
 ]
 uni = [
     "huggingface-hub>=0.26.2",
-    #TODO change the git repo back to mahmoodlab's once our pull request has been accepted
-    "uni @ git+https://github.com/KatherLab/uni.git@f37c299eb0bffa0e585f120974082cfec6ee6d53",
+    "uni @ git+https://github.com/mahmoodlab/UNI.git",
 ]
 uni2 = [
     "timm>=0.9.11",
@@ -170,6 +168,21 @@ requires-dist = ["torch", "packaging", "ninja", "hatchling", "setuptools"]
 name = "causal-conv1d"
 version = "1.5.0.post8"
 requires-dist = ["torch", "packaging", "ninja", "hatchling", "setuptools"]
+
+[[tool.uv.dependency-metadata]]
+name = "uni"
+version = "v0.1.0"
+requires-dist = [
+    "torch>=2.0.1",
+    "torchvision",
+    "timm>=0.9.8",
+    "numpy",
+    "pandas",
+    "scikit-learn",
+    "tqdm",
+    "transformers",
+    "xformers; sys_platform != 'darwin'"  # xformers is not supported on macOS
+]
 
 [tool.uv]
 no-build-isolation-package = ["cobra", "causal-conv1d"]
