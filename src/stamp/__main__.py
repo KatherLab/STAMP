@@ -282,7 +282,9 @@ def main() -> None:
     )
     commands.add_parser("config", help="Print the loaded configuration")
     commands.add_parser("heatmaps", help="Generate heatmaps for a trained model")
-    commands.add_parser("attentionui", help="Provides an interactive UI for exploring attention maps")
+    commands.add_parser(
+        "attentionui", help="Provides an interactive UI for exploring attention maps"
+    )
 
     args = parser.parse_args()
 

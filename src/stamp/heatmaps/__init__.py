@@ -318,8 +318,6 @@ def heatmaps_(
         plt.close(fig)
 
 
-
-
 def attention_ui_(
     *,
     feature_dir: Path,
@@ -328,9 +326,8 @@ def attention_ui_(
     output_dir: Path,
     slide_paths: Iterable[Path] | None,
     device: DeviceLikeType,
-    default_slide_mpp: SlideMPP | None
+    default_slide_mpp: SlideMPP | None,
 ) -> None:
-    
     try:
         from stamp.heatmaps.attention_ui import show_attention_ui
     except ImportError as e:
@@ -340,14 +337,13 @@ def attention_ui_(
         ) from e
 
     with torch.no_grad():
-
         # Collect slides to generate attention maps for
         if slide_paths is not None:
             wsis_to_process_all = (wsi_dir / slide for slide in slide_paths)
         else:
             wsis_to_process_all = (
                 p for ext in supported_extensions for p in wsi_dir.glob(f"**/*{ext}")
-            ) 
+            )
 
         # Check of a corresponding feature file exists
         wsis_to_process = []
@@ -355,11 +351,20 @@ def attention_ui_(
             h5_path = feature_dir / wsi_path.with_suffix(".h5").name
 
             if not h5_path.exists():
-                _logger.info(f"could not find matching h5 file at {h5_path}. Skipping...")
+                _logger.info(
+                    f"could not find matching h5 file at {h5_path}. Skipping..."
+                )
                 continue
 
             wsis_to_process.append(str(wsi_path))
 
-        
         # Launch the UI
-        show_attention_ui(feature_dir, wsis_to_process, checkpoint_path, output_dir, slide_paths, device, default_slide_mpp)
+        show_attention_ui(
+            feature_dir,
+            wsis_to_process,
+            checkpoint_path,
+            output_dir,
+            slide_paths,
+            device,
+            default_slide_mpp,
+        )

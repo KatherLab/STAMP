@@ -61,7 +61,13 @@ class SelfAttention(nn.Module):
         # Help, my abstractions are leaking!
         alibi_mask: Bool[Tensor, "batch sequence sequence"],
         return_attention: bool = False,
-    ) -> Float[Tensor, "batch sequence proj_feature"] | tuple[Float[Tensor, "batch sequence proj_feature"], Float[Tensor, "batch heads sequence sequence"]]:
+    ) -> (
+        Float[Tensor, "batch sequence proj_feature"]
+        | tuple[
+            Float[Tensor, "batch sequence proj_feature"],
+            Float[Tensor, "batch heads sequence sequence"],
+        ]
+    ):
         """
         Args:
             attn_mask:
@@ -125,11 +131,17 @@ class SelfAttention(nn.Module):
                         )
                         # Create dummy attention weights to satisfy type checking
                         if return_attention:
-                            print(f"Warning: Failed to return attention weights ({type(e).__name__}: {e}). Creating dummy weights.")
+                            print(
+                                f"Warning: Failed to return attention weights ({type(e).__name__}: {e}). Creating dummy weights."
+                            )
                             batch_size, seq_len, _ = x.shape
                             self.last_attn_weights = torch.zeros(
-                                batch_size, self.heads, seq_len, seq_len, 
-                                device=x.device, dtype=x.dtype
+                                batch_size,
+                                self.heads,
+                                seq_len,
+                                seq_len,
+                                device=x.device,
+                                dtype=x.dtype,
                             )
                 else:
                     attn_output = self.mhsa(
@@ -151,11 +163,15 @@ class SelfAttention(nn.Module):
                 # Create default attention weights if none were produced
                 batch_size, seq_len, _ = x.shape
                 self.last_attn_weights = torch.zeros(
-                    batch_size, self.heads if hasattr(self, 'heads') else 1, 
-                    seq_len, seq_len, device=x.device, dtype=x.dtype
+                    batch_size,
+                    self.heads if hasattr(self, "heads") else 1,
+                    seq_len,
+                    seq_len,
+                    device=x.device,
+                    dtype=x.dtype,
                 )
             return attn_output, self.last_attn_weights
-    
+
         return attn_output
 
 
@@ -203,27 +219,35 @@ class Transformer(nn.Module):
         attn_mask: Bool[Tensor, "batch sequence sequence"] | None,
         alibi_mask: Bool[Tensor, "batch sequence sequence"],
         return_attention: bool = False,
-    ) -> Float[Tensor, "batch sequence proj_feature"] | tuple[Float[Tensor, "batch sequence proj_feature"], list[Float[Tensor, "batch heads sequence sequence"]]]:
+    ) -> (
+        Float[Tensor, "batch sequence proj_feature"]
+        | tuple[
+            Float[Tensor, "batch sequence proj_feature"],
+            list[Float[Tensor, "batch heads sequence sequence"]],
+        ]
+    ):
         attention_weights = []
-        
+
         for attn, ff in cast(Iterable[tuple[SelfAttention, nn.Module]], self.layers):
             if return_attention:
                 x_attn, attn_weights = attn(
-                    x, 
-                    coords=coords, 
-                    attn_mask=attn_mask, 
+                    x,
+                    coords=coords,
+                    attn_mask=attn_mask,
                     alibi_mask=alibi_mask,
-                    return_attention=True
+                    return_attention=True,
                 )
                 attention_weights.append(attn_weights)
             else:
-                x_attn = attn(x, coords=coords, attn_mask=attn_mask, alibi_mask=alibi_mask)
-            
+                x_attn = attn(
+                    x, coords=coords, attn_mask=attn_mask, alibi_mask=alibi_mask
+                )
+
             x = x_attn + x
             x = ff(x) + x
 
         x = self.norm(x)
-        
+
         if return_attention:
             return x, attention_weights
         return x
@@ -314,8 +338,7 @@ class VisionTransformer(nn.Module):
         bags = bags[:, 0]
 
         return self.mlp_head(bags)
-    
-    
+
     def get_attention_maps(
         self,
         bags: Float[Tensor, "batch tile feature"],
@@ -339,7 +362,11 @@ class VisionTransformer(nn.Module):
         # Create necessary masks
         if mask is None:
             bags, attention_weights = self.transformer(
-                bags, coords=coords, attn_mask=None, alibi_mask=None, return_attention=True
+                bags,
+                coords=coords,
+                attn_mask=None,
+                alibi_mask=None,
+                return_attention=True,
             )
         else:
             mask_with_class_token = torch.cat(
@@ -361,8 +388,8 @@ class VisionTransformer(nn.Module):
                 coords=coords,
                 attn_mask=square_attn_mask,
                 alibi_mask=alibi_mask,
-                return_attention=True
+                return_attention=True,
             )
-        
+
         # Return the attention weights
         return attention_weights
