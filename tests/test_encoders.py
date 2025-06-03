@@ -68,6 +68,17 @@ def test_if_encoding_crashes(*, tmp_path: Path, encoder: EncoderName):
         n_categories=2,
     )
 
+    cuda_required = [
+        EncoderName.CHIEF,
+        EncoderName.COBRA,
+        EncoderName.GIGAPATH,
+        EncoderName.MADELEINE,
+        EncoderName.EAGLE,
+    ]
+
+    if encoder in cuda_required and not torch.cuda.is_available():
+        pytest.skip(f"Skipping {encoder} as CUDA is not available")
+
     agg_feat_dir = None
     if encoder == EncoderName.EAGLE:
         # Eagle requires the aggregated features, so we generate new ones
