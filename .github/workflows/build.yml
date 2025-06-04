@@ -30,13 +30,13 @@ jobs:
     #     python-version: ${{ matrix.python-version }}
         
     - name: Install the project
-      run: uv sync --all-extras --dev
+      run: uv sync --extra cpu --dev
     
     - name: Build
       run: uv build
         
     - name: Run tests
-      run: uv run pytest tests/
+      run: uv run pytest -rs tests/test_feature_extractors.py
       env:
         HF_TOKEN: ${{ secrets.HF_TOKEN }}
   

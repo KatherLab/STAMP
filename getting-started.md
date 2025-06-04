@@ -44,10 +44,21 @@ which in turn allows us to efficiently train machine learning models with them.
 
 Stamp currently supports the following feature extractors:
   - [ctranspath][ctranspath]
+  - [chief_ctranspath][chief_ctranspath]
   - [DinoBloom][dinobloom]
   - [CONCH][conch]
+  - [CONCHv1.5][conch1_5]
   - [UNI][uni]
+  - [UNI2][uni2]
+  - [Virchow][virchow]
   - [Virchow2][virchow2]
+  - [Gigapath][gigapath]
+  - [H-optimus-0][h_optimus_0]
+  - [H-optimus-1][h_optimus_1]
+  - [mSTAR][mstar]
+  - [MUSK][musk]
+  - [PLIP][plip]
+
 
 As some of the above require you to request access to the model on huggingface,
 we will stick with ctranspath for this example.
@@ -128,8 +139,19 @@ meaning ignored that it was ignored during feature extraction.
 [ctranspath]: https://www.sciencedirect.com/science/article/abs/pii/S1361841522002043 "Transformer-based unsupervised contrastive learning for histopathological image classification"
 [dinobloom]: https://github.com/marrlab/DinoBloom "DinoBloom: A Foundation Model for Generalizable Cell Embeddings in Hematology"
 [uni]: https://www.nature.com/articles/s41591-024-02857-3 "Towards a general-purpose foundation model for computational pathology"
+[uni2]: https://huggingface.co/MahmoodLab/UNI2-h
 [conch]: https://www.nature.com/articles/s41591-024-02856-4 "A visual-language foundation model for computational pathology"
+[conch1_5]: https://huggingface.co/MahmoodLab/conchv1_5
+[virchow]: https://huggingface.co/paige-ai/Virchow "A foundation model for clinical-grade computational pathology and rare cancers detection"
 [virchow2]: https://huggingface.co/paige-ai/Virchow2
+[chief_ctranspath]: https://github.com/hms-dbmi/CHIEF
+[gigapath]: https://huggingface.co/prov-gigapath/prov-gigapath
+[h_optimus_0]: https://huggingface.co/bioptimus/H-optimus-0
+[h_optimus_1]: https://huggingface.co/bioptimus/H-optimus-1
+[mstar]: https://huggingface.co/Wangyh/mSTAR
+[musk]: https://huggingface.co/xiangjx/musk
+[plip]: https://github.com/PathologyFoundation/plip
+
 
 ## Doing Cross-Validation on the Data Set
 

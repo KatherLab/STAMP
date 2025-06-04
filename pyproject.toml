@@ -47,7 +47,6 @@ dependencies = [
 [project.optional-dependencies]
 dinobloom = [
     "torchvision>=0.20.1",
-    "xformers>=0.0.28.post3",
 ]
 conch = [
     "huggingface-hub>=0.26.2",
@@ -70,6 +69,17 @@ chief_ctranspath = [
 gigapath = [
     "timm>=0.9.11",
     "torchvision>=0.20.1",
+    "fvcore",
+    "iopath",
+    "monai",
+    "scikit-image",
+    "webdataset",
+    "lifelines",
+    "scikit-survival",
+    "fairscale",
+    "wandb",
+    "ninja==1.11.1.1",
+    "gigapath @ git+https://github.com/EzicStar/prov-gigapath.git"
 ]
 h_optimus_0 = [
     "timm>=0.9.11",
@@ -81,8 +91,7 @@ h_optimus_1 = [
 ]
 uni = [
     "huggingface-hub>=0.26.2",
-    #TODO change the git repo back to mahmoodlab's once our pull request has been accepted
-    "uni @ git+https://github.com/KatherLab/uni.git@f37c299eb0bffa0e585f120974082cfec6ee6d53",
+    "uni @ git+https://github.com/mahmoodlab/UNI.git",
 ]
 uni2 = [
     "timm>=0.9.11",
@@ -93,8 +102,28 @@ virchow2 = [
     "timm>=0.9.11",
     "torch>=2.0.0",
 ]
+cobra = [
+    "jinja2>=3.1.4",
+    "cobra @ git+https://github.com/KatherLab/COBRA.git",
+]
+prism = [
+    "sacremoses==0.1.1",
+    "environs==11.0.0",
+]
+madeleine = [
+    "madeleine @ git+https://github.com/mahmoodlab/MADELEINE.git@de7c85acc2bdad352e6df8eee5694f8b6f288012"
+]
+musk = [
+    "timm>=0.9.11",
+    "musk @ git+https://github.com/lilab-stanford/MUSK.git@e1699c27687f44bbf6d4adfcbb2abe89795d347f",
+]
+plip = [
+    "transformers>=4.45.2"
+]
+
 # Blanket target
-all = ["stamp[dinobloom,conch,ctranspath,uni,virchow2]"]
+all = ["stamp[dinobloom,conch,ctranspath,uni,virchow2,uni2,chief_ctranspath,conch1_5,gigapath,h_optimus_0,h_optimus_1,cobra,prism,madeleine,musk,plip]"]
+cpu = ["stamp[dinobloom,conch,ctranspath,uni,virchow2,uni2,chief_ctranspath,conch1_5,gigapath,h_optimus_0,h_optimus_1,prism,madeleine,musk,plip]"]
 
 [project.scripts]
 "stamp" = "stamp.__main__:main"
@@ -127,3 +156,33 @@ markers = [
 
 [tool.ruff]
 lint.ignore = ["F722"] # https://docs.kidger.site/jaxtyping/faq/#flake8-or-ruff-are-throwing-an-error
+
+# Hack to get dependencies installed for cobra and causal-conv1d
+# More info: https://docs.astral.sh/uv/concepts/projects/config/#build-isolation
+[[tool.uv.dependency-metadata]]
+name = "cobra"
+version = "0.1.0"
+requires-dist = ["torch", "packaging", "ninja", "hatchling", "setuptools"]
+
+[[tool.uv.dependency-metadata]]
+name = "causal-conv1d"
+version = "1.5.0.post8"
+requires-dist = ["torch", "packaging", "ninja", "hatchling", "setuptools"]
+
+[[tool.uv.dependency-metadata]]
+name = "uni"
+version = "v0.1.0"
+requires-dist = [
+    "torch>=2.0.1",
+    "torchvision",
+    "timm>=0.9.8",
+    "numpy",
+    "pandas",
+    "scikit-learn",
+    "tqdm",
+    "transformers",
+    "xformers; sys_platform != 'darwin'"  # xformers is not supported on macOS
+]
+
+[tool.uv]
+no-build-isolation-package = ["cobra", "causal-conv1d"]
