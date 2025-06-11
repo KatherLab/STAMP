@@ -3,7 +3,7 @@ In parts from https://github.com/lucidrains/vit-pytorch/blob/main/vit_pytorch/vi
 """
 
 from collections.abc import Iterable
-from typing import assert_never, cast
+from typing import Literal, assert_never, cast, overload
 
 import torch
 from beartype import beartype
@@ -41,15 +41,39 @@ class SelfAttention(nn.Module):
         super().__init__()
         self.heads = num_heads
         self.norm = nn.LayerNorm(dim)
-        self.last_attn_weights = None  # Store attention weights
 
         if use_alibi:
-            self.mhsa = MultiHeadALiBi(
+            self.mhsa: MultiHeadALiBi | nn.MultiheadAttention = MultiHeadALiBi(
                 embed_dim=dim,
                 num_heads=num_heads,
             )
         else:
             self.mhsa = nn.MultiheadAttention(dim, num_heads, dropout, batch_first=True)
+
+    @overload
+    def forward(
+        self,
+        x: Float[Tensor, "batch sequence proj_feature"],
+        *,
+        coords: Float[Tensor, "batch sequence xy"],
+        attn_mask: Bool[Tensor, "batch sequence sequence"] | None,
+        alibi_mask: Bool[Tensor, "batch sequence sequence"],
+        return_attention: Literal[False] = False,
+    ) -> Float[Tensor, "batch sequence proj_feature"]: ...
+
+    @overload
+    def forward(
+        self,
+        x: Float[Tensor, "batch sequence proj_feature"],
+        *,
+        coords: Float[Tensor, "batch sequence xy"],
+        attn_mask: Bool[Tensor, "batch sequence sequence"] | None,
+        alibi_mask: Bool[Tensor, "batch sequence sequence"],
+        return_attention: Literal[True],
+    ) -> tuple[  # if return_attention is True, return the attention weights as well
+        Float[Tensor, "batch sequence proj_feature"],
+        Float[Tensor, "batch heads sequence sequence"],
+    ]: ...
 
     @jaxtyped(typechecker=beartype)
     def forward(
@@ -85,7 +109,7 @@ class SelfAttention(nn.Module):
         x = self.norm(x)
 
         # Initialize attention weights with default shape
-        self.last_attn_weights = None
+        last_attn_weights: Float[Tensor, "batch heads sequence sequence"] | None = None
 
         match self.mhsa:
             case nn.MultiheadAttention():
@@ -101,7 +125,7 @@ class SelfAttention(nn.Module):
                         else None
                     ),
                 )
-                self.last_attn_weights = attn_weights
+                last_attn_weights = attn_weights
 
             case MultiHeadALiBi():
                 # Modified MultiHeadALiBi to return attention weights
@@ -117,7 +141,7 @@ class SelfAttention(nn.Module):
                             alibi_mask=alibi_mask,
                             return_attention=True,
                         )
-                        self.last_attn_weights = attn_weights
+                        last_attn_weights = attn_weights
                     except (TypeError, ValueError, RuntimeError) as e:
                         # If the return_attention param exists but fails, fall back
                         attn_output = self.mhsa(
@@ -135,7 +159,7 @@ class SelfAttention(nn.Module):
                                 f"Warning: Failed to return attention weights ({type(e).__name__}: {e}). Creating dummy weights."
                             )
                             batch_size, seq_len, _ = x.shape
-                            self.last_attn_weights = torch.zeros(
+                            last_attn_weights = torch.zeros(
                                 batch_size,
                                 self.heads,
                                 seq_len,
@@ -153,16 +177,16 @@ class SelfAttention(nn.Module):
                         attn_mask=attn_mask,
                         alibi_mask=alibi_mask,
                     )
-                    self.last_attn_weights = None
+                    last_attn_weights = None
             case _ as unreachable:
                 assert_never(unreachable)
 
         if return_attention:
             # Ensure we always return valid tensor for attention weights
-            if self.last_attn_weights is None:
+            if last_attn_weights is None:
                 # Create default attention weights if none were produced
                 batch_size, seq_len, _ = x.shape
-                self.last_attn_weights = torch.zeros(
+                last_attn_weights = torch.zeros(
                     batch_size,
                     self.heads if hasattr(self, "heads") else 1,
                     seq_len,
@@ -170,7 +194,7 @@ class SelfAttention(nn.Module):
                     device=x.device,
                     dtype=x.dtype,
                 )
-            return attn_output, self.last_attn_weights
+            return attn_output, last_attn_weights
 
         return attn_output
 
@@ -209,6 +233,31 @@ class Transformer(nn.Module):
         )
 
         self.norm = nn.LayerNorm(dim)
+
+    @overload
+    def forward(
+        self,
+        x: Float[Tensor, "batch sequence proj_feature"],
+        *,
+        coords: Float[Tensor, "batch sequence 2"],
+        attn_mask: Bool[Tensor, "batch sequence sequence"] | None,
+        alibi_mask: Bool[Tensor, "batch sequence sequence"],
+        return_attention: Literal[False] = False,
+    ) -> Float[Tensor, "batch sequence proj_feature"]: ...
+
+    @overload
+    def forward(
+        self,
+        x: Float[Tensor, "batch sequence proj_feature"],
+        *,
+        coords: Float[Tensor, "batch sequence 2"],
+        attn_mask: Bool[Tensor, "batch sequence sequence"] | None,
+        alibi_mask: Bool[Tensor, "batch sequence sequence"],
+        return_attention: Literal[True],
+    ) -> tuple[
+        Float[Tensor, "batch sequence proj_feature"],
+        list[Float[Tensor, "batch heads sequence sequence"]],
+    ]: ...
 
     @jaxtyped(typechecker=beartype)
     def forward(
