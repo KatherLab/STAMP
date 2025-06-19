@@ -36,7 +36,7 @@ jobs:
       run: uv build
         
     - name: Run tests
-      run: uv run pytest -rs tests/test_feature_extractors.py
+      run: uv run pytest -rs tests/
       env:
         HF_TOKEN: ${{ secrets.HF_TOKEN }}
   
