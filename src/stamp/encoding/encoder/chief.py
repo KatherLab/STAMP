@@ -7,13 +7,12 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from numpy import ndarray
-from torch._prims_common import DeviceLikeType  # type: ignore
 from tqdm import tqdm
 
 from stamp.cache import STAMP_CACHE_DIR, file_digest
 from stamp.encoding.config import EncoderName
 from stamp.encoding.encoder import Encoder
-from stamp.modeling.data import PandasLabel
+from stamp.modeling.data import DeviceLikeType, PandasLabel
 from stamp.preprocessing.config import ExtractorName
 
 """authors: https://github.com/hms-dbmi/CHIEF"""

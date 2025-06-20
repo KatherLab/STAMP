@@ -13,10 +13,9 @@ from matplotlib.axes import Axes
 from matplotlib.patches import Patch
 from PIL import Image
 from torch import Tensor
-from torch._prims_common import DeviceLikeType  # type: ignore
 from torch.func import jacrev  # pyright: ignore[reportPrivateImportUsage]
 
-from stamp.modeling.data import get_coords, get_stride
+from stamp.modeling.data import DeviceLikeType, get_coords, get_stride
 from stamp.modeling.lightning_model import LitVisionTransformer
 from stamp.modeling.vision_transformer import VisionTransformer
 from stamp.preprocessing import supported_extensions

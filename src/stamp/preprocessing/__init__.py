@@ -12,12 +12,12 @@ import openslide
 import torch
 from PIL import Image
 from torch import Tensor
-from torch._prims_common import DeviceLikeType  # type: ignore
 from torch.utils.data import DataLoader, IterableDataset
 from tqdm import tqdm
 
 import stamp
 from stamp.cache import get_processing_code_hash
+from stamp.modeling.data import DeviceLikeType
 from stamp.preprocessing.config import ExtractorName
 from stamp.preprocessing.extractor import Extractor
 from stamp.preprocessing.tiling import (

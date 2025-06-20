@@ -5,13 +5,12 @@ import numpy as np
 import pandas as pd
 import torch
 from torch import Tensor
-from torch._prims_common import DeviceLikeType  # type: ignore
 from tqdm import tqdm
 
 from stamp.encoding.config import EncoderName
 from stamp.encoding.encoder import Encoder
 from stamp.encoding.encoder.chief import CHIEF
-from stamp.modeling.data import CoordsInfo, PandasLabel
+from stamp.modeling.data import CoordsInfo, DeviceLikeType, PandasLabel
 from stamp.preprocessing.config import ExtractorName
 
 """From https://github.com/KatherLab/EAGLE/blob/main/eagle/main_feature_extraction.py"""

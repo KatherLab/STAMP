@@ -8,13 +8,12 @@ import numpy as np
 import pandas as pd
 import torch
 from torch import Tensor, nn
-from torch._prims_common import DeviceLikeType  # type: ignore
 from tqdm import tqdm
 
 import stamp
 from stamp.cache import get_processing_code_hash
 from stamp.encoding.config import EncoderName
-from stamp.modeling.data import CoordsInfo, PandasLabel, get_coords
+from stamp.modeling.data import CoordsInfo, DeviceLikeType, PandasLabel, get_coords
 from stamp.preprocessing.config import ExtractorName
 
 EncoderModel = TypeVar("EncoderModel", bound=nn.Module)

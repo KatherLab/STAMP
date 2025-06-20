@@ -1,11 +1,9 @@
 from pathlib import Path
 from typing import assert_never
 
-from torch._prims_common import DeviceLikeType  # type: ignore
-
 from stamp.encoding.config import EncoderName
 from stamp.encoding.encoder import Encoder
-from stamp.modeling.data import PandasLabel
+from stamp.modeling.data import DeviceLikeType, PandasLabel
 
 __author__ = "Juan Pablo Ricapito"
 __copyright__ = "Copyright (C) 2025 Juan Pablo Ricapito"

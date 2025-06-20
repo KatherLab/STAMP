@@ -6,13 +6,12 @@ import numpy as np
 import pandas as pd
 import torch
 from torch import Tensor
-from torch._prims_common import DeviceLikeType  # type: ignore
 from tqdm import tqdm
 from transformers import AutoModel
 
 from stamp.encoding.config import EncoderName
 from stamp.encoding.encoder import Encoder
-from stamp.modeling.data import CoordsInfo, PandasLabel
+from stamp.modeling.data import CoordsInfo, DeviceLikeType, PandasLabel
 from stamp.preprocessing.config import ExtractorName
 from stamp.preprocessing.tiling import Microns, SlideMPP
 

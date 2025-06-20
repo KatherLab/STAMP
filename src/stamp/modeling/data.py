@@ -26,6 +26,7 @@ __author__ = "Marko van Treeck"
 __copyright__ = "Copyright (C) 2022-2025 Marko van Treeck"
 __license__ = "MIT"
 
+DeviceLikeType: TypeAlias = str | torch.device | int
 
 PatientId: TypeAlias = str
 GroundTruth: TypeAlias = str

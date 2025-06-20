@@ -2,9 +2,8 @@ from enum import StrEnum
 from pathlib import Path
 
 from pydantic import BaseModel, ConfigDict
-from torch._prims_common import DeviceLikeType  # type: ignore
 
-from stamp.modeling.data import PandasLabel  # type: ignore
+from stamp.modeling.data import DeviceLikeType, PandasLabel
 
 
 class EncoderName(StrEnum):
