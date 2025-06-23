@@ -27,6 +27,35 @@ Loss: TypeAlias = Float[Tensor, ""]
 
 
 class LitVisionTransformer(lightning.LightningModule):
+    """
+    PyTorch Lightning wrapper for the Vision Transformer (ViT) model used in weakly supervised
+    learning settings, such as Multiple Instance Learning (MIL) for whole-slide images or patch-based data.
+
+    This class encapsulates training, validation, testing, and prediction logic, along with:
+    - Masking logic that ensures only valid tiles (patches) participate in attention during training.
+    - AUROC metric tracking during validation for multiclass classification.
+    - Compatibility checks based on the `stamp` framework version.
+    - Integration of class imbalance handling through weighted cross-entropy loss.
+
+    The attention mask is applied *only* during training to hide paddings
+    and is skipped during evaluation and inference for reducing memory usage.
+
+    Args:
+        categories: List of class labels.
+        category_weights: Class weights for cross-entropy loss to handle imbalance.
+        dim_input: Input feature dimensionality per tile.
+        dim_model: Latent dimensionality used inside the transformer.
+        dim_feedforward: Dimensionality of the transformer MLP block.
+        n_heads: Number of self-attention heads.
+        n_layers: Number of transformer layers.
+        dropout: Dropout rate used throughout the model.
+        use_alibi: Whether to use ALiBi-style positional bias in attention (optional).
+        ground_truth_label: Column name for accessing ground-truth labels from metadata.
+        train_patients: List of patient IDs used for training.
+        valid_patients: List of patient IDs used for validation.
+        stamp_version: Version of the `stamp` framework used during training.
+        **metadata: Additional metadata to store with the model.
+    """
     def __init__(
         self,
         *,
@@ -40,7 +69,7 @@ class LitVisionTransformer(lightning.LightningModule):
         dropout: float,
         # Experimental features
         # TODO remove default values for stamp 3; they're only here for backwards compatibility
-        use_alibi: bool = False,
+        use_alibi: bool,
         # Metadata used by other parts of stamp, but not by the model itself
         ground_truth_label: PandasLabel,
         train_patients: Iterable[PatientId],
@@ -49,17 +78,11 @@ class LitVisionTransformer(lightning.LightningModule):
         # Other metadata
         **metadata,
     ) -> None:
-        """
-        Args:
-            metadata:
-                Any additional information to be saved in the models,
-                but not directly influencing the model.
-        """
         super().__init__()
 
         if len(categories) != len(category_weights):
             raise ValueError(
-                "the number of category weights has to mathc the number of categories!"
+                "the number of category weights has to match the number of categories!"
             )
 
         self.vision_transformer = VisionTransformer(
@@ -73,6 +96,15 @@ class LitVisionTransformer(lightning.LightningModule):
             use_alibi=use_alibi,
         )
         self.class_weights = category_weights
+        self.valid_auroc = MulticlassAUROC(len(categories))
+
+        # Used during deployment
+        self.ground_truth_label = ground_truth_label
+        self.categories = np.array(categories)
+        self.train_patients = train_patients
+        self.valid_patients = valid_patients
+
+        _ = metadata  # unused, but saved in model
 
         # Check if version is compatible.
         # This should only happen when the model is loaded,
@@ -92,16 +124,6 @@ class LitVisionTransformer(lightning.LightningModule):
                 "Please upgrade stamp to a compatible version."
             )
 
-        self.valid_auroc = MulticlassAUROC(len(categories))
-
-        # Used during deployment
-        self.ground_truth_label = ground_truth_label
-        self.categories = np.array(categories)
-        self.train_patients = train_patients
-        self.valid_patients = valid_patients
-
-        _ = metadata  # unused, but saved in model
-
         self.save_hyperparameters()
 
     def forward(
@@ -112,21 +134,20 @@ class LitVisionTransformer(lightning.LightningModule):
 
     def _step(
         self,
-        *,
-        step_name: str,
         batch: tuple[Bags, CoordinatesBatch, BagSizes, EncodedTargets],
-        batch_idx: int,
+        step_name: str,
+        use_mask: bool,
     ) -> Loss:
-        _ = batch_idx  # unused
-
         bags, coords, bag_sizes, targets = batch
 
-        logits = self.vision_transformer(
-            bags, coords=coords, mask=_mask_from_bags(bags=bags, bag_sizes=bag_sizes)
-        )
+        mask = _mask_from_bags(bags=bags, bag_sizes=bag_sizes) if use_mask else None
+
+        logits = self.vision_transformer(bags, coords=coords, mask=mask)
 
         loss = nn.functional.cross_entropy(
-            logits, targets.type_as(logits), weight=self.class_weights.type_as(logits)
+            logits,
+            targets.type_as(logits),
+            weight=self.class_weights.type_as(logits),
         )
 
         self.log(
@@ -140,7 +161,7 @@ class LitVisionTransformer(lightning.LightningModule):
 
         if step_name == "validation":
             # TODO this is a bit ugly, we'd like to have `_step` without special cases
-            self.valid_auroc.update(logits, targets.long().argmax(-1))
+            self.valid_auroc.update(logits, targets.argmax(dim=-1))
             self.log(
                 f"{step_name}_auroc",
                 self.valid_auroc,
@@ -151,48 +172,18 @@ class LitVisionTransformer(lightning.LightningModule):
 
         return loss
 
-    def training_step(
-        self,
-        batch: tuple[Bags, CoordinatesBatch, BagSizes, EncodedTargets],
-        batch_idx: int,
-    ) -> Loss:
-        return self._step(
-            step_name="training",
-            batch=batch,
-            batch_idx=batch_idx,
-        )
+    def training_step(self, batch, batch_idx) -> Loss:
+        return self._step(batch, step_name="training", use_mask=True)
 
-    def validation_step(
-        self,
-        batch: tuple[Bags, CoordinatesBatch, BagSizes, EncodedTargets],
-        batch_idx: int,
-    ) -> Loss:
-        return self._step(
-            step_name="validation",
-            batch=batch,
-            batch_idx=batch_idx,
-        )
+    def validation_step(self, batch, batch_idx) -> Loss:
+        return self._step(batch, step_name="validation", use_mask=False)
 
-    def test_step(
-        self,
-        batch: tuple[Bags, CoordinatesBatch, BagSizes, EncodedTargets],
-        batch_idx: int,
-    ) -> Loss:
-        return self._step(
-            step_name="test",
-            batch=batch,
-            batch_idx=batch_idx,
-        )
+    def test_step(self, batch, batch_idx) -> Loss:
+        return self._step(batch, step_name="test", use_mask=False)
 
-    def predict_step(
-        self,
-        batch: tuple[Bags, CoordinatesBatch, BagSizes, EncodedTargets],
-        batch_idx: int = -1,
-    ) -> Float[Tensor, "batch logit"]:
+    def predict_step(self, batch, batch_idx: int = -1) -> Float[Tensor, "batch logit"]:
         bags, coords, bag_sizes, _ = batch
-        return self.vision_transformer(
-            bags, coords=coords, mask=_mask_from_bags(bags=bags, bag_sizes=bag_sizes)
-        )
+        return self.vision_transformer(bags, coords=coords, mask=None)
 
     def configure_optimizers(self) -> optim.Optimizer:
         optimizer = optim.Adam(self.parameters(), lr=1e-3)
