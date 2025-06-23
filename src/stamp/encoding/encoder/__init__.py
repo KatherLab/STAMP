@@ -74,7 +74,7 @@ class Encoder(ABC):
             )
             slide_dict[slide_name] = {"feats": slide_embedding}
 
-        self._save_features(output_file, entry_dict=slide_dict)
+        self._save_features_(output_file, entry_dict=slide_dict)
 
     def encode_patients(
         self,
@@ -124,7 +124,7 @@ class Encoder(ABC):
             )
             patient_dict[patient_id] = {"feats": patient_embedding}
 
-        self._save_features(output_file, entry_dict=patient_dict)
+        self._save_features_(output_file, entry_dict=patient_dict)
 
     @abstractmethod
     def _generate_slide_embedding(
@@ -170,7 +170,7 @@ class Encoder(ABC):
             extractor: str = f.attrs.get("extractor", "no extractor name")
             return feats, coords, extractor
 
-    def _save_features(self, output_file: str, entry_dict: dict) -> None:
+    def _save_features_(self, output_file: str, entry_dict: dict) -> None:
         os.makedirs(os.path.dirname(output_file), exist_ok=True)
         with h5py.File(output_file, "w") as f:
             for entry_name, data in entry_dict.items():

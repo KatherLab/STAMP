@@ -178,7 +178,7 @@ class CHIEF(Encoder):
                 "feats": patient_embedding,
             }
 
-        self._save_features(output_file=output_file, entry_dict=patient_dict)
+        self._save_features_(output_file=output_file, entry_dict=patient_dict)
 
 
 def initialize_weights(module):

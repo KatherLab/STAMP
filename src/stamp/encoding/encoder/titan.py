@@ -150,4 +150,4 @@ class Titan(Encoder):
                 "feats": patient_embedding,
             }
 
-        self._save_features(output_file, entry_dict=patient_dict)
+        self._save_features_(output_file, entry_dict=patient_dict)

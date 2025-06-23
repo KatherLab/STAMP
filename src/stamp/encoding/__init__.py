@@ -21,7 +21,32 @@ def get_pat_embs(
     agg_feat_dir: Path | None = None,
     generate_hash: bool = True,
 ) -> None:
-    """"""
+    """
+    Encode patch-level features to a single feature per patient using a given encoder.
+
+    This function selects an encoder based on the provided `encoder` parameter and
+    uses it to encode patient-level features. Each patient's slide is concatenated
+    along the x-axis to create a single 'virtual' slide for encoding.
+
+    Args:
+        encoder (EncoderName | Encoder): The encoder to use for feature extraction.
+            Can be an instance of `Encoder` or an `EncoderName` enum value.
+        output_dir (Path): Directory where the encoded patient features will be saved.
+        feat_dir (Path): Directory containing the input features for encoding.
+        slide_table_path (Path): Path to the slide table file (CSV) containing metadata.
+        patient_label (PandasLabel): Column name in the slide table representing patient IDs.
+        filename_label (PandasLabel): Column name in the slide table representing slide filenames.
+        device (DeviceLikeType): Device to use for computation (e.g., "cpu" or "cuda").
+        agg_feat_dir (Path | None, optional): Directory for aggregated features. Defaults to None.
+        generate_hash (bool, optional): Whether to generate a hash for the output file name. Defaults to True.
+
+    Side Effects:
+        - Reads the slide table file from `slide_table_path`.
+        - Reads feature files from `feat_dir`.
+        - Saves encoded patient features to `output_dir` in a single .h5 file
+        containing each patient as a dataset.
+    """
+
     match encoder:
         case EncoderName.COBRA:
             from stamp.encoding.encoder.cobra import Cobra
