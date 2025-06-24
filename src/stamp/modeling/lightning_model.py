@@ -56,6 +56,7 @@ class LitVisionTransformer(lightning.LightningModule):
         stamp_version: Version of the `stamp` framework used during training.
         **metadata: Additional metadata to store with the model.
     """
+
     def __init__(
         self,
         *,
@@ -69,7 +70,7 @@ class LitVisionTransformer(lightning.LightningModule):
         dropout: float,
         # Experimental features
         # TODO remove default values for stamp 3; they're only here for backwards compatibility
-        use_alibi: bool,
+        use_alibi: bool = False,
         # Metadata used by other parts of stamp, but not by the model itself
         ground_truth_label: PandasLabel,
         train_patients: Iterable[PatientId],
@@ -161,7 +162,7 @@ class LitVisionTransformer(lightning.LightningModule):
 
         if step_name == "validation":
             # TODO this is a bit ugly, we'd like to have `_step` without special cases
-            self.valid_auroc.update(logits, targets.argmax(dim=-1))
+            self.valid_auroc.update(logits, targets.long().argmax(dim=-1))
             self.log(
                 f"{step_name}_auroc",
                 self.valid_auroc,
