@@ -11,9 +11,14 @@ from transformers import AutoModel
 
 from stamp.encoding.config import EncoderName
 from stamp.encoding.encoder import Encoder
-from stamp.modeling.data import CoordsInfo, DeviceLikeType, PandasLabel
+from stamp.modeling.data import CoordsInfo
 from stamp.preprocessing.config import ExtractorName
-from stamp.preprocessing.tiling import Microns, SlideMPP
+from stamp.types import DeviceLikeType, Microns, PandasLabel, SlideMPP
+
+__author__ = "Juan Pablo Ricapito"
+__copyright__ = "Copyright (C) 2025 Juan Pablo Ricapito"
+__license__ = "MIT"
+__credits__ = ["Ding, et al. (https://github.com/mahmoodlab/TITAN)"]
 
 
 class Titan(Encoder):
@@ -76,7 +81,7 @@ class Titan(Encoder):
 
         return self._generate_slide_embedding(all_feats_cat, device, coords)
 
-    def encode_patients(
+    def encode_patients_(
         self,
         output_dir: Path,
         feat_dir: Path,

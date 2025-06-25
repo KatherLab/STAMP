@@ -6,14 +6,15 @@ import h5py
 import numpy as np
 import pandas as pd
 import torch
-from torch import Tensor, nn
+from torch import Tensor
 from tqdm import tqdm
 
 import stamp
 from stamp.cache import get_processing_code_hash
 from stamp.encoding.config import EncoderName
-from stamp.modeling.data import CoordsInfo, DeviceLikeType, PandasLabel, get_coords
+from stamp.modeling.data import CoordsInfo, get_coords
 from stamp.preprocessing.config import ExtractorName
+from stamp.types import DeviceLikeType, PandasLabel
 
 __author__ = "Juan Pablo Ricapito"
 __copyright__ = "Copyright (C) 2025 Juan Pablo Ricapito"
@@ -23,7 +24,7 @@ __license__ = "MIT"
 class Encoder(ABC):
     def __init__(
         self,
-        model: nn.Module,
+        model,
         identifier: EncoderName,
         precision: torch.dtype,
         required_extractors: list[ExtractorName],
@@ -33,7 +34,7 @@ class Encoder(ABC):
         self.precision = precision
         self.required_extractors = required_extractors
 
-    def encode_slides(
+    def encode_slides_(
         self,
         output_dir: Path,
         feat_dir: Path,
@@ -41,7 +42,8 @@ class Encoder(ABC):
         generate_hash: bool,
         **kwargs,
     ) -> None:
-        """General method to encode slides."""
+        """General method for encoding slide-level features. Called by init_slide_encoder_.
+        Override this function if coords are required. See init_slide_encoder_ for full description"""
         output_file = self._generate_output_path(
             output_dir=output_dir, generate_hash=generate_hash
         )
@@ -73,7 +75,7 @@ class Encoder(ABC):
 
         self._save_features_(output_file, entry_dict=slide_dict)
 
-    def encode_patients(
+    def encode_patients_(
         self,
         output_dir: Path,
         feat_dir: Path,
@@ -84,8 +86,8 @@ class Encoder(ABC):
         generate_hash: bool,
         **kwargs,
     ) -> None:
-        """General method to encode patients with features only.
-        Override this method if coords are needed for encoding"""
+        """General method for encoding patient-level features. Called by init_patient_encoder_.
+        Override this function if coords are required. See init_patient_encoder_ for full description"""
         output_file = self._generate_output_path(
             output_dir=output_dir, generate_hash=generate_hash
         )
@@ -167,7 +169,7 @@ class Encoder(ABC):
             extractor: str = f.attrs.get("extractor", "no extractor name")
             return feats, coords, extractor
 
-    def _save_features_(self, output_file: str, entry_dict: dict) -> None:
+    def _save_features_(self, output_file: Path, entry_dict: dict) -> None:
         os.makedirs(os.path.dirname(output_file), exist_ok=True)
         with h5py.File(output_file, "w") as f:
             for entry_name, data in entry_dict.items():

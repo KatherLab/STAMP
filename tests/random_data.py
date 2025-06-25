@@ -15,12 +15,13 @@ from jaxtyping import Float
 from torch import Tensor
 
 import stamp
-from stamp.modeling.data import (
-    Category,
-    PatientId,
-)
 from stamp.preprocessing.config import ExtractorName
-from stamp.preprocessing.tiling import Microns, TilePixels
+from stamp.types import (
+    Category,
+    Microns,
+    PatientId,
+    TilePixels,
+)
 
 CliniPath: TypeAlias = Path
 SlidePath: TypeAlias = Path

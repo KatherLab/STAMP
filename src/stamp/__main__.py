@@ -78,7 +78,7 @@ def _run_cli(args: argparse.Namespace) -> None:
             )
 
         case "encode_slides":
-            from stamp.encoding import get_slide_embs
+            from stamp.encoding import init_slide_encoder_
 
             if config.slide_encoding is None:
                 raise ValueError("no slide encoding configuration supplied")
@@ -88,7 +88,7 @@ def _run_cli(args: argparse.Namespace) -> None:
                 "using the following configuration:\n"
                 f"{yaml.dump(config.slide_encoding.model_dump(mode='json'))}"
             )
-            get_slide_embs(
+            init_slide_encoder_(
                 encoder=config.slide_encoding.encoder,
                 output_dir=config.slide_encoding.output_dir,
                 feat_dir=config.slide_encoding.feat_dir,
@@ -98,7 +98,7 @@ def _run_cli(args: argparse.Namespace) -> None:
             )
 
         case "encode_patients":
-            from stamp.encoding import get_pat_embs
+            from stamp.encoding import init_patient_encoder_
 
             if config.patient_encoding is None:
                 raise ValueError("no patient encoding configuration supplied")
@@ -108,7 +108,7 @@ def _run_cli(args: argparse.Namespace) -> None:
                 "using the following configuration:\n"
                 f"{yaml.dump(config.patient_encoding.model_dump(mode='json'))}"
             )
-            get_pat_embs(
+            init_patient_encoder_(
                 encoder=config.patient_encoding.encoder,
                 output_dir=config.patient_encoding.output_dir,
                 feat_dir=config.patient_encoding.feat_dir,

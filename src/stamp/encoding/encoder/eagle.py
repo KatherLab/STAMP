@@ -10,10 +10,14 @@ from tqdm import tqdm
 from stamp.encoding.config import EncoderName
 from stamp.encoding.encoder import Encoder
 from stamp.encoding.encoder.chief import CHIEF
-from stamp.modeling.data import CoordsInfo, DeviceLikeType, PandasLabel
+from stamp.modeling.data import CoordsInfo
 from stamp.preprocessing.config import ExtractorName
+from stamp.types import DeviceLikeType, PandasLabel
 
-"""From https://github.com/KatherLab/EAGLE/blob/main/eagle/main_feature_extraction.py"""
+__author__ = "Juan Pablo Ricapito"
+__copyright__ = "Copyright (C) 2025 Juan Pablo Ricapito"
+__license__ = "MIT"
+__credits__ = ["Neidlinger, et al. (https://github.com/KatherLab/EAGLE)"]
 
 
 class Eagle(Encoder):
@@ -108,7 +112,7 @@ class Eagle(Encoder):
         all_agg_feats = torch.cat(agg_feats_list, dim=0).to(device)
         return self._generate_slide_embedding(all_feats, device, all_agg_feats)
 
-    def encode_slides(
+    def encode_slides_(
         self,
         output_dir: Path,
         feat_dir: Path,
@@ -156,7 +160,8 @@ class Eagle(Encoder):
 
         self._save_features_(output_file, entry_dict=slide_dict)
 
-    def encode_patients(
+    # TODO: Add @override decorator on each encoder once it is added to python
+    def encode_patients_(
         self,
         output_dir: Path,
         feat_dir: Path,

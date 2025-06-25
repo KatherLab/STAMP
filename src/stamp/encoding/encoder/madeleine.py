@@ -16,6 +16,11 @@ except ModuleNotFoundError as e:
         " Please update your venv using `uv sync --extra madeleine`"
     ) from e
 
+__author__ = "Juan Pablo Ricapito"
+__copyright__ = "Copyright (C) 2025 Juan Pablo Ricapito"
+__license__ = "MIT"
+__credits__ = ["Jaume, et al. (https://github.com/mahmoodlab/MADELEINE)"]
+
 
 class Madeleine(Encoder):
     def __init__(self) -> None:

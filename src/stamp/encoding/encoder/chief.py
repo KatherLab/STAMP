@@ -12,10 +12,13 @@ from tqdm import tqdm
 from stamp.cache import STAMP_CACHE_DIR, file_digest
 from stamp.encoding.config import EncoderName
 from stamp.encoding.encoder import Encoder
-from stamp.modeling.data import DeviceLikeType, PandasLabel
 from stamp.preprocessing.config import ExtractorName
+from stamp.types import DeviceLikeType, PandasLabel
 
-"""authors: https://github.com/hms-dbmi/CHIEF"""
+__author__ = "Juan Pablo Ricapito"
+__copyright__ = "Copyright (C) 2025 Juan Pablo Ricapito"
+__license__ = "MIT"
+__credits__ = ["Wang X et al. (https://github.com/hms-dbmi/CHIEF)"]
 
 
 class CHIEFModel(nn.Module):
@@ -126,7 +129,7 @@ class CHIEF(Encoder):
         patient_embedding = self.model(all_feats.to(device))["WSI_feature"]
         return patient_embedding.detach().squeeze().cpu().numpy()
 
-    def encode_patients(
+    def encode_patients_(
         self,
         output_dir: Path,
         feat_dir: Path,

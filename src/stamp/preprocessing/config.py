@@ -4,7 +4,7 @@ from pathlib import Path
 import torch
 from pydantic import BaseModel, ConfigDict, Field
 
-from stamp.preprocessing.tiling import ImageExtension, Microns, SlideMPP, TilePixels
+from stamp.types import ImageExtension, Microns, SlideMPP, TilePixels
 
 __author__ = "Marko van Treeck"
 __copyright__ = "Copyright (C) 2022-2025 Marko van Treeck"

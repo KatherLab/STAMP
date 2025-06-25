@@ -6,6 +6,11 @@ from stamp.encoding.config import EncoderName
 from stamp.encoding.encoder import Encoder
 from stamp.preprocessing.config import ExtractorName
 
+__author__ = "Juan Pablo Ricapito"
+__copyright__ = "Copyright (C) 2025 Juan Pablo Ricapito"
+__license__ = "MIT"
+__credits__ = ["Shaikovski, et al. (https://huggingface.co/paige-ai/Prism)"]
+
 
 class Prism(Encoder):
     def __init__(self) -> None:

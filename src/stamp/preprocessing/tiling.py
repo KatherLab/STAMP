@@ -3,7 +3,7 @@ import json
 import logging
 import re
 import xml.dom.minidom as minidom
-from collections.abc import Iterator, Mapping
+from collections.abc import Iterator
 from concurrent import futures
 from dataclasses import dataclass
 from pathlib import Path
@@ -11,10 +11,7 @@ from tempfile import NamedTemporaryFile
 from typing import (
     Final,
     Generic,
-    Literal,
     NamedTuple,
-    NewType,
-    TypeAlias,
     TypedDict,
     TypeVar,
     cast,
@@ -27,6 +24,15 @@ import numpy.typing as npt
 import openslide
 from PIL import Image
 
+from stamp.types import (
+    EXTENSION_TO_FORMAT,
+    ImageExtension,
+    Microns,
+    SlideMPP,
+    SlidePixels,
+    TilePixels,
+)
+
 __author__ = "Marko van Treeck"
 __copyright__ = "Copyright (C) 2022-2025 Marko van Treeck"
 __license__ = "MIT"
@@ -38,24 +44,6 @@ _logger = logging.getLogger("stamp")
 # As a consequence, all details pertaining to tiling should be limited to _this_ file.
 with open(__file__, "rb") as this_file_fp:
     _CODE_HASH: Final[str] = hashlib.file_digest(this_file_fp, "sha256").hexdigest()
-
-
-Microns = NewType("Microns", float)
-"""Micrometers, usually referring to the tissue on the slide"""
-
-SlidePixels = NewType("SlidePixels", int)
-"""Pixels of the WSI scan at largest magnification (i.e. coordinates used by OpenSlide)"""
-
-TilePixels = NewType("TilePixels", int)
-"""Pixels after resizing, i.e. how they appear on the final tile"""
-
-SlideMPP = NewType("SlideMPP", float)
-
-ImageExtension: TypeAlias = Literal["png", "jpg"]
-EXTENSION_TO_FORMAT: Final[Mapping[ImageExtension, str]] = {
-    "png": "png",
-    "jpg": "jpeg",
-}
 
 _Unit = TypeVar("_Unit")
 

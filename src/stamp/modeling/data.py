@@ -5,19 +5,34 @@ from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import KW_ONLY, dataclass
 from itertools import groupby
 from pathlib import Path
-from typing import BinaryIO, Generic, NewType, TextIO, TypeAlias, TypeVar, cast
+from typing import BinaryIO, Generic, TextIO, TypeAlias, cast
 
 import h5py
 import numpy as np
 import pandas as pd
 import torch
-from jaxtyping import Bool, Float, Integer
+from jaxtyping import Bool, Float
 from packaging.version import Version
 from torch import Tensor
 from torch.utils.data import DataLoader, Dataset
 
 import stamp
-from stamp.preprocessing.tiling import Microns, SlideMPP, TilePixels
+from stamp.types import (
+    Bags,
+    BagSize,
+    BagSizes,
+    Category,
+    CoordinatesBatch,
+    EncodedTargets,
+    FeaturePath,
+    GroundTruth,
+    GroundTruthType,
+    Microns,
+    PandasLabel,
+    PatientId,
+    SlideMPP,
+    TilePixels,
+)
 
 _logger = logging.getLogger("stamp")
 
@@ -26,31 +41,10 @@ __author__ = "Marko van Treeck"
 __copyright__ = "Copyright (C) 2022-2025 Marko van Treeck"
 __license__ = "MIT"
 
-DeviceLikeType: TypeAlias = str | torch.device | int
-
-PatientId: TypeAlias = str
-GroundTruth: TypeAlias = str
-FeaturePath = NewType("FeaturePath", Path)
-
-Category: TypeAlias = str
-
-# One instance
 _Bag: TypeAlias = Float[Tensor, "tile feature"]
-BagSize: TypeAlias = int
 _EncodedTarget: TypeAlias = Bool[Tensor, "category_is_hot"]  # noqa: F821
 """The ground truth, encoded numerically (currently: one-hot)"""
 _Coordinates: TypeAlias = Float[Tensor, "tile 2"]
-
-# A batch of the above
-Bags: TypeAlias = Float[Tensor, "batch tile feature"]
-BagSizes: TypeAlias = Integer[Tensor, "batch"]  # noqa: F821
-EncodedTargets: TypeAlias = Bool[Tensor, "batch category_is_hot"]
-"""The ground truth, encoded numerically (currently: one-hot)"""
-CoordinatesBatch: TypeAlias = Float[Tensor, "batch tile 2"]
-
-PandasLabel: TypeAlias = str
-
-GroundTruthType = TypeVar("GroundTruthType", covariant=True)
 
 
 @dataclass

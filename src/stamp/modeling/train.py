@@ -17,12 +17,7 @@ from torch.utils.data.dataloader import DataLoader
 
 from stamp.modeling.data import (
     BagDataset,
-    Category,
-    CoordinatesBatch,
-    GroundTruth,
-    PandasLabel,
     PatientData,
-    PatientId,
     dataloader_from_patient_data,
     filter_complete_patient_data_,
     patient_to_ground_truth_from_clini_table_,
@@ -35,6 +30,7 @@ from stamp.modeling.lightning_model import (
     LitVisionTransformer,
 )
 from stamp.modeling.transforms import VaryPrecisionTransform
+from stamp.types import Category, CoordinatesBatch, GroundTruth, PandasLabel, PatientId
 
 __author__ = "Marko van Treeck"
 __copyright__ = "Copyright (C) 2024 Marko van Treeck"

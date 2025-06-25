@@ -15,11 +15,12 @@ from PIL import Image
 from torch import Tensor
 from torch.func import jacrev  # pyright: ignore[reportPrivateImportUsage]
 
-from stamp.modeling.data import DeviceLikeType, get_coords, get_stride
+from stamp.modeling.data import get_coords, get_stride
 from stamp.modeling.lightning_model import LitVisionTransformer
 from stamp.modeling.vision_transformer import VisionTransformer
 from stamp.preprocessing import supported_extensions
-from stamp.preprocessing.tiling import Microns, SlideMPP, TilePixels, get_slide_mpp_
+from stamp.preprocessing.tiling import get_slide_mpp_
+from stamp.types import DeviceLikeType, Microns, SlideMPP, TilePixels
 
 _logger = logging.getLogger("stamp")
 

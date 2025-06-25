@@ -10,9 +10,14 @@ from tqdm import tqdm
 
 from stamp.encoding.config import EncoderName
 from stamp.encoding.encoder import Encoder
-from stamp.modeling.data import CoordsInfo, PandasLabel
+from stamp.modeling.data import CoordsInfo
 from stamp.preprocessing.config import ExtractorName
-from stamp.preprocessing.tiling import SlideMPP
+from stamp.types import PandasLabel, SlideMPP
+
+__author__ = "Juan Pablo Ricapito"
+__copyright__ = "Copyright (C) 2025 Juan Pablo Ricapito"
+__license__ = "MIT"
+__credits__ = ["Xu, et al. (https://github.com/prov-gigapath/prov-gigapath)"]
 
 
 class Gigapath(Encoder):
@@ -66,7 +71,7 @@ class Gigapath(Encoder):
 
         return slide_embedding.detach().squeeze().cpu().numpy()
 
-    def encode_patients(
+    def encode_patients_(
         self,
         output_dir: Path,
         feat_dir: Path,

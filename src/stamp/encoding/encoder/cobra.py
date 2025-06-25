@@ -13,6 +13,11 @@ except ModuleNotFoundError as e:
         " Please update your venv using `uv sync --extra cobra`"
     ) from e
 
+__author__ = "Juan Pablo Ricapito"
+__copyright__ = "Copyright (C) 2025 Juan Pablo Ricapito"
+__license__ = "MIT"
+__credits__ = ["Lenz, Neidlinger, et al. (https://github.com/KatherLab/COBRA)"]
+
 
 class Cobra(Encoder):
     def __init__(self) -> None:

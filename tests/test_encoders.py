@@ -11,7 +11,11 @@ from huggingface_hub.errors import GatedRepoError
 from random_data import create_random_dataset, create_random_feature_file, random_string
 
 from stamp.cache import download_file
-from stamp.encoding import EncoderName, get_pat_embs, get_slide_embs
+from stamp.encoding import (
+    EncoderName,
+    init_patient_encoder_,
+    init_slide_encoder_,
+)
 from stamp.preprocessing.config import ExtractorName
 
 # Contains an accepted input patch-level feature encoder
@@ -34,8 +38,8 @@ used_extractor = {
     EncoderName.EAGLE: ExtractorName.CTRANSPATH,
     EncoderName.GIGAPATH: ExtractorName.GIGAPATH,
     EncoderName.MADELEINE: ExtractorName.CONCH,
-    EncoderName.PRISM: ExtractorName.VIRCHOW_FULL,
     EncoderName.TITAN: ExtractorName.CONCH1_5,
+    # EncoderName.PRISM: ExtractorName.VIRCHOW_FULL,
 }
 
 
@@ -129,7 +133,7 @@ def test_if_encoding_crashes(*, tmp_path: Path, encoder: EncoderName):
     patient_output_dir.mkdir(exist_ok=True)
 
     try:
-        get_slide_embs(
+        init_slide_encoder_(
             encoder=encoder,
             output_dir=slide_output_dir,
             feat_dir=Path(feature_dir),
@@ -137,7 +141,7 @@ def test_if_encoding_crashes(*, tmp_path: Path, encoder: EncoderName):
             agg_feat_dir=agg_feat_dir,
         )
 
-        get_pat_embs(
+        init_patient_encoder_(
             encoder=encoder,
             output_dir=patient_output_dir,
             feat_dir=Path(feature_dir),

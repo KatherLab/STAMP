@@ -10,16 +10,20 @@ from torch.utils.data import DataLoader
 
 from stamp.modeling.data import (
     BagDataset,
-    BagSize,
     CoordsInfo,
-    FeaturePath,
-    GroundTruth,
     PatientData,
-    PatientId,
     filter_complete_patient_data_,
     get_coords,
 )
-from stamp.preprocessing.tiling import Microns, SlideMPP, TilePixels
+from stamp.types import (
+    BagSize,
+    FeaturePath,
+    GroundTruth,
+    Microns,
+    PatientId,
+    SlideMPP,
+    TilePixels,
+)
 
 
 @pytest.mark.filterwarnings("ignore:some patients have no associated slides")

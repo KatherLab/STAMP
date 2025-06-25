@@ -3,7 +3,7 @@ from pathlib import Path
 
 from pydantic import BaseModel, ConfigDict
 
-from stamp.modeling.data import DeviceLikeType, PandasLabel
+from stamp.types import DeviceLikeType, PandasLabel
 
 
 class EncoderName(StrEnum):
@@ -12,8 +12,9 @@ class EncoderName(StrEnum):
     CHIEF = "chief"
     TITAN = "mahmood-titan"
     GIGAPATH = "gigapath"
-    PRISM = "paigeai-prism"
     MADELEINE = "mahmood-madeleine"
+    # PRISM = "paigeai-prism"
+    # waiting for paige-ai authors to fix it
 
 
 class SlideEncodingConfig(BaseModel, arbitrary_types_allowed=True):

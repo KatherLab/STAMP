@@ -17,18 +17,20 @@ from tqdm import tqdm
 
 import stamp
 from stamp.cache import get_processing_code_hash
-from stamp.modeling.data import DeviceLikeType
 from stamp.preprocessing.config import ExtractorName
 from stamp.preprocessing.extractor import Extractor
 from stamp.preprocessing.tiling import (
+    MPPExtractionError,
+    get_slide_mpp_,
+    tiles_with_cache,
+)
+from stamp.types import (
+    DeviceLikeType,
     ImageExtension,
     Microns,
-    MPPExtractionError,
     SlideMPP,
     SlidePixels,
     TilePixels,
-    get_slide_mpp_,
-    tiles_with_cache,
 )
 
 __author__ = "Marko van Treeck"
