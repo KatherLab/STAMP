@@ -30,7 +30,7 @@ class Cobra(Encoder):
             model=model,
             identifier=EncoderName.COBRA,
             precision=precision,
-            required_extractor=[
+            required_extractors=[
                 ExtractorName.CTRANSPATH,
                 ExtractorName.UNI,
                 ExtractorName.VIRCHOW2,

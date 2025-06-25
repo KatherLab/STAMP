@@ -23,7 +23,7 @@ class Titan(Encoder):
             model=model,
             identifier=EncoderName.TITAN,
             precision=torch.float32,
-            required_extractor=[ExtractorName.CONCH1_5],
+            required_extractors=[ExtractorName.CONCH1_5],
         )
 
     def _generate_slide_embedding(

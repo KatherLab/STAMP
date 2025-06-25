@@ -109,7 +109,7 @@ class CHIEF(Encoder):
             model=model,
             identifier=EncoderName.CHIEF,
             precision=torch.float32,
-            required_extractor=[ExtractorName.CHIEF_CTRANSPATH],
+            required_extractors=[ExtractorName.CHIEF_CTRANSPATH],
         )
 
     def _generate_slide_embedding(

@@ -1,7 +1,6 @@
 import os
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import TypeVar
 
 import h5py
 import numpy as np
@@ -16,8 +15,6 @@ from stamp.encoding.config import EncoderName
 from stamp.modeling.data import CoordsInfo, DeviceLikeType, PandasLabel, get_coords
 from stamp.preprocessing.config import ExtractorName
 
-EncoderModel = TypeVar("EncoderModel", bound=nn.Module)
-
 __author__ = "Juan Pablo Ricapito"
 __copyright__ = "Copyright (C) 2025 Juan Pablo Ricapito"
 __license__ = "MIT"
@@ -26,15 +23,15 @@ __license__ = "MIT"
 class Encoder(ABC):
     def __init__(
         self,
-        model,
+        model: nn.Module,
         identifier: EncoderName,
         precision: torch.dtype,
-        required_extractor: list[ExtractorName],
+        required_extractors: list[ExtractorName],
     ):
         self.model = model
         self.identifier = identifier
         self.precision = precision
-        self.required_extractor = required_extractor
+        self.required_extractors = required_extractors
 
     def encode_slides(
         self,
@@ -149,9 +146,9 @@ class Encoder(ABC):
 
     def _validate_and_read_features(self, h5_path: str) -> tuple[Tensor, CoordsInfo]:
         feats, coords, extractor = self._read_h5(h5_path)
-        if extractor not in self.required_extractor:
+        if extractor not in self.required_extractors:
             raise ValueError(
-                f"Features must be extracted with one of {self.required_extractor}. "
+                f"Features must be extracted with one of {self.required_extractors}. "
                 f"Features located in {h5_path} are extracted with {extractor}"
             )
         return feats, coords
@@ -184,9 +181,9 @@ class Encoder(ABC):
             else:
                 tqdm.write(f"Finished encoding, saved to {output_file}")
 
-    def _generate_output_path(self, output_dir: Path, generate_hash: bool) -> str:
+    def _generate_output_path(self, output_dir: Path, generate_hash: bool) -> Path:
         if generate_hash:
             output_name = f"{self.identifier}-slide-{get_processing_code_hash(Path(__file__))[:8]}.h5"
         else:
             output_name = f"{self.identifier}-slide.h5"
-        return os.path.join(output_dir, output_name)
+        return output_dir / output_name

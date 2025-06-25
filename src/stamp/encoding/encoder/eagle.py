@@ -23,7 +23,7 @@ class Eagle(Encoder):
             model=CHIEF().model,
             identifier=EncoderName.EAGLE,
             precision=torch.float32,
-            required_extractor=[
+            required_extractors=[
                 ExtractorName.CTRANSPATH,
                 ExtractorName.CHIEF_CTRANSPATH,
             ],
@@ -37,9 +37,9 @@ class Eagle(Encoder):
         extractor: str
         feats, coords, extractor = self._read_h5(h5_ctp)
 
-        if extractor not in self.required_extractor:
+        if extractor not in self.required_extractors:
             raise ValueError(
-                f"Features must be extracted with one of {self.required_extractor}. "
+                f"Features must be extracted with one of {self.required_extractors}. "
                 f"Features located in {h5_ctp} are extracted with {extractor}"
             )
 

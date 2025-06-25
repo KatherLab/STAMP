@@ -14,7 +14,7 @@ class Prism(Encoder):
             model=model,
             identifier=EncoderName.PRISM,
             precision=torch.float16,
-            required_extractor=[ExtractorName.VIRCHOW_FULL],
+            required_extractors=[ExtractorName.VIRCHOW_FULL],
         )
 
     def _generate_slide_embedding(self, feats, device, **kwargs) -> np.ndarray:

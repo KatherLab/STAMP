@@ -30,7 +30,7 @@ class Gigapath(Encoder):
             model=model,
             identifier=EncoderName.GIGAPATH,
             precision=torch.float16,
-            required_extractor=[ExtractorName.GIGAPATH],
+            required_extractors=[ExtractorName.GIGAPATH],
         )
 
     def _generate_slide_embedding(

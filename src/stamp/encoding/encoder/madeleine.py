@@ -29,7 +29,7 @@ class Madeleine(Encoder):
             model=model,
             identifier=EncoderName.MADELEINE,
             precision=precision,
-            required_extractor=[ExtractorName.CONCH],
+            required_extractors=[ExtractorName.CONCH],
         )
 
     def _generate_slide_embedding(
