@@ -2,9 +2,9 @@ preprocessing:
   output_dir: "/path/to/save/files/to"
   wsi_dir: "/path/containing/whole/slide/images/to/extract/features/from"
   # Extractor to use for feature extractor.  Possible options are "ctranspath",
-  # "mahmood-uni", "mahmood-conch", "chief-ctranspath", "mahmood-conch1_5",
-  # "mahmood-uni2", "dino-bloom", "gigapath", "h-optimus-0", "h-optimus-1", "virchow2",
-  # "virchow", "virchow_full", "musk", "mstar", "plip"
+  # "uni", "conch", "chief-ctranspath", "conch1_5", "uni2", "dino-bloom",
+  # "gigapath", "h-optimus-0", "h-optimus-1", "virchow2", "virchow", 
+  # "virchow-full", "musk", "mstar", "plip"
   # Some of them require requesting access to the respective authors beforehand.
   extractor: "ctranspath"
 
@@ -36,62 +36,6 @@ preprocessing:
 
   # Add a hash of the entire preprocessing codebase in the feature folder name.
   # Used to distinguish features extracted with different code versions.
-  #generate_hash: True
-
-
-slide_encoding:
-  # Encoder to use for slide encoding. Possible options are "katherlab-cobra",
-  # "katherlab-eagle", "mahmood-titan", "gigapath", "chief", "pageai-prism",
-  # "mahmood-madeleine".
-  encoder: "katherlab-eagle"
-  
-  # Directory to save the output files.
-  output_dir: "/path/to/save/files/to"
-  
-  # Directory where the extracted features are stored.
-  feat_dir: "/path/your/extracted/features/are/stored/in"
-  
-  # Device to run slide encoding on ("cpu", "cuda", "cuda:0", etc.)
-  device: "cuda"
-
-  # Optional settings:
-  # Directory where the aggregated features are stored. Needed for
-  # some encoders such as eagle (it requires virchow2 features).
-  #agg_feat_dir: "/path/your/aggregated/features/are/stored/in"
-
-  # Add a hash of the entire preprocessing codebase in the feature folder name.
-  #generate_hash: True
-
-
-patient_encoding:
-  # Encoder to use for patient encoding. Possible options are "katherlab-cobra",
-  # "katherlab-eagle", "mahmood-titan", "gigapath", "chief", "pageai-prism",
-  # "mahmood-madeleine".
-  encoder: "katherlab-eagle"
-  
-  # Directory to save the output files.
-  output_dir: "/path/to/save/files/to"
-  
-  # Directory where the extracted features are stored.
-  feat_dir: "/path/your/extracted/features/are/stored/in"
-  
-  # A table (.xlsx or .csv) relating every slide to their feature files.
-  # The table must contain at least two columns, one titled "SLIDE",
-  # containing the slide ID, and one called "FILENAME", containing the feature file path relative to `feat_dir`.
-  slide_table: "/path/of/slide.csv"
-  
-  # Device to run slide encoding on ("cpu", "cuda", "cuda:0", etc.)
-  device: "cuda"
-
-  # Optional settings:
-  patient_label: "PATIENT"
-  filename_label: "FILENAME"
-  
-  # Directory where the aggregated features are stored. Needed for
-  # some encoders such as eagle (it requires virchow2 features).
-  #agg_feat_dir: "/path/your/aggregated/features/are/stored/in"
-
-  # Add a hash of the entire preprocessing codebase in the feature folder name.
   #generate_hash: True
 
 
@@ -274,3 +218,57 @@ heatmaps:
   # The number of top- and bottom-scoring tiles to extract
   #topk: 5
   #bottomk: 5
+
+
+slide_encoding:
+  # Encoder to use for slide encoding. Possible options are "cobra",
+  # "eagle", "titan", "gigapath", "chief", "prism", "madeleine".
+  encoder: "katherlab-eagle"
+  
+  # Directory to save the output files.
+  output_dir: "/path/to/save/files/to"
+  
+  # Directory where the extracted features are stored.
+  feat_dir: "/path/your/extracted/features/are/stored/in"
+  
+  # Device to run slide encoding on ("cpu", "cuda", "cuda:0", etc.)
+  device: "cuda"
+
+  # Optional settings:
+  # Directory where the aggregated features are stored. Needed for
+  # some encoders such as eagle (it requires virchow2 features).
+  #agg_feat_dir: "/path/your/aggregated/features/are/stored/in"
+
+  # Add a hash of the entire preprocessing codebase in the feature folder name.
+  #generate_hash: True
+
+
+patient_encoding:
+  # Encoder to use for patient encoding. Possible options are "cobra",
+  # "eagle", "titan", "gigapath", "chief", "prism", "madeleine".
+  encoder: "katherlab-eagle"
+  
+  # Directory to save the output files.
+  output_dir: "/path/to/save/files/to"
+  
+  # Directory where the extracted features are stored.
+  feat_dir: "/path/your/extracted/features/are/stored/in"
+  
+  # A table (.xlsx or .csv) relating every slide to their feature files.
+  # The table must contain at least two columns, one titled "SLIDE",
+  # containing the slide ID, and one called "FILENAME", containing the feature file path relative to `feat_dir`.
+  slide_table: "/path/of/slide.csv"
+  
+  # Device to run slide encoding on ("cpu", "cuda", "cuda:0", etc.)
+  device: "cuda"
+
+  # Optional settings:
+  patient_label: "PATIENT"
+  filename_label: "FILENAME"
+  
+  # Directory where the aggregated features are stored. Needed for
+  # some encoders such as eagle (it requires virchow2 features).
+  #agg_feat_dir: "/path/your/aggregated/features/are/stored/in"
+
+  # Add a hash of the entire preprocessing codebase in the feature folder name.
+  #generate_hash: True

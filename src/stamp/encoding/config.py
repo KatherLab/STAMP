@@ -7,12 +7,12 @@ from stamp.types import DeviceLikeType, PandasLabel
 
 
 class EncoderName(StrEnum):
-    COBRA = "katherlab-cobra"
-    EAGLE = "katherlab-eagle"
+    COBRA = "cobra"
+    EAGLE = "eagle"
     CHIEF = "chief"
-    TITAN = "mahmood-titan"
+    TITAN = "titan"
     GIGAPATH = "gigapath"
-    MADELEINE = "mahmood-madeleine"
+    MADELEINE = "madeleine"
     # PRISM = "paigeai-prism"
     # waiting for paige-ai authors to fix it
 

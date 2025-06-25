@@ -321,7 +321,7 @@ def extract_(
                 h5_fp["feats"] = torch.concat(feats).numpy()
 
                 h5_fp.attrs["stamp_version"] = stamp.__version__
-                h5_fp.attrs["extractor"] = extractor.identifier
+                h5_fp.attrs["extractor"] = str(extractor.identifier)
                 h5_fp.attrs["unit"] = "um"
                 h5_fp.attrs["tile_size_um"] = tile_size_um  # changed in v2.1.0
                 h5_fp.attrs["tile_size_px"] = tile_size_px
