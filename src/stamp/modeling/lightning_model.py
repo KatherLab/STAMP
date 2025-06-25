@@ -135,6 +135,7 @@ class LitVisionTransformer(lightning.LightningModule):
 
     def _step(
         self,
+        *,
         batch: tuple[Bags, CoordinatesBatch, BagSizes, EncodedTargets],
         step_name: str,
         use_mask: bool,
@@ -173,17 +174,34 @@ class LitVisionTransformer(lightning.LightningModule):
 
         return loss
 
-    def training_step(self, batch, batch_idx) -> Loss:
-        return self._step(batch, step_name="training", use_mask=True)
+    def training_step(
+        self,
+        batch: tuple[Bags, CoordinatesBatch, BagSizes, EncodedTargets],
+        batch_idx: int,
+    ) -> Loss:
+        return self._step(batch=batch, step_name="training", use_mask=True)
 
-    def validation_step(self, batch, batch_idx) -> Loss:
-        return self._step(batch, step_name="validation", use_mask=False)
+    def validation_step(
+        self,
+        batch: tuple[Bags, CoordinatesBatch, BagSizes, EncodedTargets],
+        batch_idx: int,
+    ) -> Loss:
+        return self._step(batch=batch, step_name="validation", use_mask=False)
 
-    def test_step(self, batch, batch_idx) -> Loss:
-        return self._step(batch, step_name="test", use_mask=False)
+    def test_step(
+        self,
+        batch: tuple[Bags, CoordinatesBatch, BagSizes, EncodedTargets],
+        batch_idx: int,
+    ) -> Loss:
+        return self._step(batch=batch, step_name="test", use_mask=False)
 
-    def predict_step(self, batch, batch_idx: int = -1) -> Float[Tensor, "batch logit"]:
+    def predict_step(
+        self,
+        batch: tuple[Bags, CoordinatesBatch, BagSizes, EncodedTargets],
+        batch_idx: int,
+    ) -> Float[Tensor, "batch logit"]:
         bags, coords, bag_sizes, _ = batch
+        # adding a mask here will *drastically* and *unbearably* increase memory usage
         return self.vision_transformer(bags, coords=coords, mask=None)
 
     def configure_optimizers(self) -> optim.Optimizer:
