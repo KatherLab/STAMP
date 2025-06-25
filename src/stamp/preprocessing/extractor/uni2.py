@@ -9,6 +9,7 @@ except ModuleNotFoundError as e:
         " Please reinstall stamp using `pip install 'stamp[uni2]'`"
     ) from e
 
+from stamp.preprocessing.config import ExtractorName
 from stamp.preprocessing.extractor import Extractor
 
 
@@ -40,5 +41,5 @@ def uni2() -> Extractor:
     return Extractor(
         model=model,
         transform=transform,
-        identifier="uni2",  # type: ignore
+        identifier=ExtractorName.UNI2,  # type: ignore
     )

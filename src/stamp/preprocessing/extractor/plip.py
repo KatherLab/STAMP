@@ -9,6 +9,7 @@ except ModuleNotFoundError as e:
         " Please reinstall stamp using `pip install 'stamp[plip]'`"
     ) from e
 
+from stamp.preprocessing.config import ExtractorName
 from stamp.preprocessing.extractor import Extractor
 
 
@@ -33,4 +34,6 @@ def plip() -> Extractor[PLIP]:
         ]
     )
 
-    return Extractor(model=PLIP(model), transform=transform, identifier="plip")
+    return Extractor(
+        model=PLIP(model), transform=transform, identifier=ExtractorName.PLIP
+    )

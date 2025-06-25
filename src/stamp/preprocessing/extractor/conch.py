@@ -3,6 +3,7 @@ from typing import cast
 import torch
 from torchvision.transforms import Compose
 
+from stamp.preprocessing.config import ExtractorName
 from stamp.preprocessing.extractor import Extractor
 
 try:
@@ -37,5 +38,5 @@ def conch() -> Extractor[_StampConchModel]:
     return Extractor(
         model=_StampConchModel(model),
         transform=preprocess,
-        identifier="mahmood-conch",
+        identifier=ExtractorName.CONCH,
     )

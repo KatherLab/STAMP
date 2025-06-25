@@ -14,6 +14,7 @@ except ModuleNotFoundError as e:
         " Please reinstall stamp using `pip install 'stamp[uni]'`"
     ) from e
 
+from stamp.preprocessing.config import ExtractorName
 from stamp.preprocessing.extractor import Extractor
 
 __author__ = "Marko van Treeck"
@@ -32,6 +33,4 @@ def uni(revision: str = "77ffbca1ee1cdcee6e87f6deebd2db8a5888c721") -> Extractor
         Callable[[Image], Tensor],
         create_transform(**resolve_data_config(model.pretrained_cfg, model=model)),
     )
-    return Extractor(
-        model=model, transform=transform, identifier=f"mahmood-uni-{revision[:8]}"
-    )
+    return Extractor(model=model, transform=transform, identifier=ExtractorName.UNI)

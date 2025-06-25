@@ -13,6 +13,7 @@ except ModuleNotFoundError as e:
         " Please reinstall stamp using `pip install 'stamp[virchow2]'`"
     ) from e
 
+from stamp.preprocessing.config import ExtractorName
 from stamp.preprocessing.extractor import Extractor
 
 __author__ = "Juan Pablo Ricapito"
@@ -57,5 +58,5 @@ def virchow_full() -> Extractor[VirchowConcatenated]:
     return Extractor(
         model=VirchowConcatenated(model),
         transform=transform,
-        identifier="virchow_full",
+        identifier=ExtractorName.VIRCHOW_FULL,
     )

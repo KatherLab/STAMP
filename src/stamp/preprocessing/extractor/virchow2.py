@@ -13,6 +13,7 @@ except ModuleNotFoundError as e:
         " Please reinstall stamp using `pip install 'stamp[virchow2]'`"
     ) from e
 
+from stamp.preprocessing.config import ExtractorName
 from stamp.preprocessing.extractor import Extractor
 
 __author__ = "Tim Lenz"
@@ -49,5 +50,5 @@ def virchow2() -> Extractor[Virchow2ClsOnly]:
     return Extractor(
         model=Virchow2ClsOnly(model),
         transform=transform,
-        identifier="virchow2",
+        identifier=ExtractorName.VIRCHOW2,
     )

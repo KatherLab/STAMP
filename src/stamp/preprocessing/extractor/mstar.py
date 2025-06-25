@@ -1,5 +1,6 @@
 from torchvision import transforms
 
+from stamp.preprocessing.config import ExtractorName
 from stamp.preprocessing.extractor import Extractor
 
 try:
@@ -23,4 +24,4 @@ def mstar() -> Extractor:
         ]
     )
 
-    return Extractor(model=model, transform=transform, identifier="mstar")
+    return Extractor(model=model, transform=transform, identifier=ExtractorName.MSTAR)

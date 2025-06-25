@@ -8,6 +8,7 @@ import torchvision
 import torchvision.transforms.functional
 from jaxtyping import Float
 
+from stamp.preprocessing.config import ExtractorName
 from stamp.preprocessing.extractor import Extractor
 
 __author__ = "Marko van Treeck"
@@ -33,5 +34,5 @@ def empty() -> Extractor[_EmptyModel]:
                 torchvision.transforms.Lambda(torch.Tensor.float),
             ]
         ),
-        identifier="empty",
+        identifier=ExtractorName.EMPTY,
     )

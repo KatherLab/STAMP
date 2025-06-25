@@ -9,6 +9,7 @@ from torch import nn
 from torchvision import transforms
 
 from stamp.cache import STAMP_CACHE_DIR
+from stamp.preprocessing.config import ExtractorName
 from stamp.preprocessing.extractor import Extractor
 
 __author__ = "Marko van Treeck"
@@ -79,5 +80,5 @@ def dino_bloom() -> Extractor:
                 ),
             ],
         ),
-        identifier="dinobloom-c2f7990b",
+        identifier=ExtractorName.DINO_BLOOM,
     )

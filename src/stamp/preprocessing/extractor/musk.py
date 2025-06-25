@@ -1,3 +1,4 @@
+from stamp.preprocessing.config import ExtractorName
 from stamp.preprocessing.extractor import Extractor
 
 try:
@@ -50,4 +51,6 @@ def musk() -> Extractor:
         ]
     )
 
-    return Extractor(model=Musk(model), transform=transform, identifier="musk")
+    return Extractor(
+        model=Musk(model), transform=transform, identifier=ExtractorName.MUSK
+    )
