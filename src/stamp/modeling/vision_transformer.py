@@ -58,7 +58,7 @@ class SelfAttention(nn.Module):
         coords: Float[Tensor, "batch sequence xy"],
         attn_mask: Bool[Tensor, "batch sequence sequence"] | None,
         # Help, my abstractions are leaking!
-        alibi_mask: Bool[Tensor, "batch sequence sequence"],
+        alibi_mask: Bool[Tensor, "batch sequence sequence"] | None,
     ) -> Float[Tensor, "batch sequence proj_feature"]:
         """
         Args:
@@ -144,7 +144,7 @@ class Transformer(nn.Module):
         *,
         coords: Float[Tensor, "batch sequence 2"],
         attn_mask: Bool[Tensor, "batch sequence sequence"] | None,
-        alibi_mask: Bool[Tensor, "batch sequence sequence"],
+        alibi_mask: Bool[Tensor, "batch sequence sequence"] | None,
     ) -> Float[Tensor, "batch sequence proj_feature"]:
         for attn, ff in cast(Iterable[tuple[nn.Module, nn.Module]], self.layers):
             x_attn = attn(x, coords=coords, attn_mask=attn_mask, alibi_mask=alibi_mask)
@@ -212,7 +212,9 @@ class VisionTransformer(nn.Module):
 
         match mask:
             case None:
-                bags = self.transformer(bags, coords=coords, attn_mask=None)
+                bags = self.transformer(
+                    bags, coords=coords, attn_mask=None, alibi_mask=None
+                )
 
             case _:
                 mask_with_class_token = torch.cat(
