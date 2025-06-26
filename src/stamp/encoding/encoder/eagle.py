@@ -1,3 +1,4 @@
+import logging
 import os
 from pathlib import Path
 
@@ -7,6 +8,7 @@ import torch
 from torch import Tensor
 from tqdm import tqdm
 
+from stamp.cache import get_processing_code_hash
 from stamp.encoding.config import EncoderName
 from stamp.encoding.encoder import Encoder
 from stamp.encoding.encoder.chief import CHIEF
@@ -18,6 +20,8 @@ __author__ = "Juan Pablo Ricapito"
 __copyright__ = "Copyright (C) 2025 Juan Pablo Ricapito"
 __license__ = "MIT"
 __credits__ = ["Neidlinger, et al. (https://github.com/KatherLab/EAGLE)"]
+
+_logger = logging.getLogger("stamp")
 
 
 class Eagle(Encoder):
@@ -128,21 +132,28 @@ class Eagle(Encoder):
                 " is required for Eagle's encode_patients"
             )
 
-        output_file = self._generate_output_path(
-            output_dir=output_dir, generate_hash=generate_hash
-        )
+        if generate_hash:
+            encode_dir = f"{self.identifier}-slide-{get_processing_code_hash(Path(__file__))[:8]}"
+        else:
+            encode_dir = f"{self.identifier}-slide"
+        encode_dir = output_dir / encode_dir
+        os.makedirs(encode_dir, exist_ok=True)
 
-        if os.path.exists(output_file):
-            tqdm.write(f"Output file {output_file} already exists, skipping")
-            return
-
-        slide_dict = {}
         self.model.to(device).eval()
 
-        for tile_feats_filename in tqdm(os.listdir(feat_dir), desc="Processing slides"):
+        for tile_feats_filename in (progress := tqdm(os.listdir(feat_dir))):
             h5_ctp = os.path.join(feat_dir, tile_feats_filename)
             h5_vir2 = os.path.join(agg_feat_dir, tile_feats_filename)
             slide_name: str = Path(tile_feats_filename).stem
+            progress.set_description(slide_name)
+
+            # skip patient in case feature file already exists
+            output_path = (encode_dir / slide_name).with_suffix(".h5")
+            if output_path.exists():
+                _logger.debug(
+                    f"skipping {str(slide_name)} because {output_path} already exists"
+                )
+                continue
 
             try:
                 feats, agg_feats = self._validate_and_read_features_with_agg(
@@ -152,13 +163,8 @@ class Eagle(Encoder):
                 tqdm.write(s=str(e))
                 continue
 
-            eagle_embedding = self._generate_slide_embedding(feats, device, agg_feats)
-
-            slide_dict[slide_name] = {
-                "feats": eagle_embedding,
-            }
-
-        self._save_features_(output_file, entry_dict=slide_dict)
+            slide_embedding = self._generate_slide_embedding(feats, device, agg_feats)
+            self._save_features_(output_path=output_path, feats=slide_embedding)
 
     # TODO: Add @override decorator on each encoder once it is added to python
     def encode_patients_(
@@ -182,18 +188,29 @@ class Eagle(Encoder):
 
         slide_table = pd.read_csv(slide_table_path)
         patient_groups = slide_table.groupby(patient_label)
-        patient_dict = {}
         self.model.to(device).eval()
 
-        output_file = self._generate_output_path(
-            output_dir=output_dir, generate_hash=generate_hash
-        )
+        # generate the name for the folder containing the feats
+        if generate_hash:
+            encode_dir = (
+                f"{self.identifier}-pat-{get_processing_code_hash(Path(__file__))[:8]}"
+            )
+        else:
+            encode_dir = f"{self.identifier}-pat"
+        encode_dir = output_dir / encode_dir
+        os.makedirs(encode_dir, exist_ok=True)
 
-        if os.path.exists(output_file):
-            tqdm.write(f"Output file {output_file} already exists, skipping")
-            return
+        for patient_id, group in (progress := tqdm(patient_groups)):
+            progress.set_description(str(patient_id))
 
-        for patient_id, group in tqdm(patient_groups, leave=False):
+            # skip patient in case feature file already exists
+            output_path = (encode_dir / str(patient_id)).with_suffix(".h5")
+            if output_path.exists():
+                _logger.debug(
+                    f"skipping {str(patient_id)} because {output_path} already exists"
+                )
+                continue
+
             feats_list = []
             agg_feats_list = []
 
@@ -213,11 +230,7 @@ class Eagle(Encoder):
                 tqdm.write(f"No ctranspath features for patient {patient_id}")
                 continue
 
-            eagle_embedding = self._generate_patient_embedding(
+            patient_embedding = self._generate_patient_embedding(
                 feats_list, device, agg_feats_list
             )
-            patient_dict[patient_id] = {
-                "feats": eagle_embedding,
-            }
-
-        self._save_features_(output_file, entry_dict=patient_dict)
+            self._save_features_(output_path=output_path, feats=patient_embedding)

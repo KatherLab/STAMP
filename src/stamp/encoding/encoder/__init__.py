@@ -1,6 +1,8 @@
+import logging
 import os
 from abc import ABC, abstractmethod
 from pathlib import Path
+from tempfile import NamedTemporaryFile
 
 import h5py
 import numpy as np
@@ -19,6 +21,8 @@ from stamp.types import DeviceLikeType, PandasLabel
 __author__ = "Juan Pablo Ricapito"
 __copyright__ = "Copyright (C) 2025 Juan Pablo Ricapito"
 __license__ = "MIT"
+
+_logger = logging.getLogger("stamp")
 
 
 class Encoder(ABC):
@@ -44,23 +48,31 @@ class Encoder(ABC):
     ) -> None:
         """General method for encoding slide-level features. Called by init_slide_encoder_.
         Override this function if coords are required. See init_slide_encoder_ for full description"""
-        output_file = self._generate_output_path(
-            output_dir=output_dir, generate_hash=generate_hash
-        )
+        # generate the name for the folder containing the feats
+        if generate_hash:
+            encode_dir = f"{self.identifier}-slide-{get_processing_code_hash(Path(__file__))[:8]}"
+        else:
+            encode_dir = f"{self.identifier}-slide"
+        encode_dir = output_dir / encode_dir
+        os.makedirs(encode_dir, exist_ok=True)
 
-        slide_dict = {}
         self.model.to(device).eval()
 
         if self.precision == torch.float16:
             self.model.half()
 
-        if os.path.exists(output_file):
-            tqdm.write(f"Output file {output_file} already exists, skipping")
-            return
-
-        for tile_feats_filename in tqdm(os.listdir(feat_dir), desc="Processing slides"):
+        for tile_feats_filename in (progress := tqdm(os.listdir(feat_dir))):
             h5_path = os.path.join(feat_dir, tile_feats_filename)
             slide_name: str = Path(tile_feats_filename).stem
+            progress.set_description(slide_name)
+
+            # skip patient in case feature file already exists
+            output_path = (encode_dir / slide_name).with_suffix(".h5")
+            if output_path.exists():
+                _logger.info(
+                    f"skipping {str(slide_name)} because {output_path} already exists"
+                )
+                continue
 
             try:
                 feats, coords = self._validate_and_read_features(h5_path)
@@ -71,9 +83,7 @@ class Encoder(ABC):
             slide_embedding = self._generate_slide_embedding(
                 feats, device, coords=coords
             )
-            slide_dict[slide_name] = {"feats": slide_embedding}
-
-        self._save_features_(output_file, entry_dict=slide_dict)
+            self._save_features_(output_path=output_path, feats=slide_embedding)
 
     def encode_patients_(
         self,
@@ -88,24 +98,35 @@ class Encoder(ABC):
     ) -> None:
         """General method for encoding patient-level features. Called by init_patient_encoder_.
         Override this function if coords are required. See init_patient_encoder_ for full description"""
-        output_file = self._generate_output_path(
-            output_dir=output_dir, generate_hash=generate_hash
-        )
+        # generate the name for the folder containing the feats
+        if generate_hash:
+            encode_dir = (
+                f"{self.identifier}-pat-{get_processing_code_hash(Path(__file__))[:8]}"
+            )
+        else:
+            encode_dir = f"{self.identifier}-pat"
+        encode_dir = output_dir / encode_dir
+        os.makedirs(encode_dir, exist_ok=True)
 
-        patient_dict = {}
         self.model.to(device).eval()
 
         if self.precision == torch.float16:
             self.model.half()
 
-        if os.path.exists(output_file):
-            tqdm.write(f"Output file {output_file} already exists, skipping")
-            return
-
         slide_table = self._read_slide_table(slide_table_path)
         patient_groups = slide_table.groupby(patient_label)
 
-        for patient_id, group in tqdm(patient_groups, leave=False):
+        for patient_id, group in (progress := tqdm(patient_groups)):
+            progress.set_description(str(patient_id))
+
+            # skip patient in case feature file already exists
+            output_path = (encode_dir / str(patient_id)).with_suffix(".h5")
+            if output_path.exists():
+                _logger.info(
+                    f"skipping {str(patient_id)} because {output_path} already exists"
+                )
+                continue
+
             feats_list = []
 
             for _, row in group.iterrows():
@@ -121,9 +142,7 @@ class Encoder(ABC):
             patient_embedding = self._generate_patient_embedding(
                 feats_list, device, **kwargs
             )
-            patient_dict[patient_id] = {"feats": patient_embedding}
-
-        self._save_features_(output_file, entry_dict=patient_dict)
+            self._save_features_(output_path=output_path, feats=patient_embedding)
 
     @abstractmethod
     def _generate_slide_embedding(
@@ -166,26 +185,29 @@ class Encoder(ABC):
         with h5py.File(h5_path, "r") as f:
             feats: Tensor = torch.tensor(f["feats"][:], dtype=self.precision)  # type: ignore
             coords: CoordsInfo = get_coords(f)
-            extractor: str = f.attrs.get("extractor", "no extractor name")
+            extractor: str = f.attrs.get("extractor", "")
+            if extractor == "":
+                raise ValueError(
+                    f"Feature file does not have extractor's name in the metadata: {os.path.basename(h5_path)}"
+                )
             return feats, coords, extractor
 
-    def _save_features_(self, output_file: Path, entry_dict: dict) -> None:
-        os.makedirs(os.path.dirname(output_file), exist_ok=True)
-        with h5py.File(output_file, "w") as f:
-            for entry_name, data in entry_dict.items():
-                f.create_dataset(f"{entry_name}", data=data["feats"])
+    def _save_features_(self, output_path: Path, feats: np.ndarray) -> None:
+        with (
+            NamedTemporaryFile(dir=output_path.parent, delete=False) as tmp_h5_file,
+            h5py.File(tmp_h5_file, "w") as f,
+        ):
+            try:
+                f["feats"] = feats
                 f.attrs["version"] = stamp.__version__
                 f.attrs["encoder"] = str(self.identifier)
                 f.attrs["precision"] = str(self.precision)
-            if len(f) == 0:
-                tqdm.write("Encoding failed: file empty")
-                os.remove(output_file)
-            else:
-                tqdm.write(f"Finished encoding, saved to {output_file}")
+                # TODO: Add more metadata like tile-level extractor name,
+                # code hash if flag is activated and maybe tile size in pixels and microns
+            except Exception:
+                _logger.exception(f"error while writing {output_path}")
+                if tmp_h5_file is not None:
+                    Path(tmp_h5_file.name).unlink(missing_ok=True)
 
-    def _generate_output_path(self, output_dir: Path, generate_hash: bool) -> Path:
-        if generate_hash:
-            output_name = f"{self.identifier}-slide-{get_processing_code_hash(Path(__file__))[:8]}.h5"
-        else:
-            output_name = f"{self.identifier}-slide.h5"
-        return output_dir / output_name
+            Path(tmp_h5_file.name).rename(output_path)
+            _logger.debug(f"saved features to {output_path}")

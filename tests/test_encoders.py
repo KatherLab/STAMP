@@ -115,7 +115,7 @@ def test_if_encoding_crashes(*, tmp_path: Path, encoder: EncoderName):
         feat_path = download_file(
             url="https://github.com/KatherLab/STAMP/releases/download/2.1.0/conch15feats.h5",
             file_name="conch15feats.h5",
-            sha256sum="f55866f5d38528a008c1381f689db36b9db57a48756b1a56b17b53357e29cb3a",
+            sha256sum="ece2eb3add347a44d5f3c0340afce692f858535c979deafc934755348b203906",
         )
         shutil.move(feat_path, downloaded_dir / feat_path.name)
 
@@ -156,26 +156,44 @@ def test_if_encoding_crashes(*, tmp_path: Path, encoder: EncoderName):
     except GatedRepoError:
         pytest.skip(f"cannot access gated repo for {encoder}")
 
-    # Check if the slide file has any contents
+    # Assert that there is at least one subdirectory in the slide output directory
+    subdirs = [d for d in slide_output_dir.iterdir() if d.is_dir()]
+    assert len(subdirs) > 0, "The output feat dir was not generated."
+
+    slide_output_dir = slide_output_dir / subdirs[0].name
     slide_files = list(slide_output_dir.glob("*.h5"))
     assert len(slide_files) > 0, "No slide feature files were generated."
-    for slide_file in slide_files:
-        with h5py.File(slide_file, "r") as h5_file:
-            slide_datasets = list(h5_file.keys())
-            # Check that there are slides
-            assert len(slide_datasets) > 0
-            for slide_dataset in slide_datasets:
-                # Check feature contents
-                assert len(h5_file[slide_dataset][:]) > 0  # type: ignore
+
+    # Assert that the number of .h5 files matches the number of slides in feat_dir
+    slide_feature_files = [f for f in feature_dir.glob("*.h5")]
+    assert len(slide_files) == len(slide_feature_files), (
+        f"Mismatch between generated slide files ({len(slide_files)}) "
+        f"and input slide features ({len(slide_feature_files)})."
+    )
+
+    # Open the last .h5 file and check its attributes
+    last_slide_file = slide_files[-1]
+    with h5py.File(last_slide_file, "r") as h5_file:
+        assert len(h5_file["feats"]) > 0, "Slide features are empty."  # type: ignore
+
+    # Assert that there is at least one subdirectory in the slide output directory
+    subdirs = [d for d in patient_output_dir.iterdir() if d.is_dir()]
+    assert len(subdirs) > 0, "The output feat dir was not generated."
+    patient_output_dir = patient_output_dir / subdirs[0].name
 
     # Check if the patient file has any contents
     patient_files = list(patient_output_dir.glob("*.h5"))
     assert len(patient_files) > 0, "No patient feature files were generated."
-    for patient_file in patient_files:
-        with h5py.File(patient_file, "r") as h5_file:
-            patient_datasets = list(h5_file.keys())
-            # Check that the amount of patient feats is 1
-            assert len(patient_datasets) == 1
-            for patient_dataset in patient_datasets:
-                # Check feature contents
-                assert len(h5_file[patient_dataset][:]) > 0  # type: ignore
+
+    # Assert that the number of .h5 files matches the number of unique patients
+    slide_df = pd.read_csv(slide_path)
+    unique_patients = slide_df["patient"].nunique()
+    assert len(patient_files) == unique_patients, (
+        f"Mismatch between generated patient files ({len(patient_files)}) "
+        f"and unique patients ({unique_patients})."
+    )
+
+    # Open the last .h5 file and check its attributes
+    last_patient_file = patient_files[-1]
+    with h5py.File(last_patient_file, "r") as h5_file:
+        assert len(h5_file["feats"]) > 0, "Patient features are empty."  # type: ignore

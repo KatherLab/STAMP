@@ -1,3 +1,4 @@
+import logging
 import math
 import os
 from pathlib import Path
@@ -9,6 +10,7 @@ from torch import Tensor
 from tqdm import tqdm
 from transformers import AutoModel
 
+from stamp.cache import get_processing_code_hash
 from stamp.encoding.config import EncoderName
 from stamp.encoding.encoder import Encoder
 from stamp.modeling.data import CoordsInfo
@@ -19,6 +21,8 @@ __author__ = "Juan Pablo Ricapito"
 __copyright__ = "Copyright (C) 2025 Juan Pablo Ricapito"
 __license__ = "MIT"
 __credits__ = ["Ding, et al. (https://github.com/mahmoodlab/TITAN)"]
+
+_logger = logging.getLogger("stamp")
 
 
 class Titan(Encoder):
@@ -97,18 +101,29 @@ class Titan(Encoder):
         slide_table = pd.read_csv(slide_table_path)
         patient_groups = slide_table.groupby(patient_label)
 
-        output_file = self._generate_output_path(
-            output_dir=output_dir, generate_hash=generate_hash
-        )
+        # generate the name for the folder containing the feats
+        if generate_hash:
+            encode_dir = (
+                f"{self.identifier}-pat-{get_processing_code_hash(Path(__file__))[:8]}"
+            )
+        else:
+            encode_dir = f"{self.identifier}-pat"
+        encode_dir = output_dir / encode_dir
+        os.makedirs(encode_dir, exist_ok=True)
 
-        patient_dict = {}
         self.model.to(device).eval()
 
-        if os.path.exists(output_file):
-            tqdm.write(f"Output file {output_file} already exists, skipping")
-            return
+        for patient_id, group in (progress := tqdm(patient_groups)):
+            progress.set_description(str(patient_id))
 
-        for patient_id, group in tqdm(patient_groups, leave=False):
+            # skip patient in case feature file already exists
+            output_path = (encode_dir / str(patient_id)).with_suffix(".h5")
+            if output_path.exists():
+                _logger.debug(
+                    f"skipping {str(patient_id)} because {output_path} already exists"
+                )
+                continue
+
             all_feats_list = []
             all_coords_list = []
             current_x_offset = 0
@@ -151,8 +166,4 @@ class Titan(Encoder):
             patient_embedding = self._generate_patient_embedding(
                 all_feats_list, device, all_coords_list
             )
-            patient_dict[patient_id] = {
-                "feats": patient_embedding,
-            }
-
-        self._save_features_(output_file, entry_dict=patient_dict)
+            self._save_features_(output_path=output_path, feats=patient_embedding)
