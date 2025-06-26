@@ -202,8 +202,10 @@ class Encoder(ABC):
                 f.attrs["version"] = stamp.__version__
                 f.attrs["encoder"] = str(self.identifier)
                 f.attrs["precision"] = str(self.precision)
-                # TODO: Add more metadata like tile-level extractor name,
-                # code hash if flag is activated and maybe tile size in pixels and microns
+                f.attrs["stamp_version"] = stamp.__version__
+                f.attrs["code_hash"] = get_processing_code_hash(Path(__file__))[:8]
+                # TODO: Add more metadata like tile-level extractor name
+                # and maybe tile size in pixels and microns
             except Exception:
                 _logger.exception(f"error while writing {output_path}")
                 if tmp_h5_file is not None:
