@@ -38,8 +38,8 @@ class _ALiBi(nn.Module):
         v: Float[Tensor, "batch key v_feature"],
         coords_q: Float[Tensor, "batch query coord"],
         coords_k: Float[Tensor, "batch key coord"],
-        attn_mask: Bool[Tensor, "batch query key"],
-        alibi_mask: Bool[Tensor, "batch query key"],
+        attn_mask: Bool[Tensor, "batch query key"] | None,
+        alibi_mask: Bool[Tensor, "batch query key"] | None,
     ) -> Float[Tensor, "batch query v_feature"]:
         """
         Args:
@@ -51,12 +51,18 @@ class _ALiBi(nn.Module):
             coords_q.unsqueeze(2) - coords_k.unsqueeze(1), dim=-1
         )
         scaled_distances = self.scale_distance(distances) * self.bias_scale
-        masked_distances = scaled_distances.where(~alibi_mask, 0.0)
+
+        if alibi_mask is not None:
+            scaled_distances = scaled_distances.where(~alibi_mask, 0.0)
 
         weights = torch.softmax(weight_logits, dim=-1)
-        masked = (weights - masked_distances).where(~attn_mask, 0.0)
 
-        attention = torch.einsum("bqk,bvf->bqf", masked, v)
+        if attn_mask is not None:
+            weights = (weights - scaled_distances).where(~attn_mask, 0.0)
+        else:
+            weights = weights - scaled_distances
+
+        attention = torch.einsum("bqk,bkf->bqf", weights, v)
 
         return attention
 
@@ -116,7 +122,7 @@ class MultiHeadALiBi(nn.Module):
         coords_q: Float[Tensor, "batch query coord"],
         coords_k: Float[Tensor, "batch key coord"],
         attn_mask: Bool[Tensor, "batch query key"] | None,
-        alibi_mask: Bool[Tensor, "batch query key"],
+        alibi_mask: Bool[Tensor, "batch query key"] | None,
     ) -> Float[Tensor, "batch query mh_v_feature"]:
         stacked_attentions = torch.stack(
             [
