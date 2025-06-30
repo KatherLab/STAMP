@@ -1,4 +1,3 @@
-
 from stamp.preprocessing import ExtractorName
 
 
