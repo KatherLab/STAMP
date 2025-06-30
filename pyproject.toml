@@ -104,7 +104,7 @@ virchow2 = [
 ]
 cobra = [
     "jinja2>=3.1.4",
-    "cobra @ git+https://github.com/KatherLab/COBRA.git",
+    "cobra @ git+https://github.com/KatherLab/COBRA.git@0a60b1602b4087c5db7bced5a61335a1fa8a4968",
 ]
 prism = [
     "sacremoses==0.1.1",
@@ -157,18 +157,6 @@ markers = [
 [tool.ruff]
 lint.ignore = ["F722"] # https://docs.kidger.site/jaxtyping/faq/#flake8-or-ruff-are-throwing-an-error
 
-# Hack to get dependencies installed for cobra and causal-conv1d
-# More info: https://docs.astral.sh/uv/concepts/projects/config/#build-isolation
-[[tool.uv.dependency-metadata]]
-name = "cobra"
-version = "0.1.0"
-requires-dist = ["torch", "packaging", "ninja", "hatchling", "setuptools"]
-
-[[tool.uv.dependency-metadata]]
-name = "causal-conv1d"
-version = "1.5.0.post8"
-requires-dist = ["torch", "packaging", "ninja", "hatchling", "setuptools"]
-
 [[tool.uv.dependency-metadata]]
 name = "uni"
 version = "v0.1.0"
@@ -183,6 +171,3 @@ requires-dist = [
     "transformers",
     "xformers; sys_platform != 'darwin'"  # xformers is not supported on macOS
 ]
-
-[tool.uv]
-no-build-isolation-package = ["cobra", "causal-conv1d"]
