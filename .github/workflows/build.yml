@@ -13,6 +13,25 @@ jobs:
     strategy:
       matrix:
         python-version: ["3.11", "3.12"]
+        extractor: [
+          "ctranspath",
+          "chief-ctranspath",
+          "conch",
+          "conch1_5",
+          "uni",
+          "uni2",
+          "dino-bloom",
+          "gigapath",
+          "h-optimus-0",
+          "h-optimus-1",
+          "virchow",
+          "virchow-full",
+          "virchow2",
+          "musk",
+          "mstar",
+          "plip",
+          "empty"
+        ]
 
     steps:
     - uses: actions/checkout@v4
@@ -35,8 +54,8 @@ jobs:
     - name: Build
       run: uv build
         
-    - name: Run tests
-      run: uv run pytest -rs tests/test_feature_extractors.py -k "not virchow"
+    - name: Run tests for extractor ${{ matrix.extractor }}
+      run: timeout 10m uv run pytest -rs tests/test_feature_extractors.py -k "${{ matrix.extractor }}"
       env:
         HF_TOKEN: ${{ secrets.HF_TOKEN }}
   
