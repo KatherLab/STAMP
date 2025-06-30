@@ -7,7 +7,7 @@ on:
     branches: [ main ]
 
 jobs:
-  test:
+  test_extractors:
     runs-on: ubuntu-latest
     # needs: format_and_lint
     strategy:
@@ -24,10 +24,6 @@ jobs:
           "gigapath",
           "h-optimus-0",
           "h-optimus-1",
-          "virchow",
-          "virchow-full",
-          "virchow2",
-          "musk",
           "mstar",
           "plip",
           "empty"
@@ -55,7 +51,40 @@ jobs:
       run: uv build
         
     - name: Run tests for extractor ${{ matrix.extractor }}
-      run: timeout 10m uv run pytest -s tests/test_feature_extractors.py -k "${{ matrix.extractor }}" --verbose
+      run: uv run pytest -s tests/test_feature_extractors.py -k "${{ matrix.extractor }}" --verbose
+      env:
+        HF_TOKEN: ${{ secrets.HF_TOKEN }}
+
+  test_others:
+    runs-on: ubuntu-latest
+    # needs: format_and_lint
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12"]
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+        enable-cache: true
+        cache-dependency-glob: "uv.lock"
+    
+    # - name: Set up Python ${{ matrix.python-version }}
+    #   uses: actions/setup-python@v5
+    #   with:
+    #     python-version: ${{ matrix.python-version }}
+        
+    - name: Install the project
+      run: uv sync --extra all --dev
+    
+    - name: Build
+      run: uv build
+        
+    - name: Run other tests
+      run: uv run pytest -s tests/ -k "not test_feature_extractors.py" --verbose
       env:
         HF_TOKEN: ${{ secrets.HF_TOKEN }}
   

@@ -12,15 +12,12 @@ from stamp.preprocessing import ExtractorName, Microns, TilePixels, extract_
 
 
 @pytest.mark.slow
-@pytest.mark.parametrize("extractor", ExtractorName)
 @pytest.mark.filterwarnings("ignore:Importing from timm.models.layers is deprecated")
 @pytest.mark.filterwarnings(
     "ignore:You are using `torch.load` with `weights_only=False`"
 )
 @pytest.mark.filterwarnings("ignore:xFormers is available")
-def test_if_feature_extraction_crashes(
-    *, tmp_path: Path, extractor: ExtractorName
-) -> None:
+def test_if_feature_extraction_crashes(*, tmp_path: Path, extractor: str) -> None:
     """
     Test if the feature extraction process crashes for a given extractor.
 
@@ -35,6 +32,7 @@ def test_if_feature_extraction_crashes(
     Raises:
         AssertionError: If the extracted features file is empty.
     """
+    extractor = ExtractorName(extractor)
     if extractor == ExtractorName.DINO_BLOOM and not torch.cuda.is_available():
         pytest.skip(
             "Skipping test for ExtractorName.DINO_BLOOM as CUDA is not available"
