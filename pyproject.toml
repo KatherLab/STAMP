@@ -84,7 +84,7 @@ virchow2 = [
 ]
 cobra = [
     "jinja2>=3.1.4",
-    "cobra @ git+https://github.com/KatherLab/COBRA.git@0a60b1602b4087c5db7bced5a61335a1fa8a4968",
+    "cobra @ git+https://github.com/KatherLab/COBRA.git@f1a576e1133330ffc2d1df6ee110701921c7b7c9",
 ]
 prism = [
     "sacremoses==0.1.1",
@@ -101,8 +101,7 @@ plip = [
 ]
 
 # Blanket target
-all = ["stamp[conch,ctranspath,uni,virchow2,chief_ctranspath,conch1_5,gigapath,cobra,prism,madeleine,musk,plip]"]
-cpu = ["stamp[conch,ctranspath,uni,virchow2,chief_ctranspath,conch1_5,gigapath,prism,madeleine,musk,plip]"]
+all = ["stamp[conch,ctranspath,uni,virchow2,chief_ctranspath,conch1_5,gigapath,prism,madeleine,musk,plip]"]
 
 [project.scripts]
 "stamp" = "stamp.__main__:main"
