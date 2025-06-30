@@ -55,7 +55,7 @@ jobs:
       run: uv build
         
     - name: Run tests for extractor ${{ matrix.extractor }}
-      run: timeout 10m uv run pytest -rs tests/test_feature_extractors.py -k "${{ matrix.extractor }}"
+      run: timeout 10m uv run pytest -s tests/test_feature_extractors.py -k "${{ matrix.extractor }}" --verbose
       env:
         HF_TOKEN: ${{ secrets.HF_TOKEN }}
   
