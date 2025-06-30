@@ -62,18 +62,7 @@ chief_ctranspath = [
     "torch>=2.0.0"
 ]
 gigapath = [
-    "fvcore",
-    "iopath",
-    "monai",
-    "scikit-image",
-    "webdataset",
-    "lifelines",
-    "scikit-survival",
-    "fairscale",
-    "wandb",
-    "ninja==1.11.1.1",
-    "flash-attn",
-    "gigapath @ git+https://github.com/EzicStar/prov-gigapath.git"
+    "gigapath @ git+https://github.com/EzicStar/prov-gigapath.git@d4cf55321df37aaf867e24a31c61bcf490a296eb"
 ]
 uni = [
     "huggingface-hub>=0.26.2",
@@ -102,7 +91,7 @@ plip = [
 ]
 
 # Blanket target
-all = ["stamp[conch,ctranspath,uni,virchow2,chief_ctranspath,conch1_5,gigapath,prism,madeleine,musk,plip]"]
+all = ["stamp[conch,ctranspath,uni,virchow2,chief_ctranspath,conch1_5,prism,madeleine,musk,plip]"]
 
 [project.scripts]
 "stamp" = "stamp.__main__:main"
