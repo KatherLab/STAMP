@@ -34,7 +34,7 @@ input_dims = {
 # They are not all, just one case that is accepted for each encoder
 used_extractor = {
     EncoderName.CHIEF: ExtractorName.CHIEF_CTRANSPATH,
-    EncoderName.COBRA: ExtractorName.CTRANSPATH,
+    EncoderName.COBRA: ExtractorName.CONCH,
     EncoderName.EAGLE: ExtractorName.CTRANSPATH,
     EncoderName.GIGAPATH: ExtractorName.GIGAPATH,
     EncoderName.MADELEINE: ExtractorName.CONCH,
