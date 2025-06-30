@@ -42,12 +42,10 @@ dependencies = [
     "torchmetrics>=1.6.0",
     "torchvision>=0.20.1",
     "tqdm>=4.66.6",
+    "timm==0.9.11",
 ]
 
 [project.optional-dependencies]
-dinobloom = [
-    "torchvision>=0.20.1",
-]
 conch = [
     "huggingface-hub>=0.26.2",
     "conch @ git+https://github.com/Mahmoodlab/CONCH.git@02d6ac59cc20874bff0f581de258c2b257f69a84",
@@ -55,20 +53,15 @@ conch = [
 conch1_5 = [
     "transformers>=4.45.2",
     "einops-exts==0.0.4",
-    "torch>=2.0.0"
 ]
 ctranspath = [
     "gdown>=5.2.0",
-    "torchvision>=0.20.1",
 ]
 chief_ctranspath = [
     "gdown>=5.2.0",
-    "torchvision>=0.20.1",
     "torch>=2.0.0"
 ]
 gigapath = [
-    "timm>=0.9.11",
-    "torchvision>=0.20.1",
     "fvcore",
     "iopath",
     "monai",
@@ -81,25 +74,12 @@ gigapath = [
     "ninja==1.11.1.1",
     "gigapath @ git+https://github.com/EzicStar/prov-gigapath.git"
 ]
-h_optimus_0 = [
-    "timm>=0.9.11",
-    "torchvision>=0.20.1",
-]
-h_optimus_1 = [
-    "timm>=0.9.11",
-    "torchvision>=0.20.1",
-]
 uni = [
     "huggingface-hub>=0.26.2",
     "uni @ git+https://github.com/mahmoodlab/UNI.git",
 ]
-uni2 = [
-    "timm>=0.9.11",
-    "torch>=2.0.0",
-]
 virchow2 = [
     "huggingface-hub>=0.27.1",
-    "timm>=0.9.11",
     "torch>=2.0.0",
 ]
 cobra = [
@@ -114,7 +94,6 @@ madeleine = [
     "madeleine @ git+https://github.com/mahmoodlab/MADELEINE.git@de7c85acc2bdad352e6df8eee5694f8b6f288012"
 ]
 musk = [
-    "timm>=0.9.11",
     "musk @ git+https://github.com/lilab-stanford/MUSK.git@e1699c27687f44bbf6d4adfcbb2abe89795d347f",
 ]
 plip = [
@@ -122,8 +101,8 @@ plip = [
 ]
 
 # Blanket target
-all = ["stamp[dinobloom,conch,ctranspath,uni,virchow2,uni2,chief_ctranspath,conch1_5,gigapath,h_optimus_0,h_optimus_1,cobra,prism,madeleine,musk,plip]"]
-cpu = ["stamp[dinobloom,conch,ctranspath,uni,virchow2,uni2,chief_ctranspath,conch1_5,gigapath,h_optimus_0,h_optimus_1,prism,madeleine,musk,plip]"]
+all = ["stamp[conch,ctranspath,uni,virchow2,chief_ctranspath,conch1_5,gigapath,cobra,prism,madeleine,musk,plip]"]
+cpu = ["stamp[conch,ctranspath,uni,virchow2,chief_ctranspath,conch1_5,gigapath,prism,madeleine,musk,plip]"]
 
 [project.scripts]
 "stamp" = "stamp.__main__:main"
