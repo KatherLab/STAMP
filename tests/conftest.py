@@ -1,4 +1,3 @@
-import pytest
 
 from stamp.preprocessing import ExtractorName
 

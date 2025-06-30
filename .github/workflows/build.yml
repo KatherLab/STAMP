@@ -26,7 +26,6 @@ jobs:
           "h-optimus-1",
           "mstar",
           "plip",
-          "empty"
         ]
 
     steps:
