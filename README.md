@@ -20,7 +20,11 @@ A Protocol for End-to-End Deep Learning in Computational Pathology".
 
 We recommend installing STAMP with [uv](https://docs.astral.sh/uv/):
 ```bash
-uv sync --all extras
+git clone https://github.com/KatherLab/STAMP.git
+
+cd STAMP/
+
+uv sync --all-extras
 
 source .venv/bin/activate
 ```
