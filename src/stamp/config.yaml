@@ -223,7 +223,7 @@ heatmaps:
 slide_encoding:
   # Encoder to use for slide encoding. Possible options are "cobra",
   # "eagle", "titan", "gigapath", "chief", "prism", "madeleine".
-  encoder: "eagle"
+  encoder: "chief"
   
   # Directory to save the output files.
   output_dir: "/path/to/save/files/to"
@@ -246,7 +246,7 @@ slide_encoding:
 patient_encoding:
   # Encoder to use for patient encoding. Possible options are "cobra",
   # "eagle", "titan", "gigapath", "chief", "prism", "madeleine".
-  encoder: "eagle"
+  encoder: "chief"
   
   # Directory to save the output files.
   output_dir: "/path/to/save/files/to"
