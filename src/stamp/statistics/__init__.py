@@ -7,7 +7,6 @@ import pandas as pd
 from matplotlib import pyplot as plt
 from pydantic import BaseModel, ConfigDict
 
-from stamp.modeling.data import PandasLabel
 from stamp.statistics.categorical import categorical_aggregated_
 from stamp.statistics.prc import (
     plot_multiple_decorated_precision_recall_curves,
@@ -17,6 +16,7 @@ from stamp.statistics.roc import (
     plot_multiple_decorated_roc_curves,
     plot_single_decorated_roc_curve,
 )
+from stamp.types import PandasLabel
 
 __author__ = "Marko van Treeck"
 __copyright__ = "Copyright (C) 2022-2024 Marko van Treeck"

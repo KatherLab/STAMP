@@ -9,7 +9,7 @@ try:
     from timm.layers.mlp import SwiGLUPacked
 except ModuleNotFoundError as e:
     raise ModuleNotFoundError(
-        "virchow2 dependencies not installed."
+        "virchow dependencies not installed."
         " Please reinstall stamp using `pip install 'stamp[virchow2]'`"
     ) from e
 
@@ -21,7 +21,7 @@ __copyright__ = "Copyright (C) 2025 Tim Lenz"
 __license__ = "MIT"
 
 
-class Virchow2ClsOnly(torch.nn.Module):
+class VirchowClsOnly(torch.nn.Module):
     def __init__(self, model) -> None:
         super().__init__()
         self.model = model
@@ -30,12 +30,14 @@ class Virchow2ClsOnly(torch.nn.Module):
         return self.model(batch)[:, 0]
 
 
-def virchow2() -> Extractor[Virchow2ClsOnly]:
-    """Extracts features from slide tiles using Virchow2 tile encoder."""
+def virchow() -> Extractor[VirchowClsOnly]:
+    """Extracts features from slide tiles using Virchow tile encoder.
+    The ouput consists of the class token only, resulting in a embedding
+    of dimension 1280"""
 
     # Load the model structure
     model = timm.create_model(  # pyright: ignore[reportPrivateImportUsage]
-        "hf-hub:paige-ai/Virchow2",
+        "hf-hub:paige-ai/Virchow",
         pretrained=True,
         mlp_layer=SwiGLUPacked,
         act_layer=torch.nn.SiLU,
@@ -48,7 +50,7 @@ def virchow2() -> Extractor[Virchow2ClsOnly]:
     )
 
     return Extractor(
-        model=Virchow2ClsOnly(model),
+        model=VirchowClsOnly(model),
         transform=transform,
-        identifier=ExtractorName.VIRCHOW2,
+        identifier=ExtractorName.VIRCHOW,
     )

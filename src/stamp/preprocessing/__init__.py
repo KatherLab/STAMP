@@ -1,7 +1,5 @@
-import hashlib
 import logging
 from collections.abc import Callable, Iterator
-from functools import cache
 from pathlib import Path
 from random import shuffle
 from tempfile import NamedTemporaryFile
@@ -14,22 +12,25 @@ import openslide
 import torch
 from PIL import Image
 from torch import Tensor
-from torch._prims_common import DeviceLikeType
 from torch.utils.data import DataLoader, IterableDataset
 from tqdm import tqdm
 
 import stamp
+from stamp.cache import get_processing_code_hash
 from stamp.preprocessing.config import ExtractorName
 from stamp.preprocessing.extractor import Extractor
 from stamp.preprocessing.tiling import (
+    MPPExtractionError,
+    get_slide_mpp_,
+    tiles_with_cache,
+)
+from stamp.types import (
+    DeviceLikeType,
     ImageExtension,
     Microns,
-    MPPExtractionError,
     SlideMPP,
     SlidePixels,
     TilePixels,
-    get_slide_mpp_,
-    tiles_with_cache,
 )
 
 __author__ = "Marko van Treeck"
@@ -55,20 +56,6 @@ supported_extensions = {
 }
 
 _logger = logging.getLogger("stamp")
-
-
-@cache
-def _get_preprocessing_code_hash() -> str:
-    """The hash of the entire preprocessing codebase.
-
-    It is used to assure that features extracted with different versions of this code base
-    can be identified as such after the fact.
-    """
-    hasher = hashlib.sha256()
-    for file_path in sorted(Path(__file__).parent.glob("*.py")):
-        with open(file_path, "rb") as fp:
-            hasher.update(fp.read())
-    return hasher.hexdigest()
 
 
 class _TileDataset(IterableDataset):
@@ -189,6 +176,16 @@ def extract_(
 
             extractor = dino_bloom()
 
+        case ExtractorName.VIRCHOW:
+            from stamp.preprocessing.extractor.virchow import virchow
+
+            extractor = virchow()
+
+        case ExtractorName.VIRCHOW_FULL:
+            from stamp.preprocessing.extractor.virchow_full import virchow_full
+
+            extractor = virchow_full()
+
         case ExtractorName.VIRCHOW2:
             from stamp.preprocessing.extractor.virchow2 import virchow2
 
@@ -209,6 +206,21 @@ def extract_(
 
             extractor = gigapath()
 
+        case ExtractorName.MUSK:
+            from stamp.preprocessing.extractor.musk import musk
+
+            extractor = musk()
+
+        case ExtractorName.MSTAR:
+            from stamp.preprocessing.extractor.mstar import mstar
+
+            extractor = mstar()
+
+        case ExtractorName.PLIP:
+            from stamp.preprocessing.extractor.plip import plip
+
+            extractor = plip()
+
         case ExtractorName.EMPTY:
             from stamp.preprocessing.extractor.empty import empty
 
@@ -222,7 +234,7 @@ def extract_(
 
     model = extractor.model.to(device).eval()
 
-    code_hash = _get_preprocessing_code_hash()[:8]
+    code_hash = get_processing_code_hash(Path(__file__))[:8]
 
     extractor_id = extractor.identifier
 
@@ -309,7 +321,7 @@ def extract_(
                 h5_fp["feats"] = torch.concat(feats).numpy()
 
                 h5_fp.attrs["stamp_version"] = stamp.__version__
-                h5_fp.attrs["extractor"] = extractor_id
+                h5_fp.attrs["extractor"] = str(extractor.identifier)
                 h5_fp.attrs["unit"] = "um"
                 h5_fp.attrs["tile_size_um"] = tile_size_um  # changed in v2.1.0
                 h5_fp.attrs["tile_size_px"] = tile_size_px

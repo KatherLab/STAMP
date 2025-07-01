@@ -4,9 +4,10 @@ import pytest
 import torch
 from random_data import make_old_feature_file
 
-from stamp.modeling.data import GroundTruth, PatientData, PatientId
+from stamp.modeling.data import PatientData
 from stamp.modeling.deploy import _predict, _to_prediction_df
 from stamp.modeling.lightning_model import LitVisionTransformer
+from stamp.types import GroundTruth, PatientId
 
 
 @pytest.mark.filterwarnings("ignore:GPU available but not used")

@@ -2,9 +2,10 @@ import pytest
 import torch
 
 from stamp.cache import download_file
-from stamp.modeling.data import FeaturePath, PatientData
+from stamp.modeling.data import PatientData
 from stamp.modeling.deploy import _predict
 from stamp.modeling.lightning_model import LitVisionTransformer
+from stamp.types import FeaturePath
 
 
 @pytest.mark.filterwarnings(

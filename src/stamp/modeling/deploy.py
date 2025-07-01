@@ -11,16 +11,14 @@ from jaxtyping import Float
 from lightning.pytorch.accelerators.accelerator import Accelerator
 
 from stamp.modeling.data import (
-    GroundTruth,
-    PandasLabel,
     PatientData,
-    PatientId,
     dataloader_from_patient_data,
     filter_complete_patient_data_,
     patient_to_ground_truth_from_clini_table_,
     slide_to_patient_from_slide_table_,
 )
 from stamp.modeling.lightning_model import LitVisionTransformer
+from stamp.types import GroundTruth, PandasLabel, PatientId
 
 __all__ = ["deploy_categorical_model_"]
 

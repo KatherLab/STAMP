@@ -7,6 +7,7 @@ except ModuleNotFoundError as e:
         " Please reinstall stamp using `pip install 'stamp[h_optimus_1]'`"
     ) from e
 
+from stamp.preprocessing.config import ExtractorName
 from stamp.preprocessing.extractor import Extractor
 
 
@@ -30,5 +31,5 @@ def h_optimus_1() -> Extractor:
     return Extractor(
         model=model,
         transform=transform,
-        identifier="h_optimus_1",  # type: ignore
+        identifier=ExtractorName.H_OPTIMUS_1,  # type: ignore
     )

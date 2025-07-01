@@ -12,7 +12,8 @@ from torch import Tensor, nn, optim
 from torchmetrics.classification import MulticlassAUROC
 
 import stamp
-from stamp.modeling.data import (
+from stamp.modeling.vision_transformer import VisionTransformer
+from stamp.types import (
     Bags,
     BagSizes,
     Category,
@@ -21,7 +22,6 @@ from stamp.modeling.data import (
     PandasLabel,
     PatientId,
 )
-from stamp.modeling.vision_transformer import VisionTransformer
 
 Loss: TypeAlias = Float[Tensor, ""]
 

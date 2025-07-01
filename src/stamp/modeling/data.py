@@ -5,19 +5,34 @@ from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import KW_ONLY, dataclass
 from itertools import groupby
 from pathlib import Path
-from typing import BinaryIO, Generic, NewType, TextIO, TypeAlias, TypeVar, cast
+from typing import BinaryIO, Generic, TextIO, TypeAlias, cast
 
 import h5py
 import numpy as np
 import pandas as pd
 import torch
-from jaxtyping import Bool, Float, Integer
+from jaxtyping import Bool, Float
 from packaging.version import Version
 from torch import Tensor
 from torch.utils.data import DataLoader, Dataset
 
 import stamp
-from stamp.preprocessing.tiling import Microns, SlideMPP, TilePixels
+from stamp.types import (
+    Bags,
+    BagSize,
+    BagSizes,
+    Category,
+    CoordinatesBatch,
+    EncodedTargets,
+    FeaturePath,
+    GroundTruth,
+    GroundTruthType,
+    Microns,
+    PandasLabel,
+    PatientId,
+    SlideMPP,
+    TilePixels,
+)
 
 _logger = logging.getLogger("stamp")
 
@@ -26,30 +41,10 @@ __author__ = "Marko van Treeck"
 __copyright__ = "Copyright (C) 2022-2025 Marko van Treeck"
 __license__ = "MIT"
 
-
-PatientId: TypeAlias = str
-GroundTruth: TypeAlias = str
-FeaturePath = NewType("FeaturePath", Path)
-
-Category: TypeAlias = str
-
-# One instance
 _Bag: TypeAlias = Float[Tensor, "tile feature"]
-BagSize: TypeAlias = int
 _EncodedTarget: TypeAlias = Bool[Tensor, "category_is_hot"]  # noqa: F821
 """The ground truth, encoded numerically (currently: one-hot)"""
 _Coordinates: TypeAlias = Float[Tensor, "tile 2"]
-
-# A batch of the above
-Bags: TypeAlias = Float[Tensor, "batch tile feature"]
-BagSizes: TypeAlias = Integer[Tensor, "batch"]  # noqa: F821
-EncodedTargets: TypeAlias = Bool[Tensor, "batch category_is_hot"]
-"""The ground truth, encoded numerically (currently: one-hot)"""
-CoordinatesBatch: TypeAlias = Float[Tensor, "batch tile 2"]
-
-PandasLabel: TypeAlias = str
-
-GroundTruthType = TypeVar("GroundTruthType", covariant=True)
 
 
 @dataclass
@@ -167,7 +162,7 @@ class BagDataset(Dataset[tuple[_Bag, _Coordinates, BagSize, _EncodedTarget]]):
                 feats.append(
                     torch.from_numpy(h5["feats"][:])  # pyright: ignore[reportIndexIssue]
                 )
-                coords_um.append(get_coords(h5).coords_um)
+                coords_um.append(torch.from_numpy(get_coords(h5).coords_um))
 
         feats = torch.concat(feats).float()
         coords_um = torch.concat(coords_um).float()
@@ -192,9 +187,9 @@ class BagDataset(Dataset[tuple[_Bag, _Coordinates, BagSize, _EncodedTarget]]):
 
 @dataclass
 class CoordsInfo:
-    coords_um: Tensor
+    coords_um: np.ndarray
     tile_size_um: Microns
-    tile_size_px: TilePixels | None
+    tile_size_px: TilePixels | None = None
 
     @property
     def mpp(self) -> SlideMPP:
@@ -206,8 +201,8 @@ class CoordsInfo:
 
 
 def get_coords(feature_h5: h5py.File) -> CoordsInfo:
-    coords = torch.from_numpy(feature_h5["coords"][:]).float()  # pyright: ignore[reportIndexIssue]
-    coords_um: Tensor | None = None
+    coords: np.ndarray = feature_h5["coords"][:]  # type: ignore
+    coords_um: np.ndarray | None = None
     tile_size_um: Microns | None = None
     tile_size_px: TilePixels | None = None
     if (tile_size := feature_h5.attrs.get("tile_size", None)) and feature_h5.attrs.get(
@@ -220,7 +215,14 @@ def get_coords(feature_h5: h5py.File) -> CoordsInfo:
         # Newer STAMP format
         tile_size_um = Microns(float(tile_size))
         coords_um = coords
-    elif round(feature_h5.attrs.get("tile_size", get_stride(coords))) == 224:
+    elif (
+        round(
+            feature_h5.attrs.get(
+                "tile_size", get_stride(torch.from_numpy(coords).float())
+            )
+        )
+        == 224
+    ):
         # Historic STAMP format
         _logger.info(
             f"{feature_h5.filename}: tile stride is roughly 224, assuming coordinates have unit 256um/224px (historic STAMP format)"
