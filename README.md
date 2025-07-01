@@ -22,6 +22,8 @@ We recommend installing STAMP with [uv](https://docs.astral.sh/uv/):
 ```bash
 git clone https://github.com/KatherLab/STAMP.git
 
+cd STAMP/
+
 uv sync --all-extras
 
 source .venv/bin/activate
