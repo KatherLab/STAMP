@@ -89,6 +89,9 @@ musk = [
 plip = [
     "transformers>=4.45.2"
 ]
+fastmcp = [
+    "fastmcp>=2.7.0"
+]
 
 # Blanket target
 all = ["stamp[conch,ctranspath,uni,virchow2,chief_ctranspath,conch1_5,prism,madeleine,musk,plip]"]
