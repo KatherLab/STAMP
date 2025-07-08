@@ -185,6 +185,51 @@ class BagDataset(Dataset[tuple[_Bag, _Coordinates, BagSize, _EncodedTarget]]):
             )
 
 
+class SingleFeatureDataset(Dataset):
+    """
+    Dataset for single feature vector per sample (e.g. slide-level or patient-level).
+    Each item is a (feature_vector, label_onehot) tuple.
+    """
+
+    def __init__(
+        self,
+        feature_files: Sequence[FeaturePath | BinaryIO],
+        ground_truths: Tensor,  # shape: [num_samples, num_classes]
+        transform: Callable[[Tensor], Tensor] | None,
+    ):
+        if len(feature_files) != len(ground_truths):
+            raise ValueError("Number of feature files and ground truths must match.")
+        self.feature_files = feature_files
+        self.ground_truths = ground_truths
+        self.transform = transform
+
+    def __len__(self):
+        return len(self.feature_files)
+
+    def __getitem__(self, idx: int):
+        feature_file = self.feature_files[idx]
+        with h5py.File(feature_file, "r") as h5:
+            feats = torch.from_numpy(h5["feats"][:])  # pyright: ignore[reportIndexIssue]
+            # Accept [V] or [1, V]
+            if feats.ndim == 2 and feats.shape[0] == 1:
+                feats = feats[0]
+            elif feats.ndim == 1:
+                pass
+            else:
+                raise RuntimeError(
+                    f"Expected single feature vector (shape [F] or [1, F]), got {feats.shape} in {feature_file}"
+                )
+            if self.transform is not None:
+                feats = self.transform(feats)
+        label = self.ground_truths[idx]
+        return feats, label
+
+
+# Aliases for clarity
+PatientDataset = SingleFeatureDataset
+SlideDataset = SingleFeatureDataset
+
+
 @dataclass
 class CoordsInfo:
     coords_um: np.ndarray
