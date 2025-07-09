@@ -83,7 +83,9 @@ class Encoder(ABC):
             slide_embedding = self._generate_slide_embedding(
                 feats, device, coords=coords
             )
-            self._save_features_(output_path=output_path, feats=slide_embedding)
+            self._save_features_(
+                output_path=output_path, feats=slide_embedding, feat_type="slide"
+            )
 
     def encode_patients_(
         self,
@@ -142,7 +144,9 @@ class Encoder(ABC):
             patient_embedding = self._generate_patient_embedding(
                 feats_list, device, **kwargs
             )
-            self._save_features_(output_path=output_path, feats=patient_embedding)
+            self._save_features_(
+                output_path=output_path, feats=patient_embedding, feat_type="patient"
+            )
 
     @abstractmethod
     def _generate_slide_embedding(
@@ -192,7 +196,9 @@ class Encoder(ABC):
                 )
             return feats, coords, extractor
 
-    def _save_features_(self, output_path: Path, feats: np.ndarray) -> None:
+    def _save_features_(
+        self, output_path: Path, feats: np.ndarray, feat_type: str
+    ) -> None:
         with (
             NamedTemporaryFile(dir=output_path.parent, delete=False) as tmp_h5_file,
             h5py.File(tmp_h5_file, "w") as f,
@@ -204,6 +210,7 @@ class Encoder(ABC):
                 f.attrs["precision"] = str(self.precision)
                 f.attrs["stamp_version"] = stamp.__version__
                 f.attrs["code_hash"] = get_processing_code_hash(Path(__file__))[:8]
+                f.attrs["feat_type"] = feat_type
                 # TODO: Add more metadata like tile-level extractor name
                 # and maybe tile size in pixels and microns
             except Exception:
