@@ -35,6 +35,7 @@ from stamp.types import (
 )
 
 _logger = logging.getLogger("stamp")
+_logged_stamp_v1_warning = False
 
 
 __author__ = "Marko van Treeck"
@@ -113,6 +114,81 @@ def _collate_to_tuple(
     encoded_targets = torch.stack([encoded_target for _, _, _, encoded_target in items])
 
     return (bags, coords, bag_sizes, encoded_targets)
+
+
+def detect_feature_type(feature_dir: Path) -> str:
+    """
+    Detects feature type by inspecting all .h5 files in feature_dir.
+
+    Returns:
+        "tile" if all files are tile-level, "patient" if all are patient-level.
+        If files have mixed types, raises an error.
+        If no .h5 files are found, raises an error.
+    """
+    feature_types = set()
+    files_checked = 0
+
+    for file in feature_dir.glob("*.h5"):
+        files_checked += 1
+        with h5py.File(file, "r") as h5:
+            feat_type = h5.attrs.get("feat_type")
+            if feat_type is not None:
+                feature_types.add(str(feat_type))
+            else:
+                # If feat_type is missing, always treat as tile-level feature
+                feature_types.add("tile")
+
+    if files_checked == 0:
+        raise RuntimeError("No .h5 feature files found in feature_dir.")
+
+    if len(feature_types) > 1:
+        raise RuntimeError(
+            f"Multiple feature types detected in {feature_dir}: {feature_types}. "
+            "All feature files must have the same type."
+        )
+
+    return feature_types.pop()
+
+
+def load_patient_level_data(
+    *,
+    clini_table: Path,
+    feature_dir: Path,
+    patient_label: PandasLabel,
+    ground_truth_label: PandasLabel,
+    feature_ext: str = ".h5",
+) -> dict[PatientId, PatientData]:
+    """
+    Loads PatientData for patient-level features, matching patients in the clinical table
+    to feature files in feature_dir named {patient_id}.h5.
+    """
+
+    clini_df = _read_table(
+        clini_table,
+        usecols=[patient_label, ground_truth_label],
+        dtype=str,
+    ).dropna()
+
+    patient_to_data: dict[PatientId, PatientData] = {}
+    missing_features = []
+    for _, row in clini_df.iterrows():
+        patient_id = PatientId(str(row[patient_label]))
+        ground_truth = row[ground_truth_label]
+        feature_file = feature_dir / f"{patient_id}{feature_ext}"
+        if feature_file.exists():
+            patient_to_data[patient_id] = PatientData(
+                ground_truth=ground_truth,
+                feature_files=[FeaturePath(feature_file)],
+            )
+        else:
+            missing_features.append(patient_id)
+
+    if missing_features:
+        _logger.warning(
+            f"Some patients have no feature file in {feature_dir}: {missing_features}"
+        )
+
+    return patient_to_data
 
 
 @dataclass
@@ -269,9 +345,12 @@ def get_coords(feature_h5: h5py.File) -> CoordsInfo:
         == 224
     ):
         # Historic STAMP format
-        _logger.info(
-            f"{feature_h5.filename}: tile stride is roughly 224, assuming coordinates have unit 256um/224px (historic STAMP format)"
-        )
+        global _logged_stamp_v1_warning
+        if not _logged_stamp_v1_warning:
+            _logger.info(
+                f"{feature_h5.filename}: tile stride is roughly 224, assuming coordinates have unit 256um/224px (historic STAMP format)"
+            )
+            _logged_stamp_v1_warning = True
         tile_size_um = Microns(256.0)
         tile_size_px = TilePixels(224)
         coords_um = coords / 224 * 256

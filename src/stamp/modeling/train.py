@@ -8,6 +8,7 @@ import lightning
 import lightning.pytorch
 import lightning.pytorch.accelerators
 import lightning.pytorch.accelerators.accelerator
+import numpy as np
 import torch
 from lightning.pytorch.accelerators.accelerator import Accelerator
 from lightning.pytorch.callbacks import EarlyStopping, ModelCheckpoint
@@ -18,8 +19,11 @@ from torch.utils.data.dataloader import DataLoader
 from stamp.modeling.data import (
     BagDataset,
     PatientData,
+    PatientDataset,
     dataloader_from_patient_data,
+    detect_feature_type,
     filter_complete_patient_data_,
+    load_patient_level_data,
     patient_to_ground_truth_from_clini_table_,
     slide_to_patient_from_slide_table_,
 )
@@ -29,6 +33,7 @@ from stamp.modeling.lightning_model import (
     EncodedTargets,
     LitVisionTransformer,
 )
+from stamp.modeling.mlp_classifier import LitMLPClassifier
 from stamp.modeling.transforms import VaryPrecisionTransform
 from stamp.types import Category, CoordinatesBatch, GroundTruth, PandasLabel, PatientId
 
@@ -92,27 +97,46 @@ def train_categorical_model_(
             Categories of the ground truth.
             Set to `None` to automatically infer.
     """
-    # Read and parse data from out clini and slide table
-    patient_to_ground_truth = patient_to_ground_truth_from_clini_table_(
-        clini_table_path=clini_table,
-        ground_truth_label=ground_truth_label,
-        patient_label=patient_label,
-    )
-    slide_to_patient = slide_to_patient_from_slide_table_(
-        slide_table_path=slide_table,
-        feature_dir=feature_dir,
-        patient_label=patient_label,
-        filename_label=filename_label,
-    )
+    feature_type = detect_feature_type(feature_dir)
+    _logger.info(f"Detected feature type: {feature_type}")
 
-    # Clean data (remove slides without ground truth, missing features, etc.)
-    patient_to_data = filter_complete_patient_data_(
-        patient_to_ground_truth=patient_to_ground_truth,
-        slide_to_patient=slide_to_patient,
-        drop_patients_with_missing_ground_truth=True,
-    )
+    if feature_type == "tile":
+        # Tile-level: use slide_table
+        patient_to_ground_truth = patient_to_ground_truth_from_clini_table_(
+            clini_table_path=clini_table,
+            ground_truth_label=ground_truth_label,
+            patient_label=patient_label,
+        )
+        slide_to_patient = slide_to_patient_from_slide_table_(
+            slide_table_path=slide_table,
+            feature_dir=feature_dir,
+            patient_label=patient_label,
+            filename_label=filename_label,
+        )
+        patient_to_data = filter_complete_patient_data_(
+            patient_to_ground_truth=patient_to_ground_truth,
+            slide_to_patient=slide_to_patient,
+            drop_patients_with_missing_ground_truth=True,
+        )
+    elif feature_type == "patient":
+        # Patient-level: ignore slide_table
+        if slide_table is not None:
+            _logger.warning("slide_table is ignored for patient-level features.")
+        patient_to_data = load_patient_level_data(
+            clini_table=clini_table,
+            feature_dir=feature_dir,
+            patient_label=patient_label,
+            ground_truth_label=ground_truth_label,
+        )
+    elif feature_type == "slide":
+        raise RuntimeError(
+            "Slide-level features are not supported for training. "
+            "Please rerun the encoding step with patient-level encoding."
+        )
+    else:
+        raise RuntimeError(f"Unknown feature type: {feature_type}")
 
-    # Train the model
+    # Train the model (the rest of the logic is unchanged)
     model, train_dl, valid_dl = setup_model_for_training(
         patient_to_data=patient_to_data,
         categories=categories,
@@ -129,6 +153,7 @@ def train_categorical_model_(
             else None
         ),
         use_alibi=use_alibi,
+        feature_type=feature_type,
     )
     train_model_(
         output_dir=output_dir,
@@ -144,13 +169,13 @@ def train_categorical_model_(
 def train_model_(
     *,
     output_dir: Path,
-    model: LitVisionTransformer,
+    model: lightning.LightningModule,
     train_dl: DataLoader[tuple[Bags, CoordinatesBatch, BagSizes, EncodedTargets]],
     valid_dl: DataLoader[tuple[Bags, CoordinatesBatch, BagSizes, EncodedTargets]],
     max_epochs: int,
     patience: int,
     accelerator: str | Accelerator,
-) -> LitVisionTransformer:
+) -> lightning.LightningModule:
     """Trains a model.
 
     Returns:
@@ -191,6 +216,117 @@ def train_model_(
     return LitVisionTransformer.load_from_checkpoint(model_checkpoint.best_model_path)
 
 
+def setup_dataloaders_for_training(
+    *,
+    patient_to_data: Mapping[PatientId, PatientData[GroundTruth]],
+    categories: Sequence[Category] | None,
+    bag_size: int,
+    batch_size: int,
+    num_workers: int,
+    train_transform: Callable[[torch.Tensor], torch.Tensor] | None,
+    feature_type: str,
+) -> tuple[
+    DataLoader,
+    DataLoader,
+    Sequence[Category],
+    int,
+    Sequence[PatientId],
+    Sequence[PatientId],
+]:
+    """
+    Creates train/val dataloaders for tile-level or patient-level features.
+
+    Returns:
+        train_dl, valid_dl, categories, feature_dim, train_patients, valid_patients
+    """
+    # Stratified split
+    ground_truths = [
+        patient_data.ground_truth
+        for patient_data in patient_to_data.values()
+        if patient_data.ground_truth is not None
+    ]
+    if len(ground_truths) != len(patient_to_data):
+        raise ValueError(
+            "patient_to_data must have a ground truth defined for all targets!"
+        )
+
+    train_patients, valid_patients = cast(
+        tuple[Sequence[PatientId], Sequence[PatientId]],
+        train_test_split(
+            list(patient_to_data), stratify=ground_truths, shuffle=True, random_state=0
+        ),
+    )
+
+    if feature_type == "tile":
+        # Use existing BagDataset logic
+        train_dl, train_categories = dataloader_from_patient_data(
+            patient_data=[patient_to_data[pid] for pid in train_patients],
+            categories=categories,
+            bag_size=bag_size,
+            batch_size=batch_size,
+            shuffle=True,
+            num_workers=num_workers,
+            transform=train_transform,
+        )
+        valid_dl, _ = dataloader_from_patient_data(
+            patient_data=[patient_to_data[pid] for pid in valid_patients],
+            bag_size=None,
+            categories=train_categories,
+            batch_size=1,
+            shuffle=False,
+            num_workers=num_workers,
+            transform=None,
+        )
+        bags, _, _, _ = next(iter(train_dl))
+        dim_feats = bags.shape[-1]
+        return (
+            train_dl,
+            valid_dl,
+            train_categories,
+            dim_feats,
+            train_patients,
+            valid_patients,
+        )
+
+    elif feature_type == "patient":
+        # Patient-level: one feature file per patient
+        train_feature_files = [
+            next(iter(patient_to_data[pid].feature_files)) for pid in train_patients
+        ]
+        train_labels = [patient_to_data[pid].ground_truth for pid in train_patients]
+        valid_feature_files = [
+            next(iter(patient_to_data[pid].feature_files)) for pid in valid_patients
+        ]
+        valid_labels = [patient_to_data[pid].ground_truth for pid in valid_patients]
+
+        all_labels = train_labels + valid_labels
+        categories = (
+            categories if categories is not None else list(sorted(set(all_labels)))
+        )
+        train_onehot = torch.tensor(np.array(train_labels).reshape(-1, 1) == categories)
+        valid_onehot = torch.tensor(np.array(valid_labels).reshape(-1, 1) == categories)
+
+        train_ds = PatientDataset(
+            train_feature_files, train_onehot, transform=train_transform
+        )
+        valid_ds = PatientDataset(valid_feature_files, valid_onehot, transform=None)
+        train_dl = DataLoader(
+            train_ds, batch_size=batch_size, shuffle=True, num_workers=num_workers
+        )
+        valid_dl = DataLoader(
+            valid_ds, batch_size=1, shuffle=False, num_workers=num_workers
+        )
+
+        feats, _ = next(iter(train_dl))
+        dim_feats = feats.shape[-1]
+        return train_dl, valid_dl, categories, dim_feats, train_patients, valid_patients
+
+    else:
+        raise RuntimeError(
+            f"Unsupported feature type: {feature_type}. Only 'tile' and 'patient' are supported."
+        )
+
+
 def setup_model_for_training(
     *,
     patient_to_data: Mapping[PatientId, PatientData[GroundTruth]],
@@ -205,64 +341,34 @@ def setup_model_for_training(
     clini_table: Path,
     slide_table: Path,
     feature_dir: Path,
+    feature_type: str,
 ) -> tuple[
-    LitVisionTransformer,
-    DataLoader[tuple[Bags, CoordinatesBatch, BagSizes, EncodedTargets]],
-    DataLoader[tuple[Bags, CoordinatesBatch, BagSizes, EncodedTargets]],
+    lightning.LightningModule,
+    DataLoader,
+    DataLoader,
 ]:
     """Creates a model and dataloaders for training"""
 
-    # Do a stratified train-validation split
-    ground_truths = [
-        patient_data.ground_truth
-        for patient_data in patient_to_data.values()
-        if patient_data.ground_truth is not None
-    ]
-
-    if len(ground_truths) != len(patient_to_data):
-        raise ValueError(
-            "patient_to_data must have a ground truth defined for all targets!"
+    train_dl, valid_dl, train_categories, dim_feats, train_patients, valid_patients = (
+        setup_dataloaders_for_training(
+            patient_to_data=patient_to_data,
+            categories=categories,
+            bag_size=bag_size,
+            batch_size=batch_size,
+            num_workers=num_workers,
+            train_transform=train_transform,
+            feature_type=feature_type,
         )
-
-    train_patients, valid_patients = cast(
-        tuple[Sequence[PatientId], Sequence[PatientId]],
-        train_test_split(
-            list(patient_to_data), stratify=ground_truths, shuffle=True, random_state=0
-        ),
     )
 
-    train_dl, train_categories = dataloader_from_patient_data(
-        patient_data=[patient_to_data[patient] for patient in train_patients],
-        categories=categories,
-        bag_size=bag_size,
-        batch_size=batch_size,
-        shuffle=True,
-        num_workers=num_workers,
-        transform=train_transform,
-    )
-    del categories  # Let's not accidentally reuse the original categories
-    valid_dl, _ = dataloader_from_patient_data(
-        patient_data=[patient_to_data[patient] for patient in valid_patients],
-        bag_size=None,  # Use all the patient data for validation
-        categories=train_categories,
-        batch_size=1,
-        shuffle=False,
-        num_workers=num_workers,
-        transform=None,
-    )
-    if overlap := set(train_patients) & set(valid_patients):
-        raise RuntimeError(
-            f"unreachable: unexpected overlap between training and validation set: {overlap}"
+    # Compute class weights
+    if feature_type == "tile":
+        category_counts = cast(BagDataset, train_dl.dataset).ground_truths.sum(dim=0)
+    else:
+        # For slide/patient, count from one-hot labels
+        category_counts = cast(PatientDataset, train_dl.dataset).ground_truths.sum(
+            dim=0
         )
-
-    # Sample one bag to infer the input dimensions of the model
-    bags, coords, bag_sizes, targets = cast(
-        tuple[Bags, CoordinatesBatch, BagSizes, EncodedTargets], next(iter(train_dl))
-    )
-    _, _, dim_feats = bags.shape
-
-    # Weigh classes inversely to their occurrence
-    category_counts = cast(BagDataset, train_dl.dataset).ground_truths.sum(dim=0)
     cat_ratio_reciprocal = category_counts.sum() / category_counts
     category_weights = cat_ratio_reciprocal / cat_ratio_reciprocal.sum()
 
@@ -279,24 +385,39 @@ def setup_model_for_training(
             "You may want to consider removing these categories; the model will likely overfit on the few samples available."
         )
 
-    # Train the model
-    model = LitVisionTransformer(
-        categories=train_categories,
-        category_weights=category_weights,
-        dim_input=dim_feats,
-        dim_model=512,
-        dim_feedforward=2048,
-        n_heads=8,
-        n_layers=2,
-        dropout=0.25,
-        use_alibi=use_alibi,
-        # Metadata, has no effect on model training
-        ground_truth_label=ground_truth_label,
-        train_patients=train_patients,
-        valid_patients=valid_patients,
-        clini_table=clini_table,
-        slide_table=slide_table,
-        feature_dir=feature_dir,
-    )
+    # Model selection
+    if feature_type == "tile":
+        model = LitVisionTransformer(
+            categories=train_categories,
+            category_weights=category_weights,
+            dim_input=dim_feats,
+            dim_model=512,
+            dim_feedforward=2048,
+            n_heads=8,
+            n_layers=2,
+            dropout=0.25,
+            use_alibi=use_alibi,
+            ground_truth_label=ground_truth_label,
+            train_patients=train_patients,
+            valid_patients=valid_patients,
+            clini_table=clini_table,
+            slide_table=slide_table,
+            feature_dir=feature_dir,
+        )
+    else:
+        model = LitMLPClassifier(
+            categories=train_categories,
+            category_weights=category_weights,
+            dim_input=dim_feats,
+            dim_hidden=512,
+            num_layers=2,
+            dropout=0.25,
+            ground_truth_label=ground_truth_label,
+            train_patients=train_patients,
+            valid_patients=valid_patients,
+            clini_table=clini_table,
+            slide_table=slide_table,
+            feature_dir=feature_dir,
+        )
 
     return model, train_dl, valid_dl
