@@ -213,7 +213,7 @@ def setup_model_for_training(
             category_weights=category_weights,
             dim_input=dim_feats,
             dim_model=512,
-            dim_feedforward=2048,
+            dim_feedforward=512,
             n_heads=8,
             n_layers=2,
             dropout=0.25,
