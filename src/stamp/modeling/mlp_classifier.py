@@ -60,7 +60,7 @@ class LitMLPClassifier(lightning.LightningModule):
         **metadata,
     ):
         super().__init__()
-        self.save_hyperparameters(ignore=["category_weights"])
+        self.save_hyperparameters()
         self.model = MLPClassifier(
             dim_input=dim_input,
             dim_hidden=dim_hidden,

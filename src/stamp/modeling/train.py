@@ -213,7 +213,9 @@ def train_model_(
     )
     shutil.copy(model_checkpoint.best_model_path, output_dir / "model.ckpt")
 
-    return LitVisionTransformer.load_from_checkpoint(model_checkpoint.best_model_path)
+    # Reload the best model using the same class as the input model
+    ModelClass = type(model)
+    return ModelClass.load_from_checkpoint(model_checkpoint.best_model_path)
 
 
 def setup_dataloaders_for_training(
