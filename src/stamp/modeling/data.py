@@ -367,6 +367,7 @@ def get_coords(feature_h5: h5py.File) -> CoordsInfo:
         == 224
     ):
         # Historic STAMP format
+        # TODO: find a better way to get this warning just once
         global _logged_stamp_v1_warning
         if not _logged_stamp_v1_warning:
             _logger.info(

@@ -10,9 +10,13 @@ from sklearn.model_selection import StratifiedKFold
 
 from stamp.modeling.data import (
     PatientData,
+    detect_feature_type,
     filter_complete_patient_data_,
+    load_patient_level_data,
+    patient_feature_dataloader,
     patient_to_ground_truth_from_clini_table_,
     slide_to_patient_from_slide_table_,
+    tile_bag_dataloader,
 )
 from stamp.modeling.deploy import _predict, _to_prediction_df
 from stamp.modeling.lightning_model import LitVisionTransformer
@@ -64,30 +68,44 @@ def categorical_crossval_(
     use_vary_precision_transform: bool,
     use_alibi: bool,
 ) -> None:
-    patient_to_ground_truth: Final[dict[PatientId, GroundTruth]] = (
-        patient_to_ground_truth_from_clini_table_(
-            clini_table_path=clini_table,
-            ground_truth_label=ground_truth_label,
-            patient_label=patient_label,
+    feature_type = detect_feature_type(feature_dir)
+    _logger.info(f"Detected feature type: {feature_type}")
+
+    if feature_type == "tile":
+        patient_to_ground_truth: dict[PatientId, GroundTruth] = (
+            patient_to_ground_truth_from_clini_table_(
+                clini_table_path=clini_table,
+                ground_truth_label=ground_truth_label,
+                patient_label=patient_label,
+            )
         )
-    )
-    slide_to_patient: Final[dict[FeaturePath, PatientId]] = (
-        slide_to_patient_from_slide_table_(
-            slide_table_path=slide_table,
+        slide_to_patient: Final[dict[FeaturePath, PatientId]] = (
+            slide_to_patient_from_slide_table_(
+                slide_table_path=slide_table,
+                feature_dir=feature_dir,
+                patient_label=patient_label,
+                filename_label=filename_label,
+            )
+        )
+        patient_to_data: Mapping[PatientId, PatientData] = (
+            filter_complete_patient_data_(
+                patient_to_ground_truth=patient_to_ground_truth,
+                slide_to_patient=slide_to_patient,
+                drop_patients_with_missing_ground_truth=True,
+            )
+        )
+    elif feature_type == "patient":
+        patient_to_data: Mapping[PatientId, PatientData] = load_patient_level_data(
+            clini_table=clini_table,
             feature_dir=feature_dir,
             patient_label=patient_label,
-            filename_label=filename_label,
+            ground_truth_label=ground_truth_label,
         )
-    )
-
-    # Clean data (remove slides without ground truth, missing features, etc.)
-    patient_to_data: Final[Mapping[Category, PatientData]] = (
-        filter_complete_patient_data_(
-            patient_to_ground_truth=patient_to_ground_truth,
-            slide_to_patient=slide_to_patient,
-            drop_patients_with_missing_ground_truth=True,
-        )
-    )
+        patient_to_ground_truth: dict[PatientId, GroundTruth] = {
+            pid: pd.ground_truth for pid, pd in patient_to_data.items()
+        }
+    else:
+        raise RuntimeError(f"Unsupported feature type: {feature_type}")
 
     output_dir.mkdir(parents=True, exist_ok=True)
     splits_file = output_dir / "splits.json"
@@ -169,6 +187,7 @@ def categorical_crossval_(
                     else None
                 ),
                 use_alibi=use_alibi,
+                feature_type=feature_type,
             )
             model = train_model_(
                 output_dir=split_dir,
@@ -184,14 +203,37 @@ def categorical_crossval_(
 
         # Deploy on test set
         if not (split_dir / "patient-preds.csv").exists():
+            # Prepare test dataloader
+            test_patients = [
+                pid for pid in split.test_patients if pid in patient_to_data
+            ]
+            test_patient_data = [patient_to_data[pid] for pid in test_patients]
+            if feature_type == "tile":
+                test_dl, _ = tile_bag_dataloader(
+                    patient_data=test_patient_data,
+                    bag_size=None,
+                    categories=categories,
+                    batch_size=1,
+                    shuffle=False,
+                    num_workers=num_workers,
+                    transform=None,
+                )
+            elif feature_type == "patient":
+                test_dl, _ = patient_feature_dataloader(
+                    patient_data=test_patient_data,
+                    categories=categories,
+                    batch_size=1,
+                    shuffle=False,
+                    num_workers=num_workers,
+                    transform=None,
+                )
+            else:
+                raise RuntimeError(f"Unsupported feature type: {feature_type}")
+
             predictions = _predict(
                 model=model,
-                patient_to_data={
-                    patient_id: patient_data
-                    for patient_id, patient_data in patient_to_data.items()
-                    if patient_id in split.test_patients
-                },
-                num_workers=num_workers,
+                test_dl=test_dl,
+                patient_ids=test_patients,
                 accelerator=accelerator,
             )
 
