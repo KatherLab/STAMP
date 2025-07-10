@@ -57,7 +57,7 @@ class PatientData(Generic[GroundTruthType]):
     feature_files: Iterable[FeaturePath | BinaryIO]
 
 
-def dataloader_from_patient_data(
+def tile_bag_dataloader(
     *,
     patient_data: Sequence[PatientData[GroundTruth | None]],
     bag_size: int | None,
@@ -70,7 +70,7 @@ def dataloader_from_patient_data(
     DataLoader[tuple[Bags, CoordinatesBatch, BagSizes, EncodedTargets]],
     Sequence[Category],
 ]:
-    """Creates a dataloader from patient data, encoding the ground truths.
+    """Creates a dataloader from patient data for tile-level (bagged) features.
 
     Args:
         categories:
@@ -114,6 +114,29 @@ def _collate_to_tuple(
     encoded_targets = torch.stack([encoded_target for _, _, _, encoded_target in items])
 
     return (bags, coords, bag_sizes, encoded_targets)
+
+
+def patient_feature_dataloader(
+    *,
+    patient_data: Sequence[PatientData[GroundTruth | None]],
+    categories: Sequence[Category] | None = None,
+    batch_size: int,
+    shuffle: bool,
+    num_workers: int,
+    transform: Callable[[Tensor], Tensor] | None,
+) -> tuple[DataLoader, Sequence[Category]]:
+    """
+    Creates a dataloader for patient-level features (one feature vector per patient).
+    """
+    feature_files = [next(iter(p.feature_files)) for p in patient_data]
+    raw_ground_truths = np.array([patient.ground_truth for patient in patient_data])
+    categories = (
+        categories if categories is not None else list(np.unique(raw_ground_truths))
+    )
+    one_hot = torch.tensor(raw_ground_truths.reshape(-1, 1) == categories)
+    ds = PatientFeatureDataset(feature_files, one_hot, transform=transform)
+    dl = DataLoader(ds, batch_size=batch_size, shuffle=shuffle, num_workers=num_workers)
+    return dl, categories
 
 
 def detect_feature_type(feature_dir: Path) -> str:
@@ -162,6 +185,9 @@ def load_patient_level_data(
     Loads PatientData for patient-level features, matching patients in the clinical table
     to feature files in feature_dir named {patient_id}.h5.
     """
+    # TODO: I'm not proud at all of this. Any other alternative for mapping
+    # clinical data to the patient-level feature paths that avoids
+    # creating another slide table for encoded featuress is welcome :P.
 
     clini_df = _read_table(
         clini_table,
@@ -261,7 +287,7 @@ class BagDataset(Dataset[tuple[_Bag, _Coordinates, BagSize, _EncodedTarget]]):
             )
 
 
-class SingleFeatureDataset(Dataset):
+class PatientFeatureDataset(Dataset):
     """
     Dataset for single feature vector per sample (e.g. slide-level or patient-level).
     Each item is a (feature_vector, label_onehot) tuple.
@@ -293,17 +319,13 @@ class SingleFeatureDataset(Dataset):
                 pass
             else:
                 raise RuntimeError(
-                    f"Expected single feature vector (shape [F] or [1, F]), got {feats.shape} in {feature_file}"
+                    f"Expected single feature vector (shape [F] or [1, F]), got {feats.shape} in {feature_file}."
+                    "Check that the features are patient-level."
                 )
             if self.transform is not None:
                 feats = self.transform(feats)
         label = self.ground_truths[idx]
         return feats, label
-
-
-# Aliases for clarity
-PatientDataset = SingleFeatureDataset
-SlideDataset = SingleFeatureDataset
 
 
 @dataclass

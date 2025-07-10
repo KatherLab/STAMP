@@ -12,13 +12,14 @@ from lightning.pytorch.accelerators.accelerator import Accelerator
 
 from stamp.modeling.data import (
     PatientData,
-    PatientDataset,
-    dataloader_from_patient_data,
+    PatientFeatureDataset,
     detect_feature_type,
     filter_complete_patient_data_,
     load_patient_level_data,
+    patient_feature_dataloader,
     patient_to_ground_truth_from_clini_table_,
     slide_to_patient_from_slide_table_,
+    tile_bag_dataloader,
 )
 from stamp.modeling.lightning_model import LitVisionTransformer
 from stamp.modeling.mlp_classifier import LitMLPClassifier
@@ -116,9 +117,9 @@ def deploy_categorical_model_(
             slide_to_patient=slide_to_patient,
             drop_patients_with_missing_ground_truth=False,
         )
-        test_dl, _ = dataloader_from_patient_data(
+        test_dl, _ = tile_bag_dataloader(
             patient_data=list(patient_to_data.values()),
-            bag_size=None,
+            bag_size=None,  # We want all tiles to be seen by the model
             categories=list(models[0].categories),
             batch_size=1,
             shuffle=False,
@@ -141,15 +142,13 @@ def deploy_categorical_model_(
             patient_label=patient_label,
             ground_truth_label=ground_truth_label,
         )
-        feature_files = [
-            next(iter(pd.feature_files)) for pd in patient_to_data.values()
-        ]
-        labels = [pd.ground_truth for pd in patient_to_data.values()]
-        categories = list(models[0].categories)
-        onehot = torch.tensor(np.array(labels).reshape(-1, 1) == categories)
-        test_ds = PatientDataset(feature_files, onehot, transform=None)
-        test_dl = torch.utils.data.DataLoader(
-            test_ds, batch_size=1, shuffle=False, num_workers=num_workers
+        test_dl, _ = patient_feature_dataloader(
+            patient_data=list(patient_to_data.values()),
+            categories=list(models[0].categories),
+            batch_size=1,
+            shuffle=False,
+            num_workers=num_workers,
+            transform=None,
         )
         patient_ids = list(patient_to_data.keys())
         patient_to_ground_truth = {
