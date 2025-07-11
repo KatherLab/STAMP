@@ -48,7 +48,7 @@ class _Splits(BaseModel):
 
 def categorical_crossval_(
     clini_table: Path,
-    slide_table: Path,
+    slide_table: Path | None,
     feature_dir: Path,
     output_dir: Path,
     patient_label: PandasLabel,
@@ -72,6 +72,8 @@ def categorical_crossval_(
     _logger.info(f"Detected feature type: {feature_type}")
 
     if feature_type == "tile":
+        if slide_table is None:
+            raise ValueError("A slide table is required for tile-level modeling")
         patient_to_ground_truth: dict[PatientId, GroundTruth] = (
             patient_to_ground_truth_from_clini_table_(
                 clini_table_path=clini_table,

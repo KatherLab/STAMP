@@ -47,7 +47,7 @@ _logger = logging.getLogger("stamp")
 def train_categorical_model_(
     *,
     clini_table: Path,
-    slide_table: Path,
+    slide_table: Path | None,
     feature_dir: Path,
     output_dir: Path,
     patient_label: PandasLabel,
@@ -101,7 +101,8 @@ def train_categorical_model_(
     _logger.info(f"Detected feature type: {feature_type}")
 
     if feature_type == "tile":
-        # Tile-level: use slide_table
+        if slide_table is None:
+            raise ValueError("A slide table is required for tile-level modeling")
         patient_to_ground_truth = patient_to_ground_truth_from_clini_table_(
             clini_table_path=clini_table,
             ground_truth_label=ground_truth_label,
@@ -178,7 +179,7 @@ def setup_model_for_training(
     # Metadata, has no effect on model training
     ground_truth_label: PandasLabel,
     clini_table: Path,
-    slide_table: Path,
+    slide_table: Path | None,
     feature_dir: Path,
     feature_type: str,
 ) -> tuple[
@@ -218,6 +219,7 @@ def setup_model_for_training(
             n_layers=2,
             dropout=0.25,
             use_alibi=use_alibi,
+            # Metadata, has no effect on model training
             ground_truth_label=ground_truth_label,
             train_patients=train_patients,
             valid_patients=valid_patients,
@@ -233,11 +235,11 @@ def setup_model_for_training(
             dim_hidden=512,
             num_layers=2,
             dropout=0.25,
+            # Metadata, has no effect on model training
             ground_truth_label=ground_truth_label,
             train_patients=train_patients,
             valid_patients=valid_patients,
             clini_table=clini_table,
-            slide_table=slide_table,
             feature_dir=feature_dir,
         )
 
