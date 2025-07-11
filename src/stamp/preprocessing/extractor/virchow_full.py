@@ -9,33 +9,41 @@ try:
     from timm.layers.mlp import SwiGLUPacked
 except ModuleNotFoundError as e:
     raise ModuleNotFoundError(
-        "virchow2 dependencies not installed."
+        "virchow dependencies not installed."
         " Please reinstall stamp using `pip install 'stamp[virchow2]'`"
     ) from e
 
 from stamp.preprocessing.config import ExtractorName
 from stamp.preprocessing.extractor import Extractor
 
-__author__ = "Tim Lenz"
-__copyright__ = "Copyright (C) 2025 Tim Lenz"
+__author__ = "Juan Pablo Ricapito"
+__copyright__ = "Copyright (C) 2025 Juan Pablo Ricapito"
 __license__ = "MIT"
+# nah just kidding
 
 
-class Virchow2ClsOnly(torch.nn.Module):
+class VirchowConcatenated(torch.nn.Module):
     def __init__(self, model) -> None:
         super().__init__()
         self.model = model
 
     def forward(self, batch: torch.Tensor) -> torch.Tensor:
-        return self.model(batch)[:, 0]
+        output = self.model(batch)
+
+        class_token = output[:, 0]
+        patch_tokens = output[:, 1:]
+        return torch.cat([class_token, patch_tokens.mean(1)], dim=-1)
 
 
-def virchow2() -> Extractor[Virchow2ClsOnly]:
-    """Extracts features from slide tiles using Virchow2 tile encoder."""
+def virchow_full() -> Extractor[VirchowConcatenated]:
+    """Extracts features from slide tiles using Virchow tile encoder
+    concatenating the class token with the mean patch token to create
+    the final tile embedding of dimension 2560.
+    """
 
     # Load the model structure
     model = timm.create_model(  # pyright: ignore[reportPrivateImportUsage]
-        "hf-hub:paige-ai/Virchow2",
+        "hf-hub:paige-ai/Virchow",
         pretrained=True,
         mlp_layer=SwiGLUPacked,
         act_layer=torch.nn.SiLU,
@@ -48,7 +56,7 @@ def virchow2() -> Extractor[Virchow2ClsOnly]:
     )
 
     return Extractor(
-        model=Virchow2ClsOnly(model),
+        model=VirchowConcatenated(model),
         transform=transform,
-        identifier=ExtractorName.VIRCHOW2,
+        identifier=ExtractorName.VIRCHOW_FULL,
     )

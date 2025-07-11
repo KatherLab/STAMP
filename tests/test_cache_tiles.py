@@ -8,12 +8,8 @@ import pytest
 
 from stamp.cache import download_file
 from stamp.preprocessing import Microns, TilePixels
-from stamp.preprocessing.tiling import (
-    ImageExtension,
-    SlidePixels,
-    _Tile,
-    tiles_with_cache,
-)
+from stamp.preprocessing.tiling import _Tile, tiles_with_cache
+from stamp.types import ImageExtension, SlidePixels
 
 
 def _get_tiles_and_images(

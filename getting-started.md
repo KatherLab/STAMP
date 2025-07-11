@@ -44,10 +44,21 @@ which in turn allows us to efficiently train machine learning models with them.
 
 Stamp currently supports the following feature extractors:
   - [ctranspath][ctranspath]
+  - [chief_ctranspath][chief_ctranspath]
   - [DinoBloom][dinobloom]
   - [CONCH][conch]
+  - [CONCHv1.5][conch1_5]
   - [UNI][uni]
+  - [UNI2][uni2]
+  - [Virchow][virchow]
   - [Virchow2][virchow2]
+  - [Gigapath][gigapath]
+  - [H-optimus-0][h_optimus_0]
+  - [H-optimus-1][h_optimus_1]
+  - [mSTAR][mstar]
+  - [MUSK][musk]
+  - [PLIP][plip]
+
 
 As some of the above require you to request access to the model on huggingface,
 we will stick with ctranspath for this example.
@@ -128,8 +139,24 @@ meaning ignored that it was ignored during feature extraction.
 [ctranspath]: https://www.sciencedirect.com/science/article/abs/pii/S1361841522002043 "Transformer-based unsupervised contrastive learning for histopathological image classification"
 [dinobloom]: https://github.com/marrlab/DinoBloom "DinoBloom: A Foundation Model for Generalizable Cell Embeddings in Hematology"
 [uni]: https://www.nature.com/articles/s41591-024-02857-3 "Towards a general-purpose foundation model for computational pathology"
+[uni2]: https://huggingface.co/MahmoodLab/UNI2-h
 [conch]: https://www.nature.com/articles/s41591-024-02856-4 "A visual-language foundation model for computational pathology"
+[conch1_5]: https://huggingface.co/MahmoodLab/conchv1_5
+[virchow]: https://huggingface.co/paige-ai/Virchow "A foundation model for clinical-grade computational pathology and rare cancers detection"
 [virchow2]: https://huggingface.co/paige-ai/Virchow2
+[chief_ctranspath]: https://github.com/hms-dbmi/CHIEF
+[gigapath]: https://huggingface.co/prov-gigapath/prov-gigapath
+[h_optimus_0]: https://huggingface.co/bioptimus/H-optimus-0
+[h_optimus_1]: https://huggingface.co/bioptimus/H-optimus-1
+[mstar]: https://huggingface.co/Wangyh/mSTAR
+[musk]: https://huggingface.co/xiangjx/musk
+[plip]: https://github.com/PathologyFoundation/plip
+[TITAN]: https://huggingface.co/MahmoodLab/TITAN
+[COBRA2]: https://huggingface.co/KatherLab/COBRA
+[EAGLE]: https://github.com/KatherLab/EAGLE
+[MADELEINE]: https://huggingface.co/MahmoodLab/madeleine
+
+
 
 ## Doing Cross-Validation on the Data Set
 
@@ -231,3 +258,113 @@ Afterwards, the `output_dir` should contain the following files:
     for the splits.
   - `roc-curve_isMSIH=yes.svg` and `pr-curve_isMSIH=yes.svg`
     contain the ROC and precision recall curves of the splits.
+
+## Slide-Level Encoding 
+Tile-Level features can be enconded into a single feature per slide, this is useful
+when trying to capture global patterns across whole slides.
+
+STAMP currently supports the following encoders:
+- [CHIEF][CHIEF_CTRANSPATH]
+- [TITAN]
+- [GIGAPATH]
+- [COBRA2]
+- [EAGLE]
+- [MADELEINE]
+
+Slide encoders take as input the already extracted tile-level features in the 
+preprocessing step. Each encoder accepts only certain extractors and most
+work only on CUDA devices:
+
+| Encoder | Required Extractor | Compatible Devices |
+|--|--|--|
+| CHIEF | CTRANSPATH, CHIEF-CTRANSPATH | CUDA only |
+| TITAN | CONCH1.5 | CUDA, cpu, mps
+| GIGAPATH | GIGAPATH | CUDA only
+| COBRA2 | CONCH, UNI, VIRCHOW2 or H-OPTIMUS-0 | CUDA only
+| EAGLE | CTRANSPATH, CHIEF-CTRANSPATH | CUDA only
+| MADELEINE | CONCH | CUDA only
+
+
+As with feature extractors, most of these models require you to request
+access. The following example uses CHIEF, which is available if you installed 
+STAMP with `uv sync --all-extras`. The configuration should look like this:
+
+```yaml
+# stamp-test-experiment/config.yaml
+
+slide_encoding:
+  # Encoder to use for slide encoding. Possible options are "cobra",
+  # "eagle", "titan", "gigapath", "chief", "prism", "madeleine".
+  encoder: "chief"
+  
+  # Directory to save the output files.
+  output_dir: "/path/to/save/files/to"
+  
+  # Directory where the extracted features are stored.
+  feat_dir: "/path/your/extracted/features/are/stored/in"
+  
+  # Device to run slide encoding on ("cpu", "cuda", "cuda:0", etc.)
+  device: "cuda"
+
+  # Optional settings:
+  # Directory where the aggregated features are stored. Needed for
+  # some encoders such as eagle (it requires virchow2 features).
+  #agg_feat_dir: "/path/your/aggregated/features/are/stored/in"
+
+  # Add a hash of the entire preprocessing codebase in the feature folder name.
+  #generate_hash: True
+  ```
+
+Don't forget to put in `feat_dir` a path containing, in this case, `ctranspath` or
+`chief-ctranspath` tile-level features. Once everything is set, you can simply run:
+
+```sh
+stamp --config stamp-test-experiment/config.yaml encode_slides
+```
+The output will be one `.h5` file per slide. 
+
+## Patient-Level Encoding
+Even though the available encoders are designed for slide-level use, this
+option concatenates the slides of a patient along the x-axis, creating a single
+"virtual" slide that contains two blocks of tissue. The configuration is the same
+except for `slide_table` which is required to link slides with patients.
+```yaml
+# stamp-test-experiment/config.yaml
+
+patient_encoding:
+  # Encoder to use for patient encoding. Possible options are "cobra",
+  # "eagle", "titan", "gigapath", "chief", "prism", "madeleine".
+  encoder: "eagle"
+  
+  # Directory to save the output files.
+  output_dir: "/path/to/save/files/to"
+  
+  # Directory where the extracted features are stored.
+  feat_dir: "/path/your/extracted/features/are/stored/in"
+  
+  # A table (.xlsx or .csv) relating every slide to their feature files.
+  # The table must contain at least two columns, one titled "SLIDE",
+  # containing the slide ID, and one called "FILENAME", containing the feature file path relative to `feat_dir`.
+  slide_table: "/path/of/slide.csv"
+  
+  # Device to run slide encoding on ("cpu", "cuda", "cuda:0", etc.)
+  device: "cuda"
+
+  # Optional settings:
+  patient_label: "PATIENT"
+  filename_label: "FILENAME"
+  
+  # Directory where the aggregated features are stored. Needed for
+  # some encoders such as eagle (it requires virchow2 features).
+  #agg_feat_dir: "/path/your/aggregated/features/are/stored/in"
+
+  # Add a hash of the entire preprocessing codebase in the feature folder name.
+  #generate_hash: True
+  ```
+
+  Then run:
+  ```sh
+stamp --config stamp-test-experiment/config.yaml encode_patients
+```
+
+The output `.h5` features will have the patient's id as name. 

@@ -7,6 +7,7 @@ except ModuleNotFoundError as e:
         " Please reinstall stamp using `pip install 'stamp[gigapath]'`"
     ) from e
 
+from stamp.preprocessing.config import ExtractorName
 from stamp.preprocessing.extractor import Extractor
 
 
@@ -29,5 +30,5 @@ def gigapath() -> Extractor:
     return Extractor(
         model=model,
         transform=transform,
-        identifier="gigapath",  # type: ignore
+        identifier=ExtractorName.GIGAPATH,  # type: ignore
     )

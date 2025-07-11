@@ -18,13 +18,15 @@ A Protocol for End-to-End Deep Learning in Computational Pathology".
 
 ## Installing stamp
 
-To install stamp, run:
+We recommend installing STAMP with [uv](https://docs.astral.sh/uv/):
 ```bash
-# We recommend using a virtual environment to install stamp
-python -m venv .venv
-. .venv/bin/activate
+git clone https://github.com/KatherLab/STAMP.git
 
-pip install "stamp[all] @ git+https://github.com/KatherLab/STAMP"
+cd STAMP/
+
+uv sync --all-extras
+
+source .venv/bin/activate
 ```
 
 > [!IMPORTANT]
@@ -43,16 +45,18 @@ pip install "stamp[all] @ git+https://github.com/KatherLab/STAMP"
 If the installation was successful, running `stamp` in your terminal should yield the following output:
 ```
 $ stamp
-usage: stamp [-h] [--config CONFIG_FILE_PATH] {init,setup,preprocess,train,crossval,deploy,statistics,config,heatmaps} ...
+usage: stamp [-h] [--config CONFIG_FILE_PATH] {init,preprocess,encode_slides,encode_patients,train,crossval,deploy,statistics,config,heatmaps} ...
 
 STAMP: Solid Tumor Associative Modeling in Pathology
 
 positional arguments:
-  {init,setup,preprocess,train,crossval,deploy,statistics,config,heatmaps}
+  {init,preprocess,encode_slides,encode_patients,train,crossval,deploy,statistics,config,heatmaps}
     init                Create a new STAMP configuration file at the path specified by --config
     preprocess          Preprocess whole-slide images into feature vectors
+    encode_slides       Encode patch-level features into slide-level embeddings
+    encode_patients     Encode features into patient-level embeddings
     train               Train a Vision Transformer model
-    crossval            Train a Vision Transformer model with cross validation
+    crossval            Train a Vision Transformer model with cross validation for modeling.n_splits folds
     deploy              Deploy a trained Vision Transformer model
     statistics          Generate AUROCs and AUPRCs with 95%CI for a trained Vision Transformer model
     config              Print the loaded configuration

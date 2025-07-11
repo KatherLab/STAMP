@@ -3,7 +3,7 @@ from pathlib import Path
 import torch
 from pydantic import BaseModel, ConfigDict
 
-from stamp.preprocessing.tiling import SlideMPP
+from stamp.types import SlideMPP
 
 
 class HeatmapConfig(BaseModel):

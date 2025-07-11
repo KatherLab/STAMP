@@ -77,6 +77,49 @@ def _run_cli(args: argparse.Namespace) -> None:
                 generate_hash=config.preprocessing.generate_hash,
             )
 
+        case "encode_slides":
+            from stamp.encoding import init_slide_encoder_
+
+            if config.slide_encoding is None:
+                raise ValueError("no slide encoding configuration supplied")
+
+            _add_file_handle_(_logger, output_dir=config.slide_encoding.output_dir)
+            _logger.info(
+                "using the following configuration:\n"
+                f"{yaml.dump(config.slide_encoding.model_dump(mode='json'))}"
+            )
+            init_slide_encoder_(
+                encoder=config.slide_encoding.encoder,
+                output_dir=config.slide_encoding.output_dir,
+                feat_dir=config.slide_encoding.feat_dir,
+                device=config.slide_encoding.device,
+                agg_feat_dir=config.slide_encoding.agg_feat_dir,
+                generate_hash=config.slide_encoding.generate_hash,
+            )
+
+        case "encode_patients":
+            from stamp.encoding import init_patient_encoder_
+
+            if config.patient_encoding is None:
+                raise ValueError("no patient encoding configuration supplied")
+
+            _add_file_handle_(_logger, output_dir=config.patient_encoding.output_dir)
+            _logger.info(
+                "using the following configuration:\n"
+                f"{yaml.dump(config.patient_encoding.model_dump(mode='json'))}"
+            )
+            init_patient_encoder_(
+                encoder=config.patient_encoding.encoder,
+                output_dir=config.patient_encoding.output_dir,
+                feat_dir=config.patient_encoding.feat_dir,
+                slide_table_path=config.patient_encoding.slide_table,
+                patient_label=config.patient_encoding.patient_label,
+                filename_label=config.patient_encoding.filename_label,
+                device=config.patient_encoding.device,
+                agg_feat_dir=config.patient_encoding.agg_feat_dir,
+                generate_hash=config.patient_encoding.generate_hash,
+            )
+
         case "train":
             from stamp.modeling.train import train_categorical_model_
 
@@ -269,6 +312,14 @@ def main() -> None:
     )
     commands.add_parser(
         "preprocess", help="Preprocess whole-slide images into feature vectors"
+    )
+    commands.add_parser(
+        "encode_slides",
+        help="Encode patch-level features into slide-level embeddings",
+    )
+    commands.add_parser(
+        "encode_patients",
+        help="Encode features into patient-level embeddings",
     )
     commands.add_parser("train", help="Train a Vision Transformer model")
     commands.add_parser(

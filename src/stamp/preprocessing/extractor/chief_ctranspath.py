@@ -13,6 +13,7 @@ except ModuleNotFoundError as e:
         " Please reinstall stamp using `pip install 'stamp[chief_ctranspath]'`"
     ) from e
 
+from stamp.preprocessing.config import ExtractorName
 from stamp.preprocessing.extractor import Extractor, ctranspath
 
 
@@ -52,5 +53,5 @@ def chief_ctranspath(
     return Extractor(
         model=model,
         transform=transform,
-        identifier="chief_ctranspath",
+        identifier=ExtractorName.CHIEF_CTRANSPATH,
     )

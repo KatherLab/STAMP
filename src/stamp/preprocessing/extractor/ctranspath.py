@@ -23,6 +23,7 @@ except ModuleNotFoundError as e:
         " Please reinstall stamp using `pip install 'stamp[ctranspath]'`"
     ) from e
 
+from stamp.preprocessing.config import ExtractorName
 from stamp.preprocessing.extractor import Extractor
 
 __author__ = "Marko van Treeck"
@@ -65,7 +66,7 @@ def ctranspath(model_path: Path | None = None) -> Extractor[_SwinTransformer]:
     return Extractor(
         model=model,
         transform=transform,
-        identifier=f"xiyuewang-ctranspath-{digest[:8]}",
+        identifier=ExtractorName.CTRANSPATH,
     )
 
 

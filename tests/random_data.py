@@ -3,7 +3,6 @@
 import io
 import random
 import string
-import tempfile
 from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import TypeAlias
@@ -16,11 +15,13 @@ from jaxtyping import Float
 from torch import Tensor
 
 import stamp
-from stamp.modeling.data import (
+from stamp.preprocessing.config import ExtractorName
+from stamp.types import (
     Category,
+    Microns,
     PatientId,
+    TilePixels,
 )
-from stamp.preprocessing.tiling import Microns, TilePixels
 
 CliniPath: TypeAlias = Path
 SlidePath: TypeAlias = Path
@@ -44,6 +45,8 @@ def create_random_dataset(
     feat_dim: int,
     categories: Sequence[str] | None = None,
     n_categories: int | None = None,
+    extractor_name: ExtractorName | str = "random-test-generator",
+    min_slides_per_patient: int = 1,
 ) -> tuple[CliniPath, SlidePath, FeatureDir, Sequence[Category]]:
     slide_path_to_patient: Mapping[Path, PatientId] = {}
     patient_to_ground_truth: Mapping[PatientId, str] = {}
@@ -70,13 +73,14 @@ def create_random_dataset(
         patient_to_ground_truth[patient_id] = random.choice(categories)
 
         # Generate some slides
-        for _ in range(random.randint(1, max_slides_per_patient)):
+        for _ in range(random.randint(min_slides_per_patient, max_slides_per_patient)):
             slide_path_to_patient[
                 create_random_feature_file(
                     tmp_path=feat_dir,
                     min_tiles=min_tiles_per_slide,
                     max_tiles=max_tiles_per_slide,
                     feat_dim=feat_dim,
+                    extractor_name=extractor_name,
                 ).relative_to(feat_dir)
             ] = patient_id
 
@@ -101,7 +105,11 @@ def create_random_feature_file(
     min_tiles: int,
     max_tiles: int,
     feat_dim: int,
-    tile_size_um: Microns = Microns(2508),
+    tile_size_um: Microns = Microns(256),
+    tile_size_px: TilePixels = TilePixels(224),
+    extractor_name: ExtractorName | str = "random-test-generator",
+    feat_filename: str | None = None,
+    coords: np.ndarray | None = None,
 ) -> Path:
     """Creates a h5 file with random contents.
 
@@ -113,20 +121,25 @@ def create_random_feature_file(
         Path to the feature file.
     """
     n_tiles = random.randint(min_tiles, max_tiles)
-    with (
-        tempfile.NamedTemporaryFile(
-            dir=tmp_path, suffix=".h5", delete=False
-        ) as tmp_file,
-        h5py.File(tmp_file, "w") as h5_file,
-    ):
-        h5_file["feats"] = torch.rand(n_tiles, feat_dim) * 1000 * tile_size_um
-        h5_file["coords"] = torch.rand(n_tiles, 2)
-
+    if feat_filename is None:
+        feat_filename = random_string(16)  # Generate a random filename
+    feature_file_path = tmp_path / f"{feat_filename}.h5"
+    with h5py.File(feature_file_path, "w") as h5_file:
+        rand_feats = torch.rand(n_tiles, feat_dim) * 1000 * tile_size_um
+        mean = rand_feats.mean()
+        std = rand_feats.std()
+        norm_feats = (rand_feats - mean) / std
+        h5_file["feats"] = norm_feats.numpy()
+        if coords is not None:
+            h5_file["coords"] = coords
+        else:
+            h5_file["coords"] = torch.rand(n_tiles, 2).numpy()
         h5_file.attrs["stamp_version"] = stamp.__version__
-        h5_file.attrs["extractor"] = "random-test-generator"
+        h5_file.attrs["extractor"] = str(extractor_name)
         h5_file.attrs["unit"] = "um"
-        h5_file.attrs["tile_size"] = tile_size_um
-        return Path(tmp_file.name)
+        h5_file.attrs["tile_size_um"] = tile_size_um
+        h5_file.attrs["tile_size_px"] = tile_size_px
+        return Path(feature_file_path)
 
 
 def random_patient_preds(*, n_patients: int, categories: list[str]) -> pd.DataFrame:
