@@ -155,7 +155,9 @@ def detect_feature_type(feature_dir: Path) -> str:
         files_checked += 1
         with h5py.File(file, "r") as h5:
             feat_type = h5.attrs.get("feat_type")
-            if feat_type is not None:
+            encoder = h5.attrs.get("encoder")
+
+            if feat_type is not None or encoder is not None:
                 feature_types.add(str(feat_type))
             else:
                 # If feat_type is missing, always treat as tile-level feature

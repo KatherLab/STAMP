@@ -349,7 +349,7 @@ def setup_dataloaders_for_training(
         raise RuntimeError(
             f"Unsupported feature type: {feature_type}. Only 'tile' and 'patient' are supported."
         )
-    
+
 
 def train_model_(
     *,

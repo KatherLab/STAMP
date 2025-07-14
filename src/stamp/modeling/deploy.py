@@ -11,8 +11,6 @@ from jaxtyping import Float
 from lightning.pytorch.accelerators.accelerator import Accelerator
 
 from stamp.modeling.data import (
-    PatientData,
-    PatientFeatureDataset,
     detect_feature_type,
     filter_complete_patient_data_,
     load_patient_level_data,
@@ -41,7 +39,7 @@ def deploy_categorical_model_(
     output_dir: Path,
     checkpoint_paths: Sequence[Path],
     clini_table: Path | None,
-    slide_table: Path,
+    slide_table: Path | None,
     feature_dir: Path,
     ground_truth_label: PandasLabel | None,
     patient_label: PandasLabel,
@@ -96,6 +94,8 @@ def deploy_categorical_model_(
 
     # --- Data loading logic ---
     if feature_type == "tile":
+        if slide_table is None:
+            raise ValueError("A slide table is required for tile-level modeling")
         slide_to_patient = slide_to_patient_from_slide_table_(
             slide_table_path=slide_table,
             feature_dir=feature_dir,

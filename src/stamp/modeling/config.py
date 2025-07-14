@@ -12,10 +12,8 @@ class TrainConfig(BaseModel):
 
     output_dir: Path = Field(description="The directory to save the results to")
 
-    clini_table: Path | None = Field(
-        description="Excel or CSV to read clinical data from"
-    )
-    slide_table: Path = Field(
+    clini_table: Path = Field(description="Excel or CSV to read clinical data from")
+    slide_table: Path | None = Field(
         description="Excel or CSV to read patient-slide associations from"
     )
     feature_dir: Path = Field(description="Directory containing feature files")
