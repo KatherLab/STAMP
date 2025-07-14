@@ -191,7 +191,7 @@ def load_patient_level_data(
     # clinical data to the patient-level feature paths that avoids
     # creating another slide table for encoded featuress is welcome :P.
 
-    clini_df = _read_table(
+    clini_df = read_table(
         clini_table,
         usecols=[patient_label, ground_truth_label],
         dtype=str,
@@ -435,7 +435,7 @@ def patient_to_ground_truth_from_clini_table_(
     ground_truth_label: PandasLabel,
 ) -> dict[PatientId, GroundTruth]:
     """Loads the patients and their ground truths from a clini table."""
-    clini_df = _read_table(
+    clini_df = read_table(
         clini_table_path,
         usecols=[patient_label, ground_truth_label],
         dtype=str,
@@ -469,7 +469,7 @@ def slide_to_patient_from_slide_table_(
     filename_label: PandasLabel,
 ) -> dict[FeaturePath, PatientId]:
     """Creates a slide-to-patient mapping from a slide table."""
-    slide_df = _read_table(
+    slide_df = read_table(
         slide_table_path,
         usecols=[patient_label, filename_label],
         dtype=str,
@@ -485,7 +485,7 @@ def slide_to_patient_from_slide_table_(
     return slide_to_patient
 
 
-def _read_table(path: Path | TextIO, **kwargs) -> pd.DataFrame:
+def read_table(path: Path | TextIO, **kwargs) -> pd.DataFrame:
     if not isinstance(path, Path):
         return pd.read_csv(path, **kwargs)
     elif path.suffix == ".xlsx":

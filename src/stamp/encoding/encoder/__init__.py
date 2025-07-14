@@ -6,7 +6,6 @@ from tempfile import NamedTemporaryFile
 
 import h5py
 import numpy as np
-import pandas as pd
 import torch
 from torch import Tensor
 from tqdm import tqdm
@@ -14,7 +13,7 @@ from tqdm import tqdm
 import stamp
 from stamp.cache import get_processing_code_hash
 from stamp.encoding.config import EncoderName
-from stamp.modeling.data import CoordsInfo, get_coords
+from stamp.modeling.data import CoordsInfo, get_coords, read_table
 from stamp.preprocessing.config import ExtractorName
 from stamp.types import DeviceLikeType, PandasLabel
 
@@ -115,7 +114,7 @@ class Encoder(ABC):
         if self.precision == torch.float16:
             self.model.half()
 
-        slide_table = self._read_slide_table(slide_table_path)
+        slide_table = read_table(slide_table_path)
         patient_groups = slide_table.groupby(patient_label)
 
         for patient_id, group in (progress := tqdm(patient_groups)):
@@ -164,10 +163,6 @@ class Encoder(ABC):
     ) -> np.ndarray:
         """Generate patient embedding. Must be implemented by subclasses."""
         pass
-
-    @staticmethod
-    def _read_slide_table(slide_table_path: Path) -> pd.DataFrame:
-        return pd.read_csv(slide_table_path)
 
     def _validate_and_read_features(self, h5_path: str) -> tuple[Tensor, CoordsInfo]:
         feats, coords, extractor = self._read_h5(h5_path)
