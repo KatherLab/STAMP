@@ -326,6 +326,7 @@ def extract_(
                 h5_fp.attrs["tile_size_um"] = tile_size_um  # changed in v2.1.0
                 h5_fp.attrs["tile_size_px"] = tile_size_px
                 h5_fp.attrs["code_hash"] = code_hash
+                h5_fp.attrs["feat_type"] = "tile"
             except Exception:
                 _logger.exception(f"error while writing {feature_output_path}")
                 if tmp_h5_file is not None:
