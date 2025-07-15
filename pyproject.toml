@@ -1,6 +1,6 @@
 [project]
 name = "stamp"
-version = "2.1.0"
+version = "2.2.0"
 authors = [
     { name = "Omar El Nahhas", email = "omar.el_nahhas@tu-dresden.de" },
     { name = "Marko van Treeck", email = "markovantreeck@gmail.com" },
@@ -8,6 +8,7 @@ authors = [
     { name = "Tim Lenz", email = "tim.lenz@tu-dresden.de" },
     { name = "Laura Žigutytė", email = "laura.zigutyte@tu-dresden.de" },
     { name = "Cornelius Kummer", email = "cornelius.kummer@tu-dresden.de" },
+    { name = "Juan Pablo Ricapito", email = "juan_pablo.ricapito@tu-dresden.de"}
 ]
 description = "A protocol for Solid Tumor Associative Modeling in Pathology"
 readme = "README.md"
