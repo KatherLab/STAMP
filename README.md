@@ -55,26 +55,26 @@ cd STAMP
 
 
 ```bash
-# Basic Installation
-uv sync --extra all
+# CPU-only Installation (excluding COBRA, Gigapath (and flash-attn))
+uv sync --extra cpu
 
 source .venv/bin/activate
 ```
 
 ```bash
-# Advanced Installation (Using flash-attn on CUDA systems for gigapath, ...)
+# Advanced Installation (Using flash-attn on CUDA systems for gigapath and other models)
 # First run this!!
-uv sync --extra=build
+uv sync --extra build
 
-# All models
-uv sync --all-extras
+# And then this for all models:
+uv sync --extra build --extra gpu
 
 # Alternatively, you can install only a specific model:
-uv sync --extra=build --extra=gigapath
+uv sync --extra build --extra uni
 
 
 # In case building flash-attn uses too much memory, you can limit the number of parallel compilation jobs:
-MAX_JOBS=4 uv sync --extra=build --extra=gigapath
+MAX_JOBS=4 uv sync --extra build --extra gpu
 ```
 
 > [!IMPORTANT]
