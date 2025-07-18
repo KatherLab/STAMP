@@ -56,8 +56,8 @@ cd STAMP
 
 ```bash
 # CPU-only Installation (excluding COBRA, Gigapath (and flash-attn))
-uv sync --extra cpu
 
+uv sync --extra cpu
 source .venv/bin/activate
 ```
 
