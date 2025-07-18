@@ -16,7 +16,7 @@ A Protocol for End-to-End Deep Learning in Computational Pathology".
 [stamp paper]: https://www.nature.com/articles/s41596-024-01047-2 "From whole-slide image to biomarker prediction: end-to-end weakly supervised deep learning in computational pathology"
 [stamp v1]: https://github.com/KatherLab/STAMP/tree/v1
 
-## Installing stamp
+## Installation
 
 We recommend installing STAMP with [uv](https://docs.astral.sh/uv/):
 
@@ -30,7 +30,7 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 uv self update
 ```
 
-### Install STAMP in a virtual environment:
+### Install STAMP in a Virtual Environment:
 
 ```bash
 uv venv --python=3.12
@@ -46,7 +46,7 @@ uv pip install "git+https://github.com/KatherLab/STAMP.git@fix/build[build,gpu]"
 # Note: You must run one after the other, the build dependencies must be installed first!
 ```
 
-### Clone the STAMP repository and install:
+### Install STAMP from the Repository:
 
 ```bash
 git clone https://github.com/KatherLab/STAMP.git
@@ -78,8 +78,10 @@ uv sync --extra build --extra uni
 MAX_JOBS=4 uv sync --extra build --extra gpu
 ```
 
+### Additional Dependencies
+
 > [!IMPORTANT]
-> STAMP additionally requires OpenCV dependencies to be installed. If you want to use flash-attn, you also need to install the `clang` compiler and a [CUDA toolkit](https://developer.nvidia.com/cuda-downloads).
+> STAMP additionally requires OpenCV dependencies to be installed. If you want to use `flash-attn`, you also need to install the `clang` compiler and a [CUDA toolkit](https://developer.nvidia.com/cuda-downloads).
 >
 
 > For Ubuntu < 23.10:
@@ -91,6 +93,8 @@ MAX_JOBS=4 uv sync --extra build --extra gpu
 > ```bash
 > apt update && apt install -y libgl1 libglx-mesa0 libglib2.0-0 clang
 > ```
+
+### Basic Usage
 
 If the installation was successful, running `stamp` in your terminal should yield the following output:
 ```
