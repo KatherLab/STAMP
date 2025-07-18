@@ -41,7 +41,7 @@ uv pip install "git+https://github.com/KatherLab/STAMP.git@fix/build[cpu]" --tor
 
 # For a GPU installation:
 uv pip install "git+https://github.com/KatherLab/STAMP.git@fix/build[build]"
-uv pip install "git+https://github.com/KatherLab/STAMP.git@fix/build[build,gpu]"
+uv pip install "git+https://github.com/KatherLab/STAMP.git@fix/build[build,gpu]" --no-build-isolation
 
 # Note: You must run one after the other, the build dependencies must be installed first!
 ```
