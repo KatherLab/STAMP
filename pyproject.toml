@@ -175,12 +175,6 @@ lint.ignore = ["F722"] # https://docs.kidger.site/jaxtyping/faq/#flake8-or-ruff-
 [tool.uv]
 no-build-isolation-package = ["flash-attn", "cobra", "mamba-ssm", "causal-conv1d", "gigapath"]
 no-binary-package = ["flash-attn", "gigapath"]
-conflicts = [
-    [
-        { extra = "cpu" },
-        { extra = "gpu" }
-    ]
-]
 
 
 [[tool.uv.dependency-metadata]]
