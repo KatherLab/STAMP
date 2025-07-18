@@ -44,6 +44,8 @@ class LitMLPClassifier(lightning.LightningModule):
     PyTorch Lightning wrapper for MLPClassifier.
     """
 
+    supported_features = ["patient"]
+
     def __init__(
         self,
         *,

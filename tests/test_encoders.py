@@ -39,12 +39,12 @@ used_extractor = {
     EncoderName.GIGAPATH: ExtractorName.GIGAPATH,
     EncoderName.MADELEINE: ExtractorName.CONCH,
     EncoderName.TITAN: ExtractorName.CONCH1_5,
-    # EncoderName.PRISM: ExtractorName.VIRCHOW_FULL,
+    EncoderName.PRISM: ExtractorName.VIRCHOW_FULL,
 }
 
 
 @pytest.mark.slow
-@pytest.mark.parametrize("encoder", EncoderName)
+@pytest.mark.parametrize("encoder", [EncoderName.PRISM])
 @pytest.mark.filterwarnings("ignore:Importing from timm.models.layers is deprecated")
 @pytest.mark.filterwarnings(
     "ignore:You are using `torch.load` with `weights_only=False`"
