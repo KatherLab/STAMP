@@ -119,6 +119,7 @@ madeleine = [
 ]
 musk_cpu = [
     "musk @ git+https://github.com/lilab-stanford/MUSK.git@e1699c27687f44bbf6d4adfcbb2abe89795d347f",
+    "fairscale",
 ]
 musk = [
     "stamp[musk_cpu, flash-attention]",

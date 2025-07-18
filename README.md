@@ -39,7 +39,7 @@ source .venv/bin/activate
 # For a CPU-only installation:
 uv pip install "git+https://github.com/KatherLab/STAMP.git@fix/build[cpu]" --torch-backend=cpu
 
-# For a GPU installation:
+# For a GPU (CUDA) installation:
 uv pip install "git+https://github.com/KatherLab/STAMP.git@fix/build[build]"
 uv pip install "git+https://github.com/KatherLab/STAMP.git@fix/build[build,gpu]" --no-build-isolation
 
@@ -62,7 +62,8 @@ source .venv/bin/activate
 ```
 
 ```bash
-# Advanced Installation (Using flash-attn on CUDA systems for gigapath and other models)
+# GPU (CUDA) Installation (Using flash-attn on CUDA systems for gigapath and other models)
+
 # First run this!!
 uv sync --extra build
 
@@ -78,7 +79,7 @@ MAX_JOBS=4 uv sync --extra build --extra gpu
 ```
 
 > [!IMPORTANT]
-> STAMP additionally requires OpenCV dependencies to be installed. If you want to use flash-attn, you also need to install the clang compiler and a [CUDA toolkit](https://developer.nvidia.com/cuda-downloads).
+> STAMP additionally requires OpenCV dependencies to be installed. If you want to use flash-attn, you also need to install the `clang` compiler and a [CUDA toolkit](https://developer.nvidia.com/cuda-downloads).
 >
 
 > For Ubuntu < 23.10:

@@ -3128,6 +3128,7 @@ cpu = [
     { name = "conch" },
     { name = "einops-exts" },
     { name = "environs" },
+    { name = "fairscale" },
     { name = "gdown" },
     { name = "huggingface-hub" },
     { name = "madeleine" },
@@ -3207,6 +3208,7 @@ madeleine = [
     { name = "madeleine" },
 ]
 musk = [
+    { name = "fairscale" },
     { name = "flash-attn" },
     { name = "hatchling" },
     { name = "musk" },
@@ -3216,6 +3218,7 @@ musk = [
     { name = "triton" },
 ]
 musk-cpu = [
+    { name = "fairscale" },
     { name = "musk" },
 ]
 plip = [
@@ -3273,6 +3276,7 @@ requires-dist = [
     { name = "einops-exts", marker = "extra == 'conch1-5-cpu'", specifier = "==0.0.4" },
     { name = "environs", marker = "extra == 'prism-cpu'", specifier = "==11.0.0" },
     { name = "fairscale", marker = "extra == 'gigapath'" },
+    { name = "fairscale", marker = "extra == 'musk-cpu'" },
     { name = "flash-attn", marker = "extra == 'flash-attention'", git = "https://github.com/KatherLab/flash-attention.git?rev=30e60b16f727af429dcfa12fc0c996f92d92a3bb" },
     { name = "fvcore", marker = "extra == 'gigapath'" },
     { name = "gdown", marker = "extra == 'chief-ctranspath'", specifier = ">=5.2.0" },
