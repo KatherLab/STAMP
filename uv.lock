@@ -3341,7 +3341,7 @@ requires-dist = [
     { name = "wandb", marker = "extra == 'gigapath'" },
     { name = "webdataset", marker = "extra == 'gigapath'" },
 ]
-provides-extras = ["build", "flash-attention", "conch", "conch1-5-cpu", "conch1-5", "ctranspath", "chief-ctranspath", "gigapath", "uni", "virchow2", "cobra", "prism-cpu", "prism", "madeleine", "musk-cpu", "musk", "plip-cpu", "plip", "all", "cpu", "gpu"]
+provides-extras = ["build", "conch", "conch1-5-cpu", "conch1-5", "ctranspath", "chief-ctranspath", "gigapath", "uni", "virchow2", "cobra", "prism-cpu", "prism", "madeleine", "musk-cpu", "musk", "plip-cpu", "plip", "all", "cpu", "gpu"]
 
 [package.metadata.requires-dev]
 dev = [

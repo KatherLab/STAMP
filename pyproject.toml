@@ -54,8 +54,7 @@ build = [
     "setuptools",
     "hatchling",
     "psutil",
-    "ninja",
-    "triton==3.2.0" # Add this so torch won't be downgraded later. Remove version constraint when resolved: https://github.com/pytorch/pytorch/issues/153737
+    "ninja"
 ]
 flash-attention = [
     "stamp[build]",
@@ -80,7 +79,8 @@ chief_ctranspath = [
     "torch>=2.0.0"
 ]
 gigapath = [
-    "stamp[flash-attention]",
+    "stamp[build]",
+    "flash-attn @ git+https://github.com/KatherLab/flash-attention.git@30e60b16f727af429dcfa12fc0c996f92d92a3bb",
     "gigapath @ git+https://github.com/KatherLab/prov-gigapath.git@edffc189af3e665bfad48a2a0a3ba81bb5bc5518",
     "fvcore",
     "iopath",
@@ -173,7 +173,7 @@ markers = [
 lint.ignore = ["F722"] # https://docs.kidger.site/jaxtyping/faq/#flake8-or-ruff-are-throwing-an-error
 
 [tool.uv]
-no-build-isolation-package = ["flash-attn", "cobra", "mamba-ssm", "causal-conv1d", "gigapath", "flash-attention"]
+no-build-isolation-package = ["flash-attn", "cobra", "mamba-ssm", "causal-conv1d", "gigapath"]
 no-binary-package = ["flash-attn", "gigapath"]
 conflicts = [
     [
