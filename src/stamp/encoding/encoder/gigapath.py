@@ -183,7 +183,9 @@ class Gigapath(Encoder):
                 all_feats_list, device, coords_list=all_coords_list
             )
 
-            self._save_features_(output_path=output_path, feats=patient_embedding)
+            self._save_features_(
+                output_path=output_path, feats=patient_embedding, feat_type="patient"
+            )
 
     def _generate_patient_embedding(
         self, feats_list, device, coords_list: list | None = None, **kwargs

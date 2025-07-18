@@ -164,7 +164,9 @@ class Eagle(Encoder):
                 continue
 
             slide_embedding = self._generate_slide_embedding(feats, device, agg_feats)
-            self._save_features_(output_path=output_path, feats=slide_embedding)
+            self._save_features_(
+                output_path=output_path, feats=slide_embedding, feat_type="slide"
+            )
 
     # TODO: Add @override decorator on each encoder once it is added to python
     def encode_patients_(
@@ -233,4 +235,6 @@ class Eagle(Encoder):
             patient_embedding = self._generate_patient_embedding(
                 feats_list, device, agg_feats_list
             )
-            self._save_features_(output_path=output_path, feats=patient_embedding)
+            self._save_features_(
+                output_path=output_path, feats=patient_embedding, feat_type="patient"
+            )

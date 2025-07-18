@@ -16,12 +16,7 @@ from torch import Tensor
 
 import stamp
 from stamp.preprocessing.config import ExtractorName
-from stamp.types import (
-    Category,
-    Microns,
-    PatientId,
-    TilePixels,
-)
+from stamp.types import Category, FeaturePath, Microns, PatientId, TilePixels
 
 CliniPath: TypeAlias = Path
 SlidePath: TypeAlias = Path
@@ -99,6 +94,56 @@ def create_random_dataset(
     return clini_path, slide_path, feat_dir, categories
 
 
+def create_random_patient_level_dataset(
+    *,
+    dir: Path,
+    n_patients: int,
+    feat_dim: int,
+    categories: Sequence[str] | None = None,
+    n_categories: int | None = None,
+) -> tuple[Path, Path, Path, Sequence[str]]:
+    """
+    Creates a random dataset with one .h5 file per patient (patient-level features).
+    Returns (clini_path, slide_path, feat_dir, categories).
+    slide_path is a dummy file (not used for patient-level).
+    """
+    clini_path = dir / "clini.csv"
+    slide_path = dir / "slide.csv"  # Not used, but keep interface consistent
+    feat_dir = dir / "feats"
+    feat_dir.mkdir()
+
+    if categories is not None:
+        if n_categories is not None:
+            raise ValueError("only one of `categories` and `n_categories` can be set")
+    else:
+        if n_categories is None:
+            raise ValueError(
+                "either `categories` or `n_categories` has to be specified"
+            )
+        categories = [random_string(8) for _ in range(n_categories)]
+
+    patient_to_ground_truth = {}
+    for _ in range(n_patients):
+        patient_id = random_string(16)
+        patient_to_ground_truth[patient_id] = random.choice(categories)
+        # Create a single feature vector per patient
+        create_random_patient_level_feature_file(
+            tmp_path=feat_dir,
+            feat_dim=feat_dim,
+            feat_filename=patient_id,
+        )
+
+    pd.DataFrame(
+        patient_to_ground_truth.items(),
+        columns=["patient", "ground-truth"],
+    ).to_csv(clini_path, index=False)
+
+    # slide_path is not used for patient-level, but return a dummy file for API compatibility
+    pd.DataFrame(columns=["slide_path", "patient"]).to_csv(slide_path, index=False)
+
+    return clini_path, slide_path, feat_dir, categories
+
+
 def create_random_feature_file(
     *,
     tmp_path: Path,
@@ -110,7 +155,7 @@ def create_random_feature_file(
     extractor_name: ExtractorName | str = "random-test-generator",
     feat_filename: str | None = None,
     coords: np.ndarray | None = None,
-) -> Path:
+) -> FeaturePath:
     """Creates a h5 file with random contents.
 
     Args:
@@ -139,7 +184,38 @@ def create_random_feature_file(
         h5_file.attrs["unit"] = "um"
         h5_file.attrs["tile_size_um"] = tile_size_um
         h5_file.attrs["tile_size_px"] = tile_size_px
-        return Path(feature_file_path)
+        return FeaturePath(feature_file_path)
+
+
+def create_random_patient_level_feature_file(
+    *,
+    tmp_path: Path,
+    feat_dim: int,
+    feat_filename: str | None = None,
+    encoder: str = "test-encoder",
+    precision: str = "float32",
+    feat_type: str = "patient",
+    code_hash: str = "testhash",
+    version: str | None = None,
+) -> FeaturePath:
+    """
+    Creates a random patient-level feature .h5 file with the correct metadata.
+    Returns the path to the created file.
+    """
+    if feat_filename is None:
+        feat_filename = random_string(16)
+    feature_file_path = tmp_path / f"{feat_filename}.h5"
+    feats = torch.rand(1, feat_dim)
+    version = version or stamp.__version__
+    with h5py.File(feature_file_path, "w") as h5:
+        h5["feats"] = feats.numpy()
+        h5.attrs["version"] = version
+        h5.attrs["encoder"] = encoder
+        h5.attrs["precision"] = precision
+        h5.attrs["stamp_version"] = version
+        h5.attrs["code_hash"] = code_hash
+        h5.attrs["feat_type"] = feat_type
+    return FeaturePath(feature_file_path)
 
 
 def random_patient_preds(*, n_patients: int, categories: list[str]) -> pd.DataFrame:
@@ -200,5 +276,32 @@ def make_feature_file(
         h5.attrs["unit"] = "um"
         h5.attrs["tile_size_um"] = tile_size_um
         h5.attrs["tile_size_px"] = tile_size_px
+        h5.attrs["feat_type"] = "tile"
 
+    return file
+
+
+def make_patient_level_feature_file(
+    *,
+    feats: torch.Tensor,
+    encoder: str = "test-encoder",
+    precision: str = "float32",
+    code_hash: str = "testhash",
+    version: str | None = None,
+) -> io.BytesIO:
+    """
+    Creates an in-memory patient-level feature .h5 file with the correct metadata.
+    Returns a BytesIO object.
+    """
+    version = version or stamp.__version__
+    file = io.BytesIO()
+    with h5py.File(file, "w") as h5:
+        h5["feats"] = feats.numpy()
+        h5.attrs["version"] = version
+        h5.attrs["encoder"] = encoder
+        h5.attrs["precision"] = precision
+        h5.attrs["stamp_version"] = version
+        h5.attrs["code_hash"] = code_hash
+        h5.attrs["feat_type"] = "patient"
+    file.seek(0)
     return file

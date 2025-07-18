@@ -6,7 +6,6 @@ from tempfile import NamedTemporaryFile
 
 import h5py
 import numpy as np
-import pandas as pd
 import torch
 from torch import Tensor
 from tqdm import tqdm
@@ -14,7 +13,7 @@ from tqdm import tqdm
 import stamp
 from stamp.cache import get_processing_code_hash
 from stamp.encoding.config import EncoderName
-from stamp.modeling.data import CoordsInfo, get_coords
+from stamp.modeling.data import CoordsInfo, get_coords, read_table
 from stamp.preprocessing.config import ExtractorName
 from stamp.types import DeviceLikeType, PandasLabel
 
@@ -83,7 +82,9 @@ class Encoder(ABC):
             slide_embedding = self._generate_slide_embedding(
                 feats, device, coords=coords
             )
-            self._save_features_(output_path=output_path, feats=slide_embedding)
+            self._save_features_(
+                output_path=output_path, feats=slide_embedding, feat_type="slide"
+            )
 
     def encode_patients_(
         self,
@@ -113,7 +114,7 @@ class Encoder(ABC):
         if self.precision == torch.float16:
             self.model.half()
 
-        slide_table = self._read_slide_table(slide_table_path)
+        slide_table = read_table(slide_table_path)
         patient_groups = slide_table.groupby(patient_label)
 
         for patient_id, group in (progress := tqdm(patient_groups)):
@@ -142,7 +143,9 @@ class Encoder(ABC):
             patient_embedding = self._generate_patient_embedding(
                 feats_list, device, **kwargs
             )
-            self._save_features_(output_path=output_path, feats=patient_embedding)
+            self._save_features_(
+                output_path=output_path, feats=patient_embedding, feat_type="patient"
+            )
 
     @abstractmethod
     def _generate_slide_embedding(
@@ -160,10 +163,6 @@ class Encoder(ABC):
     ) -> np.ndarray:
         """Generate patient embedding. Must be implemented by subclasses."""
         pass
-
-    @staticmethod
-    def _read_slide_table(slide_table_path: Path) -> pd.DataFrame:
-        return pd.read_csv(slide_table_path)
 
     def _validate_and_read_features(self, h5_path: str) -> tuple[Tensor, CoordsInfo]:
         feats, coords, extractor = self._read_h5(h5_path)
@@ -192,7 +191,9 @@ class Encoder(ABC):
                 )
             return feats, coords, extractor
 
-    def _save_features_(self, output_path: Path, feats: np.ndarray) -> None:
+    def _save_features_(
+        self, output_path: Path, feats: np.ndarray, feat_type: str
+    ) -> None:
         with (
             NamedTemporaryFile(dir=output_path.parent, delete=False) as tmp_h5_file,
             h5py.File(tmp_h5_file, "w") as f,
@@ -204,6 +205,7 @@ class Encoder(ABC):
                 f.attrs["precision"] = str(self.precision)
                 f.attrs["stamp_version"] = stamp.__version__
                 f.attrs["code_hash"] = get_processing_code_hash(Path(__file__))[:8]
+                f.attrs["feat_type"] = feat_type
                 # TODO: Add more metadata like tile-level extractor name
                 # and maybe tile size in pixels and microns
             except Exception:

@@ -57,6 +57,8 @@ class LitVisionTransformer(lightning.LightningModule):
         **metadata: Additional metadata to store with the model.
     """
 
+    supported_features = ["tile"]
+
     def __init__(
         self,
         *,

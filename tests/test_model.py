@@ -1,5 +1,6 @@
 import torch
 
+from stamp.modeling.mlp_classifier import LitMLPClassifier
 from stamp.modeling.vision_transformer import VisionTransformer
 
 
@@ -69,3 +70,52 @@ def test_inference_reproducibility(
         )
 
     assert logits1.allclose(logits2)
+
+
+def test_mlp_classifier_dims(
+    num_classes: int = 3,
+    batch_size: int = 6,
+    input_dim: int = 32,
+    dim_hidden: int = 64,
+    num_layers: int = 2,
+) -> None:
+    model = LitMLPClassifier(
+        categories=[str(i) for i in range(num_classes)],
+        category_weights=torch.ones(num_classes),
+        dim_input=input_dim,
+        dim_hidden=dim_hidden,
+        num_layers=num_layers,
+        dropout=0.1,
+        ground_truth_label="test",
+        train_patients=["pat1", "pat2"],
+        valid_patients=["pat3", "pat4"],
+    )
+    feats = torch.rand((batch_size, input_dim))
+    logits = model.forward(feats)
+    assert logits.shape == (batch_size, num_classes)
+
+
+def test_mlp_inference_reproducibility(
+    num_classes: int = 4,
+    batch_size: int = 7,
+    input_dim: int = 33,
+    dim_hidden: int = 64,
+    num_layers: int = 3,
+) -> None:
+    model = LitMLPClassifier(
+        categories=[str(i) for i in range(num_classes)],
+        category_weights=torch.ones(num_classes),
+        dim_input=input_dim,
+        dim_hidden=dim_hidden,
+        num_layers=num_layers,
+        dropout=0.1,
+        ground_truth_label="test",
+        train_patients=["pat1", "pat2"],
+        valid_patients=["pat3", "pat4"],
+    )
+    model = model.eval()
+    feats = torch.rand((batch_size, input_dim))
+    with torch.inference_mode():
+        logits1 = model.forward(feats)
+        logits2 = model.forward(feats)
+    assert torch.allclose(logits1, logits2)

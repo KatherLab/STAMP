@@ -63,15 +63,6 @@ Stamp currently supports the following feature extractors:
 As some of the above require you to request access to the model on huggingface,
 we will stick with ctranspath for this example.
 
-In order to use a feature extractor,
-you also have to install their respective dependencies.
-You can do so by specifying the feature extractor you want to use
-when installing stamp:
-```sh
-# Install stamp including the dependencies for all feature extractors
-pip install "git+https://github.com/KatherLab/stamp@v2[all]"
-```
-
 Open the `stamp-test-experiment/config.yaml` we created in the last step
 and modify the `output_dir`, `wsi_dir` and `cache_dir` entries
 in the `preprocessing` section
@@ -125,6 +116,12 @@ you can see the output directory fill up with the features, saved in `.h5` files
 as well as `.jpg`s showing from which parts of the slide features are extracted.
 Most of the background should be marked in red,
 meaning ignored that it was ignored during feature extraction.
+
+> In case you want to use a gated model (e.g. Virchow2), you need to login in your console using:
+> ```
+>huggingface-cli login
+> ```
+> More info about this [here](https://huggingface.co/docs/huggingface_hub/en/guides/cli).
 
 > **If you are using the UNI or CONCH models**
 > and working in an environment where your home directory storage is limited,
@@ -368,3 +365,26 @@ stamp --config stamp-test-experiment/config.yaml encode_patients
 ```
 
 The output `.h5` features will have the patient's id as name. 
+
+## Training with Patient-Level Features
+
+Once you have patient-level features, 
+you can train models directly on these features. This is useful because:
+- **Efficient with Limited Data**: Patient-level modeling often performs better when data is scarce, since pretrained encoders can extract robust features from each slide as a whole.
+- **Faster Training & Reduced Overfitting**: With fewer parameters to train compared to tile-level models, patient-level models train more quickly and are less prone to overfitting.
+- **Enables Interpretable Cohort Analysis**: Patient-level features can be used for unsupervised analyses, such as clustering, making it easier to interpret and explore patient subgroups within your cohort.
+
+> **Note:** Slide-level features are not supported for modeling because the ground truth 
+> labels in the clinical table are at the patient level. 
+
+To train a model using patient-level features, you can use the same command as before:
+```sh
+stamp --config stamp-test-experiment/config.yaml crossval
+```
+
+The key differences for patient-level modeling are:
+- The `feature_dir` should contain patient-level `.h5` files (one per patient)
+- The `slide_table` is not needed since there's a direct mapping from patient ID to feature file
+- STAMP will automatically detect that these are patient-level features and use a MultiLayer Perceptron (MLP) classifier instead of the Vision Transformer
+
+You can then run statistics as done with tile-level features.

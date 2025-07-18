@@ -5,13 +5,18 @@ from pathlib import Path
 import h5py
 import pytest
 import torch
-from random_data import make_feature_file, make_old_feature_file
+from random_data import (
+    create_random_patient_level_feature_file,
+    make_feature_file,
+    make_old_feature_file,
+)
 from torch.utils.data import DataLoader
 
 from stamp.modeling.data import (
     BagDataset,
     CoordsInfo,
     PatientData,
+    PatientFeatureDataset,
     filter_complete_patient_data_,
     get_coords,
 )
@@ -80,7 +85,7 @@ def test_get_cohort_df(tmp_path: Path) -> None:
     "feature_file_creator",
     [make_feature_file, make_old_feature_file],
 )
-def test_dataset(
+def test_bag_dataset(
     feature_file_creator,
     bag_size: BagSize = BagSize(5),
     dim_feats: int = 34,
@@ -123,6 +128,32 @@ def test_dataset(
     assert bag.shape == (batch_size, bag_size, dim_feats)
     assert coords.shape == (batch_size, bag_size, 2)
     assert (bag_sizes <= bag_size).all()
+
+
+def test_patient_feature_dataset(
+    tmp_path: Path, dim_feats: int = 16, batch_size: int = 2
+) -> None:
+    # Create 3 random patient-level feature files on disk
+    files = [
+        create_random_patient_level_feature_file(tmp_path=tmp_path, feat_dim=dim_feats)
+        for _ in range(3)
+    ]
+    # One-hot encoded labels for 3 samples, 4 categories
+    labels = torch.eye(4)[:3]
+
+    ds = PatientFeatureDataset(files, labels, transform=None)
+    assert len(ds) == 3
+
+    # Test single dataset item
+    feats, label = ds[0]
+    assert feats.shape == (dim_feats,)
+    assert torch.allclose(label, labels[0])
+
+    # Test batching
+    dl = DataLoader(ds, batch_size=batch_size, shuffle=False)
+    feats_batch, labels_batch = next(iter(dl))
+    assert feats_batch.shape == (batch_size, dim_feats)
+    assert labels_batch.shape == (batch_size, 4)
 
 
 def test_get_coords_with_mpp() -> None:

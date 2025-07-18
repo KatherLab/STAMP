@@ -13,8 +13,7 @@ class EncoderName(StrEnum):
     TITAN = "titan"
     GIGAPATH = "gigapath"
     MADELEINE = "madeleine"
-    # PRISM = "paigeai-prism"
-    # waiting for paige-ai authors to fix it
+    PRISM = "prism"
 
 
 class SlideEncodingConfig(BaseModel, arbitrary_types_allowed=True):

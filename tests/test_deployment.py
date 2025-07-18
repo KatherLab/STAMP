@@ -1,18 +1,27 @@
+from pathlib import Path
+
 import numpy as np
-import numpy.typing as npt
 import pytest
 import torch
-from random_data import make_old_feature_file
+from random_data import create_random_patient_level_feature_file, make_old_feature_file
 
-from stamp.modeling.data import PatientData
+from stamp.modeling.data import (
+    PatientData,
+    patient_feature_dataloader,
+    tile_bag_dataloader,
+)
 from stamp.modeling.deploy import _predict, _to_prediction_df
 from stamp.modeling.lightning_model import LitVisionTransformer
+from stamp.modeling.mlp_classifier import LitMLPClassifier
 from stamp.types import GroundTruth, PatientId
 
 
 @pytest.mark.filterwarnings("ignore:GPU available but not used")
+@pytest.mark.filterwarnings(
+    "ignore:The 'predict_dataloader' does not have many workers which may be a bottleneck"
+)
 def test_predict(
-    categories: npt.NDArray = np.array(["foo", "bar", "baz"]),
+    categories: list[str] = ["foo", "bar", "baz"],
     n_heads: int = 7,
     dim_input: int = 12,
 ) -> None:
@@ -42,10 +51,20 @@ def test_predict(
         )
     }
 
+    test_dl, _ = tile_bag_dataloader(
+        patient_data=list(patient_to_data.values()),
+        bag_size=None,
+        categories=list(model.categories),
+        batch_size=1,
+        shuffle=False,
+        num_workers=2,
+        transform=None,
+    )
+
     predictions = _predict(
         model=model,
-        patient_to_data=patient_to_data,
-        num_workers=2,
+        test_dl=test_dl,
+        patient_ids=list(patient_to_data.keys()),
         accelerator="cpu",
     )
 
@@ -75,10 +94,20 @@ def test_predict(
         ),
     }
 
+    more_test_dl, _ = tile_bag_dataloader(
+        patient_data=list(more_patients_to_data.values()),
+        bag_size=None,
+        categories=list(model.categories),
+        batch_size=1,
+        shuffle=False,
+        num_workers=2,
+        transform=None,
+    )
+
     more_predictions = _predict(
         model=model,
-        patient_to_data=more_patients_to_data,
-        num_workers=2,
+        test_dl=more_test_dl,
+        patient_ids=list(more_patients_to_data.keys()),
         accelerator="cpu",
     )
 
@@ -88,6 +117,105 @@ def test_predict(
     ), "different inputs should give different results"
     assert torch.allclose(
         predictions[PatientId("pat5")], more_predictions[PatientId("pat5")]
+    ), "the same inputs should repeatedly yield the same results"
+
+
+def test_predict_patient_level(
+    tmp_path: Path, categories: list[str] = ["foo", "bar", "baz"], dim_feats: int = 12
+):
+    model = LitMLPClassifier(
+        categories=categories,
+        category_weights=torch.rand(len(categories)),
+        dim_input=dim_feats,
+        dim_hidden=32,
+        num_layers=2,
+        dropout=0.2,
+        ground_truth_label="test",
+        train_patients=["pat1", "pat2"],
+        valid_patients=["pat3", "pat4"],
+    )
+
+    # Create 3 random patient-level feature files on disk
+    patient_ids = [PatientId(f"pat{i}") for i in range(5, 8)]
+    labels = ["foo", "bar", "baz"]
+    files = [
+        create_random_patient_level_feature_file(
+            tmp_path=tmp_path, feat_dim=dim_feats, feat_filename=str(pid)
+        )
+        for pid in patient_ids
+    ]
+    patient_to_data = {
+        pid: PatientData(
+            ground_truth=label,
+            feature_files={file},
+        )
+        for pid, label, file in zip(patient_ids, labels, files)
+    }
+
+    test_dl, _ = patient_feature_dataloader(
+        patient_data=list(patient_to_data.values()),
+        categories=categories,
+        batch_size=1,
+        shuffle=False,
+        num_workers=1,
+        transform=None,
+    )
+
+    predictions = _predict(
+        model=model,
+        test_dl=test_dl,
+        patient_ids=patient_ids,
+        accelerator="cpu",
+    )
+
+    assert len(predictions) == len(patient_to_data)
+    for pid in patient_ids:
+        assert predictions[pid].shape == torch.Size([3]), "expected one score per class"
+
+    # Check if scores are consistent between runs and different for different patients
+    more_patient_ids = [PatientId(f"pat{i}") for i in range(8, 11)]
+    more_labels = ["foo", "bar", "baz"]
+    more_files = [
+        create_random_patient_level_feature_file(
+            tmp_path=tmp_path, feat_dim=dim_feats, feat_filename=str(pid)
+        )
+        for pid in more_patient_ids
+    ]
+    more_patient_to_data = {
+        pid: PatientData(
+            ground_truth=label,
+            feature_files={file},
+        )
+        for pid, label, file in zip(more_patient_ids, more_labels, more_files)
+    }
+    # Add the original patient for repeatability check
+    all_patient_ids = more_patient_ids + [patient_ids[0]]
+
+    more_test_dl, _ = patient_feature_dataloader(
+        patient_data=[more_patient_to_data[pid] for pid in more_patient_ids]
+        + [patient_to_data[patient_ids[0]]],
+        categories=categories,
+        batch_size=1,
+        shuffle=False,
+        num_workers=1,
+        transform=None,
+    )
+
+    more_predictions = _predict(
+        model=model,
+        test_dl=more_test_dl,
+        patient_ids=all_patient_ids,
+        accelerator="cpu",
+    )
+
+    assert len(more_predictions) == len(all_patient_ids)
+    # Different patients should give different results
+    assert not torch.allclose(
+        more_predictions[more_patient_ids[0]], more_predictions[more_patient_ids[1]]
+    ), "different inputs should give different results"
+    # The same patient should yield the same result
+    assert torch.allclose(
+        predictions[patient_ids[0]], more_predictions[patient_ids[0]]
     ), "the same inputs should repeatedly yield the same results"
 
 

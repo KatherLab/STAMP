@@ -2,16 +2,16 @@ import pytest
 import torch
 
 from stamp.cache import download_file
-from stamp.modeling.data import PatientData
+from stamp.modeling.data import PatientData, tile_bag_dataloader
 from stamp.modeling.deploy import _predict
 from stamp.modeling.lightning_model import LitVisionTransformer
-from stamp.types import FeaturePath
+from stamp.types import FeaturePath, PatientId
 
 
 @pytest.mark.filterwarnings(
     "ignore:The 'predict_dataloader' does not have many workers"
 )
-def test_backwards_compatability() -> None:
+def test_backwards_compatibility() -> None:
     example_checkpoint_path = download_file(
         url="https://github.com/KatherLab/STAMP/releases/download/2.0.0-dev8/example-model.ckpt",
         file_name="example-model.ckpt",
@@ -25,15 +25,28 @@ def test_backwards_compatability() -> None:
 
     model = LitVisionTransformer.load_from_checkpoint(example_checkpoint_path)
 
+    # Prepare PatientData and DataLoader for the test patient
+    patient_id = PatientId("TestPatient")
+    patient_to_data = {
+        patient_id: PatientData(
+            ground_truth=None,
+            feature_files=[FeaturePath(example_feature_path)],
+        )
+    }
+    test_dl, _ = tile_bag_dataloader(
+        patient_data=list(patient_to_data.values()),
+        bag_size=None,
+        categories=list(model.categories),
+        batch_size=1,
+        shuffle=False,
+        num_workers=1,
+        transform=None,
+    )
+
     predictions = _predict(
         model=model,
-        patient_to_data={
-            "TestPatient": PatientData(
-                ground_truth=None,
-                feature_files=[FeaturePath(example_feature_path)],
-            )
-        },
-        num_workers=1,
+        test_dl=test_dl,
+        patient_ids=[patient_id],
         accelerator="gpu" if torch.cuda.is_available() else "cpu",
     )
 
