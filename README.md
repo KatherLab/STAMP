@@ -16,31 +16,85 @@ A Protocol for End-to-End Deep Learning in Computational Pathology".
 [stamp paper]: https://www.nature.com/articles/s41596-024-01047-2 "From whole-slide image to biomarker prediction: end-to-end weakly supervised deep learning in computational pathology"
 [stamp v1]: https://github.com/KatherLab/STAMP/tree/v1
 
-## Installing stamp
+## Installation
 
 We recommend installing STAMP with [uv](https://docs.astral.sh/uv/):
+
+### Install or Update uv:
+
+```bash
+# Install uv
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Update uv
+uv self update
+```
+
+### Install STAMP in a Virtual Environment:
+
+```bash
+uv venv --python=3.12
+source .venv/bin/activate
+
+# For a CPU-only installation:
+uv pip install "git+https://github.com/KatherLab/STAMP.git@fix/build[cpu]" --torch-backend=cpu
+
+# For a GPU (CUDA) installation:
+uv pip install "git+https://github.com/KatherLab/STAMP.git@fix/build[build]"
+uv pip install "git+https://github.com/KatherLab/STAMP.git@fix/build[build,gpu]" --no-build-isolation
+
+# Note: You must run one after the other, the build dependencies must be installed first!
+```
+
+### Install STAMP from the Repository:
+
 ```bash
 git clone https://github.com/KatherLab/STAMP.git
+cd STAMP
+```
 
-cd STAMP/
 
-uv sync --all-extras
+```bash
+# CPU-only Installation (excluding COBRA, Gigapath (and flash-attn))
 
+uv sync --extra cpu
 source .venv/bin/activate
 ```
 
+```bash
+# GPU (CUDA) Installation (Using flash-attn on CUDA systems for gigapath and other models)
+
+# First run this!!
+uv sync --extra build
+
+# And then this for all models:
+uv sync --extra build --extra gpu
+
+# Alternatively, you can install only a specific model:
+uv sync --extra build --extra uni
+
+
+# In case building flash-attn uses too much memory, you can limit the number of parallel compilation jobs:
+MAX_JOBS=4 uv sync --extra build --extra gpu
+```
+
+### Additional Dependencies
+
 > [!IMPORTANT]
-> STAMP additionally requires OpenSlide to be installed, as well as OpenCV dependencies.
+> STAMP additionally requires OpenCV dependencies to be installed. If you want to use `flash-attn`, you also need to install the `clang` compiler and a [CUDA toolkit](https://developer.nvidia.com/cuda-downloads).
 >
+
 > For Ubuntu < 23.10:
 > ```bash
-> apt update && apt install -y openslide-tools libgl1-mesa-glx  # libgl1-mesa-glx is needed for OpenCV
+> apt update && apt install -y libgl1-mesa-glx clang
 > ```
 >
 > For Ubuntu >= 23.10:
 > ```bash
-> apt update && apt install -y openslide-tools libgl1 libglx-mesa0 libglib2.0-0  # libgl1, libglx-mesa0, libglib2.0-0 are needed for OpenCV
+> apt update && apt install -y libgl1 libglx-mesa0 libglib2.0-0 clang
 > ```
+
+### Basic Usage
 
 If the installation was successful, running `stamp` in your terminal should yield the following output:
 ```
@@ -68,7 +122,7 @@ options:
                         Path to config file. Default: config.yaml
 ```
 
-## Running stamp
+## Running STAMP
 
 For a quick introduction how to run stamp,
 check out our [getting started guide](getting-started.md).
