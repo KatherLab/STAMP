@@ -218,20 +218,6 @@ wheels = [
 ]
 
 [[package]]
-name = "build"
-version = "1.2.2.post1"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "colorama", marker = "os_name == 'nt' and sys_platform != 'darwin' and sys_platform != 'linux'" },
-    { name = "packaging" },
-    { name = "pyproject-hooks" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/7d/46/aeab111f8e06793e4f0e421fcad593d547fb8313b50990f31681ee2fb1ad/build-1.2.2.post1.tar.gz", hash = "sha256:b36993e92ca9375a219c99e606a122ff365a760a2d4bba0caa09bd5278b608b7", size = 46701, upload-time = "2024-10-06T17:22:25.251Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/84/c2/80633736cd183ee4a62107413def345f7e6e3c01563dbca1417363cf957e/build-1.2.2.post1-py3-none-any.whl", hash = "sha256:1d61c0887fa860c01971625baae8bdd338e517b836a2f70dd1f7aa3a6b2fc5b5", size = 22950, upload-time = "2024-10-06T17:22:23.299Z" },
-]
-
-[[package]]
 name = "causal-conv1d"
 version = "1.5.0.post8"
 source = { git = "https://github.com/KatherLab/causal-conv1d.git?rev=52ec902314b9eda800162c73502a89f3572fc522#52ec902314b9eda800162c73502a89f3572fc522" }
@@ -2302,15 +2288,6 @@ wheels = [
 ]
 
 [[package]]
-name = "pyproject-hooks"
-version = "1.2.0"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/e7/82/28175b2414effca1cdac8dc99f76d660e7a4fb0ceefa4b4ab8f5f6742925/pyproject_hooks-1.2.0.tar.gz", hash = "sha256:1e859bd5c40fae9448642dd871adf459e5e2084186e8d2c2a79a824c970da1f8", size = 19228, upload-time = "2024-09-29T09:24:13.293Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/bd/24/12818598c362d7f300f18e74db45963dbcb85150324092410c8b49405e42/pyproject_hooks-1.2.0-py3-none-any.whl", hash = "sha256:9e5c6bfa8dcc30091c74b0cf803c81fdd29d94f01992a7707bc97babb1141913", size = 10216, upload-time = "2024-09-29T09:24:11.978Z" },
-]
-
-[[package]]
 name = "pyright"
 version = "1.1.401"
 source = { registry = "https://pypi.org/simple" }
@@ -3000,22 +2977,10 @@ dependencies = [
     { name = "torchmetrics" },
     { name = "torchvision" },
     { name = "tqdm" },
+    { name = "transformers" },
 ]
 
 [package.optional-dependencies]
-all = [
-    { name = "conch" },
-    { name = "einops-exts" },
-    { name = "environs" },
-    { name = "gdown" },
-    { name = "huggingface-hub" },
-    { name = "madeleine" },
-    { name = "musk" },
-    { name = "sacremoses" },
-    { name = "torch" },
-    { name = "transformers" },
-    { name = "uni" },
-]
 build = [
     { name = "hatchling" },
     { name = "ninja" },
@@ -3029,8 +2994,12 @@ chief-ctranspath = [
 cobra = [
     { name = "causal-conv1d" },
     { name = "cobra" },
+    { name = "hatchling" },
     { name = "jinja2" },
     { name = "mamba-ssm" },
+    { name = "ninja" },
+    { name = "psutil" },
+    { name = "setuptools" },
     { name = "triton" },
 ]
 conch = [
@@ -3039,22 +3008,87 @@ conch = [
 ]
 conch1-5 = [
     { name = "einops-exts" },
+    { name = "flash-attn" },
+    { name = "hatchling" },
+    { name = "ninja" },
+    { name = "psutil" },
+    { name = "setuptools" },
     { name = "transformers" },
+]
+conch1-5-cpu = [
+    { name = "einops-exts" },
+    { name = "transformers" },
+]
+cpu = [
+    { name = "conch" },
+    { name = "einops-exts" },
+    { name = "environs" },
+    { name = "gdown" },
+    { name = "huggingface-hub" },
+    { name = "madeleine" },
+    { name = "musk" },
+    { name = "sacremoses" },
+    { name = "torch" },
+    { name = "transformers" },
+    { name = "uni" },
 ]
 ctranspath = [
     { name = "gdown" },
 ]
+flash-attention = [
+    { name = "flash-attn" },
+    { name = "hatchling" },
+    { name = "ninja" },
+    { name = "psutil" },
+    { name = "setuptools" },
+]
 gigapath = [
-    { name = "build" },
     { name = "fairscale" },
     { name = "flash-attn" },
     { name = "fvcore" },
     { name = "gigapath" },
+    { name = "hatchling" },
     { name = "iopath" },
     { name = "lifelines" },
     { name = "monai" },
+    { name = "ninja" },
+    { name = "psutil" },
     { name = "scikit-image" },
     { name = "scikit-survival" },
+    { name = "setuptools" },
+    { name = "wandb" },
+    { name = "webdataset" },
+]
+gpu = [
+    { name = "causal-conv1d" },
+    { name = "cobra" },
+    { name = "conch" },
+    { name = "einops-exts" },
+    { name = "environs" },
+    { name = "fairscale" },
+    { name = "flash-attn" },
+    { name = "fvcore" },
+    { name = "gdown" },
+    { name = "gigapath" },
+    { name = "hatchling" },
+    { name = "huggingface-hub" },
+    { name = "iopath" },
+    { name = "jinja2" },
+    { name = "lifelines" },
+    { name = "madeleine" },
+    { name = "mamba-ssm" },
+    { name = "monai" },
+    { name = "musk" },
+    { name = "ninja" },
+    { name = "psutil" },
+    { name = "sacremoses" },
+    { name = "scikit-image" },
+    { name = "scikit-survival" },
+    { name = "setuptools" },
+    { name = "torch" },
+    { name = "transformers" },
+    { name = "triton" },
+    { name = "uni" },
     { name = "wandb" },
     { name = "webdataset" },
 ]
@@ -3062,12 +3096,37 @@ madeleine = [
     { name = "madeleine" },
 ]
 musk = [
+    { name = "flash-attn" },
+    { name = "hatchling" },
+    { name = "musk" },
+    { name = "ninja" },
+    { name = "psutil" },
+    { name = "setuptools" },
+]
+musk-cpu = [
     { name = "musk" },
 ]
 plip = [
+    { name = "flash-attn" },
+    { name = "hatchling" },
+    { name = "ninja" },
+    { name = "psutil" },
+    { name = "setuptools" },
+    { name = "transformers" },
+]
+plip-cpu = [
     { name = "transformers" },
 ]
 prism = [
+    { name = "environs" },
+    { name = "flash-attn" },
+    { name = "hatchling" },
+    { name = "ninja" },
+    { name = "psutil" },
+    { name = "sacremoses" },
+    { name = "setuptools" },
+]
+prism-cpu = [
     { name = "environs" },
     { name = "sacremoses" },
 ]
@@ -3092,15 +3151,14 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "beartype", specifier = ">=0.19.0" },
-    { name = "build", marker = "extra == 'gigapath'" },
     { name = "causal-conv1d", marker = "extra == 'cobra'", git = "https://github.com/KatherLab/causal-conv1d.git?rev=52ec902314b9eda800162c73502a89f3572fc522" },
     { name = "cobra", marker = "extra == 'cobra'", git = "http://github.com/KatherLab/COBRA.git?rev=468ba1171f6b5488cd4c946438b90998fd8defad" },
     { name = "conch", marker = "extra == 'conch'", git = "https://github.com/Mahmoodlab/CONCH.git?rev=02d6ac59cc20874bff0f581de258c2b257f69a84" },
     { name = "einops", specifier = ">=0.8.0" },
-    { name = "einops-exts", marker = "extra == 'conch1-5'", specifier = "==0.0.4" },
-    { name = "environs", marker = "extra == 'prism'", specifier = "==11.0.0" },
+    { name = "einops-exts", marker = "extra == 'conch1-5-cpu'", specifier = "==0.0.4" },
+    { name = "environs", marker = "extra == 'prism-cpu'", specifier = "==11.0.0" },
     { name = "fairscale", marker = "extra == 'gigapath'" },
-    { name = "flash-attn", marker = "extra == 'gigapath'", git = "https://github.com/KatherLab/flash-attention.git?rev=30e60b16f727af429dcfa12fc0c996f92d92a3bb" },
+    { name = "flash-attn", marker = "extra == 'flash-attention'", git = "https://github.com/KatherLab/flash-attention.git?rev=30e60b16f727af429dcfa12fc0c996f92d92a3bb" },
     { name = "fvcore", marker = "extra == 'gigapath'" },
     { name = "gdown", marker = "extra == 'chief-ctranspath'", specifier = ">=5.2.0" },
     { name = "gdown", marker = "extra == 'ctranspath'", specifier = ">=5.2.0" },
@@ -3119,7 +3177,7 @@ requires-dist = [
     { name = "mamba-ssm", marker = "extra == 'cobra'", git = "https://github.com/KatherLab/mamba.git?rev=423692d1dddd558884fc3efb7c063e907d022c74" },
     { name = "matplotlib", specifier = ">=3.9.2" },
     { name = "monai", marker = "extra == 'gigapath'" },
-    { name = "musk", marker = "extra == 'musk'", git = "https://github.com/lilab-stanford/MUSK.git?rev=e1699c27687f44bbf6d4adfcbb2abe89795d347f" },
+    { name = "musk", marker = "extra == 'musk-cpu'", git = "https://github.com/lilab-stanford/MUSK.git?rev=e1699c27687f44bbf6d4adfcbb2abe89795d347f" },
     { name = "ninja", marker = "extra == 'build'" },
     { name = "numpy", specifier = ">=2.2.2" },
     { name = "opencv-python", specifier = ">=4.10.0.84" },
@@ -3132,13 +3190,21 @@ requires-dist = [
     { name = "psutil", marker = "extra == 'build'" },
     { name = "pydantic", specifier = ">=2.10.3" },
     { name = "pyyaml", specifier = ">=6.0.2" },
-    { name = "sacremoses", marker = "extra == 'prism'", specifier = "==0.1.1" },
+    { name = "sacremoses", marker = "extra == 'prism-cpu'", specifier = "==0.1.1" },
     { name = "scikit-image", marker = "extra == 'gigapath'" },
     { name = "scikit-learn", specifier = ">=1.5.2" },
     { name = "scikit-survival", marker = "extra == 'gigapath'" },
     { name = "scipy", specifier = ">=1.15.1" },
     { name = "setuptools", marker = "extra == 'build'" },
-    { name = "stamp", extras = ["conch", "ctranspath", "uni", "virchow2", "chief-ctranspath", "conch1-5", "prism", "madeleine", "musk", "plip"], marker = "extra == 'all'" },
+    { name = "stamp", extras = ["build"], marker = "extra == 'cobra'" },
+    { name = "stamp", extras = ["build"], marker = "extra == 'flash-attention'" },
+    { name = "stamp", extras = ["conch", "ctranspath", "uni", "virchow2", "chief-ctranspath", "conch1-5", "prism", "madeleine", "musk", "plip", "gigapath", "cobra"], marker = "extra == 'gpu'" },
+    { name = "stamp", extras = ["conch", "ctranspath", "uni", "virchow2", "chief-ctranspath", "conch1-5-cpu", "prism-cpu", "madeleine", "musk-cpu", "plip-cpu"], marker = "extra == 'cpu'" },
+    { name = "stamp", extras = ["flash-attention"], marker = "extra == 'gigapath'" },
+    { name = "stamp", extras = ["flash-attention", "conch1-5-cpu"], marker = "extra == 'conch1-5'" },
+    { name = "stamp", extras = ["flash-attention", "musk-cpu"], marker = "extra == 'musk'" },
+    { name = "stamp", extras = ["flash-attention", "plip-cpu"], marker = "extra == 'plip'" },
+    { name = "stamp", extras = ["flash-attention", "prism-cpu"], marker = "extra == 'prism'" },
     { name = "timm", specifier = ">=0.9.11" },
     { name = "torch", specifier = ">=2.5.1" },
     { name = "torch", marker = "extra == 'chief-ctranspath'", specifier = ">=2.0.0" },
@@ -3146,14 +3212,15 @@ requires-dist = [
     { name = "torchmetrics", specifier = ">=1.6.0" },
     { name = "torchvision", specifier = ">=0.20.1" },
     { name = "tqdm", specifier = ">=4.66.6" },
-    { name = "transformers", marker = "extra == 'conch1-5'", specifier = ">=4.45.2" },
-    { name = "transformers", marker = "extra == 'plip'", specifier = ">=4.45.2" },
+    { name = "transformers" },
+    { name = "transformers", marker = "extra == 'conch1-5-cpu'", specifier = ">=4.45.2" },
+    { name = "transformers", marker = "extra == 'plip-cpu'", specifier = ">=4.45.2" },
     { name = "triton", marker = "extra == 'cobra'", specifier = "==3.2.0" },
     { name = "uni", marker = "extra == 'uni'", git = "https://github.com/mahmoodlab/UNI.git" },
     { name = "wandb", marker = "extra == 'gigapath'" },
     { name = "webdataset", marker = "extra == 'gigapath'" },
 ]
-provides-extras = ["build", "conch", "conch1-5", "ctranspath", "chief-ctranspath", "gigapath", "uni", "virchow2", "cobra", "prism", "madeleine", "musk", "plip", "all"]
+provides-extras = ["build", "flash-attention", "conch", "conch1-5-cpu", "conch1-5", "ctranspath", "chief-ctranspath", "gigapath", "uni", "virchow2", "cobra", "prism-cpu", "prism", "madeleine", "musk-cpu", "musk", "plip-cpu", "plip", "cpu", "gpu"]
 
 [package.metadata.requires-dev]
 dev = [
