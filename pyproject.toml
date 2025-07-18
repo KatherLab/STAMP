@@ -46,7 +46,6 @@ dependencies = [
     "tqdm>=4.66.6",
     "timm>=0.9.11",
     "transformers"
-    "transformers"
 ]
 
 [project.optional-dependencies]
