@@ -3096,6 +3096,7 @@ chief-ctranspath = [
 cobra = [
     { name = "causal-conv1d" },
     { name = "cobra" },
+    { name = "flash-attn" },
     { name = "hatchling" },
     { name = "jinja2" },
     { name = "mamba-ssm" },
@@ -3137,13 +3138,6 @@ cpu = [
 ]
 ctranspath = [
     { name = "gdown" },
-]
-flash-attention = [
-    { name = "flash-attn" },
-    { name = "hatchling" },
-    { name = "ninja" },
-    { name = "psutil" },
-    { name = "setuptools" },
 ]
 gigapath = [
     { name = "fairscale" },
@@ -3265,7 +3259,12 @@ requires-dist = [
     { name = "einops-exts", marker = "extra == 'conch1-5-cpu'", specifier = "==0.0.4" },
     { name = "environs", marker = "extra == 'prism-cpu'", specifier = "==11.0.0" },
     { name = "fairscale", marker = "extra == 'gigapath'" },
-    { name = "flash-attn", marker = "extra == 'flash-attention'", git = "https://github.com/KatherLab/flash-attention.git?rev=30e60b16f727af429dcfa12fc0c996f92d92a3bb" },
+    { name = "flash-attn", marker = "extra == 'cobra'", git = "https://github.com/KatherLab/flash-attention.git?rev=30e60b16f727af429dcfa12fc0c996f92d92a3bb" },
+    { name = "flash-attn", marker = "extra == 'conch1-5'", git = "https://github.com/KatherLab/flash-attention.git?rev=30e60b16f727af429dcfa12fc0c996f92d92a3bb" },
+    { name = "flash-attn", marker = "extra == 'gigapath'", git = "https://github.com/KatherLab/flash-attention.git?rev=30e60b16f727af429dcfa12fc0c996f92d92a3bb" },
+    { name = "flash-attn", marker = "extra == 'musk'", git = "https://github.com/KatherLab/flash-attention.git?rev=30e60b16f727af429dcfa12fc0c996f92d92a3bb" },
+    { name = "flash-attn", marker = "extra == 'plip'", git = "https://github.com/KatherLab/flash-attention.git?rev=30e60b16f727af429dcfa12fc0c996f92d92a3bb" },
+    { name = "flash-attn", marker = "extra == 'prism'", git = "https://github.com/KatherLab/flash-attention.git?rev=30e60b16f727af429dcfa12fc0c996f92d92a3bb" },
     { name = "fvcore", marker = "extra == 'gigapath'" },
     { name = "gdown", marker = "extra == 'chief-ctranspath'", specifier = ">=5.2.0" },
     { name = "gdown", marker = "extra == 'ctranspath'", specifier = ">=5.2.0" },
@@ -3304,15 +3303,14 @@ requires-dist = [
     { name = "scipy", specifier = ">=1.15.1" },
     { name = "setuptools", marker = "extra == 'build'" },
     { name = "stamp", extras = ["build"], marker = "extra == 'cobra'" },
-    { name = "stamp", extras = ["build"], marker = "extra == 'flash-attention'" },
+    { name = "stamp", extras = ["build"], marker = "extra == 'gigapath'" },
     { name = "stamp", extras = ["conch", "ctranspath", "uni", "virchow2", "chief-ctranspath", "conch1-5", "prism", "madeleine", "musk", "plip", "gigapath", "cobra"], marker = "extra == 'all'" },
     { name = "stamp", extras = ["conch", "ctranspath", "uni", "virchow2", "chief-ctranspath", "conch1-5", "prism", "madeleine", "musk", "plip", "gigapath", "cobra"], marker = "extra == 'gpu'" },
     { name = "stamp", extras = ["conch", "ctranspath", "uni", "virchow2", "chief-ctranspath", "conch1-5-cpu", "prism-cpu", "madeleine", "musk-cpu", "plip-cpu"], marker = "extra == 'cpu'" },
-    { name = "stamp", extras = ["flash-attention"], marker = "extra == 'gigapath'" },
-    { name = "stamp", extras = ["flash-attention", "conch1-5-cpu"], marker = "extra == 'conch1-5'" },
-    { name = "stamp", extras = ["flash-attention", "musk-cpu"], marker = "extra == 'musk'" },
-    { name = "stamp", extras = ["flash-attention", "plip-cpu"], marker = "extra == 'plip'" },
-    { name = "stamp", extras = ["flash-attention", "prism-cpu"], marker = "extra == 'prism'" },
+    { name = "stamp", extras = ["conch1-5-cpu", "build"], marker = "extra == 'conch1-5'" },
+    { name = "stamp", extras = ["musk-cpu", "build"], marker = "extra == 'musk'" },
+    { name = "stamp", extras = ["plip-cpu", "build"], marker = "extra == 'plip'" },
+    { name = "stamp", extras = ["prism-cpu", "build"], marker = "extra == 'prism'" },
     { name = "timm", specifier = ">=0.9.11" },
     { name = "torch", specifier = ">=2.5.1" },
     { name = "torch", marker = "extra == 'chief-ctranspath'", specifier = ">=2.0.0" },
@@ -3328,7 +3326,7 @@ requires-dist = [
     { name = "wandb", marker = "extra == 'gigapath'" },
     { name = "webdataset", marker = "extra == 'gigapath'" },
 ]
-provides-extras = ["build", "flash-attention", "conch", "conch1-5-cpu", "conch1-5", "ctranspath", "chief-ctranspath", "gigapath", "uni", "virchow2", "cobra", "prism-cpu", "prism", "madeleine", "musk-cpu", "musk", "plip-cpu", "plip", "all", "cpu", "gpu"]
+provides-extras = ["build", "conch", "conch1-5-cpu", "conch1-5", "ctranspath", "chief-ctranspath", "gigapath", "uni", "virchow2", "cobra", "prism-cpu", "prism", "madeleine", "musk-cpu", "musk", "plip-cpu", "plip", "all", "cpu", "gpu"]
 
 [package.metadata.requires-dev]
 dev = [

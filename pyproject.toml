@@ -55,10 +55,6 @@ build = [
     "psutil",
     "ninja"
 ]
-flash-attention = [
-    "stamp[build]",
-    "flash-attn @ git+https://github.com/KatherLab/flash-attention.git@30e60b16f727af429dcfa12fc0c996f92d92a3bb",
-]
 conch = [
     "huggingface-hub>=0.26.2",
     "conch @ git+https://github.com/Mahmoodlab/CONCH.git@02d6ac59cc20874bff0f581de258c2b257f69a84",
@@ -68,7 +64,8 @@ conch1_5_cpu = [
     "einops-exts==0.0.4",
 ]
 conch1_5 = [
-    "stamp[flash-attention,conch1_5_cpu]",
+    "flash-attn @ git+https://github.com/KatherLab/flash-attention.git@30e60b16f727af429dcfa12fc0c996f92d92a3bb",
+    "stamp[conch1_5_cpu, build]",
 ]
 ctranspath = [
     "gdown>=5.2.0",
@@ -78,7 +75,8 @@ chief_ctranspath = [
     "torch>=2.0.0"
 ]
 gigapath = [
-    "stamp[flash-attention]",
+    "stamp[build]",
+    "flash-attn @ git+https://github.com/KatherLab/flash-attention.git@30e60b16f727af429dcfa12fc0c996f92d92a3bb",
     "gigapath @ git+https://github.com/KatherLab/prov-gigapath.git@edffc189af3e665bfad48a2a0a3ba81bb5bc5518",
     "fvcore",
     "iopath",
@@ -99,6 +97,7 @@ virchow2 = [
     "torch>=2.0.0",
 ]
 cobra = [
+    "flash-attn @ git+https://github.com/KatherLab/flash-attention.git@30e60b16f727af429dcfa12fc0c996f92d92a3bb",
     "causal-conv1d @ git+https://github.com/KatherLab/causal-conv1d.git@52ec902314b9eda800162c73502a89f3572fc522",
     "mamba-ssm @ git+https://github.com/KatherLab/mamba.git@423692d1dddd558884fc3efb7c063e907d022c74",
     "cobra @ git+http://github.com/KatherLab/COBRA.git@468ba1171f6b5488cd4c946438b90998fd8defad",
@@ -111,7 +110,8 @@ prism_cpu = [
     "environs==11.0.0",
 ]
 prism = [
-    "stamp[flash-attention,prism_cpu]",
+    "flash-attn @ git+https://github.com/KatherLab/flash-attention.git@30e60b16f727af429dcfa12fc0c996f92d92a3bb",
+    "stamp[prism_cpu, build]",
 ]
 madeleine = [
     "madeleine @ git+https://github.com/mahmoodlab/MADELEINE.git@de7c85acc2bdad352e6df8eee5694f8b6f288012"
@@ -120,13 +120,15 @@ musk_cpu = [
     "musk @ git+https://github.com/lilab-stanford/MUSK.git@e1699c27687f44bbf6d4adfcbb2abe89795d347f",
 ]
 musk = [
-    "stamp[flash-attention,musk_cpu]",
+    "flash-attn @ git+https://github.com/KatherLab/flash-attention.git@30e60b16f727af429dcfa12fc0c996f92d92a3bb",
+    "stamp[musk_cpu, build]",
 ]
 plip_cpu = [
     "transformers>=4.45.2"
 ]
 plip = [
-    "stamp[flash-attention,plip_cpu]",
+    "flash-attn @ git+https://github.com/KatherLab/flash-attention.git@30e60b16f727af429dcfa12fc0c996f92d92a3bb",
+    "stamp[plip_cpu, build]",
 ]
 
 
@@ -170,7 +172,7 @@ markers = [
 lint.ignore = ["F722"] # https://docs.kidger.site/jaxtyping/faq/#flake8-or-ruff-are-throwing-an-error
 
 [tool.uv]
-no-build-isolation-package = ["flash-attn", "cobra", "mamba-ssm", "causal-conv1d", "gigapath", "flash-attention"]
+no-build-isolation-package = ["flash-attn", "cobra", "mamba-ssm", "causal-conv1d", "gigapath"]
 no-binary-package = ["flash-attn", "gigapath"]
 conflicts = [
     [
