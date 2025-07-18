@@ -2981,6 +2981,39 @@ dependencies = [
 ]
 
 [package.optional-dependencies]
+all = [
+    { name = "causal-conv1d" },
+    { name = "cobra" },
+    { name = "conch" },
+    { name = "einops-exts" },
+    { name = "environs" },
+    { name = "fairscale" },
+    { name = "flash-attn" },
+    { name = "fvcore" },
+    { name = "gdown" },
+    { name = "gigapath" },
+    { name = "hatchling" },
+    { name = "huggingface-hub" },
+    { name = "iopath" },
+    { name = "jinja2" },
+    { name = "lifelines" },
+    { name = "madeleine" },
+    { name = "mamba-ssm" },
+    { name = "monai" },
+    { name = "musk" },
+    { name = "ninja" },
+    { name = "psutil" },
+    { name = "sacremoses" },
+    { name = "scikit-image" },
+    { name = "scikit-survival" },
+    { name = "setuptools" },
+    { name = "torch" },
+    { name = "transformers" },
+    { name = "triton" },
+    { name = "uni" },
+    { name = "wandb" },
+    { name = "webdataset" },
+]
 build = [
     { name = "hatchling" },
     { name = "ninja" },
@@ -3198,6 +3231,7 @@ requires-dist = [
     { name = "setuptools", marker = "extra == 'build'" },
     { name = "stamp", extras = ["build"], marker = "extra == 'cobra'" },
     { name = "stamp", extras = ["build"], marker = "extra == 'flash-attention'" },
+    { name = "stamp", extras = ["conch", "ctranspath", "uni", "virchow2", "chief-ctranspath", "conch1-5", "prism", "madeleine", "musk", "plip", "gigapath", "cobra"], marker = "extra == 'all'" },
     { name = "stamp", extras = ["conch", "ctranspath", "uni", "virchow2", "chief-ctranspath", "conch1-5", "prism", "madeleine", "musk", "plip", "gigapath", "cobra"], marker = "extra == 'gpu'" },
     { name = "stamp", extras = ["conch", "ctranspath", "uni", "virchow2", "chief-ctranspath", "conch1-5-cpu", "prism-cpu", "madeleine", "musk-cpu", "plip-cpu"], marker = "extra == 'cpu'" },
     { name = "stamp", extras = ["flash-attention"], marker = "extra == 'gigapath'" },
@@ -3220,7 +3254,7 @@ requires-dist = [
     { name = "wandb", marker = "extra == 'gigapath'" },
     { name = "webdataset", marker = "extra == 'gigapath'" },
 ]
-provides-extras = ["build", "flash-attention", "conch", "conch1-5-cpu", "conch1-5", "ctranspath", "chief-ctranspath", "gigapath", "uni", "virchow2", "cobra", "prism-cpu", "prism", "madeleine", "musk-cpu", "musk", "plip-cpu", "plip", "cpu", "gpu"]
+provides-extras = ["build", "flash-attention", "conch", "conch1-5-cpu", "conch1-5", "ctranspath", "chief-ctranspath", "gigapath", "uni", "virchow2", "cobra", "prism-cpu", "prism", "madeleine", "musk-cpu", "musk", "plip-cpu", "plip", "all", "cpu", "gpu"]
 
 [package.metadata.requires-dev]
 dev = [
