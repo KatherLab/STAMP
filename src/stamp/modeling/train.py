@@ -15,6 +15,7 @@ from lightning.pytorch.loggers import CSVLogger
 from sklearn.model_selection import train_test_split
 from torch.utils.data.dataloader import DataLoader
 
+from stamp.modeling.config import AdvancedConfig, TrainConfig
 from stamp.modeling.data import (
     BagDataset,
     PatientData,
@@ -31,9 +32,8 @@ from stamp.modeling.lightning_model import (
     Bags,
     BagSizes,
     EncodedTargets,
-    LitVisionTransformer,
 )
-from stamp.modeling.mlp_classifier import LitMLPClassifier
+from stamp.modeling.registry import MODEL_REGISTRY, ModelName
 from stamp.modeling.transforms import VaryPrecisionTransform
 from stamp.types import Category, CoordinatesBatch, GroundTruth, PandasLabel, PatientId
 
@@ -46,73 +46,26 @@ _logger = logging.getLogger("stamp")
 
 def train_categorical_model_(
     *,
-    clini_table: Path,
-    slide_table: Path | None,
-    feature_dir: Path,
-    output_dir: Path,
-    patient_label: PandasLabel,
-    ground_truth_label: PandasLabel,
-    filename_label: PandasLabel,
-    categories: Sequence[Category] | None,
-    # Dataset and -loader parameters
-    bag_size: int,
-    num_workers: int,
-    # Training paramenters
-    batch_size: int,
-    max_epochs: int,
-    patience: int,
-    accelerator: str | Accelerator,
-    # Experimental features
-    use_vary_precision_transform: bool,
-    use_alibi: bool,
+    config: TrainConfig,
+    advanced: AdvancedConfig,
 ) -> None:
-    """Trains a model based on the feature type.
-
-    Args:
-        clini_table:
-            An excel or csv file to read the clinical information from.
-            Must at least have the columns specified in the arguments
-
-            `patient_label` (containing a unique patient ID)
-            and `ground_truth_label` (containing the ground truth to train for).
-        slide_table:
-            An excel or csv file to read the patient-slide associations from.
-            Must at least have the columns specified in the arguments
-            `patient_label` (containing the patient ID)
-            and `filename_label`
-            (containing a filename relative to `feature_dir`
-            in which some of the patient's features are stored).
-        feature_dir:
-            See `slide_table`.
-        output_dir:
-            Path into which to output the artifacts (trained model etc.)
-            generated during training.
-        patient_label:
-            See `clini_table`, `slide_table`.
-        ground_truth_label:
-            See `clini_table`.
-        filename_label:
-            See `slide_table`.
-        categories:
-            Categories of the ground truth.
-            Set to `None` to automatically infer.
-    """
-    feature_type = detect_feature_type(feature_dir)
+    """Trains a model based on the feature type."""
+    feature_type = detect_feature_type(config.feature_dir)
     _logger.info(f"Detected feature type: {feature_type}")
 
     if feature_type == "tile":
-        if slide_table is None:
+        if config.slide_table is None:
             raise ValueError("A slide table is required for tile-level modeling")
         patient_to_ground_truth = patient_to_ground_truth_from_clini_table_(
-            clini_table_path=clini_table,
-            ground_truth_label=ground_truth_label,
-            patient_label=patient_label,
+            clini_table_path=config.clini_table,
+            ground_truth_label=config.ground_truth_label,
+            patient_label=config.patient_label,
         )
         slide_to_patient = slide_to_patient_from_slide_table_(
-            slide_table_path=slide_table,
-            feature_dir=feature_dir,
-            patient_label=patient_label,
-            filename_label=filename_label,
+            slide_table_path=config.slide_table,
+            feature_dir=config.feature_dir,
+            patient_label=config.patient_label,
+            filename_label=config.filename_label,
         )
         patient_to_data = filter_complete_patient_data_(
             patient_to_ground_truth=patient_to_ground_truth,
@@ -121,13 +74,13 @@ def train_categorical_model_(
         )
     elif feature_type == "patient":
         # Patient-level: ignore slide_table
-        if slide_table is not None:
+        if config.slide_table is not None:
             _logger.warning("slide_table is ignored for patient-level features.")
         patient_to_data = load_patient_level_data(
-            clini_table=clini_table,
-            feature_dir=feature_dir,
-            patient_label=patient_label,
-            ground_truth_label=ground_truth_label,
+            clini_table=config.clini_table,
+            feature_dir=config.feature_dir,
+            patient_label=config.patient_label,
+            ground_truth_label=config.ground_truth_label,
         )
     elif feature_type == "slide":
         raise RuntimeError(
@@ -140,30 +93,27 @@ def train_categorical_model_(
     # Train the model (the rest of the logic is unchanged)
     model, train_dl, valid_dl = setup_model_for_training(
         patient_to_data=patient_to_data,
-        categories=categories,
-        bag_size=bag_size,
-        batch_size=batch_size,
-        num_workers=num_workers,
-        ground_truth_label=ground_truth_label,
-        clini_table=clini_table,
-        slide_table=slide_table,
-        feature_dir=feature_dir,
+        categories=config.categories,
+        advanced=advanced,
+        ground_truth_label=config.ground_truth_label,
+        clini_table=config.clini_table,
+        slide_table=config.slide_table,
+        feature_dir=config.feature_dir,
         train_transform=(
             VaryPrecisionTransform(min_fraction_bits=1)
-            if use_vary_precision_transform
+            if config.use_vary_precision_transform
             else None
         ),
-        use_alibi=use_alibi,
         feature_type=feature_type,
     )
     train_model_(
-        output_dir=output_dir,
+        output_dir=config.output_dir,
         model=model,
         train_dl=train_dl,
         valid_dl=valid_dl,
-        max_epochs=max_epochs,
-        patience=patience,
-        accelerator=accelerator,
+        max_epochs=advanced.max_epochs,
+        patience=advanced.patience,
+        accelerator=advanced.accelerator,
     )
 
 
@@ -171,17 +121,14 @@ def setup_model_for_training(
     *,
     patient_to_data: Mapping[PatientId, PatientData[GroundTruth]],
     categories: Sequence[Category] | None,
-    bag_size: int,
-    batch_size: int,
-    num_workers: int,
     train_transform: Callable[[torch.Tensor], torch.Tensor] | None,
-    use_alibi: bool,
+    feature_type: str,
+    advanced: AdvancedConfig,
     # Metadata, has no effect on model training
     ground_truth_label: PandasLabel,
     clini_table: Path,
     slide_table: Path | None,
     feature_dir: Path,
-    feature_type: str,
 ) -> tuple[
     lightning.LightningModule,
     DataLoader,
@@ -193,12 +140,19 @@ def setup_model_for_training(
         setup_dataloaders_for_training(
             patient_to_data=patient_to_data,
             categories=categories,
-            bag_size=bag_size,
-            batch_size=batch_size,
-            num_workers=num_workers,
+            bag_size=advanced.bag_size,
+            batch_size=advanced.batch_size,
+            num_workers=advanced.num_workers,
             train_transform=train_transform,
             feature_type=feature_type,
         )
+    )
+
+    _logger.info(
+        "Training dataloaders: bag_size=%s, batch_size=%s, num_workers=%s",
+        advanced.bag_size,
+        advanced.batch_size,
+        advanced.num_workers,
     )
 
     category_weights = _compute_class_weights_and_check_categories(
@@ -207,41 +161,48 @@ def setup_model_for_training(
         train_categories=train_categories,
     )
 
-    # Model selection
-    if feature_type == "tile":
-        model = LitVisionTransformer(
-            categories=train_categories,
-            category_weights=category_weights,
-            dim_input=dim_feats,
-            dim_model=512,
-            dim_feedforward=512,
-            n_heads=8,
-            n_layers=2,
-            dropout=0.25,
-            use_alibi=use_alibi,
-            # Metadata, has no effect on model training
-            ground_truth_label=ground_truth_label,
-            train_patients=train_patients,
-            valid_patients=valid_patients,
-            clini_table=clini_table,
-            slide_table=slide_table,
-            feature_dir=feature_dir,
+    # 1. Default to a model if none is specified
+    if advanced.model_name is None:
+        advanced.model_name = ModelName.VIT if feature_type == "tile" else ModelName.MLP
+        _logger.info(
+            f"No model specified, defaulting to '{advanced.model_name.value}' for feature type '{feature_type}'"
         )
-    else:
-        model = LitMLPClassifier(
-            categories=train_categories,
-            category_weights=category_weights,
-            dim_input=dim_feats,
-            dim_hidden=512,
-            num_layers=2,
-            dropout=0.25,
-            # Metadata, has no effect on model training
-            ground_truth_label=ground_truth_label,
-            train_patients=train_patients,
-            valid_patients=valid_patients,
-            clini_table=clini_table,
-            feature_dir=feature_dir,
+
+    # 2. Validate that the chosen model supports the feature type
+    model_info = MODEL_REGISTRY[advanced.model_name]
+    if feature_type not in model_info["supported_features"]:
+        raise ValueError(
+            f"Model '{advanced.model_name.value}' does not support feature type '{feature_type}'. "
+            f"Supported types are: {model_info['supported_features']}"
         )
+
+    # 3. Get model-specific hyperparameters
+    model_specific_params = advanced.model_params.model_dump()[
+        advanced.model_name.value
+    ]
+
+    # 4. Prepare common parameters
+    common_params = {
+        "categories": train_categories,
+        "category_weights": category_weights,
+        "dim_input": dim_feats,
+        # Metadata, has no effect on model training
+        "model_name": advanced.model_name.value,
+        "ground_truth_label": ground_truth_label,
+        "train_patients": train_patients,
+        "valid_patients": valid_patients,
+        "clini_table": clini_table,
+        "slide_table": slide_table,
+        "feature_dir": feature_dir,
+    }
+
+    # 4. Instantiate the model dynamically
+    ModelClass = model_info["model_class"]
+    all_params = {**common_params, **model_specific_params}
+    _logger.info(
+        f"Instantiating model '{advanced.model_name.value}' with parameters: {model_specific_params}"
+    )
+    model = ModelClass(**all_params)
 
     return model, train_dl, valid_dl
 
