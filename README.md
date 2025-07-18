@@ -19,23 +19,60 @@ A Protocol for End-to-End Deep Learning in Computational Pathology".
 ## Installing stamp
 
 We recommend installing STAMP with [uv](https://docs.astral.sh/uv/):
+
+### Install or Update uv:
+
 ```bash
-uv sync --all extras
+# Install uv
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Update uv
+uv self update
+```
+
+### Clone the STAMP repository and install:
+
+```bash
+git clone https://github.com/KatherLab/STAMP.git
+cd STAMP
+```
+
+
+```bash
+# Basic Installation
+uv sync --extra all
 
 source .venv/bin/activate
 ```
 
+```bash
+# Advanced Installation (Using flash-attn on CUDA systems for gigapath, ...)
+# First run this!!
+uv sync --extra=build
+
+# All models
+uv sync --all-extras
+
+# Alternatively, you can install only a specific model:
+uv sync --extra=build --extra=gigapath
+
+
+# In case building flash-attn uses too much memory, you can limit the number of parallel compilation jobs:
+MAX_JOBS=4 uv sync --extra=build --extra=gigapath
+```
+
 > [!IMPORTANT]
-> STAMP additionally requires OpenSlide to be installed, as well as OpenCV dependencies.
+> STAMP additionally requires OpenCV dependencies to be installed. If you want to use flash-attn, you also need to install the clang compiler and a [CUDA toolkit](https://developer.nvidia.com/cuda-downloads).
 >
+
 > For Ubuntu < 23.10:
 > ```bash
-> apt update && apt install -y openslide-tools libgl1-mesa-glx  # libgl1-mesa-glx is needed for OpenCV
+> apt update && apt install -y libgl1-mesa-glx clang
 > ```
 >
 > For Ubuntu >= 23.10:
 > ```bash
-> apt update && apt install -y openslide-tools libgl1 libglx-mesa0 libglib2.0-0  # libgl1, libglx-mesa0, libglib2.0-0 are needed for OpenCV
+> apt update && apt install -y libgl1 libglx-mesa0 libglib2.0-0 clang
 > ```
 
 If the installation was successful, running `stamp` in your terminal should yield the following output:
