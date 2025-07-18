@@ -122,7 +122,7 @@ options:
                         Path to config file. Default: config.yaml
 ```
 
-## Running stamp
+## Running STAMP
 
 For a quick introduction how to run stamp,
 check out our [getting started guide](getting-started.md).
