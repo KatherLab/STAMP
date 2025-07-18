@@ -137,8 +137,8 @@ plip = [
 all = [
     "stamp[conch,ctranspath,uni,virchow2,chief_ctranspath,conch1_5,prism,madeleine,musk,plip,gigapath,cobra]"
 ]
-cpu = ["stamp[conch,ctranspath,uni,virchow2,chief_ctranspath,conch1_5_cpu,prism_cpu,madeleine,musk_cpu,plip_cpu]", "torch"]
-gpu = ["stamp[conch,ctranspath,uni,virchow2,chief_ctranspath,conch1_5,prism,madeleine,musk,plip,gigapath,cobra]", "torch"]
+cpu = ["stamp[conch,ctranspath,uni,virchow2,chief_ctranspath,conch1_5_cpu,prism_cpu,madeleine,musk_cpu,plip_cpu]"]
+gpu = ["stamp[conch,ctranspath,uni,virchow2,chief_ctranspath,conch1_5,prism,madeleine,musk,plip,gigapath,cobra]"]
 
 [project.scripts]
 "stamp" = "stamp.__main__:main"
