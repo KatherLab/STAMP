@@ -57,7 +57,7 @@ build = [
 ]
 conch = [
     "huggingface-hub>=0.26.2",
-    "conch @ git+https://github.com/Mahmoodlab/CONCH.git@02d6ac59cc20874bff0f581de258c2b257f69a84",
+    "conch @ git+https://github.com/KatherLab/CONCH",
 ]
 conch1_5_cpu = [
     "transformers>=4.45.2",
