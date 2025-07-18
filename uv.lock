@@ -1696,7 +1696,7 @@ name = "nvidia-cudnn-cu12"
 version = "9.1.0.70"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "nvidia-cublas-cu12", marker = "platform_machine != 'aarch64' and sys_platform == 'linux'" },
+    { name = "nvidia-cublas-cu12", marker = "(platform_machine != 'aarch64' and sys_platform == 'linux' and extra != 'extra-5-stamp-cpu' and extra != 'extra-5-stamp-gpu') or (extra == 'extra-5-stamp-cpu' and extra == 'extra-5-stamp-gpu')" },
 ]
 wheels = [
     { url = "https://files.pythonhosted.org/packages/9f/fd/713452cd72343f682b1c7b9321e23829f00b842ceaedcda96e742ea0b0b3/nvidia_cudnn_cu12-9.1.0.70-py3-none-manylinux2014_x86_64.whl", hash = "sha256:165764f44ef8c61fcdfdfdbe769d687e06374059fbb388b6c89ecb0e28793a6f", size = 664752741, upload-time = "2024-04-22T15:24:15.253Z" },
@@ -1731,9 +1731,9 @@ name = "nvidia-cusolver-cu12"
 version = "11.6.1.9"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "nvidia-cublas-cu12", marker = "platform_machine != 'aarch64' and sys_platform == 'linux'" },
-    { name = "nvidia-cusparse-cu12", marker = "platform_machine != 'aarch64' and sys_platform == 'linux'" },
-    { name = "nvidia-nvjitlink-cu12", marker = "platform_machine != 'aarch64' and sys_platform == 'linux'" },
+    { name = "nvidia-cublas-cu12", marker = "(platform_machine != 'aarch64' and sys_platform == 'linux' and extra != 'extra-5-stamp-cpu' and extra != 'extra-5-stamp-gpu') or (extra == 'extra-5-stamp-cpu' and extra == 'extra-5-stamp-gpu')" },
+    { name = "nvidia-cusparse-cu12", marker = "(platform_machine != 'aarch64' and sys_platform == 'linux' and extra != 'extra-5-stamp-cpu' and extra != 'extra-5-stamp-gpu') or (extra == 'extra-5-stamp-cpu' and extra == 'extra-5-stamp-gpu')" },
+    { name = "nvidia-nvjitlink-cu12", marker = "(platform_machine != 'aarch64' and sys_platform == 'linux' and extra != 'extra-5-stamp-cpu' and extra != 'extra-5-stamp-gpu') or (extra == 'extra-5-stamp-cpu' and extra == 'extra-5-stamp-gpu')" },
 ]
 wheels = [
     { url = "https://files.pythonhosted.org/packages/46/6b/a5c33cf16af09166845345275c34ad2190944bcc6026797a39f8e0a282e0/nvidia_cusolver_cu12-11.6.1.9-py3-none-manylinux2014_aarch64.whl", hash = "sha256:d338f155f174f90724bbde3758b7ac375a70ce8e706d70b018dd3375545fc84e", size = 127634111, upload-time = "2024-06-18T19:35:01.793Z" },
@@ -1746,7 +1746,7 @@ name = "nvidia-cusparse-cu12"
 version = "12.3.1.170"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "nvidia-nvjitlink-cu12", marker = "platform_machine != 'aarch64' and sys_platform == 'linux'" },
+    { name = "nvidia-nvjitlink-cu12", marker = "(platform_machine != 'aarch64' and sys_platform == 'linux' and extra != 'extra-5-stamp-cpu' and extra != 'extra-5-stamp-gpu') or (extra == 'extra-5-stamp-cpu' and extra == 'extra-5-stamp-gpu')" },
 ]
 wheels = [
     { url = "https://files.pythonhosted.org/packages/96/a9/c0d2f83a53d40a4a41be14cea6a0bf9e668ffcf8b004bd65633f433050c0/nvidia_cusparse_cu12-12.3.1.170-py3-none-manylinux2014_aarch64.whl", hash = "sha256:9d32f62896231ebe0480efd8a7f702e143c98cfaa0e8a76df3386c1ba2b54df3", size = 207381987, upload-time = "2024-06-18T19:35:32.989Z" },
@@ -3328,6 +3328,8 @@ requires-dist = [
     { name = "timm", specifier = ">=0.9.11" },
     { name = "torch", specifier = ">=2.5.1" },
     { name = "torch", marker = "extra == 'chief-ctranspath'", specifier = ">=2.0.0" },
+    { name = "torch", marker = "extra == 'cpu'", index = "https://download.pytorch.org/whl/cpu", conflict = { package = "stamp", extra = "cpu" } },
+    { name = "torch", marker = "extra == 'gpu'", index = "https://download.pytorch.org/whl/cu126", conflict = { package = "stamp", extra = "gpu" } },
     { name = "torch", marker = "extra == 'virchow2'", specifier = ">=2.0.0" },
     { name = "torchmetrics", specifier = ">=1.6.0" },
     { name = "torchvision", specifier = ">=0.20.1" },
