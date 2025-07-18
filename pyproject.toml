@@ -134,8 +134,8 @@ plip = [
 all = [
     "stamp[conch,ctranspath,uni,virchow2,chief_ctranspath,conch1_5,prism,madeleine,musk,plip,gigapath,cobra]"
 ]
-cpu = ["stamp[conch,ctranspath,uni,virchow2,chief_ctranspath,conch1_5_cpu,prism_cpu,madeleine,musk_cpu,plip_cpu]"]
-gpu = ["stamp[conch,ctranspath,uni,virchow2,chief_ctranspath,conch1_5,prism,madeleine,musk,plip,gigapath,cobra]"]
+cpu = ["stamp[conch,ctranspath,uni,virchow2,chief_ctranspath,conch1_5_cpu,prism_cpu,madeleine,musk_cpu,plip_cpu]", "torch"]
+gpu = ["stamp[conch,ctranspath,uni,virchow2,chief_ctranspath,conch1_5,prism,madeleine,musk,plip,gigapath,cobra]", "torch"]
 
 [project.scripts]
 "stamp" = "stamp.__main__:main"
@@ -172,6 +172,28 @@ lint.ignore = ["F722"] # https://docs.kidger.site/jaxtyping/faq/#flake8-or-ruff-
 [tool.uv]
 no-build-isolation-package = ["flash-attn", "cobra", "mamba-ssm", "causal-conv1d", "gigapath"]
 no-binary-package = ["flash-attn", "gigapath"]
+conflicts = [
+    [
+        { extra = "cpu" },
+        { extra = "gpu" }
+    ]
+]
+
+[tool.uv.sources]
+torch = [
+    { index = "pytorch-cpu", extra = "cpu" },
+    { index = "pytorch-cuda", extra = "gpu" }
+]
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[[tool.uv.index]]
+name = "pytorch-cuda"
+url = "https://download.pytorch.org/whl/cu126"
+explicit = true
 
 [[tool.uv.dependency-metadata]]
 name = "uni"
