@@ -30,6 +30,22 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 uv self update
 ```
 
+### Install STAMP in a virtual environment:
+
+```bash
+uv venv --python=3.12
+source .venv/bin/activate
+
+# For a CPU-only installation:
+uv pip install "git+https://github.com/KatherLab/STAMP.git@fix/build[cpu]" --torch-backend=cpu
+
+# For a GPU installation:
+uv pip install "git+https://github.com/KatherLab/STAMP.git@fix/build[build]"
+uv pip install "git+https://github.com/KatherLab/STAMP.git@fix/build[build,gpu]"
+
+# Note: You must run one after the other, the build dependencies must be installed first!
+```
+
 ### Clone the STAMP repository and install:
 
 ```bash

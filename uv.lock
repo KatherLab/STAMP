@@ -3250,7 +3250,7 @@ requires-dist = [
     { name = "transformers", marker = "extra == 'conch1-5-cpu'", specifier = ">=4.45.2" },
     { name = "transformers", marker = "extra == 'plip-cpu'", specifier = ">=4.45.2" },
     { name = "triton", marker = "extra == 'cobra'", specifier = "==3.2.0" },
-    { name = "uni", marker = "extra == 'uni'", git = "https://github.com/mahmoodlab/UNI.git" },
+    { name = "uni", marker = "extra == 'uni'", git = "https://github.com/KatherLab/uni.git?rev=f37c299eb0bffa0e585f120974082cfec6ee6d53" },
     { name = "wandb", marker = "extra == 'gigapath'" },
     { name = "webdataset", marker = "extra == 'gigapath'" },
 ]
@@ -3554,7 +3554,7 @@ wheels = [
 [[package]]
 name = "uni"
 version = "0.1.0"
-source = { git = "https://github.com/mahmoodlab/UNI.git#42715efc11722a496e0a67f3369505a8f277206c" }
+source = { git = "https://github.com/KatherLab/uni.git?rev=f37c299eb0bffa0e585f120974082cfec6ee6d53#f37c299eb0bffa0e585f120974082cfec6ee6d53" }
 dependencies = [
     { name = "numpy" },
     { name = "pandas" },
