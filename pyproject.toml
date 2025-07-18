@@ -92,7 +92,7 @@ gigapath = [
 ]
 uni = [
     "huggingface-hub>=0.26.2",
-    "uni @ git+https://github.com/mahmoodlab/UNI.git",
+    "uni @ git+https://github.com/KatherLab/uni.git@f37c299eb0bffa0e585f120974082cfec6ee6d53",
 ]
 virchow2 = [
     "huggingface-hub>=0.27.1",
@@ -170,7 +170,7 @@ markers = [
 lint.ignore = ["F722"] # https://docs.kidger.site/jaxtyping/faq/#flake8-or-ruff-are-throwing-an-error
 
 [tool.uv]
-no-build-isolation-package = ["flash-attn", "cobra", "mamba-ssm", "causal-conv1d", "gigapath", "uni"]
+no-build-isolation-package = ["flash-attn", "cobra", "mamba-ssm", "causal-conv1d", "gigapath"]
 no-binary-package = ["flash-attn", "gigapath"]
 
 [[tool.uv.dependency-metadata]]
