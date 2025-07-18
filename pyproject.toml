@@ -53,7 +53,8 @@ build = [
     "setuptools",
     "hatchling",
     "psutil",
-    "ninja"
+    "ninja",
+    "triton==3.2.0" # Add this so torch won't be downgraded later. Remove version constraint when resolved: https://github.com/pytorch/pytorch/issues/153737
 ]
 flash-attention = [
     "stamp[build]",
