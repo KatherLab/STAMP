@@ -66,11 +66,7 @@ we will stick with ctranspath for this example.
 In order to use a feature extractor,
 you also have to install their respective dependencies.
 You can do so by specifying the feature extractor you want to use
-when installing stamp:
-```sh
-# Install stamp including the dependencies for all feature extractors
-pip install "git+https://github.com/KatherLab/stamp@v2[all]"
-```
+when installing stamp. Please refer to the [installation instructions](README.md#installation)
 
 Open the `stamp-test-experiment/config.yaml` we created in the last step
 and modify the `output_dir`, `wsi_dir` and `cache_dir` entries
