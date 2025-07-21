@@ -7,6 +7,13 @@ import pytest
 import torch
 from random_data import create_random_dataset, create_random_patient_level_dataset
 
+from stamp.modeling.config import (
+    AdvancedConfig,
+    CrossvalConfig,
+    MlpModelParams,
+    ModelParams,
+    VitModelParams,
+)
 from stamp.modeling.crossval import categorical_crossval_
 
 
@@ -53,15 +60,20 @@ def test_crossval_integration(
 
     output_dir = tmp_path / "output"
 
-    categorical_crossval_(
+    config = CrossvalConfig(
         clini_table=clini_path,
         slide_table=slide_path,
-        feature_dir=feature_dir,
         output_dir=output_dir,
         patient_label="patient",
         ground_truth_label="ground-truth",
         filename_label="slide_path",
         categories=categories,
+        feature_dir=feature_dir,
+        n_splits=2,
+        use_vary_precision_transform=use_vary_precision_transform,
+    )
+
+    advanced = AdvancedConfig(
         # Dataset and -loader parameters
         bag_size=max_tiles_per_slide // 2,
         num_workers=min(os.cpu_count() or 1, 7),
@@ -70,8 +82,16 @@ def test_crossval_integration(
         max_epochs=2,
         patience=1,
         accelerator="gpu" if torch.cuda.is_available() else "cpu",
-        n_splits=2,
         # Experimental features
-        use_vary_precision_transform=use_vary_precision_transform,
-        use_alibi=use_alibi,
+        model_params=ModelParams(
+            vit=VitModelParams(
+                use_alibi=use_alibi,
+            ),
+            mlp=MlpModelParams(),
+        ),
+    )
+
+    categorical_crossval_(
+        config=config,
+        advanced=advanced,
     )

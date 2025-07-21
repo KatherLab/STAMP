@@ -7,6 +7,13 @@ import pytest
 import torch
 from random_data import create_random_dataset, create_random_patient_level_dataset
 
+from stamp.modeling.config import (
+    AdvancedConfig,
+    MlpModelParams,
+    ModelParams,
+    TrainConfig,
+    VitModelParams,
+)
 from stamp.modeling.deploy import deploy_categorical_model_
 from stamp.modeling.train import train_categorical_model_
 
@@ -56,7 +63,7 @@ def test_train_deploy_integration(
         feat_dim=feat_dim,
     )
 
-    train_categorical_model_(
+    config = TrainConfig(
         clini_table=train_clini_path,
         slide_table=train_slide_path,
         feature_dir=train_feature_dir,
@@ -65,6 +72,10 @@ def test_train_deploy_integration(
         ground_truth_label="ground-truth",
         filename_label="slide_path",
         categories=categories,
+        use_vary_precision_transform=use_vary_precision_transform,
+    )
+
+    advanced = AdvancedConfig(
         # Dataset and -loader parameters
         bag_size=500,
         num_workers=min(os.cpu_count() or 1, 16),
@@ -73,10 +84,12 @@ def test_train_deploy_integration(
         max_epochs=2,
         patience=1,
         accelerator="gpu" if torch.cuda.is_available() else "cpu",
-        # Experimental features
-        use_vary_precision_transform=use_vary_precision_transform,
-        use_alibi=use_alibi,
+        model_params=ModelParams(
+            vit=VitModelParams(use_alibi=use_alibi), mlp=MlpModelParams()
+        ),
     )
+
+    train_categorical_model_(config=config, advanced=advanced)
 
     deploy_categorical_model_(
         output_dir=tmp_path / "deploy_output",
@@ -133,7 +146,7 @@ def test_train_deploy_patient_level_integration(
         )
     )
 
-    train_categorical_model_(
+    config = TrainConfig(
         clini_table=train_clini_path,
         slide_table=None,  # Not needed for patient-level
         feature_dir=train_feature_dir,
@@ -142,6 +155,10 @@ def test_train_deploy_patient_level_integration(
         ground_truth_label="ground-truth",
         filename_label="slide_path",  # Not used for patient-level
         categories=categories,
+        use_vary_precision_transform=use_vary_precision_transform,
+    )
+
+    advanced = AdvancedConfig(
         # Dataset and -loader parameters
         bag_size=1,  # Not used for patient-level, but required by signature
         num_workers=min(os.cpu_count() or 1, 16),
@@ -150,9 +167,14 @@ def test_train_deploy_patient_level_integration(
         max_epochs=2,
         patience=1,
         accelerator="gpu" if torch.cuda.is_available() else "cpu",
-        # Experimental features
-        use_vary_precision_transform=use_vary_precision_transform,
-        use_alibi=use_alibi,
+        model_params=ModelParams(
+            vit=VitModelParams(use_alibi=use_alibi), mlp=MlpModelParams()
+        ),
+    )
+
+    train_categorical_model_(
+        config=config,
+        advanced=advanced,
     )
 
     deploy_categorical_model_(
