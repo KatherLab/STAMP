@@ -37,11 +37,11 @@ uv venv --python=3.12
 source .venv/bin/activate
 
 # For a CPU-only installation:
-uv pip install "git+https://github.com/KatherLab/STAMP.git@fix/build[cpu]" --torch-backend=cpu
+uv pip install "git+https://github.com/KatherLab/STAMP.git[cpu]" --torch-backend=cpu
 
 # For a GPU (CUDA) installation:
-uv pip install "git+https://github.com/KatherLab/STAMP.git@fix/build[build]"
-uv pip install "git+https://github.com/KatherLab/STAMP.git@fix/build[build,gpu]" --no-build-isolation
+uv pip install "git+https://github.com/KatherLab/STAMP.git[build]"
+uv pip install "git+https://github.com/KatherLab/STAMP.git[build,gpu]" --no-build-isolation
 
 # Note: You must run one after the other, the build dependencies must be installed first!
 ```
@@ -94,7 +94,44 @@ MAX_JOBS=4 uv sync --extra build --extra gpu
 > apt update && apt install -y libgl1 libglx-mesa0 libglib2.0-0 clang
 > ```
 
-### Basic Usage
+
+### Installation Troubleshooting
+
+> [!NOTE]
+> Installing the GPU version of STAMP will force the compilation of the `flash-attn` package (as well as `mamba-ssm` and `causal_conv1d`). This can take a long time and requires a lot of memory. You can limit the number of parallel compilation jobs by setting the `MAX_JOBS` environment variable before running the installation command, e.g. `MAX_JOBS=4 uv sync --extra build --extra gpu`.
+
+
+#### Undefined Symbol Error
+
+If you encounter an error similar to the following when importing flash_attn, mamba or causal_conv1d on a GPU system, it usually indicates that the torch version in your environment does not match the torch version used to build the flash-attn, mamba or causal_conv1d package. This can happen if you already built these packages for another environment or if for any reason between the installation commands with only `--extra build` and `--extra gpu` the torch version was changed.
+
+```
+>       import flash_attn_2_cuda as flash_attn_gpu
+E       ImportError: [...]/.venv/lib/python3.12/site-packages/flash_attn_2_cuda.cpython-312-x86_64-linux-gnu.so: undefined symbol: _ZN3c105ErrorC2ENS_14SourceLocationENSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE
+
+.venv/lib/python3.12/site-packages/flash_attn/flash_attn_interface.py:15: ImportError
+```
+
+In case you encounter this error on a gpu installation, you can fix it by going back to the environment just with `--extra build`, clearing the uv cache and then reinstalling the `--extra gpu` packages:
+
+```bash
+uv cache clean flash_attn
+uv cache clean mamba-ssm
+uv cache clean causal_conv1d
+
+# Now it should re-build the packages with the correct torch version
+
+# With uv pip install
+uv pip install "git+https://github.com/KatherLab/STAMP.git[build]"
+uv pip install "git+https://github.com/KatherLab/STAMP.git[build,gpu] --no-build-isolation"
+
+# With uv sync in the cloned repository
+uv sync --extra build
+uv sync --extra build --extra gpu
+```
+
+
+## Basic Usage
 
 If the installation was successful, running `stamp` in your terminal should yield the following output:
 ```
@@ -122,7 +159,7 @@ options:
                         Path to config file. Default: config.yaml
 ```
 
-## Running STAMP
+## Getting Started Guide
 
 For a quick introduction how to run stamp,
 check out our [getting started guide](getting-started.md).
