@@ -157,6 +157,7 @@ meaning ignored that it was ignored during feature extraction.
 [COBRA2]: https://huggingface.co/KatherLab/COBRA
 [EAGLE]: https://github.com/KatherLab/EAGLE
 [MADELEINE]: https://huggingface.co/MahmoodLab/madeleine
+[PRISM]: https://huggingface.co/paige-ai/Prism
 
 
 
@@ -272,6 +273,7 @@ STAMP currently supports the following encoders:
 - [COBRA2]
 - [EAGLE]
 - [MADELEINE]
+- [PRISM]
 
 Slide encoders take as input the already extracted tile-level features in the 
 preprocessing step. Each encoder accepts only certain extractors and most
@@ -279,12 +281,13 @@ work only on CUDA devices:
 
 | Encoder | Required Extractor | Compatible Devices |
 |--|--|--|
-| CHIEF | CTRANSPATH, CHIEF-CTRANSPATH | CUDA only |
+| CHIEF | CHIEF-CTRANSPATH | CUDA only |
 | TITAN | CONCH1.5 | CUDA, cpu, mps
 | GIGAPATH | GIGAPATH | CUDA only
 | COBRA2 | CONCH, UNI, VIRCHOW2 or H-OPTIMUS-0 | CUDA only
 | EAGLE | CTRANSPATH, CHIEF-CTRANSPATH | CUDA only
 | MADELEINE | CONCH | CUDA only
+| PRISM | VIRCHOW_FULL | CUDA only
 
 
 As with feature extractors, most of these models require you to request
@@ -388,8 +391,8 @@ stamp --config stamp-test-experiment/config.yaml crossval
 ```
 
 The key differences for patient-level modeling are:
-- The `feature_dir` should contain patient-level `.h5` files (one per patient)
-- The `slide_table` is not needed since there's a direct mapping from patient ID to feature file
-- STAMP will automatically detect that these are patient-level features and use a MultiLayer Perceptron (MLP) classifier instead of the Vision Transformer
+- The `feature_dir` should contain patient-level `.h5` files (one per patient).
+- The `slide_table` is not needed since there's a direct mapping from patient ID to feature file.
+- STAMP will automatically detect that these are patient-level features and use a MultiLayer Perceptron (MLP) classifier instead of the Vision Transformer.
 
 You can then run statistics as done with tile-level features.
