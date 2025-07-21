@@ -117,7 +117,6 @@ class CHIEF(Encoder):
             precision=torch.float32,
             required_extractors=[
                 ExtractorName.CHIEF_CTRANSPATH,
-                ExtractorName.CTRANSPATH,
             ],
         )
 

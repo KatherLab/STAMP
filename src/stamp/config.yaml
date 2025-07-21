@@ -6,7 +6,7 @@ preprocessing:
   # "gigapath", "h-optimus-0", "h-optimus-1", "virchow2", "virchow", 
   # "virchow-full", "musk", "mstar", "plip"
   # Some of them require requesting access to the respective authors beforehand.
-  extractor: "ctranspath"
+  extractor: "chief-ctranspath"
 
   # Device to run feature extraction on ("cpu", "cuda", "cuda:0", etc.)
   device: "cuda"
