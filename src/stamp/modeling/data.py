@@ -35,6 +35,7 @@ from stamp.types import (
 )
 
 _logger = logging.getLogger("stamp")
+_logged_stamp_v1_warning = False
 
 
 __author__ = "Marko van Treeck"
@@ -56,7 +57,7 @@ class PatientData(Generic[GroundTruthType]):
     feature_files: Iterable[FeaturePath | BinaryIO]
 
 
-def dataloader_from_patient_data(
+def tile_bag_dataloader(
     *,
     patient_data: Sequence[PatientData[GroundTruth | None]],
     bag_size: int | None,
@@ -69,7 +70,7 @@ def dataloader_from_patient_data(
     DataLoader[tuple[Bags, CoordinatesBatch, BagSizes, EncodedTargets]],
     Sequence[Category],
 ]:
-    """Creates a dataloader from patient data, encoding the ground truths.
+    """Creates a dataloader from patient data for tile-level (bagged) features.
 
     Args:
         categories:
@@ -113,6 +114,109 @@ def _collate_to_tuple(
     encoded_targets = torch.stack([encoded_target for _, _, _, encoded_target in items])
 
     return (bags, coords, bag_sizes, encoded_targets)
+
+
+def patient_feature_dataloader(
+    *,
+    patient_data: Sequence[PatientData[GroundTruth | None]],
+    categories: Sequence[Category] | None = None,
+    batch_size: int,
+    shuffle: bool,
+    num_workers: int,
+    transform: Callable[[Tensor], Tensor] | None,
+) -> tuple[DataLoader, Sequence[Category]]:
+    """
+    Creates a dataloader for patient-level features (one feature vector per patient).
+    """
+    feature_files = [next(iter(p.feature_files)) for p in patient_data]
+    raw_ground_truths = np.array([patient.ground_truth for patient in patient_data])
+    categories = (
+        categories if categories is not None else list(np.unique(raw_ground_truths))
+    )
+    one_hot = torch.tensor(raw_ground_truths.reshape(-1, 1) == categories)
+    ds = PatientFeatureDataset(feature_files, one_hot, transform=transform)
+    dl = DataLoader(ds, batch_size=batch_size, shuffle=shuffle, num_workers=num_workers)
+    return dl, categories
+
+
+def detect_feature_type(feature_dir: Path) -> str:
+    """
+    Detects feature type by inspecting all .h5 files in feature_dir.
+
+    Returns:
+        "tile" if all files are tile-level, "patient" if all are patient-level.
+        If files have mixed types, raises an error.
+        If no .h5 files are found, raises an error.
+    """
+    feature_types = set()
+    files_checked = 0
+
+    for file in feature_dir.glob("*.h5"):
+        files_checked += 1
+        with h5py.File(file, "r") as h5:
+            feat_type = h5.attrs.get("feat_type")
+            encoder = h5.attrs.get("encoder")
+
+            if feat_type is not None or encoder is not None:
+                feature_types.add(str(feat_type))
+            else:
+                # If feat_type is missing, always treat as tile-level feature
+                feature_types.add("tile")
+
+    if files_checked == 0:
+        raise RuntimeError("No .h5 feature files found in feature_dir.")
+
+    if len(feature_types) > 1:
+        raise RuntimeError(
+            f"Multiple feature types detected in {feature_dir}: {feature_types}. "
+            "All feature files must have the same type."
+        )
+
+    return feature_types.pop()
+
+
+def load_patient_level_data(
+    *,
+    clini_table: Path,
+    feature_dir: Path,
+    patient_label: PandasLabel,
+    ground_truth_label: PandasLabel,
+    feature_ext: str = ".h5",
+) -> dict[PatientId, PatientData]:
+    """
+    Loads PatientData for patient-level features, matching patients in the clinical table
+    to feature files in feature_dir named {patient_id}.h5.
+    """
+    # TODO: I'm not proud at all of this. Any other alternative for mapping
+    # clinical data to the patient-level feature paths that avoids
+    # creating another slide table for encoded featuress is welcome :P.
+
+    clini_df = read_table(
+        clini_table,
+        usecols=[patient_label, ground_truth_label],
+        dtype=str,
+    ).dropna()
+
+    patient_to_data: dict[PatientId, PatientData] = {}
+    missing_features = []
+    for _, row in clini_df.iterrows():
+        patient_id = PatientId(str(row[patient_label]))
+        ground_truth = row[ground_truth_label]
+        feature_file = feature_dir / f"{patient_id}{feature_ext}"
+        if feature_file.exists():
+            patient_to_data[patient_id] = PatientData(
+                ground_truth=ground_truth,
+                feature_files=[FeaturePath(feature_file)],
+            )
+        else:
+            missing_features.append(patient_id)
+
+    if missing_features:
+        _logger.warning(
+            f"Some patients have no feature file in {feature_dir}: {missing_features}"
+        )
+
+    return patient_to_data
 
 
 @dataclass
@@ -185,6 +289,47 @@ class BagDataset(Dataset[tuple[_Bag, _Coordinates, BagSize, _EncodedTarget]]):
             )
 
 
+class PatientFeatureDataset(Dataset):
+    """
+    Dataset for single feature vector per sample (e.g. slide-level or patient-level).
+    Each item is a (feature_vector, label_onehot) tuple.
+    """
+
+    def __init__(
+        self,
+        feature_files: Sequence[FeaturePath | BinaryIO],
+        ground_truths: Tensor,  # shape: [num_samples, num_classes]
+        transform: Callable[[Tensor], Tensor] | None,
+    ):
+        if len(feature_files) != len(ground_truths):
+            raise ValueError("Number of feature files and ground truths must match.")
+        self.feature_files = feature_files
+        self.ground_truths = ground_truths
+        self.transform = transform
+
+    def __len__(self):
+        return len(self.feature_files)
+
+    def __getitem__(self, idx: int):
+        feature_file = self.feature_files[idx]
+        with h5py.File(feature_file, "r") as h5:
+            feats = torch.from_numpy(h5["feats"][:])  # pyright: ignore[reportIndexIssue]
+            # Accept [V] or [1, V]
+            if feats.ndim == 2 and feats.shape[0] == 1:
+                feats = feats[0]
+            elif feats.ndim == 1:
+                pass
+            else:
+                raise RuntimeError(
+                    f"Expected single feature vector (shape [F] or [1, F]), got {feats.shape} in {feature_file}."
+                    "Check that the features are patient-level."
+                )
+            if self.transform is not None:
+                feats = self.transform(feats)
+        label = self.ground_truths[idx]
+        return feats, label
+
+
 @dataclass
 class CoordsInfo:
     coords_um: np.ndarray
@@ -224,9 +369,13 @@ def get_coords(feature_h5: h5py.File) -> CoordsInfo:
         == 224
     ):
         # Historic STAMP format
-        _logger.info(
-            f"{feature_h5.filename}: tile stride is roughly 224, assuming coordinates have unit 256um/224px (historic STAMP format)"
-        )
+        # TODO: find a better way to get this warning just once
+        global _logged_stamp_v1_warning
+        if not _logged_stamp_v1_warning:
+            _logger.info(
+                f"{feature_h5.filename}: tile stride is roughly 224, assuming coordinates have unit 256um/224px (historic STAMP format)"
+            )
+            _logged_stamp_v1_warning = True
         tile_size_um = Microns(256.0)
         tile_size_px = TilePixels(224)
         coords_um = coords / 224 * 256
@@ -286,7 +435,7 @@ def patient_to_ground_truth_from_clini_table_(
     ground_truth_label: PandasLabel,
 ) -> dict[PatientId, GroundTruth]:
     """Loads the patients and their ground truths from a clini table."""
-    clini_df = _read_table(
+    clini_df = read_table(
         clini_table_path,
         usecols=[patient_label, ground_truth_label],
         dtype=str,
@@ -320,7 +469,7 @@ def slide_to_patient_from_slide_table_(
     filename_label: PandasLabel,
 ) -> dict[FeaturePath, PatientId]:
     """Creates a slide-to-patient mapping from a slide table."""
-    slide_df = _read_table(
+    slide_df = read_table(
         slide_table_path,
         usecols=[patient_label, filename_label],
         dtype=str,
@@ -336,7 +485,7 @@ def slide_to_patient_from_slide_table_(
     return slide_to_patient
 
 
-def _read_table(path: Path | TextIO, **kwargs) -> pd.DataFrame:
+def read_table(path: Path | TextIO, **kwargs) -> pd.DataFrame:
     if not isinstance(path, Path):
         return pd.read_csv(path, **kwargs)
     elif path.suffix == ".xlsx":

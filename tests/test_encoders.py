@@ -39,7 +39,7 @@ used_extractor = {
     EncoderName.GIGAPATH: ExtractorName.GIGAPATH,
     EncoderName.MADELEINE: ExtractorName.CONCH,
     EncoderName.TITAN: ExtractorName.CONCH1_5,
-    # EncoderName.PRISM: ExtractorName.VIRCHOW_FULL,
+    EncoderName.PRISM: ExtractorName.VIRCHOW_FULL,
 }
 
 

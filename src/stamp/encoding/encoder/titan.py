@@ -166,4 +166,6 @@ class Titan(Encoder):
             patient_embedding = self._generate_patient_embedding(
                 all_feats_list, device, all_coords_list
             )
-            self._save_features_(output_path=output_path, feats=patient_embedding)
+            self._save_features_(
+                output_path=output_path, feats=patient_embedding, feat_type="patient"
+            )

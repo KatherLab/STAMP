@@ -122,6 +122,12 @@ as well as `.jpg`s showing from which parts of the slide features are extracted.
 Most of the background should be marked in red,
 meaning ignored that it was ignored during feature extraction.
 
+> In case you want to use a gated model (e.g. Virchow2), you need to login in your console using:
+> ```
+>huggingface-cli login
+> ```
+> More info about this [here](https://huggingface.co/docs/huggingface_hub/en/guides/cli).
+
 > **If you are using the UNI or CONCH models**
 > and working in an environment where your home directory storage is limited,
 > you may want to also specify your huggingface storage directory
@@ -151,6 +157,7 @@ meaning ignored that it was ignored during feature extraction.
 [COBRA2]: https://huggingface.co/KatherLab/COBRA
 [EAGLE]: https://github.com/KatherLab/EAGLE
 [MADELEINE]: https://huggingface.co/MahmoodLab/madeleine
+[PRISM]: https://huggingface.co/paige-ai/Prism
 
 
 
@@ -266,6 +273,7 @@ STAMP currently supports the following encoders:
 - [COBRA2]
 - [EAGLE]
 - [MADELEINE]
+- [PRISM]
 
 Slide encoders take as input the already extracted tile-level features in the 
 preprocessing step. Each encoder accepts only certain extractors and most
@@ -273,12 +281,13 @@ work only on CUDA devices:
 
 | Encoder | Required Extractor | Compatible Devices |
 |--|--|--|
-| CHIEF | CTRANSPATH, CHIEF-CTRANSPATH | CUDA only |
+| CHIEF | CHIEF-CTRANSPATH | CUDA only |
 | TITAN | CONCH1.5 | CUDA, cpu, mps
 | GIGAPATH | GIGAPATH | CUDA only
 | COBRA2 | CONCH, UNI, VIRCHOW2 or H-OPTIMUS-0 | CUDA only
 | EAGLE | CTRANSPATH, CHIEF-CTRANSPATH | CUDA only
 | MADELEINE | CONCH | CUDA only
+| PRISM | VIRCHOW_FULL | CUDA only
 
 
 As with feature extractors, most of these models require you to request
@@ -364,3 +373,26 @@ stamp --config stamp-test-experiment/config.yaml encode_patients
 ```
 
 The output `.h5` features will have the patient's id as name. 
+
+## Training with Patient-Level Features
+
+Once you have patient-level features, 
+you can train models directly on these features. This is useful because:
+- **Efficient with Limited Data**: Patient-level modeling often performs better when data is scarce, since pretrained encoders can extract robust features from each slide as a whole.
+- **Faster Training & Reduced Overfitting**: With fewer parameters to train compared to tile-level models, patient-level models train more quickly and are less prone to overfitting.
+- **Enables Interpretable Cohort Analysis**: Patient-level features can be used for unsupervised analyses, such as clustering, making it easier to interpret and explore patient subgroups within your cohort.
+
+> **Note:** Slide-level features are not supported for modeling because the ground truth 
+> labels in the clinical table are at the patient level. 
+
+To train a model using patient-level features, you can use the same command as before:
+```sh
+stamp --config stamp-test-experiment/config.yaml crossval
+```
+
+The key differences for patient-level modeling are:
+- The `feature_dir` should contain patient-level `.h5` files (one per patient).
+- The `slide_table` is not needed since there's a direct mapping from patient ID to feature file.
+- STAMP will automatically detect that these are patient-level features and use a MultiLayer Perceptron (MLP) classifier instead of the Vision Transformer.
+
+You can then run statistics as done with tile-level features.

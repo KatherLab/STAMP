@@ -115,7 +115,9 @@ class CHIEF(Encoder):
             model=model,
             identifier=EncoderName.CHIEF,
             precision=torch.float32,
-            required_extractors=[ExtractorName.CHIEF_CTRANSPATH],
+            required_extractors=[
+                ExtractorName.CHIEF_CTRANSPATH,
+            ],
         )
 
     def _generate_slide_embedding(
@@ -192,7 +194,9 @@ class CHIEF(Encoder):
                 .cpu()
                 .numpy()
             )
-            self._save_features_(output_path=output_path, feats=patient_embedding)
+            self._save_features_(
+                output_path=output_path, feats=patient_embedding, feat_type="patient"
+            )
 
 
 def initialize_weights(module):
