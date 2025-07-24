@@ -44,13 +44,15 @@ def test_heatmap_integration(tmp_path: Path) -> None:
         default_slide_mpp=None,
     )
 
-    assert (tmp_path / "output" / "slide" / "plots" /  "overview-slide.png").is_file()
+    assert (tmp_path / "output" / "slide" / "plots" / "overview-slide.png").is_file()
     assert (tmp_path / "output" / "slide" / "raw" / "thumbnail-slide.png").is_file()
     assert (tmp_path / "output" / "slide" / "raw" / "slide-MSIH=0.16.png").is_file()
     assert (tmp_path / "output" / "slide" / "raw" / "slide-nonMSIH=0.84.png").is_file()
     assert (
-        len(list((tmp_path / "output" / "slide" / "tiles").glob("top-slide-*.jpg"))) == 2
+        len(list((tmp_path / "output" / "slide" / "tiles").glob("top-slide-*.jpg")))
+        == 2
     )
     assert (
-        len(list((tmp_path / "output" / "slide" / "tiles").glob("bottom-slide-*.jpg"))) == 2
+        len(list((tmp_path / "output" / "slide" / "tiles").glob("bottom-slide-*.jpg")))
+        == 2
     )

@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 from collections.abc import Collection, Iterable
 from pathlib import Path
-from typing import cast, no_type_check
+from typing import cast
 
 import h5py
 import matplotlib.pyplot as plt
@@ -35,25 +35,26 @@ def _gradcam_per_category(
     feats = feats.detach()
     feats.requires_grad_(True)
 
-    logits = model(bags=feats.unsqueeze(0),
-                   coords=coords.unsqueeze(0),
-                   mask=None).squeeze(0) # shape [C]
+    logits = model(
+        bags=feats.unsqueeze(0), coords=coords.unsqueeze(0), mask=None
+    ).squeeze(0)  # shape [C]
 
     cams = []
     for c in range(logits.numel()):
-        grad, = torch.autograd.grad(logits[c], feats,
-                                    retain_graph=True, allow_unused=False)
+        (grad,) = torch.autograd.grad(
+            logits[c], feats, retain_graph=True, allow_unused=False
+        )
 
         # channel‑wise weights, spatially pooled
-        w = grad.mean(dim=0) # [feat]
+        w = grad.mean(dim=0)  # [feat]
         # apply ReLU to focus on features that have a positive influence on the class
-        cam = torch.relu((feats * w).sum(dim=1)) # [tile]
+        cam = torch.relu((feats * w).sum(dim=1))  # [tile]
 
-        # normalize 
+        # normalize
         cam = (cam - cam.min()) / (cam.max() + 1e-8)
         cams.append(cam)
 
-    return torch.stack(cams, dim=1) # [tile, C]
+    return torch.stack(cams, dim=1)  # [tile, C]
 
 
 def _vals_to_im(
@@ -62,7 +63,9 @@ def _vals_to_im(
 ) -> Float[Tensor, "width height *"]:
     """Scatter *scores* into image grid using integer *coords_norm*."""
     size = coords_norm.max(0).values.flip(0) + 1  # (H, W)
-    im = torch.zeros((*size.tolist(), *scores.shape[1:]), dtype=scores.dtype, device=scores.device)
+    im = torch.zeros(
+        (*size.tolist(), *scores.shape[1:]), dtype=scores.dtype, device=scores.device
+    )
 
     idx_flat = coords_norm[:, 1] * im.shape[1] + coords_norm[:, 0]
     im_flat = im.flatten(end_dim=1)
@@ -92,7 +95,9 @@ def _show_class_map(
     class_ax.axis("off")
 
     class_ax.legend(
-        handles=[Patch(facecolor=cmap(i), label=cat) for i, cat in enumerate(categories)],
+        handles=[
+            Patch(facecolor=cmap(i), label=cat) for i, cat in enumerate(categories)
+        ],
         loc="upper center",
         bbox_to_anchor=(0.5, -0.05),
         ncol=min(4, len(categories)),
@@ -175,7 +180,9 @@ def heatmaps_(
             coords_info = get_coords(h5)
             coords_um = torch.from_numpy(coords_info.coords_um).float()  # [tile,2]
             stride_um = Microns(get_stride(coords_um))
-            tile_size_slide_px = TilePixels(int(round(float(coords_info.tile_size_um) / slide_mpp)))
+            tile_size_slide_px = TilePixels(
+                int(round(float(coords_info.tile_size_um) / slide_mpp))
+            )
 
         coords_norm = (coords_um / stride_um).round().long()  # grid coords
         coords_tile_slide_px = torch.round(coords_um / slide_mpp).long()
@@ -188,7 +195,9 @@ def heatmaps_(
         slide_score = slide_logits.softmax(0)  # [C]
         predicted_idx = int(slide_score.argmax())
 
-        gradcam = _gradcam_per_category(model=model.vision_transformer, feats=feats, coords=coords_um)
+        gradcam = _gradcam_per_category(
+            model=model.vision_transformer, feats=feats, coords=coords_um
+        )
         gradcam_2d = _vals_to_im(gradcam, coords_norm).detach()  # (W,H,C)
 
         # Per‑tile soft‑max scores
@@ -228,7 +237,9 @@ def heatmaps_(
                 (
                     others := gradcam[
                         ..., list(set(range(len(model.categories))) - {pos_idx})
-                    ].max(-1).values
+                    ]
+                    .max(-1)
+                    .values
                 )
                 / others.max(),
             )
@@ -260,8 +271,7 @@ def heatmaps_(
             Image.fromarray(np.uint8(score_im * 255)).resize(
                 tuple(target_size), resample=Image.Resampling.NEAREST
             ).save(
-                raw_dir
-                / f"{h5_path.stem}-{category}={slide_score[pos_idx]:0.2f}.png"
+                raw_dir / f"{h5_path.stem}-{category}={slide_score[pos_idx]:0.2f}.png"
             )
 
             # ─── Top and bottom tiles (predicted class only) ──────────────────
@@ -281,7 +291,8 @@ def heatmaps_(
                         0,
                         (tile_size_slide_px, tile_size_slide_px),
                     ).convert("RGB").save(
-                        tiles_dir / f"bottom-{h5_path.stem}-{category}={-score_val:.2f}.jpg"
+                        tiles_dir
+                        / f"bottom-{h5_path.stem}-{category}={-score_val:.2f}.jpg"
                     )
 
         assert last_attention is not None
@@ -289,7 +300,7 @@ def heatmaps_(
         # Thumbnail extraction (H&E)
         dims_um = np.array(slide.dimensions) * slide_mpp
         thumb_raw = np.array(
-            slide.get_thumbnail(np.round(dims_um * 8 / 256).astype(int)) # type: ignore
+            slide.get_thumbnail(np.round(dims_um * 8 / 256).astype(int))  # type: ignore
         )
         att_im = _vals_to_im(last_attention.unsqueeze(-1), coords_norm).squeeze(-1)
 
@@ -315,9 +326,9 @@ def heatmaps_(
         top_class_idx = scores_2d.topk(1).indices.squeeze(-1)  # (W,H)
         mask_activate = gradcam_2d.sum(-1) > 0
         classmap_rgb = np.ones((*top_class_idx.shape, 3), dtype=float)  # white base
-        classmap_rgb[mask_activate.cpu().numpy()] = cmap(top_class_idx.cpu().numpy())[mask_activate.cpu().numpy()][
-            :, :3
-        ]
+        classmap_rgb[mask_activate.cpu().numpy()] = cmap(top_class_idx.cpu().numpy())[
+            mask_activate.cpu().numpy()
+        ][:, :3]
         fig_cmp2 = _plot_thumbnail_comparison(
             thumb=thumb_cropped,
             overlay=(classmap_rgb * 255).astype(np.uint8),
