@@ -30,27 +30,28 @@ def _gradcam_per_category(
     feats: Float[Tensor, "tile feat"],
     coords: Float[Tensor, "tile 2"],
 ) -> Float[Tensor, "tile category"]:
-    feat = -1  # feats dimension
+    feats = feats.detach()
+    feats.requires_grad_(True)
 
-    return (
-        (
-            feats
-            * jacrev(
-                lambda bags: torch.softmax(
-                    model.forward(
-                        bags=bags.unsqueeze(0),
-                        coords=coords.unsqueeze(0),
-                        mask=torch.zeros(
-                            1, len(bags), dtype=torch.bool, device=bags.device
-                        ),
-                    ),
-                    dim=1,
-                ).squeeze(0)
-            )(feats)
-        )
-        .mean(feat)
-        .abs()
-    ).permute(-1, -2)
+    logits = model(bags=feats.unsqueeze(0),
+                   coords=coords.unsqueeze(0),
+                   mask=None).squeeze(0)          # shape [C]
+
+    cams = []
+    for c in range(logits.numel()):
+        grad, = torch.autograd.grad(logits[c], feats,
+                                    retain_graph=True, allow_unused=False)
+
+        # channel‑wise weights, spatially pooled
+        w = grad.mean(dim=0)                     # [feat]
+        # apply ReLU to focus on features that have a positive influence on the class
+        cam = torch.relu((feats * w).sum(dim=1)) # [tile]
+
+        # normalize 
+        cam = (cam - cam.min()) / (cam.max() + 1e-8)
+        cams.append(cam)
+
+    return torch.stack(cams, dim=1)              # [tile, C]
 
 
 def _vals_to_im(
@@ -163,7 +164,7 @@ def heatmaps_(
             model.vision_transformer(
                 bags=feats.unsqueeze(0),
                 coords=coords_um.unsqueeze(0),
-                mask=torch.zeros(1, len(feats), dtype=torch.bool, device=device),
+                mask=None,
             )
             .squeeze(0)
             .softmax(0)
@@ -174,6 +175,7 @@ def heatmaps_(
             feats=feats,
             coords=coords_um,
         )  # shape: [tile, category]
+
         gradcam_2d = _vals_to_im(
             gradcam,
             coords_norm,
@@ -183,7 +185,7 @@ def heatmaps_(
             model.vision_transformer.forward(
                 bags=feats.unsqueeze(-2),
                 coords=coords_um.unsqueeze(-2),
-                mask=torch.zeros(len(feats), 1, dtype=torch.bool, device=device),
+                mask=None,
             ),
             dim=1,
         )  # shape: [tile, category]
@@ -264,7 +266,6 @@ def heatmaps_(
                 slide_output_dir
                 / f"{h5_path.stem}-{category}={slide_score[pos_idx]:0.2f}.png"
             )
-
             # Top tiles
             for score, index in zip(*category_score.topk(topk)):
                 (
