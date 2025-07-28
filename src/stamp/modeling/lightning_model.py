@@ -181,7 +181,7 @@ class LitVisionTransformer(lightning.LightningModule):
         batch: tuple[Bags, CoordinatesBatch, BagSizes, EncodedTargets],
         batch_idx: int,
     ) -> Loss:
-        return self._step(batch=batch, step_name="training", use_mask=True)
+        return self._step(batch=batch, step_name="training", use_mask=False)
 
     def validation_step(
         self,
@@ -207,7 +207,7 @@ class LitVisionTransformer(lightning.LightningModule):
         return self.vision_transformer(bags, coords=coords, mask=None)
 
     def configure_optimizers(self) -> optim.Optimizer:
-        optimizer = optim.Adam(self.parameters(), lr=1e-3)
+        optimizer = optim.AdamW(self.parameters(), lr=1e-3)
         return optimizer
 
 

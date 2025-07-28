@@ -270,8 +270,8 @@ patient_encoding:
 
 
 advanced_config:
-  max_epochs: 64
-  patience: 16
+  max_epochs: 32
+  patience: 8
   batch_size: 64
   # Only for tile-level training. Reducing its amount could affect
   # model performance. Reduces memory consumption. Default value works
@@ -291,7 +291,7 @@ advanced_config:
       dim_feedforward: 512
       n_heads: 8
       n_layers: 2
-      dropout: 0.25
+      dropout: 0.
       # Experimental feature: Use ALiBi positional embedding
       use_alibi: false
 
