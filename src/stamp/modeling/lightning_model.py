@@ -70,6 +70,7 @@ class LitVisionTransformer(lightning.LightningModule):
         n_heads: int,
         n_layers: int,
         dropout: float,
+        total_steps: int,
         # Experimental features
         # TODO remove default values for stamp 3; they're only here for backwards compatibility
         use_alibi: bool = False,
@@ -100,6 +101,7 @@ class LitVisionTransformer(lightning.LightningModule):
         )
         self.class_weights = category_weights
         self.valid_auroc = MulticlassAUROC(len(categories))
+        self.total_steps = total_steps
 
         # Used during deployment
         self.ground_truth_label = ground_truth_label
@@ -206,9 +208,28 @@ class LitVisionTransformer(lightning.LightningModule):
         # adding a mask here will *drastically* and *unbearably* increase memory usage
         return self.vision_transformer(bags, coords=coords, mask=None)
 
-    def configure_optimizers(self) -> optim.Optimizer:
+    def configure_optimizers(self) -> tuple[list[optim.Optimizer], list[optim.lr_scheduler.LRScheduler]]:
         optimizer = optim.AdamW(self.parameters(), lr=1e-3)
-        return optimizer
+        # Calculate total number of steps
+        
+        scheduler = optim.lr_scheduler.OneCycleLR(
+            optimizer=optimizer, 
+            total_steps=self.total_steps,
+            max_lr=1e-4
+        )
+        return [optimizer], [scheduler]
+    
+    def on_train_batch_end(self, outputs, batch, batch_idx):
+        # Log learning rate at the end of each training batch
+        current_lr = self.trainer.optimizers[0].param_groups[0]['lr']
+        self.log(
+            "learning_rate",
+            current_lr,
+            on_step=False,
+            on_epoch=True,
+            prog_bar=True,
+            sync_dist=True,
+        )
 
 
 def _mask_from_bags(

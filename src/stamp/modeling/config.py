@@ -65,7 +65,7 @@ class VitModelParams(BaseModel):
     dim_feedforward: int = 512
     n_heads: int = 8
     n_layers: int = 2
-    dropout: float = 0.25
+    dropout: float = 0.
     # Experimental feature: Use ALiBi positional embedding
     use_alibi: bool = False
 
@@ -88,8 +88,8 @@ class AdvancedConfig(BaseModel):
     bag_size: int = 512
     num_workers: int = min(os.cpu_count() or 1, 16)
     batch_size: int = 64
-    max_epochs: int = 64
-    patience: int = 16
+    max_epochs: int = 32
+    patience: int = 8
     accelerator: str = "gpu" if torch.cuda.is_available() else "cpu"
     model_name: ModelName | None = Field(
         default=None,

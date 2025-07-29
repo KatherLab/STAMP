@@ -40,9 +40,7 @@ def _gradcam_per_category(
                     model.forward(
                         bags=bags.unsqueeze(0),
                         coords=coords.unsqueeze(0),
-                        mask=torch.zeros(
-                            1, len(bags), dtype=torch.bool, device=bags.device
-                        ),
+                        mask=None,
                     ),
                     dim=1,
                 ).squeeze(0)
@@ -163,7 +161,7 @@ def heatmaps_(
             model.vision_transformer(
                 bags=feats.unsqueeze(0),
                 coords=coords_um.unsqueeze(0),
-                mask=torch.zeros(1, len(feats), dtype=torch.bool, device=device),
+                mask=None,
             )
             .squeeze(0)
             .softmax(0)
@@ -174,10 +172,12 @@ def heatmaps_(
             feats=feats,
             coords=coords_um,
         )  # shape: [tile, category]
+        breakpoint()
         gradcam_2d = _vals_to_im(
             gradcam,
             coords_norm,
         ).detach()  # shape: [width, height, category]
+        breakpoint()
 
         scores = torch.softmax(
             model.vision_transformer.forward(
