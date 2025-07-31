@@ -172,12 +172,10 @@ def heatmaps_(
             feats=feats,
             coords=coords_um,
         )  # shape: [tile, category]
-        breakpoint()
         gradcam_2d = _vals_to_im(
             gradcam,
             coords_norm,
         ).detach()  # shape: [width, height, category]
-        breakpoint()
 
         scores = torch.softmax(
             model.vision_transformer.forward(

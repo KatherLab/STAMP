@@ -208,20 +208,21 @@ class LitVisionTransformer(lightning.LightningModule):
         # adding a mask here will *drastically* and *unbearably* increase memory usage
         return self.vision_transformer(bags, coords=coords, mask=None)
 
-    def configure_optimizers(self) -> tuple[list[optim.Optimizer], list[optim.lr_scheduler.LRScheduler]]:
-        optimizer = optim.AdamW(self.parameters(), lr=1e-3)
-        # Calculate total number of steps
-        
+    def configure_optimizers(
+        self,
+    ) -> tuple[list[optim.Optimizer], list[optim.lr_scheduler.LRScheduler]]:
+        optimizer = optim.AdamW(
+            self.parameters(), lr=1e-3
+        )  # this lr value should be ignored with the scheduler
+
         scheduler = optim.lr_scheduler.OneCycleLR(
-            optimizer=optimizer, 
-            total_steps=self.total_steps,
-            max_lr=1e-4
+            optimizer=optimizer, total_steps=self.total_steps, max_lr=1e-4
         )
         return [optimizer], [scheduler]
-    
+
     def on_train_batch_end(self, outputs, batch, batch_idx):
         # Log learning rate at the end of each training batch
-        current_lr = self.trainer.optimizers[0].param_groups[0]['lr']
+        current_lr = self.trainer.optimizers[0].param_groups[0]["lr"]
         self.log(
             "learning_rate",
             current_lr,
