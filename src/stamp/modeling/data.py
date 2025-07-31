@@ -480,7 +480,7 @@ def slide_to_patient_from_slide_table_(
     # for path in filename_label:
     #     if path.endswith(".h5"):
     #         any_h5 = True
-    # need to check the sldie DataFrame that's already loaded in the function
+    # need to check the slide DataFrame that's already loaded in the function
     for x in slide_df[filename_label]:
         if x.endswith(".h5"):
             any_h5 = True
@@ -489,7 +489,7 @@ def slide_to_patient_from_slide_table_(
         raise ValueError(
             "No .h5 extensions found in the slide table's feature path"
         )
-        
+
     slide_to_patient: Mapping[FeaturePath, PatientId] = {
         FeaturePath(feature_dir / cast(str, k)): PatientId(cast(str, patient))
         for k, patient in slide_df.set_index(filename_label, verify_integrity=True)[

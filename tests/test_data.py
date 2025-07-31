@@ -9,6 +9,7 @@ from random_data import (
     create_random_patient_level_feature_file,
     make_feature_file,
     make_old_feature_file,
+    create_good_and_bad_slide__tables,
 )
 from torch.utils.data import DataLoader
 
@@ -19,6 +20,7 @@ from stamp.modeling.data import (
     PatientFeatureDataset,
     filter_complete_patient_data_,
     get_coords,
+    slide_to_patient_from_slide_table_,
 )
 from stamp.types import (
     BagSize,
@@ -213,52 +215,65 @@ def test_get_coords_historic_format() -> None:
         assert coords_info.tile_size_px == TilePixels(224)
         assert coords_info.mpp == SlideMPP(256.0 / 224)
 
-
-def test_slide_table_h5_validation(tmp_path: Path):
-    """
+def test_slide_table_h5_validation (tmp_path: Path):
+ """
     Test that an error is raised in 
     slide_to_patient_from_slide_table_() when no .h5 files are in the slide
     table.
     """
+    feature_dir = tmp_path
 
-    slide_path = dir / "slide.csv"
+    good_slide_path, bad_slide_path = create_good_and_bad_slide__tables(tmp_path=tmp_path,)
+    
+    assert slide_to_patient_from_slide_table_(slide_table_path=good_slide_path, feature_dir=feature_dir)
+
+# def test_slide_table_h5_validation_random(tmp_path: Path, ):
+#     """
+#     Test that an error is raised in 
+#     slide_to_patient_from_slide_table_() when no .h5 files are in the slide
+#     table.
+#     """
+
+#     slide_path = dir / "slide.csv"
 
   
 
-    # Create temp paths
-    (tmp_path / "test_data").mkdir()
+#     # Create temp paths
+#     (tmp_path / "test_data").mkdir()
 
-    # Create bad slide table
-    bad_slide_table = "bad_slide"
-    bad_feature_dir = ""
-    bad_patient_label = 1
-    bad_filename_label = 1
-    # Create a good slide table
+#     # Create bad slide table
+#     bad_slide_table = "bad_slide"
+#     bad_feature_dir = ""
+#     bad_patient_label = 1
+#     bad_filename_label = 1
 
-    clini_pathj = slide_path, feat_dir, categories = create_random_dataset(
-        
-    )
     
-    good_slide_table= 2
-    good_feature_dir = 2
-    good_patient_label = 2
-    good_filename_label = 2
+#     # Create a good slide table
 
-    # This should raise an error   
-    slide_df = pd.DataFrame(
-        slide_path_to_patient.items()
-    )
-    assert
-    slide_to_patient_from_slide_table_(
-    slide_table_path=bad_slide_table,
-            feature_dir=bad_feature_dir,
-            patient_label=bad_patient_label,
-            filename_label=bad_filename_label,
-) 
-    # This should not raise an error
-    slide_to_patient_from_slide_table_(
-    slide_table_path=good_slide_table,
-            feature_dir=good_feature_dir,
-            patient_label=good_patient_label,
-            filename_label=good_filename_label,
-) 
+#     clini_pathj = slide_path, feat_dir, categories = create_random_dataset(
+        
+#     )
+    
+#     good_slide_table= 2
+#     good_feature_dir = 2
+#     good_patient_label = 2
+#     good_filename_label = 2
+
+#     # This should raise an error   
+#     slide_df = pd.DataFrame(
+#         slide_path_to_patient.items()
+#     )
+#     assert
+#     slide_to_patient_from_slide_table_(
+#     slide_table_path=bad_slide_table,
+#             feature_dir=bad_feature_dir,
+#             patient_label=bad_patient_label,
+#             filename_label=bad_filename_label,
+# ) 
+#     # This should not raise an error
+#     slide_to_patient_from_slide_table_(
+#     slide_table_path=good_slide_table,
+#             feature_dir=good_feature_dir,
+#             patient_label=good_patient_label,
+#             filename_label=good_filename_label,
+# ) 
