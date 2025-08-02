@@ -316,9 +316,14 @@ def create_good_and_bad_slide__tables(
     contain .h5 extensions and bad slide tables do not.
     """
     # Create bad slide table (no .h5 extension)
+    # bad_slide_df = pd.DataFrame({
+    #     "patient": ["pat_bad1", "pat_bad2", "pat_bad3"],
+    #     "slide_path": ["slide1.jpg", "slide2.png", "slide3.tiff"]
+    # })
+
     bad_slide_df = pd.DataFrame({
-        "patient": ["pat_bad1", "pat_bad2", "pat_bad3"],
-        "slide_path": ["slide1.jpg", "slide2.png", "slide3.tiff"]
+        "PATIENT": ["pat_bad1", "pat_bad2", "pat_bad3"],
+        "FILENAME": ["slide1.jpg", "slide2.png", "slide3.tiff"]
     })
     
     bad_slide_path = tmp_path / "bad_slide.csv"
@@ -326,8 +331,8 @@ def create_good_and_bad_slide__tables(
 
     # Create good slide table (with .h5 extension)
     good_slide_df = pd.DataFrame({
-        "patient": ["pat1", "pat2", "pat3"], 
-        "slide_path": ["slide1.h5", "slide2.h5", "slide3.h5"]
+        "PATIENT": ["pat1", "pat2", "pat3"], 
+        "FILENAME": ["slide1.h5", "slide2.h5", "slide3.h5"]
     })
 
     good_slide_path = tmp_path / "good_slide.csv"
@@ -335,22 +340,22 @@ def create_good_and_bad_slide__tables(
 
     return good_slide_path, bad_slide_path
 
-def create_random_slide_tables(
-        *,
-        dir: Path,
-        tmp_path: Path, 
-        slide_path_to_patient: Mapping[Path, PatientId] = {},
+# def create_random_slide_tables(
+#         *,
+#         dir: Path,
+#         tmp_path: Path, 
+#         slide_path_to_patient: Mapping[Path, PatientId] = {},
 
-        ):
-     """
-    Randomly creates two slide tables for testing
-    slide_to_patient_from_slide_table_ in data.py. Good slide tables
-    contain .h5 extensions and bad slide tables do not.
-    """
-    for x in range(10)
+#         ):
+#      """
+#     Randomly creates two slide tables for testing
+#     slide_to_patient_from_slide_table_ in data.py. Good slide tables
+#     contain .h5 extensions and bad slide tables do not.
+#     """
+#     for x in range(10)
 
-    bad_slide_df = pd.DataFrame (
-        slide_path_to_patient.items(),
-        columns=["slide_path", "patient"],
-    )
+#     bad_slide_df = pd.DataFrame (
+#         slide_path_to_patient.items(),
+#         columns=["slide_path", "patient"],
+#     )
 

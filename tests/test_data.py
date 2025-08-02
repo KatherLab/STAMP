@@ -215,17 +215,33 @@ def test_get_coords_historic_format() -> None:
         assert coords_info.tile_size_px == TilePixels(224)
         assert coords_info.mpp == SlideMPP(256.0 / 224)
 
+
 def test_slide_table_h5_validation (tmp_path: Path):
- """
+    """
     Test that an error is raised in 
     slide_to_patient_from_slide_table_() when no .h5 files are in the slide
     table.
     """
     feature_dir = tmp_path
 
-    good_slide_path, bad_slide_path = create_good_and_bad_slide__tables(tmp_path=tmp_path,)
-    
-    assert slide_to_patient_from_slide_table_(slide_table_path=good_slide_path, feature_dir=feature_dir)
+    good_slide_path, bad_slide_path = create_good_and_bad_slide__tables(tmp_path=tmp_path)
+    # remember that PandasLabel is just a string
+
+    # Test Good Slide Path (should be no error or error that doesn't contain the error I made)
+    # assert slide_to_patient_from_slide_table_(slide_table_path=good_slide_path, feature_dir=feature_dir, patient_label="PATIENT", filename_label="FILENAME")
+    with pytest.raises(ValueError, match="No .h5 extensions found in the slide table's feature path"):
+        slide_to_patient_from_slide_table_(
+            slide_table_path=good_slide_path,
+            feature_dir=feature_dir,
+            patient_label="PATIENT",
+            filename_label="FILENAME")
+    # Test Bad Slide Path
+    with pytest.raises(ValueError, match="No .h5 extensions found in the slide table's feature path"):
+        slide_to_patient_from_slide_table_(
+            slide_table_path=bad_slide_path,
+            feature_dir=feature_dir,
+            patient_label="PATIENT",
+            filename_label="FILENAME")
 
 # def test_slide_table_h5_validation_random(tmp_path: Path, ):
 #     """
@@ -236,7 +252,7 @@ def test_slide_table_h5_validation (tmp_path: Path):
 
 #     slide_path = dir / "slide.csv"
 
-  
+
 
 #     # Create temp paths
 #     (tmp_path / "test_data").mkdir()
