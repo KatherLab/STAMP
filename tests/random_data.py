@@ -309,17 +309,13 @@ def make_patient_level_feature_file(
 def create_good_and_bad_slide__tables(
         *,
         tmp_path: Path
-        ) :
+        ) -> tuple[Path, Path]:
     """
     Manually creates two slide tables for testing
     slide_to_patient_from_slide_table_ in data.py. Good slide tables
     contain .h5 extensions and bad slide tables do not.
     """
     # Create bad slide table (no .h5 extension)
-    # bad_slide_df = pd.DataFrame({
-    #     "patient": ["pat_bad1", "pat_bad2", "pat_bad3"],
-    #     "slide_path": ["slide1.jpg", "slide2.png", "slide3.tiff"]
-    # })
 
     bad_slide_df = pd.DataFrame({
         "PATIENT": ["pat_bad1", "pat_bad2", "pat_bad3"],
@@ -340,22 +336,27 @@ def create_good_and_bad_slide__tables(
 
     return good_slide_path, bad_slide_path
 
-# def create_random_slide_tables(
-#         *,
-#         dir: Path,
-#         tmp_path: Path, 
-#         slide_path_to_patient: Mapping[Path, PatientId] = {},
+def create_random_slide_tables(
+        *,
+        dir: Path,
+        tmp_path: Path,
+        ) -> tuple[Path, Path]:
+    """
+    Randomly creates two slide tables for testing
+    slide_to_patient_from_slide_table_ in data.py. Good slide tables
+    contain .h5 extensions and bad slide tables do not.
+    """
+    bad_extensions =[ ".jpg", ".pdf", ".png", "gir"]
 
-#         ):
-#      """
-#     Randomly creates two slide tables for testing
-#     slide_to_patient_from_slide_table_ in data.py. Good slide tables
-#     contain .h5 extensions and bad slide tables do not.
-#     """
-#     for x in range(10)
+    words = []
+    for x in range(10):
+        word = random_string(random.randint(5, b=12))
+        words.append(word)
 
-#     bad_slide_df = pd.DataFrame (
-#         slide_path_to_patient.items(),
-#         columns=["slide_path", "patient"],
-#     )
+    
+    bad_slide_df = pd.DataFrame (
+        slide_path_to_patient.items(),
+        columns=["slide_path", "patient"],
+    )
 
+    return good_random_slide_path, bad_random_slide_path

@@ -10,6 +10,7 @@ from random_data import (
     make_feature_file,
     make_old_feature_file,
     create_good_and_bad_slide__tables,
+    create_random_dataset
 )
 from torch.utils.data import DataLoader
 
@@ -216,27 +217,32 @@ def test_get_coords_historic_format() -> None:
         assert coords_info.mpp == SlideMPP(256.0 / 224)
 
 
-def test_slide_table_h5_validation (tmp_path: Path):
+def test_slide_table_h5_validation(tmp_path: Path):
     """
-    Test that an error is raised in 
-    slide_to_patient_from_slide_table_() when no .h5 files are in the slide
-    table.
+    Tests that an error is properly raised in
+    slide_to_patient_from_slide_table_( when none of items in the
+    filename_labels column of a slide table have an .h5 extension and
+    verifies that the error isn't raised when
+    
     """
     feature_dir = tmp_path
 
-    good_slide_path, bad_slide_path = create_good_and_bad_slide__tables(tmp_path=tmp_path)
+    good_slide_path, bad_slide_path = create_good_and_bad_slide__tables(
+        tmp_path=tmp_path)
     # remember that PandasLabel is just a string
 
-    # Test Good Slide Path (should be no error or error that doesn't contain the error I made)
-    # assert slide_to_patient_from_slide_table_(slide_table_path=good_slide_path, feature_dir=feature_dir, patient_label="PATIENT", filename_label="FILENAME")
-    with pytest.raises(ValueError, match="No .h5 extensions found in the slide table's feature path"):
-        slide_to_patient_from_slide_table_(
+    # Test with .h5 extensions in filename_label column (should be no error
+    # regarding no .h5 extensions)
+    result = slide_to_patient_from_slide_table_(
             slide_table_path=good_slide_path,
             feature_dir=feature_dir,
             patient_label="PATIENT",
             filename_label="FILENAME")
-    # Test Bad Slide Path
-    with pytest.raises(ValueError, match="No .h5 extensions found in the slide table's feature path"):
+    assert isinstance(result, dict)
+    # Test without .h5 extensions in filename_label column
+    with pytest.raises(ValueError,
+                       match="No .h5 extensions found in the slide table's "
+                       "filename_label column"):
         slide_to_patient_from_slide_table_(
             slide_table_path=bad_slide_path,
             feature_dir=feature_dir,
@@ -250,46 +256,15 @@ def test_slide_table_h5_validation (tmp_path: Path):
 #     table.
 #     """
 
-#     slide_path = dir / "slide.csv"
-
-
-
-#     # Create temp paths
-#     (tmp_path / "test_data").mkdir()
-
-#     # Create bad slide table
-#     bad_slide_table = "bad_slide"
-#     bad_feature_dir = ""
-#     bad_patient_label = 1
-#     bad_filename_label = 1
-
-    
-#     # Create a good slide table
-
-#     clini_pathj = slide_path, feat_dir, categories = create_random_dataset(
-        
-#     )
-    
-#     good_slide_table= 2
-#     good_feature_dir = 2
-#     good_patient_label = 2
-#     good_filename_label = 2
-
-#     # This should raise an error   
-#     slide_df = pd.DataFrame(
-#         slide_path_to_patient.items()
-#     )
-#     assert
-#     slide_to_patient_from_slide_table_(
-#     slide_table_path=bad_slide_table,
-#             feature_dir=bad_feature_dir,
-#             patient_label=bad_patient_label,
-#             filename_label=bad_filename_label,
-# ) 
-#     # This should not raise an error
-#     slide_to_patient_from_slide_table_(
-#     slide_table_path=good_slide_table,
-#             feature_dir=good_feature_dir,
-#             patient_label=good_patient_label,
-#             filename_label=good_filename_label,
-# ) 
+    # Test Good Slide Path using data from create_random_dataset
+    # clini_path, slide_path, feat_dir, categories = create_random_dataset (
+    #     dir= tmp_path,
+    #     n_patients=5,
+    #     max_slides_per_patient=5
+    #     min_tiles_per_slide=1,
+    #     max_tiles_per_slide=5,
+    #     feat_dim=5
+    #     categories=,
+    #     n_categories=2,
+    #     extractor_name=extractor_name;
+    # )
