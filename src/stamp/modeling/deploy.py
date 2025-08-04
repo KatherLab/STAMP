@@ -167,13 +167,15 @@ def deploy_categorical_model_(
         )
         all_predictions.append(predictions)
 
-        _to_prediction_df(
-            categories=model_categories,
-            patient_to_ground_truth=patient_to_ground_truth,
-            predictions=predictions,
-            patient_label=patient_label,
-            ground_truth_label=ground_truth_label,
-        ).to_csv(output_dir / f"patient-preds-{model_i}.csv", index=False)
+        # Only save individual model files when deploying multiple models (ensemble)
+        if len(models) > 1:
+            _to_prediction_df(
+                categories=model_categories,
+                patient_to_ground_truth=patient_to_ground_truth,
+                predictions=predictions,
+                patient_label=patient_label,
+                ground_truth_label=ground_truth_label,
+            ).to_csv(output_dir / f"patient-preds-{model_i}.csv", index=False)
 
     # TODO we probably also want to save the 95% confidence interval in addition to the mean
     _to_prediction_df(
