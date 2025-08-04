@@ -10,7 +10,7 @@ from random_data import (
     make_feature_file,
     make_old_feature_file,
     create_good_and_bad_slide__tables,
-    create_random_dataset
+    create_random_slide_tables
 )
 from torch.utils.data import DataLoader
 
@@ -220,17 +220,16 @@ def test_get_coords_historic_format() -> None:
 def test_slide_table_h5_validation(tmp_path: Path):
     """
     Tests that an error is properly raised in
-    slide_to_patient_from_slide_table_( when none of items in the
+    slide_to_patient_from_slide_table_() when none of items in the
     filename_labels column of a slide table have an .h5 extension and
-    verifies that the error isn't raised when
-    
+    verifies that the error isn't raised when there is at least one
+    filename with a .h5 extension in the filename_labels column.
     """
     feature_dir = tmp_path
 
     good_slide_path, bad_slide_path = create_good_and_bad_slide__tables(
         tmp_path=tmp_path)
-    # remember that PandasLabel is just a string
-
+    
     # Test with .h5 extensions in filename_label column (should be no error
     # regarding no .h5 extensions)
     result = slide_to_patient_from_slide_table_(
@@ -249,22 +248,37 @@ def test_slide_table_h5_validation(tmp_path: Path):
             patient_label="PATIENT",
             filename_label="FILENAME")
 
-# def test_slide_table_h5_validation_random(tmp_path: Path, ):
-#     """
-#     Test that an error is raised in 
-#     slide_to_patient_from_slide_table_() when no .h5 files are in the slide
-#     table.
-#     """
 
-    # Test Good Slide Path using data from create_random_dataset
-    # clini_path, slide_path, feat_dir, categories = create_random_dataset (
-    #     dir= tmp_path,
-    #     n_patients=5,
-    #     max_slides_per_patient=5
-    #     min_tiles_per_slide=1,
-    #     max_tiles_per_slide=5,
-    #     feat_dim=5
-    #     categories=,
-    #     n_categories=2,
-    #     extractor_name=extractor_name;
-    # )
+def test_slide_table_h5_validation_random(tmp_path: Path, ):
+    """
+    Tests that an error is properly raised in
+    slide_to_patient_from_slide_table_() when none of items in the
+    filename_labels column of a slide table have an .h5 extension and
+    verifies that the error isn't raised when there is at least one
+    filename with a .h5 extension in the filename_labels column.
+    Uses random data.
+    """
+
+    feature_dir = tmp_path
+
+    good_slide_path, bad_slide_path = create_random_slide_tables(
+        n_patients=10,
+        tmp_path=tmp_path)
+
+    # Test with .h5 extensions in filename_label column (should be no error
+    # regarding no .h5 extensions)
+    result = slide_to_patient_from_slide_table_(
+            slide_table_path=good_slide_path,
+            feature_dir=feature_dir,
+            patient_label="PATIENT",
+            filename_label="FILENAME")
+    assert isinstance(result, dict)
+    # Test without .h5 extensions in filename_label column
+    with pytest.raises(ValueError,
+                       match="No .h5 extensions found in the slide table's "
+                       "filename_label column"):
+        slide_to_patient_from_slide_table_(
+            slide_table_path=bad_slide_path,
+            feature_dir=feature_dir,
+            patient_label="PATIENT",
+            filename_label="FILENAME")
