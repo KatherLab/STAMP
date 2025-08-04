@@ -47,6 +47,15 @@ def deploy_categorical_model_(
     num_workers: int,
     accelerator: str | Accelerator,
 ) -> None:
+    """Deploy categorical model(s) and save predictions.
+    
+    For single model deployment, creates:
+    - patient-preds.csv (main prediction file)
+    
+    For ensemble deployment (multiple checkpoints), creates:
+    - patient-preds-{i}.csv (individual model predictions)
+    - patient-preds.csv (mean predictions across models)
+    """
     # --- Detect feature type and load correct model ---
     feature_type = detect_feature_type(feature_dir)
     _logger.info(f"Detected feature type: {feature_type}")
