@@ -264,7 +264,6 @@ def test_slide_table_h5_validation_random(tmp_path: Path, ):
     good_slide_path, bad_slide_path = create_random_slide_tables(
         n_patients=10,
         tmp_path=tmp_path)
-
     # Test with .h5 extensions in filename_label column (should be no error
     # regarding no .h5 extensions)
     result = slide_to_patient_from_slide_table_(
@@ -273,6 +272,7 @@ def test_slide_table_h5_validation_random(tmp_path: Path, ):
             patient_label="PATIENT",
             filename_label="FILENAME")
     assert isinstance(result, dict)
+
     # Test without .h5 extensions in filename_label column
     with pytest.raises(ValueError,
                        match="No .h5 extensions found in the slide table's "

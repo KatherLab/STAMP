@@ -468,7 +468,12 @@ def slide_to_patient_from_slide_table_(
     patient_label: PandasLabel,
     filename_label: PandasLabel,
 ) -> dict[FeaturePath, PatientId]:
-    """Creates a slide-to-patient mapping from a slide table."""
+    """
+    Creates a slide-to-patient mapping from a slide table.
+    Side effects:
+        Checks to see if least one file in the slide table's
+        filename_label column has an .h5 extension.
+    """
     print("Entering slide_to_patient_from_slide_table_", flush=True)
     slide_df = read_table(
         slide_table_path,

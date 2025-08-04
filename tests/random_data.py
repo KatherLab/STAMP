@@ -306,12 +306,14 @@ def make_patient_level_feature_file(
     file.seek(0)
     return file
 
+
 def create_good_and_bad_slide__tables(*, tmp_path: Path) -> tuple[Path, Path]:
     """
     Manually creates two slide tables for testing
     slide_to_patient_from_slide_table_ in data.py. Good slide tables
     contain .h5 extensions and bad slide tables do not.
     """
+
     # Create good slide table (with .h5 extension)
     good_slide_df = pd.DataFrame(
         {
@@ -319,9 +321,9 @@ def create_good_and_bad_slide__tables(*, tmp_path: Path) -> tuple[Path, Path]:
             "FILENAME": ["slide1.h5", "slide2.h5", "slide3.h5"],
         }
     )
-
     good_slide_path = tmp_path / "good_slide.csv"
     good_slide_df.to_csv(good_slide_path, index=False)
+
     # Create bad slide table (no .h5 extension)
     bad_slide_df = pd.DataFrame(
         {
@@ -329,11 +331,11 @@ def create_good_and_bad_slide__tables(*, tmp_path: Path) -> tuple[Path, Path]:
             "FILENAME": ["slide1.jpg", "slide2.png", "slide3.tiff"],
         }
     )
-
     bad_slide_path = tmp_path / "bad_slide.csv"
     bad_slide_df.to_csv(bad_slide_path, index=False)
 
     return good_slide_path, bad_slide_path
+
 
 def create_random_slide_tables(
         *,
@@ -363,20 +365,16 @@ def create_random_slide_tables(
 
     good_files = []
     bad_files = []
-    # words = []
-    for x in range(n_patients):
+    for _ in range(n_patients):
         word = random_string(random.randint(5, 12))
-        # words.append(word)
         good_files.append(word + ".h5")
         bad_files.append(word + random.choice(bad_extensions))
 
     good_slide_df = pd.DataFrame({"PATIENT": names, "FILENAME": good_files})
-
     good_slide_path = tmp_path / "good_random_slide.csv"
     good_slide_df.to_csv(good_slide_path, index=False)
 
     bad_slide_df = pd.DataFrame({"PATIENT": names, "FILENAME": bad_files})
-
     bad_slide_path = tmp_path / "bad_random_slide.csv"
     bad_slide_df.to_csv(bad_slide_path, index=False)
 
