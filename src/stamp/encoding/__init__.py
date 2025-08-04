@@ -64,6 +64,11 @@ def init_slide_encoder_(
 
             selected_encoder: Encoder = Madeleine()
 
+        case EncoderName.PRISM:
+            from stamp.encoding.encoder.prism import Prism
+
+            selected_encoder: Encoder = Prism()
+
         case Encoder():
             selected_encoder = encoder
 
@@ -144,6 +149,11 @@ def init_patient_encoder_(
             from stamp.encoding.encoder.madeleine import Madeleine
 
             selected_encoder: Encoder = Madeleine()
+
+        case EncoderName.PRISM:
+            from stamp.encoding.encoder.prism import Prism
+
+            selected_encoder: Encoder = Prism()
 
         case Encoder():
             selected_encoder = encoder

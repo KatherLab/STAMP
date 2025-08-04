@@ -6,7 +6,7 @@ preprocessing:
   # "gigapath", "h-optimus-0", "h-optimus-1", "virchow2", "virchow", 
   # "virchow-full", "musk", "mstar", "plip"
   # Some of them require requesting access to the respective authors beforehand.
-  extractor: "ctranspath"
+  extractor: "chief-ctranspath"
 
   # Device to run feature extraction on ("cpu", "cuda", "cuda:0", etc.)
   device: "cuda"
@@ -79,16 +79,14 @@ crossval:
   # Number of folds to split the data into for cross-validation
   #n_splits: 5
 
-  # Experimental features:
+  # Path to a YAML file with advanced training parameters.
+  #params_path: "path/to/train_params.yaml"
 
-  # Please try uncommenting the settings below
-  # and report if they improve / reduce model performance!
+  # Experimental features:
 
   # Change the precision of features during training
   #use_vary_precision_transform: true
 
-  # Use ALiBi positional embedding
-  # use_alibi: true
 
 
 training:
@@ -126,16 +124,13 @@ training:
   # If unspecified, they will be inferred from the table itself.
   #categories: ["mutated", "wild type"]
 
-  # Experimental features:
+  # Path to a YAML file with advanced training parameters.
+  #params_path: "path/to/model_params.yaml"
 
-  # Please try uncommenting the settings below
-  # and report if they improve / reduce model performance!
+  # Experimental features:
 
   # Change the precision of features during training
   #use_vary_precision_transform: true
-
-  # Use ALiBi positional embedding
-  # use_alibi: true
 
 
 deployment:
@@ -291,3 +286,36 @@ patient_encoding:
 
   # Add a hash of the entire preprocessing codebase in the feature folder name.
   #generate_hash: True
+
+
+advanced_config:
+  max_epochs: 64
+  patience: 16
+  batch_size: 64
+  # Only for tile-level training. Reducing its amount could affect
+  # model performance. Reduces memory consumption. Default value works
+  # fine for most cases.
+  bag_size: 512
+  # Optional parameters
+  #num_workers: 16 # Default chosen by cpu cores
+
+  # Select a model. Not working yet, added for future support.
+  # Now it uses a ViT for tile features and a MLP for patient features.
+  #model_name: "vit"
+
+  model_params:
+    # Tile-level training models:
+    vit: # Vision Transformer
+      dim_model: 512
+      dim_feedforward: 512
+      n_heads: 8
+      n_layers: 2
+      dropout: 0.25
+      # Experimental feature: Use ALiBi positional embedding
+      use_alibi: false
+
+    # Patient-level training models:
+    mlp: # Multilayer Perceptron
+      dim_hidden: 512
+      num_layers: 2
+      dropout: 0.25

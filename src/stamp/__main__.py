@@ -7,6 +7,12 @@ from pathlib import Path
 import yaml
 
 from stamp.config import StampConfig
+from stamp.modeling.config import (
+    AdvancedConfig,
+    MlpModelParams,
+    ModelParams,
+    VitModelParams,
+)
 
 STAMP_FACTORY_SETTINGS = Path(__file__).with_name("config.yaml")
 
@@ -126,32 +132,20 @@ def _run_cli(args: argparse.Namespace) -> None:
             if config.training is None:
                 raise ValueError("no training configuration supplied")
 
+            # use default advanced config in case none is provided
+            if config.advanced_config is None:
+                config.advanced_config = AdvancedConfig(
+                    model_params=ModelParams(vit=VitModelParams(), mlp=MlpModelParams())
+                )
+
             _add_file_handle_(_logger, output_dir=config.training.output_dir)
             _logger.info(
                 "using the following configuration:\n"
                 f"{yaml.dump(config.training.model_dump(mode='json'))}"
             )
-            # We pass every parameter explicitly so our type checker can do its work.
+
             train_categorical_model_(
-                output_dir=config.training.output_dir,
-                clini_table=config.training.clini_table,
-                slide_table=config.training.slide_table,
-                feature_dir=config.training.feature_dir,
-                patient_label=config.training.patient_label,
-                ground_truth_label=config.training.ground_truth_label,
-                filename_label=config.training.filename_label,
-                categories=config.training.categories,
-                # Dataset and -loader parameters
-                bag_size=config.training.bag_size,
-                num_workers=config.training.num_workers,
-                # Training paramenters
-                batch_size=config.training.batch_size,
-                max_epochs=config.training.max_epochs,
-                patience=config.training.patience,
-                accelerator=config.training.accelerator,
-                # Experimental features
-                use_vary_precision_transform=config.training.use_vary_precision_transform,
-                use_alibi=config.training.use_alibi,
+                config=config.training, advanced=config.advanced_config
             )
 
         case "deploy":
@@ -189,27 +183,16 @@ def _run_cli(args: argparse.Namespace) -> None:
                 "using the following configuration:\n"
                 f"{yaml.dump(config.crossval.model_dump(mode='json'))}"
             )
+
+            # use default advanced config in case none is provided
+            if config.advanced_config is None:
+                config.advanced_config = AdvancedConfig(
+                    model_params=ModelParams(vit=VitModelParams(), mlp=MlpModelParams())
+                )
+
             categorical_crossval_(
-                output_dir=config.crossval.output_dir,
-                clini_table=config.crossval.clini_table,
-                slide_table=config.crossval.slide_table,
-                feature_dir=config.crossval.feature_dir,
-                patient_label=config.crossval.patient_label,
-                ground_truth_label=config.crossval.ground_truth_label,
-                filename_label=config.crossval.filename_label,
-                categories=config.crossval.categories,
-                n_splits=config.crossval.n_splits,
-                # Dataset and -loader parameters
-                bag_size=config.crossval.bag_size,
-                num_workers=config.crossval.num_workers,
-                # Crossval paramenters
-                batch_size=config.crossval.batch_size,
-                max_epochs=config.crossval.max_epochs,
-                patience=config.crossval.patience,
-                accelerator=config.crossval.accelerator,
-                # Experimental Features
-                use_vary_precision_transform=config.crossval.use_vary_precision_transform,
-                use_alibi=config.crossval.use_alibi,
+                config=config.crossval,
+                advanced=config.advanced_config,
             )
 
         case "statistics":

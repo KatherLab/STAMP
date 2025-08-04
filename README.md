@@ -16,31 +16,122 @@ A Protocol for End-to-End Deep Learning in Computational Pathology".
 [stamp paper]: https://www.nature.com/articles/s41596-024-01047-2 "From whole-slide image to biomarker prediction: end-to-end weakly supervised deep learning in computational pathology"
 [stamp v1]: https://github.com/KatherLab/STAMP/tree/v1
 
-## Installing stamp
+## Installation
 
 We recommend installing STAMP with [uv](https://docs.astral.sh/uv/):
+
+### Install or Update uv:
+
+```bash
+# Install uv
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Update uv
+uv self update
+```
+
+### Install STAMP in a Virtual Environment:
+
+```bash
+uv venv --python=3.12
+source .venv/bin/activate
+
+# For a CPU-only installation:
+uv pip install "git+https://github.com/KatherLab/STAMP.git[cpu]" --torch-backend=cpu
+
+# For a GPU (CUDA) installation:
+uv pip install "git+https://github.com/KatherLab/STAMP.git[build]"
+uv pip install "git+https://github.com/KatherLab/STAMP.git[build,gpu]" --no-build-isolation
+
+# Note: You must run one after the other, the build dependencies must be installed first!
+```
+
+### Install STAMP from the Repository:
+
 ```bash
 git clone https://github.com/KatherLab/STAMP.git
+cd STAMP
+```
 
-cd STAMP/
 
-uv sync --all-extras
+```bash
+# CPU-only Installation (excluding COBRA, Gigapath (and flash-attn))
 
+uv sync --extra cpu
 source .venv/bin/activate
 ```
 
+```bash
+# GPU (CUDA) Installation (Using flash-attn on CUDA systems for gigapath and other models)
+
+# First run this!!
+uv sync --extra build
+
+# And then this for all models:
+uv sync --extra build --extra gpu
+
+# Alternatively, you can install only a specific model:
+uv sync --extra build --extra uni
+
+
+# In case building flash-attn uses too much memory, you can limit the number of parallel compilation jobs:
+MAX_JOBS=4 uv sync --extra build --extra gpu
+```
+
+### Additional Dependencies
+
 > [!IMPORTANT]
-> STAMP additionally requires OpenSlide to be installed, as well as OpenCV dependencies.
+> STAMP additionally requires OpenCV dependencies to be installed. If you want to use `flash-attn`, you also need to install the `clang` compiler and a [CUDA toolkit](https://developer.nvidia.com/cuda-downloads).
 >
+
 > For Ubuntu < 23.10:
 > ```bash
-> apt update && apt install -y openslide-tools libgl1-mesa-glx  # libgl1-mesa-glx is needed for OpenCV
+> apt update && apt install -y libgl1-mesa-glx clang
 > ```
 >
 > For Ubuntu >= 23.10:
 > ```bash
-> apt update && apt install -y openslide-tools libgl1 libglx-mesa0 libglib2.0-0  # libgl1, libglx-mesa0, libglib2.0-0 are needed for OpenCV
+> apt update && apt install -y libgl1 libglx-mesa0 libglib2.0-0 clang
 > ```
+
+
+### Installation Troubleshooting
+
+> [!NOTE]
+> Installing the GPU version of STAMP will force the compilation of the `flash-attn` package (as well as `mamba-ssm` and `causal_conv1d`). This can take a long time and requires a lot of memory. You can limit the number of parallel compilation jobs by setting the `MAX_JOBS` environment variable before running the installation command, e.g. `MAX_JOBS=4 uv sync --extra build --extra gpu`.
+
+
+#### Undefined Symbol Error
+
+If you encounter an error similar to the following when importing flash_attn, mamba or causal_conv1d on a GPU system, it usually indicates that the torch version in your environment does not match the torch version used to build the flash-attn, mamba or causal_conv1d package. This can happen if you already built these packages for another environment or if for any reason between the installation commands with only `--extra build` and `--extra gpu` the torch version was changed.
+
+```
+>       import flash_attn_2_cuda as flash_attn_gpu
+E       ImportError: [...]/.venv/lib/python3.12/site-packages/flash_attn_2_cuda.cpython-312-x86_64-linux-gnu.so: undefined symbol: _ZN3c105ErrorC2ENS_14SourceLocationENSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE
+
+.venv/lib/python3.12/site-packages/flash_attn/flash_attn_interface.py:15: ImportError
+```
+
+In case you encounter this error on a gpu installation, you can fix it by going back to the environment just with `--extra build`, clearing the uv cache and then reinstalling the `--extra gpu` packages:
+
+```bash
+uv cache clean flash_attn
+uv cache clean mamba-ssm
+uv cache clean causal_conv1d
+
+# Now it should re-build the packages with the correct torch version
+
+# With uv pip install
+uv pip install "git+https://github.com/KatherLab/STAMP.git[build]"
+uv pip install "git+https://github.com/KatherLab/STAMP.git[build,gpu] --no-build-isolation"
+
+# With uv sync in the cloned repository
+uv sync --extra build
+uv sync --extra build --extra gpu
+```
+
+
+## Basic Usage
 
 If the installation was successful, running `stamp` in your terminal should yield the following output:
 ```
@@ -68,7 +159,7 @@ options:
                         Path to config file. Default: config.yaml
 ```
 
-## Running stamp
+## Getting Started Guide
 
 For a quick introduction how to run stamp,
 check out our [getting started guide](getting-started.md).
