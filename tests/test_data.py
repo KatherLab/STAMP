@@ -9,7 +9,7 @@ from random_data import (
     create_random_patient_level_feature_file,
     make_feature_file,
     make_old_feature_file,
-    create_good_and_bad_slide__tables,
+    create_good_and_bad_slide_tables,
     create_random_slide_tables
 )
 from torch.utils.data import DataLoader
@@ -217,7 +217,7 @@ def test_get_coords_historic_format() -> None:
         assert coords_info.mpp == SlideMPP(256.0 / 224)
 
 
-def test_slide_table_h5_validation(tmp_path: Path):
+def test_slide_table_h5_validation(tmp_path: Path) -> None:
     """
     Tests that an error is properly raised in
     slide_to_patient_from_slide_table_() when none of items in the
@@ -227,9 +227,9 @@ def test_slide_table_h5_validation(tmp_path: Path):
     """
     feature_dir = tmp_path
 
-    good_slide_path, bad_slide_path = create_good_and_bad_slide__tables(
+    good_slide_path, bad_slide_path = create_good_and_bad_slide_tables(
         tmp_path=tmp_path)
-    
+
     # Test with .h5 extensions in filename_label column (should be no error
     # regarding no .h5 extensions)
     result = slide_to_patient_from_slide_table_(
@@ -249,7 +249,7 @@ def test_slide_table_h5_validation(tmp_path: Path):
             filename_label="FILENAME")
 
 
-def test_slide_table_h5_validation_random(tmp_path: Path, ):
+def test_slide_table_h5_validation_random(tmp_path: Path, ) -> None:
     """
     Tests that an error is properly raised in
     slide_to_patient_from_slide_table_() when none of items in the
