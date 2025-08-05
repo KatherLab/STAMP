@@ -48,10 +48,10 @@ def deploy_categorical_model_(
     accelerator: str | Accelerator,
 ) -> None:
     """Deploy categorical model(s) and save predictions.
-    
+
     For single model deployment, creates:
     - patient-preds.csv (main prediction file)
-    
+
     For ensemble deployment (multiple checkpoints), creates:
     - patient-preds-{i}.csv (individual model predictions)
     - patient-preds.csv (mean predictions across models)
