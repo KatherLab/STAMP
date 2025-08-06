@@ -471,8 +471,8 @@ def slide_to_patient_from_slide_table_(
     """
     Creates a slide-to-patient mapping from a slide table.
     Side effects:
-        Checks to see if least one file in the slide table's
-        filename_label column has an .h5 extension.
+        Verifies that all files in the slide tables filename_label
+        column has an .h5 extension.
     """
     slide_df = read_table(
         slide_table_path,
@@ -481,15 +481,13 @@ def slide_to_patient_from_slide_table_(
     )
     # Verify the slide table contains a feature path with .h5 extension by
     # checking the filename_label.
-    any_h5 = False
     for x in slide_df[filename_label]:
-        if x.endswith(".h5"):
-            any_h5 = True
-    if any_h5 is False:
-        raise ValueError(
-            "No .h5 extensions found in the slide table's filename_label "
-            "column"
-        )
+        if not str(x).endswith(".h5"):
+            raise ValueError(
+                "One or more files are missing the .h5 extension in the "
+                "filename_label column. The first file missing the .h5 "
+                "extension is: " + str(x) + "."
+            )
 
     slide_to_patient: Mapping[FeaturePath, PatientId] = {
         FeaturePath(feature_dir / cast(str, k)): PatientId(cast(str, patient))

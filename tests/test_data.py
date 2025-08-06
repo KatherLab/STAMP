@@ -227,23 +227,36 @@ def test_slide_table_h5_validation(tmp_path: Path) -> None:
     """
     feature_dir = tmp_path
 
-    good_slide_path, bad_slide_path = create_good_and_bad_slide_tables(
-        tmp_path=tmp_path)
+    (good_slide_path, bad_slide_path, one_bad_slide_path,
+     no_file_names_slide_path) = create_good_and_bad_slide_tables(
+         tmp_path=tmp_path
+    )
 
-    # Test with .h5 extensions in filename_label column (should be no error
-    # regarding no .h5 extensions)
+    # Test with all files having .h5 extensions in filename_label column
+    # (should be no error regarding no .h5 extensions)
     result = slide_to_patient_from_slide_table_(
             slide_table_path=good_slide_path,
             feature_dir=feature_dir,
             patient_label="PATIENT",
             filename_label="FILENAME")
     assert isinstance(result, dict)
-    # Test without .h5 extensions in filename_label column
+    # Test without any .h5 extensions in filename_label column
     with pytest.raises(ValueError,
-                       match="No .h5 extensions found in the slide table's "
-                       "filename_label column"):
+                       match="One or more files are missing the .h5 extension "
+                       "in the filename_label column. The first file missing "
+                       "the .h5 extension is: slide1.jpg"):
         slide_to_patient_from_slide_table_(
             slide_table_path=bad_slide_path,
+            feature_dir=feature_dir,
+            patient_label="PATIENT",
+            filename_label="FILENAME")
+    # Test with one filename missing .h5 extension
+    with pytest.raises(ValueError,
+                       match="One or more files are missing the .h5 extension "
+                       "in the filename_label column. The first file missing "
+                       "the .h5 extension is: slide3.jpg"):
+        slide_to_patient_from_slide_table_(
+            slide_table_path=one_bad_slide_path,
             feature_dir=feature_dir,
             patient_label="PATIENT",
             filename_label="FILENAME")
@@ -275,8 +288,8 @@ def test_slide_table_h5_validation_random(tmp_path: Path, ) -> None:
 
     # Test without .h5 extensions in filename_label column
     with pytest.raises(ValueError,
-                       match="No .h5 extensions found in the slide table's "
-                       "filename_label column"):
+                       match="One or more files are missing the .h5 extension "
+                       "in the filename_label column"):
         slide_to_patient_from_slide_table_(
             slide_table_path=bad_slide_path,
             feature_dir=feature_dir,
