@@ -474,7 +474,6 @@ def slide_to_patient_from_slide_table_(
         Checks to see if least one file in the slide table's
         filename_label column has an .h5 extension.
     """
-    print("Entering slide_to_patient_from_slide_table_", flush=True)
     slide_df = read_table(
         slide_table_path,
         usecols=[patient_label, filename_label],
@@ -487,7 +486,6 @@ def slide_to_patient_from_slide_table_(
         if x.endswith(".h5"):
             any_h5 = True
     if any_h5 is False:
-        print("Hit the No .h5 error", flush=True)
         raise ValueError(
             "No .h5 extensions found in the slide table's filename_label "
             "column"
