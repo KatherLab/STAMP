@@ -88,6 +88,22 @@ uv sync --extra build --extra gpu
 > Installing the GPU version of STAMP will force the compilation of the `flash-attn` package (as well as `mamba-ssm` and `causal_conv1d`). This can take a long time and requires a lot of memory. You can limit the number of parallel compilation jobs by setting the `MAX_JOBS` environment variable before running the installation command, e.g. `MAX_JOBS=4 uv sync --extra build --extra gpu`.
 
 
+#### Triton Errors
+
+If you encounter errors related to the [Triton package like the following](https://github.com/pytorch/pytorch/issues/153737):
+
+```bash
+SystemError: PY_SSIZE_T_CLEAN macro must be defined for '#' formats
+``` 
+
+Try to delete the triton cache: 
+
+```bash
+rm -r ~/.triton
+```
+
+A re-installation might be necessary afterwards.
+
 #### Undefined Symbol Error
 
 If you encounter an error similar to the following when importing flash_attn, mamba or causal_conv1d on a GPU system, it usually indicates that the torch version in your environment does not match the torch version used to build the flash-attn, mamba or causal_conv1d package. This can happen if you already built these packages for another environment or if for any reason between the installation commands with only `--extra build` and `--extra gpu` the torch version was changed.
