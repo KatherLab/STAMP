@@ -99,6 +99,62 @@ def _show_class_map(
     return classes, legend_patches
 
 
+def _create_overlay(
+    thumb: np.ndarray,
+    score_im: np.ndarray,
+    alpha: float = 0.6
+) -> np.ndarray:
+    """Creates an overlay of the heatmap over the thumbnail."""
+    # Resize score_im to match thumbnail size
+    thumb_height, thumb_width = thumb.shape[:2]
+    score_resized = Image.fromarray(np.uint8(score_im * 255)).resize(
+        (thumb_width, thumb_height), resample=Image.Resampling.NEAREST
+    )
+    score_resized = np.array(score_resized) / 255.0
+    
+    # Convert thumbnail to float for blending
+    thumb_float = thumb.astype(float) / 255.0
+    
+    # Create overlay where heatmap alpha channel > 0
+    mask = score_resized[..., -1] > 0
+    overlay = thumb_float.copy()
+    
+    # Blend heatmap with thumbnail where mask is True
+    overlay[mask] = (
+        alpha * score_resized[mask, :3] + 
+        (1 - alpha) * thumb_float[mask]
+    )
+    
+    return (overlay * 255).astype(np.uint8)
+
+
+def _create_plotted_overlay(
+    thumb: np.ndarray,
+    score_im: np.ndarray,
+    category: str,
+    slide_score: float,
+    alpha: float = 0.6
+) -> tuple[plt.Figure, plt.Axes]:
+    """Creates a plotted overlay with title and legend."""
+    overlay = _create_overlay(thumb, score_im, alpha)
+    
+    fig, ax = plt.subplots(figsize=(10, 8))
+    ax.imshow(overlay)
+    ax.set_title(f"{category} - Slide Score: {slide_score:.3f}", fontsize=16, pad=20)
+    ax.axis("off")
+    
+    # Create legend
+    from matplotlib.patches import Patch
+    legend_elements = [
+        Patch(facecolor='red', alpha=0.7, label='Positive'),
+        Patch(facecolor='blue', alpha=0.7, label='Negative')
+    ]
+    ax.legend(handles=legend_elements, loc='upper right', bbox_to_anchor=(0.98, 0.98))
+    
+    plt.tight_layout()
+    return fig, ax
+
+
 def heatmaps_(
     *,
     feature_dir: Path,
@@ -220,6 +276,17 @@ def heatmaps_(
             tuple(target_size), resample=Image.Resampling.NEAREST
         ).save(raw_dir / f"{h5_path.stem}-classmap.png")
 
+        # Generate overview thumbnail first (moved up)
+        thumb = _show_thumb(
+            slide=slide,
+            thumb_ax=axs[0, 0],
+            attention=_vals_to_im(
+                torch.zeros(len(feats), 1).to(device),  # placeholder for initial call
+                coords_norm,
+            ).squeeze(-1),
+            default_slide_mpp=default_slide_mpp,
+        )
+
         attention = None
         for ax, (pos_idx, category) in zip(axs[1, :], enumerate(model.categories)):
             ax: Axes
@@ -283,6 +350,22 @@ def heatmaps_(
                 / f"{h5_path.stem}-{category}={slide_score[pos_idx]:0.2f}.png"
             )
 
+            # Create and save overlay to raw folder
+            overlay = _create_overlay(thumb, score_im)
+            Image.fromarray(overlay).save(
+                raw_dir / f"raw-overlay-{h5_path.stem}-{category}.png"
+            )
+
+            # Create and save plotted overlay to plots folder
+            overlay_fig, overlay_ax = _create_plotted_overlay(
+                thumb, score_im, category, slide_score[pos_idx].item()
+            )
+            overlay_fig.savefig(
+                plots_dir / f"overlay-{h5_path.stem}-{category}.png",
+                dpi=150, bbox_inches='tight'
+            )
+            plt.close(overlay_fig)
+
             # Only extract tiles for the highest probability class
             if pos_idx == highest_prob_class_idx:
                 # Top tiles
@@ -318,16 +401,7 @@ def heatmaps_(
             "attention should have been set in the for loop above"
         )
 
-        # Generate overview thumbnail and save to raw folder
-        thumb = _show_thumb(
-            slide=slide,
-            thumb_ax=axs[0, 0],
-            attention=_vals_to_im(
-                attention.unsqueeze(-1),
-                coords_norm,  # pyright: ignore[reportPossiblyUnboundVariable]
-            ).squeeze(-1),
-            default_slide_mpp=default_slide_mpp,
-        )
+        # Save thumbnail to raw folder
         Image.fromarray(thumb).save(raw_dir / f"thumbnail-{h5_path.stem}.png")
 
         for ax in axs.ravel():
