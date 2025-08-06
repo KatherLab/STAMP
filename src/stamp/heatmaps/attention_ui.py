@@ -12,6 +12,8 @@ from qtpy.QtWidgets import (
     QSlider,
     QHBoxLayout,
     QFrame,
+    QLineEdit,
+    QFileDialog,
 )
 from qtpy.QtCore import Qt
 
@@ -194,6 +196,7 @@ class AttentionViewer:
         # Add other UI elements
         self._add_file_selection_ui()
         self._add_config_selection_ui()
+        self._add_topk_controls_ui()
         self._add_patch_display_widget()
 
         # Disable UI elements until a file is selected
@@ -360,6 +363,18 @@ class AttentionViewer:
 
         layout.addLayout(head_layout)
 
+        # === Add the widget to napari viewer as a dock widget ===
+        self.viewer.window.add_dock_widget(
+            selection_widget, name="Attention Parameters", area="right"
+        )
+
+    def _add_topk_controls_ui(self):
+        """Add UI controls for top-k tile selection and patch operations"""
+        # Create a widget container
+        topk_widget = QWidget()
+        layout = QVBoxLayout()
+        topk_widget.setLayout(layout)
+
         # === Top-k SELECTION ===
         topk_label = QLabel("Top-k tiles to highlight:")
         layout.addWidget(topk_label)
@@ -404,20 +419,37 @@ class AttentionViewer:
 
         layout.addLayout(topk_layout)
 
-        # Add a horizontal separator
-        separator = QFrame()
-        separator.setFrameShape(QFrame.HLine)
-        separator.setFrameShadow(QFrame.Sunken)
-        layout.addWidget(separator)
-
         # === LOAD PATCHES BUTTON ===
-        self.load_patches_btn = QPushButton("Load Selected & Top-k Patches")
+        self.load_patches_btn = QPushButton("Visualize Top-k Patches")
         self.load_patches_btn.clicked.connect(self._load_tile_patches)
         layout.addWidget(self.load_patches_btn)
+        
+        save_path_layout = QHBoxLayout()
+        
+        # Path entry field
+        self.save_path_entry = QLineEdit()
+        self.save_path_entry.setPlaceholderText("Enter path to save patches...")
+        # Set default save path to output directory if available
+        if hasattr(self, 'output_dir') and self.output_dir:
+            self.save_path_entry.setText(str(Path(self.output_dir) / 'topK_patches'))
+        save_path_layout.addWidget(self.save_path_entry)
+        
+        # Browse button
+        self.browse_btn = QPushButton("Browse Save Path")
+        self.browse_btn.setMaximumWidth(120)
+        self.browse_btn.clicked.connect(self._browse_save_path)
+        save_path_layout.addWidget(self.browse_btn)
+        
+        layout.addLayout(save_path_layout)
+
+        # === SAVE TOP-K BUTTON ===
+        self.save_topk_btn = QPushButton("Save Top-k Patches")
+        self.save_topk_btn.clicked.connect(self._save_topk_patches)
+        layout.addWidget(self.save_topk_btn)
 
         # === Add the widget to napari viewer as a dock widget ===
         self.viewer.window.add_dock_widget(
-            selection_widget, name="Attention Parameters", area="right"
+            topk_widget, name="Top-k Tile Controls", area="right"
         )
 
     def _add_patch_display_widget(self):
@@ -459,6 +491,16 @@ class AttentionViewer:
         # Enable patch loading button
         if hasattr(self, "load_patches_btn"):
             self.load_patches_btn.setEnabled(enabled)
+
+        # Enable save top-k button
+        if hasattr(self, "save_topk_btn"):
+            self.save_topk_btn.setEnabled(enabled)
+
+        # Enable save path entry and browse button
+        if hasattr(self, "save_path_entry"):
+            self.save_path_entry.setEnabled(enabled)
+        if hasattr(self, "browse_btn"):
+            self.browse_btn.setEnabled(enabled)
 
         # Enable attention handling dropdown
         if hasattr(self, "attention_handling"):
@@ -588,10 +630,6 @@ class AttentionViewer:
                         coords_um = torch.tensor(coords_um, dtype=torch.float32)
 
                     stride_um = Microns(get_stride(coords_um))
-
-                    # list all h5 attrs
-                    for key in h5.attrs.keys():
-                        print(f"h5 attribute '{key}': {h5.attrs[key]}")
 
                     self.tile_size_slide_px = SlidePixels(
                             int(round(256 / slide_mpp))
@@ -795,6 +833,74 @@ class AttentionViewer:
         # Force update of the layout
         self.patches_container.adjustSize()
         QApplication.processEvents()
+
+    def _browse_save_path(self):
+        """Open file dialog to select save directory"""
+        current_path = self.save_path_entry.text() or str(Path(self.output_dir) / 'topK_patches') if hasattr(self, 'output_dir') and self.output_dir else ""
+        
+        directory = QFileDialog.getExistingDirectory(
+            None,
+            "Select Directory to Save Patches",
+            current_path
+        )
+        
+        if directory:
+            self.save_path_entry.setText(directory)
+
+    def _save_topk_patches(self):
+        """Save the selected patch and top-k patches to the specified directory"""
+        if self.selected_token_idx is None:
+            print("No token selected. Click on the image first.")
+            return
+
+        save_path = self.save_path_entry.text().strip()
+        if not save_path:
+            print("Please specify a save path.")
+            return
+
+        save_dir = Path(save_path)
+        save_dir.mkdir(parents=True, exist_ok=True)
+
+        try:
+            # Save selected patch
+            selected_patch = self.slide.read_region(
+                tuple(self.coords_tile_slide_px[self.selected_token_idx].tolist()),
+                0,
+                (self.tile_size_slide_px, self.tile_size_slide_px),
+            ).convert("RGB")
+
+            # Create filename prefix based on slide and attention parameters
+            filename_prefix = f"{Path(self.selected_filename).stem}_layer{self.layer_slider.value()}_head{self.head_slider.value()}_mode{self.attention_handling.currentData()}"
+
+            if self.attention_handling.currentData() == 6:  # Class token attention
+                # For class token, we want to skip
+                filename_prefix = f"{filename_prefix}_cls"
+            else:
+                filename_prefix = f"{filename_prefix}_token{self.selected_token_idx}"
+                selected_filename = save_dir / f"{filename_prefix}.png"
+                selected_patch.save(selected_filename)
+
+            # Save top-k patches
+            topk = min(self.topk_slider.value(), len(self.token_attn))
+            if topk > 0:
+                saved_count = 0
+                for n, (score, index) in enumerate(zip(*self.token_attn.topk(topk))):
+                    # Get patch
+                    patch = self.slide.read_region(
+                        tuple(self.coords_tile_slide_px[index].tolist()),
+                        0,
+                        (self.tile_size_slide_px, self.tile_size_slide_px),
+                    ).convert("RGB")
+
+                    # Save patch
+                    patch_filename = save_dir / f"{filename_prefix}_top{n+1}_token{index}_score{score:.3f}.png"
+                    patch.save(patch_filename)
+                    saved_count += 1
+
+            print(f"Saved {saved_count} top-k patches to: {save_dir}")
+
+        except Exception as e:
+            print(f"Error saving patches: {e}")
 
     def _on_update_attention_map(self):
         # Check if we have data to display
