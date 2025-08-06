@@ -84,16 +84,19 @@ def _show_class_map(
     top_score_indices: Integer[Tensor, "width height"],
     gradcam_2d: Float[Tensor, "width height category"],
     categories: Collection[str],
-) -> None:
+) -> tuple[np.ndarray, list[Patch]]:
+    """Returns the class map image and legend patches for saving separately"""
     cmap = plt.get_cmap("Pastel1")
     classes = cast(np.ndarray, cmap(top_score_indices.cpu().numpy()))
     classes[..., -1] = (gradcam_2d.sum(-1) > 0).detach().cpu().numpy() * 1.0
     class_ax.imshow(classes)
-    class_ax.legend(
-        handles=[
-            Patch(facecolor=cmap(i), label=cat) for i, cat in enumerate(categories)
-        ]
-    )
+    
+    legend_patches = [
+        Patch(facecolor=cmap(i), label=cat) for i, cat in enumerate(categories)
+    ]
+    class_ax.legend(handles=legend_patches)
+    
+    return classes, legend_patches
 
 
 def heatmaps_(
@@ -127,7 +130,14 @@ def heatmaps_(
             continue
 
         slide_output_dir = output_dir / h5_path.stem
-        slide_output_dir.mkdir(exist_ok=True, parents=True)
+        # Create organized folder structure
+        plots_dir = slide_output_dir / "plots"
+        raw_dir = slide_output_dir / "raw"
+        tiles_dir = slide_output_dir / "tiles"
+        
+        for dir_path in [plots_dir, raw_dir, tiles_dir]:
+            dir_path.mkdir(exist_ok=True, parents=True)
+
         _logger.info(f"creating heatmaps for {wsi_path.name}")
 
         slide = openslide.open_slide(wsi_path)
@@ -167,6 +177,9 @@ def heatmaps_(
             .softmax(0)
         )
 
+        # Find the class with highest probability
+        highest_prob_class_idx = slide_score.argmax().item()
+
         gradcam = _gradcam_per_category(
             model=model.vision_transformer,
             feats=feats,
@@ -193,12 +206,19 @@ def heatmaps_(
             nrows=2, ncols=max(2, len(model.categories)), figsize=(12, 8)
         )
 
-        _show_class_map(
+        # Generate class map and save it separately
+        classes_img, legend_patches = _show_class_map(
             class_ax=axs[0, 1],
             top_score_indices=scores_2d.topk(2).indices[:, :, 0],
             gradcam_2d=gradcam_2d,
             categories=model.categories,
         )
+
+        # Save class map to raw folder
+        target_size = np.array(classes_img.shape[:2][::-1]) * 8
+        Image.fromarray(np.uint8(classes_img * 255)).resize(
+            tuple(target_size), resample=Image.Resampling.NEAREST
+        ).save(raw_dir / f"{h5_path.stem}-classmap.png")
 
         attention = None
         for ax, (pos_idx, category) in zip(axs[1, :], enumerate(model.categories)):
@@ -259,43 +279,46 @@ def heatmaps_(
             Image.fromarray(np.uint8(score_im * 255)).resize(
                 tuple(target_size), resample=Image.Resampling.NEAREST
             ).save(
-                slide_output_dir
+                raw_dir
                 / f"{h5_path.stem}-{category}={slide_score[pos_idx]:0.2f}.png"
             )
 
-            # Top tiles
-            for score, index in zip(*category_score.topk(topk)):
-                (
-                    slide.read_region(
-                        tuple(coords_tile_slide_px[index].tolist()),
-                        0,
-                        (tile_size_slide_px, tile_size_slide_px),
+            # Only extract tiles for the highest probability class
+            if pos_idx == highest_prob_class_idx:
+                # Top tiles
+                for i, (score, index) in enumerate(zip(*category_score.topk(topk))):
+                    (
+                        slide.read_region(
+                            tuple(coords_tile_slide_px[index].tolist()),
+                            0,
+                            (tile_size_slide_px, tile_size_slide_px),
+                        )
+                        .convert("RGB")
+                        .save(
+                            tiles_dir
+                            / f"top_{i+1:02d}-{h5_path.stem}-{category}={score:0.2f}.jpg"
+                        )
                     )
-                    .convert("RGB")
-                    .save(
-                        slide_output_dir
-                        / f"top-{h5_path.stem}-{category}={score:0.2f}.jpg"
+                # Bottom tiles  
+                for i, (score, index) in enumerate(zip(*(-category_score).topk(bottomk))):
+                    (
+                        slide.read_region(
+                            tuple(coords_tile_slide_px[index].tolist()),
+                            0,
+                            (tile_size_slide_px, tile_size_slide_px),
+                        )
+                        .convert("RGB")
+                        .save(
+                            tiles_dir
+                            / f"bottom_{i+1:02d}-{h5_path.stem}-{category}={-score:0.2f}.jpg"
+                        )
                     )
-                )
-            for score, index in zip(*(-category_score).topk(bottomk)):
-                (
-                    slide.read_region(
-                        tuple(coords_tile_slide_px[index].tolist()),
-                        0,
-                        (tile_size_slide_px, tile_size_slide_px),
-                    )
-                    .convert("RGB")
-                    .save(
-                        slide_output_dir
-                        / f"bottom-{h5_path.stem}-{category}={-score:0.2f}.jpg"
-                    )
-                )
 
         assert attention is not None, (
             "attention should have been set in the for loop above"
         )
 
-        # Generate overview
+        # Generate overview thumbnail and save to raw folder
         thumb = _show_thumb(
             slide=slide,
             thumb_ax=axs[0, 0],
@@ -305,10 +328,11 @@ def heatmaps_(
             ).squeeze(-1),
             default_slide_mpp=default_slide_mpp,
         )
-        Image.fromarray(thumb).save(slide_output_dir / f"thumbnail-{h5_path.stem}.png")
+        Image.fromarray(thumb).save(raw_dir / f"thumbnail-{h5_path.stem}.png")
 
         for ax in axs.ravel():
             ax.axis("off")
 
-        fig.savefig(slide_output_dir / f"overview-{h5_path.stem}.png")
+        # Save overview plot to plots folder
+        fig.savefig(plots_dir / f"overview-{h5_path.stem}.png")
         plt.close(fig)
