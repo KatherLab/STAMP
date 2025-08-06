@@ -227,10 +227,11 @@ def test_slide_table_h5_validation(tmp_path: Path) -> None:
     """
     feature_dir = tmp_path
 
-    (good_slide_path, bad_slide_path, one_bad_slide_path,
-     no_file_names_slide_path) = create_good_and_bad_slide_tables(
-         tmp_path=tmp_path
-    )
+    (
+        good_slide_path,
+        bad_slide_path,
+        one_bad_slide_path,
+    ) = create_good_and_bad_slide_tables(tmp_path=tmp_path)
 
     # Test with all files having .h5 extensions in filename_label column
     # (should be no error regarding no .h5 extensions)

@@ -308,7 +308,7 @@ def make_patient_level_feature_file(
 
 
 def create_good_and_bad_slide_tables(*, tmp_path: Path) -> tuple[
-        Path, Path, Path, Path]:
+        Path, Path, Path]:
     """
     Manually creates two slide tables for testing
     slide_to_patient_from_slide_table_ in data.py. Good slide tables
