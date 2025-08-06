@@ -17,8 +17,11 @@ A Protocol for End-to-End Deep Learning in Computational Pathology".
 [stamp v1]: https://github.com/KatherLab/STAMP/tree/v1
 
 ## Installation
+To setup STAMP you need [uv](https://docs.astral.sh/uv/).
 
-To setup STAMP in a single step you need [uv](https://docs.astral.sh/uv/) version 0.8.5+:
+> [!IMPORTANT]
+> We use the experimental `match runtime` feature of `uv` which was introduced in [version 0.8.5](https://github.com/astral-sh/uv/releases/tag/0.8.5).
+> Please empty your `triton` cache before installing STAMP: `rm -r ~/.triton`.
 
 ### Install or Update uv:
 
