@@ -47,6 +47,15 @@ def deploy_categorical_model_(
     num_workers: int,
     accelerator: str | Accelerator,
 ) -> None:
+    """Deploy categorical model(s) and save predictions.
+
+    For single model deployment, creates:
+    - patient-preds.csv (main prediction file)
+
+    For ensemble deployment (multiple checkpoints), creates:
+    - patient-preds-{i}.csv (individual model predictions)
+    - patient-preds.csv (mean predictions across models)
+    """
     # --- Detect feature type and load correct model ---
     feature_type = detect_feature_type(feature_dir)
     _logger.info(f"Detected feature type: {feature_type}")
@@ -167,13 +176,15 @@ def deploy_categorical_model_(
         )
         all_predictions.append(predictions)
 
-        _to_prediction_df(
-            categories=model_categories,
-            patient_to_ground_truth=patient_to_ground_truth,
-            predictions=predictions,
-            patient_label=patient_label,
-            ground_truth_label=ground_truth_label,
-        ).to_csv(output_dir / f"patient-preds-{model_i}.csv", index=False)
+        # Only save individual model files when deploying multiple models (ensemble)
+        if len(models) > 1:
+            _to_prediction_df(
+                categories=model_categories,
+                patient_to_ground_truth=patient_to_ground_truth,
+                predictions=predictions,
+                patient_label=patient_label,
+                ground_truth_label=ground_truth_label,
+            ).to_csv(output_dir / f"patient-preds-{model_i}.csv", index=False)
 
     # TODO we probably also want to save the 95% confidence interval in addition to the mean
     _to_prediction_df(
