@@ -307,8 +307,7 @@ def make_patient_level_feature_file(
     return file
 
 
-def create_good_and_bad_slide_tables(*, tmp_path: Path) -> tuple[
-        Path, Path, Path]:
+def create_good_and_bad_slide_tables(*, tmp_path: Path) -> tuple[Path, Path, Path]:
     """
     Manually creates two slide tables for testing
     slide_to_patient_from_slide_table_ in data.py. Good slide tables
@@ -340,8 +339,13 @@ def create_good_and_bad_slide_tables(*, tmp_path: Path) -> tuple[
     one_bad_slide_df = pd.DataFrame(
         {
             "PATIENT": ["pat1", "pat2", "badpat3", "pat4", "pat5"],
-            "FILENAME": ["slide1.h5", "slide2.h5", "slide3.jpg", "slide4.h5",
-                         "slide5.h5",],
+            "FILENAME": [
+                "slide1.h5",
+                "slide2.h5",
+                "slide3.jpg",
+                "slide4.h5",
+                "slide5.h5",
+            ],
         }
     )
     one_bad_slide_df.to_csv(one_bad_slide_path, index=False)
@@ -353,10 +357,7 @@ def create_good_and_bad_slide_tables(*, tmp_path: Path) -> tuple[
     )
 
 
-def create_random_slide_tables(
-        *,
-        n_patients: int,
-        tmp_path: Path) -> tuple[Path, Path]:
+def create_random_slide_tables(*, n_patients: int, tmp_path: Path) -> tuple[Path, Path]:
     """
     Randomly creates two slide tables for testing
     slide_to_patient_from_slide_table_ in data.py. Good slide tables

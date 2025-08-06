@@ -10,7 +10,7 @@ from random_data import (
     make_feature_file,
     make_old_feature_file,
     create_good_and_bad_slide_tables,
-    create_random_slide_tables
+    create_random_slide_tables,
 )
 from torch.utils.data import DataLoader
 
@@ -236,34 +236,43 @@ def test_slide_table_h5_validation(tmp_path: Path) -> None:
     # Test with all files having .h5 extensions in filename_label column
     # (should be no error regarding no .h5 extensions)
     result = slide_to_patient_from_slide_table_(
-            slide_table_path=good_slide_path,
-            feature_dir=feature_dir,
-            patient_label="PATIENT",
-            filename_label="FILENAME")
+        slide_table_path=good_slide_path,
+        feature_dir=feature_dir,
+        patient_label="PATIENT",
+        filename_label="FILENAME",
+    )
     assert isinstance(result, dict)
     # Test without any .h5 extensions in filename_label column
-    with pytest.raises(ValueError,
-                       match="One or more files are missing the .h5 extension "
-                       "in the filename_label column. The first file missing "
-                       "the .h5 extension is: slide1.jpg"):
+    with pytest.raises(
+        ValueError,
+        match="One or more files are missing the .h5 extension "
+        "in the filename_label column. The first file missing "
+        "the .h5 extension is: slide1.jpg",
+    ):
         slide_to_patient_from_slide_table_(
             slide_table_path=bad_slide_path,
             feature_dir=feature_dir,
             patient_label="PATIENT",
-            filename_label="FILENAME")
+            filename_label="FILENAME",
+        )
     # Test with one filename missing .h5 extension
-    with pytest.raises(ValueError,
-                       match="One or more files are missing the .h5 extension "
-                       "in the filename_label column. The first file missing "
-                       "the .h5 extension is: slide3.jpg"):
+    with pytest.raises(
+        ValueError,
+        match="One or more files are missing the .h5 extension "
+        "in the filename_label column. The first file missing "
+        "the .h5 extension is: slide3.jpg",
+    ):
         slide_to_patient_from_slide_table_(
             slide_table_path=one_bad_slide_path,
             feature_dir=feature_dir,
             patient_label="PATIENT",
-            filename_label="FILENAME")
+            filename_label="FILENAME",
+        )
 
 
-def test_slide_table_h5_validation_random(tmp_path: Path, ) -> None:
+def test_slide_table_h5_validation_random(
+    tmp_path: Path,
+) -> None:
     """
     Tests that an error is properly raised in
     slide_to_patient_from_slide_table_() when none of items in the
@@ -276,23 +285,27 @@ def test_slide_table_h5_validation_random(tmp_path: Path, ) -> None:
     feature_dir = tmp_path
 
     good_slide_path, bad_slide_path = create_random_slide_tables(
-        n_patients=10,
-        tmp_path=tmp_path)
+        n_patients=10, tmp_path=tmp_path
+    )
     # Test with .h5 extensions in filename_label column (should be no error
     # regarding no .h5 extensions)
     result = slide_to_patient_from_slide_table_(
-            slide_table_path=good_slide_path,
-            feature_dir=feature_dir,
-            patient_label="PATIENT",
-            filename_label="FILENAME")
+        slide_table_path=good_slide_path,
+        feature_dir=feature_dir,
+        patient_label="PATIENT",
+        filename_label="FILENAME",
+    )
     assert isinstance(result, dict)
 
     # Test without .h5 extensions in filename_label column
-    with pytest.raises(ValueError,
-                       match="One or more files are missing the .h5 extension "
-                       "in the filename_label column"):
+    with pytest.raises(
+        ValueError,
+        match="One or more files are missing the .h5 extension "
+        "in the filename_label column",
+    ):
         slide_to_patient_from_slide_table_(
             slide_table_path=bad_slide_path,
             feature_dir=feature_dir,
             patient_label="PATIENT",
-            filename_label="FILENAME")
+            filename_label="FILENAME",
+        )
