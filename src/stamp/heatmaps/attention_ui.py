@@ -582,17 +582,27 @@ class AttentionViewer:
                         .float()
                         .to(self.device)
                     )
+
                     coords_um = get_coords(h5).coords_um
+                    if not isinstance(coords_um, torch.Tensor):
+                        coords_um = torch.tensor(coords_um, dtype=torch.float32)
+
                     stride_um = Microns(get_stride(coords_um))
 
-                    if h5.attrs.get("unit") == "um":
-                        self.tile_size_slide_px = SlidePixels(
-                            int(round(cast(float, h5.attrs["tile_size"]) / slide_mpp))
-                        )
-                    else:
-                        self.tile_size_slide_px = SlidePixels(
+                    # list all h5 attrs
+                    for key in h5.attrs.keys():
+                        print(f"h5 attribute '{key}': {h5.attrs[key]}")
+
+                    self.tile_size_slide_px = SlidePixels(
                             int(round(256 / slide_mpp))
                         )
+                    if h5.attrs.get("unit") == "um":
+                        for attr_name in ["tile_size_um", "tile_size"]:
+                            if attr_name in h5.attrs:
+                                self.tile_size_slide_px = SlidePixels(
+                                    int(round(cast(float, h5.attrs[attr_name]) / slide_mpp))
+                                )
+                                break                        
 
                 # grid coordinates, i.e. the top-left most tile is (0, 0), the one to its right (0, 1) etc.
                 self.map_coords = (coords_um / stride_um).round().long()
@@ -719,21 +729,28 @@ class AttentionViewer:
             (self.tile_size_slide_px, self.tile_size_slide_px),
         ).convert("RGB")
 
-        # Add selected patch with label
+        # Add layout for selected patch
         selected_frame = QFrame()
         selected_layout = QVBoxLayout()
         selected_frame.setLayout(selected_layout)
-
-        # Create QLabel for image
         selected_label = QLabel()
-        selected_pixmap = _patch_to_pixmap(selected_patch)
+    
+        # Create label text and selected image
+        if  self.attention_handling.currentData() == 6: # Class token attention (no reference image)
+            # Create QLabel for Class token
+            selected_pixmap = QPixmap(200, 200) # blank image
+            selected_pixmap.fill(Qt.transparent)  
+            text_label = QLabel(f"Selected: Class Token Attention")
+
+        else:
+            # Create QLabel for image
+            selected_pixmap = _patch_to_pixmap(selected_patch)
+            text_label = QLabel(f"Selected-ID:{self.selected_token_idx}")
+            
+        # Add selected patch and label to layout
         selected_label.setPixmap(selected_pixmap)
-
-        # Create label text
-        text_label = QLabel(f"Selected-ID:{self.selected_token_idx}")
-        text_label.setAlignment(Qt.AlignCenter)
-
         selected_layout.addWidget(selected_label)
+        text_label.setAlignment(Qt.AlignCenter)
         selected_layout.addWidget(text_label)
         self.patches_layout.addWidget(selected_frame)
 
