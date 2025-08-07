@@ -16,7 +16,7 @@ class TrainConfig(BaseModel):
 
     clini_table: Path = Field(description="Excel or CSV to read clinical data from")
     slide_table: Path | None = Field(
-        description="Excel or CSV to read patient-slide associations from"
+        default=None, description="Excel or CSV to read patient-slide associations from"
     )
     feature_dir: Path = Field(description="Directory containing feature files")
 
