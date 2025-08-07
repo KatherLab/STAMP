@@ -223,7 +223,10 @@ class LitVisionTransformer(lightning.LightningModule):
         )  # this lr value should be ignored with the scheduler
 
         scheduler = optim.lr_scheduler.OneCycleLR(
-            optimizer=optimizer, total_steps=self.total_steps, max_lr=self.max_lr, div_factor=self.div_factor
+            optimizer=optimizer,
+            total_steps=self.total_steps,
+            max_lr=self.max_lr,
+            div_factor=self.div_factor,
         )
         return [optimizer], [scheduler]
 

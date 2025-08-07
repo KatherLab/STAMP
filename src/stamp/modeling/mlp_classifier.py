@@ -137,7 +137,10 @@ class LitMLPClassifier(lightning.LightningModule):
         )  # this lr value should be ignored with the scheduler
 
         scheduler = optim.lr_scheduler.OneCycleLR(
-            optimizer=optimizer, total_steps=self.total_steps, max_lr=self.max_lr, div_factor=25.
+            optimizer=optimizer,
+            total_steps=self.total_steps,
+            max_lr=self.max_lr,
+            div_factor=25.0,
         )
         return [optimizer], [scheduler]
 

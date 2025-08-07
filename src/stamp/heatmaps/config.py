@@ -19,9 +19,12 @@ class HeatmapConfig(BaseModel):
 
     device: str = "cuda" if torch.cuda.is_available() else "cpu"
 
-    opacity: float = Field(default=0.6,
-                           description="Overlay plot opacity. A value of 0 means transparent and 1 opaque.",
-                           ge=0, le=1)
+    opacity: float = Field(
+        default=0.6,
+        description="Overlay plot opacity. A value of 0 means transparent and 1 opaque.",
+        ge=0,
+        le=1,
+    )
 
     topk: int = 0
     bottomk: int = 0

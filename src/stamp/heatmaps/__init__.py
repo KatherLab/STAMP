@@ -47,7 +47,7 @@ def _gradcam_per_category(
                 ).squeeze(0)
             )(feats)
         )
-        .mean(feat) # type: ignore
+        .mean(feat)  # type: ignore
         .abs()
     ).permute(-1, -2)
 
@@ -91,12 +91,12 @@ def _show_class_map(
     classes = cast(np.ndarray, cmap(top_score_indices.cpu().numpy()))
     classes[..., -1] = (gradcam_2d.sum(-1) > 0).detach().cpu().numpy() * 1.0
     class_ax.imshow(classes)
-    
+
     legend_patches = [
         Patch(facecolor=cmap(i), label=cat) for i, cat in enumerate(categories)
     ]
     class_ax.legend(handles=legend_patches)
-    
+
     return classes, legend_patches
 
 
@@ -112,20 +112,17 @@ def _create_overlay(
         (thumb_width, thumb_height), resample=Image.Resampling.NEAREST
     )
     score_resized = np.array(score_resized) / 255.0
-    
+
     # Convert thumbnail to float for blending
     thumb_float = thumb.astype(float) / 255.0
-    
+
     # Create overlay where heatmap alpha channel > 0
     mask = score_resized[..., -1] > 0
     overlay = thumb_float.copy()
-    
+
     # Blend heatmap with thumbnail where mask is True
-    overlay[mask] = (
-        alpha * score_resized[mask, :3] + 
-        (1 - alpha) * thumb_float[mask]
-    )
-    
+    overlay[mask] = alpha * score_resized[mask, :3] + (1 - alpha) * thumb_float[mask]
+
     return (overlay * 255).astype(np.uint8)
 
 
@@ -138,20 +135,21 @@ def _create_plotted_overlay(
 ) -> tuple[Figure, Axes]:
     """Creates a plotted overlay with title and legend."""
     overlay = _create_overlay(thumb, score_im, alpha)
-    
+
     fig, ax = plt.subplots(figsize=(10, 8))
     ax.imshow(overlay)
     ax.set_title(f"{category} - Slide Score: {slide_score:.3f}", fontsize=16, pad=20)
     ax.axis("off")
-    
+
     # Create legend
     from matplotlib.patches import Patch
+
     legend_elements = [
-        Patch(facecolor='red', alpha=0.7, label='Positive'),
-        Patch(facecolor='blue', alpha=0.7, label='Negative')
+        Patch(facecolor="red", alpha=0.7, label="Positive"),
+        Patch(facecolor="blue", alpha=0.7, label="Negative"),
     ]
-    ax.legend(handles=legend_elements, loc='upper right', bbox_to_anchor=(0.98, 0.98))
-    
+    ax.legend(handles=legend_elements, loc="upper right", bbox_to_anchor=(0.98, 0.98))
+
     plt.tight_layout()
     return fig, ax
 
@@ -192,7 +190,7 @@ def heatmaps_(
         plots_dir = slide_output_dir / "plots"
         raw_dir = slide_output_dir / "raw"
         tiles_dir = slide_output_dir / "tiles"
-        
+
         for dir_path in [plots_dir, raw_dir, tiles_dir]:
             dir_path.mkdir(exist_ok=True, parents=True)
 
@@ -203,6 +201,11 @@ def heatmaps_(
         assert slide_mpp is not None, "could not determine slide MPP"
 
         with h5py.File(h5_path) as h5:
+            feat_type = h5.attrs.get("feat_type", None)
+            if feat_type is not None and feat_type != "tile":
+                raise ValueError(
+                    f"Feature file {h5_path} is a slide or patient level feature. Heatmaps are currently supported for tile-level features only."
+                )
             feats = (
                 torch.tensor(
                     h5["feats"][:]  # pyright: ignore[reportIndexIssue]
@@ -348,8 +351,7 @@ def heatmaps_(
             Image.fromarray(np.uint8(score_im * 255)).resize(
                 tuple(target_size), resample=Image.Resampling.NEAREST
             ).save(
-                raw_dir
-                / f"{h5_path.stem}-{category}={slide_score[pos_idx]:0.2f}.png"
+                raw_dir / f"{h5_path.stem}-{category}={slide_score[pos_idx]:0.2f}.png"
             )
 
             # Create and save overlay to raw folder
@@ -360,11 +362,16 @@ def heatmaps_(
 
             # Create and save plotted overlay to plots folder
             overlay_fig, overlay_ax = _create_plotted_overlay(
-                thumb=thumb, score_im=score_im, category=category, slide_score=slide_score[pos_idx].item(), alpha=opacity
+                thumb=thumb,
+                score_im=score_im,
+                category=category,
+                slide_score=slide_score[pos_idx].item(),
+                alpha=opacity,
             )
             overlay_fig.savefig(
                 plots_dir / f"overlay-{h5_path.stem}-{category}.png",
-                dpi=150, bbox_inches='tight'
+                dpi=150,
+                bbox_inches="tight",
             )
             plt.close(overlay_fig)
 
@@ -381,11 +388,13 @@ def heatmaps_(
                         .convert("RGB")
                         .save(
                             tiles_dir
-                            / f"top_{i+1:02d}-{h5_path.stem}-{category}={score:0.2f}.jpg"
+                            / f"top_{i + 1:02d}-{h5_path.stem}-{category}={score:0.2f}.jpg"
                         )
                     )
-                # Bottom tiles  
-                for i, (score, index) in enumerate(zip(*(-category_score).topk(bottomk))):
+                # Bottom tiles
+                for i, (score, index) in enumerate(
+                    zip(*(-category_score).topk(bottomk))
+                ):
                     (
                         slide.read_region(
                             tuple(coords_tile_slide_px[index].tolist()),
@@ -395,7 +404,7 @@ def heatmaps_(
                         .convert("RGB")
                         .save(
                             tiles_dir
-                            / f"bottom_{i+1:02d}-{h5_path.stem}-{category}={-score:0.2f}.jpg"
+                            / f"bottom_{i + 1:02d}-{h5_path.stem}-{category}={-score:0.2f}.jpg"
                         )
                     )
 

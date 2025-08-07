@@ -92,7 +92,7 @@ class AdvancedConfig(BaseModel):
     patience: int = 16
     accelerator: str = "gpu" if torch.cuda.is_available() else "cpu"
     max_lr: float = 1e-4
-    div_factor: float = 25.
+    div_factor: float = 25.0
     model_name: ModelName | None = Field(
         default=None,
         description='Optional: "vit" or "mlp". Defaults based on feature type.',

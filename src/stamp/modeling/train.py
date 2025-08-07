@@ -184,7 +184,7 @@ def setup_model_for_training(
     # 4. Calculate total steps for scheduler
     steps_per_epoch = len(train_dl)
     total_steps = steps_per_epoch * advanced.max_epochs
-    
+
     # 5. Prepare common parameters
     common_params = {
         "categories": train_categories,

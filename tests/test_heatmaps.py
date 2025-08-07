@@ -42,7 +42,7 @@ def test_heatmap_integration(tmp_path: Path) -> None:
         topk=2,
         bottomk=2,
         default_slide_mpp=None,
-        opacity=0.6
+        opacity=0.6,
     )
 
     assert (tmp_path / "output" / "slide" / "plots" / "overview-slide.png").is_file()
@@ -50,9 +50,22 @@ def test_heatmap_integration(tmp_path: Path) -> None:
     assert (tmp_path / "output" / "slide" / "raw").glob("slide-MSIH=*.png")
     assert any((tmp_path / "output" / "slide" / "raw").glob("slide-nonMSIH=*.png"))
     assert (
-        len(list((tmp_path / "output" / "slide" / "tiles").glob("top_*-slide-nonMSIH=*.jpg"))) == 2
+        len(
+            list(
+                (tmp_path / "output" / "slide" / "tiles").glob(
+                    "top_*-slide-nonMSIH=*.jpg"
+                )
+            )
+        )
+        == 2
     )
     assert (
-        len(list((tmp_path / "output" / "slide" / "tiles").glob("bottom_*-slide-nonMSIH=*.jpg")))
+        len(
+            list(
+                (tmp_path / "output" / "slide" / "tiles").glob(
+                    "bottom_*-slide-nonMSIH=*.jpg"
+                )
+            )
+        )
         == 2
     )

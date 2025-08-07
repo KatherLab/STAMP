@@ -41,7 +41,7 @@ def test_predict(
         # these values do not affect at inference time
         total_steps=320,
         max_lr=1e-4,
-        div_factor=25.
+        div_factor=25.0,
     )
 
     patient_to_data = {
@@ -140,7 +140,7 @@ def test_predict_patient_level(
         # these values do not affect at inference time
         total_steps=320,
         max_lr=1e-4,
-        div_factor=25.
+        div_factor=25.0,
     )
 
     # Create 3 random patient-level feature files on disk
