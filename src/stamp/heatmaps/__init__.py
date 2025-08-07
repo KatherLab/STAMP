@@ -10,6 +10,7 @@ import openslide
 import torch
 from jaxtyping import Float, Integer
 from matplotlib.axes import Axes
+from matplotlib.figure import Figure
 from matplotlib.patches import Patch
 from PIL import Image
 from torch import Tensor
@@ -46,7 +47,7 @@ def _gradcam_per_category(
                 ).squeeze(0)
             )(feats)
         )
-        .mean(feat)
+        .mean(feat) # type: ignore
         .abs()
     ).permute(-1, -2)
 
@@ -102,7 +103,7 @@ def _show_class_map(
 def _create_overlay(
     thumb: np.ndarray,
     score_im: np.ndarray,
-    alpha: float = 0.6
+    alpha: float,
 ) -> np.ndarray:
     """Creates an overlay of the heatmap over the thumbnail."""
     # Resize score_im to match thumbnail size
@@ -133,8 +134,8 @@ def _create_plotted_overlay(
     score_im: np.ndarray,
     category: str,
     slide_score: float,
-    alpha: float = 0.6
-) -> tuple[plt.Figure, plt.Axes]:
+    alpha: float,
+) -> tuple[Figure, Axes]:
     """Creates a plotted overlay with title and legend."""
     overlay = _create_overlay(thumb, score_im, alpha)
     
@@ -164,6 +165,7 @@ def heatmaps_(
     slide_paths: Iterable[Path] | None,
     device: DeviceLikeType,
     default_slide_mpp: SlideMPP | None,
+    opacity: float,
     # top tiles
     topk: int,
     bottomk: int,
@@ -351,14 +353,14 @@ def heatmaps_(
             )
 
             # Create and save overlay to raw folder
-            overlay = _create_overlay(thumb, score_im)
+            overlay = _create_overlay(thumb=thumb, score_im=score_im, alpha=opacity)
             Image.fromarray(overlay).save(
                 raw_dir / f"raw-overlay-{h5_path.stem}-{category}.png"
             )
 
             # Create and save plotted overlay to plots folder
             overlay_fig, overlay_ax = _create_plotted_overlay(
-                thumb, score_im, category, slide_score[pos_idx].item()
+                thumb=thumb, score_im=score_im, category=category, slide_score=slide_score[pos_idx].item(), alpha=opacity
             )
             overlay_fig.savefig(
                 plots_dir / f"overlay-{h5_path.stem}-{category}.png",

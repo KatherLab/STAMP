@@ -10,9 +10,9 @@ from stamp.heatmaps import heatmaps_
 @pytest.mark.filterwarnings("ignore:There is a performance drop")
 def test_heatmap_integration(tmp_path: Path) -> None:
     example_checkpoint_path = download_file(
-        url="https://github.com/KatherLab/STAMP/releases/download/2.0.0-dev8/example-model.ckpt",
-        file_name="example-model.ckpt",
-        sha256sum="a71dffd4b5fdb82acd5f84064880efd3382e200b07e5a008cb53e03197b6de56",
+        url="https://github.com/KatherLab/STAMP/releases/download/2.2.0/example-model.ckpt",
+        file_name="example-modelv2_3.ckpt",
+        sha256sum="1caa5b56a02d09e6df72f087ebe9f87bae4e53de0516e2291e6dd1ce7dfff054",
     )
     example_slide_path = download_file(
         url="https://github.com/KatherLab/STAMP/releases/download/2.0.0.dev14/TCGA-G4-6625-01Z-00-DX1.0fa26667-2581-4f96-a891-d78dbc3299b4.svs",
@@ -20,9 +20,9 @@ def test_heatmap_integration(tmp_path: Path) -> None:
         sha256sum="9b7d2b0294524351bf29229c656cc886af028cb9e7463882289fac43c1347525",
     )
     example_feature_path = download_file(
-        url="https://github.com/KatherLab/STAMP/releases/download/2.0.0.dev14/TCGA-G4-6625-01Z-00-DX1.0fa26667-2581-4f96-a891-d78dbc3299b4-mahmood-uni.h5",
-        file_name="TCGA-G4-6625-01Z-00-DX1.0fa26667-2581-4f96-a891-d78dbc3299b4-mahmood-uni.h5",
-        sha256sum="13b1390241e73a3969915d3d01c5c64f1b7c68318a685d8e3bf851067162f0bc",
+        url="https://github.com/KatherLab/STAMP/releases/download/2.2.0/TCGA-G4-6625-01Z-00-DX1.0fa26667-2581-4f96-a891-d78dbc3299b4.h5",
+        file_name="TCGA-G4-6625-01Z-00-DX1.0fa26667-2581-4f96-a891-d78dbc3299b4.h5",
+        sha256sum="c66a63a289bd36d9fd3bdca9226830d0cba59fa1f9791adf60eef39f9c40c49a",
     )
 
     wsi_dir = tmp_path / "wsis"
@@ -42,20 +42,17 @@ def test_heatmap_integration(tmp_path: Path) -> None:
         topk=2,
         bottomk=2,
         default_slide_mpp=None,
+        opacity=0.6
     )
 
-    assert (tmp_path / "output" / "slide" / "overview-slide.png").is_file()
-    assert (tmp_path / "output" / "slide" / "thumbnail-slide.png").is_file()
-    assert (tmp_path / "output" / "slide" / "slide-MSIH=0.16.png").is_file()
-    assert (tmp_path / "output" / "slide" / "slide-nonMSIH=0.84.png").is_file()
-    assert len(list((tmp_path / "output" / "slide").glob("top-slide-MSIH=*.jpg"))) == 2
+    assert (tmp_path / "output" / "slide" / "plots" / "overview-slide.png").is_file()
+    assert (tmp_path / "output" / "slide" / "raw" / "thumbnail-slide.png").is_file()
+    assert (tmp_path / "output" / "slide" / "raw").glob("slide-MSIH=*.png")
+    assert any((tmp_path / "output" / "slide" / "raw").glob("slide-nonMSIH=*.png"))
     assert (
-        len(list((tmp_path / "output" / "slide").glob("top-slide-nonMSIH=*.jpg"))) == 2
+        len(list((tmp_path / "output" / "slide" / "tiles").glob("top_*-slide-nonMSIH=*.jpg"))) == 2
     )
     assert (
-        len(list((tmp_path / "output" / "slide").glob("bottom-slide-MSIH=*.jpg"))) == 2
-    )
-    assert (
-        len(list((tmp_path / "output" / "slide").glob("bottom-slide-nonMSIH=*.jpg")))
+        len(list((tmp_path / "output" / "slide" / "tiles").glob("bottom_*-slide-nonMSIH=*.jpg")))
         == 2
     )
