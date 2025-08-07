@@ -277,9 +277,11 @@ advanced_config:
   # model performance. Reduces memory consumption. Default value works
   # fine for most cases.
   bag_size: 512
-  # Optional parameters
   #num_workers: 16 # Default chosen by cpu cores
-
+  # One Cycle Learning Rate Scheduler parameters. Check docs for more info.
+  # Determines the initial learning rate via initial_lr = max_lr/div_factor
+  max_lr: 1e-4
+  div_factor: 25. 
   # Select a model. Not working yet, added for future support.
   # Now it uses a ViT for tile features and a MLP for patient features.
   #model_name: "vit"

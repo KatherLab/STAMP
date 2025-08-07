@@ -32,13 +32,12 @@ class LitVisionTransformer(lightning.LightningModule):
     learning settings, such as Multiple Instance Learning (MIL) for whole-slide images or patch-based data.
 
     This class encapsulates training, validation, testing, and prediction logic, along with:
-    - Masking logic that ensures only valid tiles (patches) participate in attention during training.
+    - Masking logic that ensures only valid tiles (patches) participate in attention during training (deactivated)
     - AUROC metric tracking during validation for multiclass classification.
     - Compatibility checks based on the `stamp` framework version.
     - Integration of class imbalance handling through weighted cross-entropy loss.
 
-    The attention mask is applied *only* during training to hide paddings
-    and is skipped during evaluation and inference for reducing memory usage.
+    The attention mask is currently deactivated to reduce memory usage.
 
     Args:
         categories: List of class labels.
@@ -49,6 +48,9 @@ class LitVisionTransformer(lightning.LightningModule):
         n_heads: Number of self-attention heads.
         n_layers: Number of transformer layers.
         dropout: Dropout rate used throughout the model.
+        total_steps: Number of steps done in the LR Scheduler cycle.
+        max_lr: max learning rate.
+        div_factor: Determines the initial learning rate via initial_lr = max_lr/div_factor
         use_alibi: Whether to use ALiBi-style positional bias in attention (optional).
         ground_truth_label: Column name for accessing ground-truth labels from metadata.
         train_patients: List of patient IDs used for training.
@@ -70,10 +72,12 @@ class LitVisionTransformer(lightning.LightningModule):
         n_heads: int,
         n_layers: int,
         dropout: float,
+        # Learning Rate Scheduler params, not used in inference
         total_steps: int,
+        max_lr: float,
+        div_factor: float,
         # Experimental features
-        # TODO remove default values for stamp 3; they're only here for backwards compatibility
-        use_alibi: bool = False,
+        use_alibi: bool,
         # Metadata used by other parts of stamp, but not by the model itself
         ground_truth_label: PandasLabel,
         train_patients: Iterable[PatientId],
@@ -102,6 +106,8 @@ class LitVisionTransformer(lightning.LightningModule):
         self.class_weights = category_weights
         self.valid_auroc = MulticlassAUROC(len(categories))
         self.total_steps = total_steps
+        self.max_lr = max_lr
+        self.div_factor = div_factor
 
         # Used during deployment
         self.ground_truth_label = ground_truth_label
@@ -114,6 +120,7 @@ class LitVisionTransformer(lightning.LightningModule):
         # Check if version is compatible.
         # This should only happen when the model is loaded,
         # otherwise the default value will make these checks pass.
+        # TODO: Change this on version change
         if stamp_version < Version("2.0.0.dev8"):
             # Update this as we change our model in incompatible ways!
             raise ValueError(
@@ -216,7 +223,7 @@ class LitVisionTransformer(lightning.LightningModule):
         )  # this lr value should be ignored with the scheduler
 
         scheduler = optim.lr_scheduler.OneCycleLR(
-            optimizer=optimizer, total_steps=self.total_steps, max_lr=1e-4
+            optimizer=optimizer, total_steps=self.total_steps, max_lr=self.max_lr, div_factor=self.div_factor
         )
         return [optimizer], [scheduler]
 
