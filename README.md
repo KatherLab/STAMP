@@ -17,8 +17,11 @@ A Protocol for End-to-End Deep Learning in Computational Pathology".
 [stamp v1]: https://github.com/KatherLab/STAMP/tree/v1
 
 ## Installation
+To setup STAMP you need [uv](https://docs.astral.sh/uv/).
 
-We recommend installing STAMP with [uv](https://docs.astral.sh/uv/):
+> [!IMPORTANT]
+> We use the experimental `match runtime` feature of `uv` which was introduced in [version 0.8.5](https://github.com/astral-sh/uv/releases/tag/0.8.5).
+> Please empty your `triton` cache before installing STAMP: `rm -r ~/.triton`.
 
 ### Install or Update uv:
 
@@ -40,10 +43,7 @@ source .venv/bin/activate
 uv pip install "git+https://github.com/KatherLab/STAMP.git[cpu]" --torch-backend=cpu
 
 # For a GPU (CUDA) installation:
-uv pip install "git+https://github.com/KatherLab/STAMP.git[build]"
-uv pip install "git+https://github.com/KatherLab/STAMP.git[build,gpu]" --no-build-isolation
-
-# Note: You must run one after the other, the build dependencies must be installed first!
+uv pip install "git+https://github.com/KatherLab/STAMP.git[gpu]"
 ```
 
 ### Install STAMP from the Repository:
@@ -64,34 +64,24 @@ source .venv/bin/activate
 ```bash
 # GPU (CUDA) Installation (Using flash-attn on CUDA systems for gigapath and other models)
 
-# First run this!!
-uv sync --extra build
-
 # And then this for all models:
 uv sync --extra build --extra gpu
-
-# Alternatively, you can install only a specific model:
-uv sync --extra build --extra uni
-
-
-# In case building flash-attn uses too much memory, you can limit the number of parallel compilation jobs:
-MAX_JOBS=4 uv sync --extra build --extra gpu
 ```
 
 ### Additional Dependencies
 
 > [!IMPORTANT]
-> STAMP additionally requires OpenCV dependencies to be installed. If you want to use `flash-attn`, you also need to install the `clang` compiler and a [CUDA toolkit](https://developer.nvidia.com/cuda-downloads).
+> STAMP additionally requires OpenCV dependencies to be installed.
 >
 
 > For Ubuntu < 23.10:
 > ```bash
-> apt update && apt install -y libgl1-mesa-glx clang
+> apt update && apt install -y libgl1-mesa-glx
 > ```
 >
 > For Ubuntu >= 23.10:
 > ```bash
-> apt update && apt install -y libgl1 libglx-mesa0 libglib2.0-0 clang
+> apt update && apt install -y libgl1 libglx-mesa0 libglib2.0-0
 > ```
 
 
@@ -100,6 +90,22 @@ MAX_JOBS=4 uv sync --extra build --extra gpu
 > [!NOTE]
 > Installing the GPU version of STAMP will force the compilation of the `flash-attn` package (as well as `mamba-ssm` and `causal_conv1d`). This can take a long time and requires a lot of memory. You can limit the number of parallel compilation jobs by setting the `MAX_JOBS` environment variable before running the installation command, e.g. `MAX_JOBS=4 uv sync --extra build --extra gpu`.
 
+
+#### Triton Errors
+
+If you encounter errors related to the [Triton package like the following](https://github.com/pytorch/pytorch/issues/153737):
+
+```bash
+SystemError: PY_SSIZE_T_CLEAN macro must be defined for '#' formats
+``` 
+
+Try to delete the triton cache: 
+
+```bash
+rm -r ~/.triton
+```
+
+A re-installation might be necessary afterwards.
 
 #### Undefined Symbol Error
 
