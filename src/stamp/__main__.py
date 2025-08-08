@@ -70,6 +70,7 @@ def _run_cli(args: argparse.Namespace) -> None:
             extract_(
                 output_dir=config.preprocessing.output_dir,
                 wsi_dir=config.preprocessing.wsi_dir,
+                wsi_list=config.preprocessing.wsi_list,
                 cache_dir=config.preprocessing.cache_dir,
                 tile_size_um=config.preprocessing.tile_size_um,
                 tile_size_px=config.preprocessing.tile_size_px,
