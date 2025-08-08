@@ -259,18 +259,18 @@ async def train_stamp(
 async def crossval_stamp(
     ctx: Context,
     output_dir: Annotated[
-        str, Field(description="Path of the directory to savethe results to")
+        str, Field(description="Path of the directory to save the results to")
     ],
     clini_table: Annotated[
-        str, Field(description="Path of aCSV or Excel to readclinical data from")
+        str, Field(description="Path of a CSV or Excel to read clinical data from")
     ],
     feature_dir: Annotated[
-        str, Field(description="Path of the directory containingfeature files")
+        str, Field(description="Path of the directory containing feature files")
     ],
     slide_table: Annotated[
         str,
         Field(
-            description="Path to a CSV or Excel to readpatient-slide associations from"
+            description="Path to a CSV or Excel to read patient-slide associations from"
         ),
     ],
     ground_truth_label: Annotated[
@@ -298,9 +298,12 @@ async def crossval_stamp(
             "in the slide table containing the feature file path relative to `feature_dir`"
         ),
     ] = "FILENAME",
-    n_folds: Annotated[
-        int, Field("Number of folds to split the data into for cross-validation")
-    ] = 3,
+    n_splits: Annotated[
+        int,
+        Field(
+            description="Number of folds to split the data into for cross-validation"
+        ),
+    ] = 5,
     bag_size: Annotated[
         int,
         Field(
@@ -332,12 +335,12 @@ async def crossval_stamp(
                 categories=["Positive", "Negative"],
                 patient_label="PATIENT",
                 filename_label="FILENAME",
-                n_folds=5
+                n_splits=5
             )
         "Command completed successfully: ..."
     """
     config = {
-        "training": {
+        "crossval": {  # Changed from "training" to "crossval"
             "output_dir": output_dir,
             "clini_table": clini_table,
             "feature_dir": feature_dir,
@@ -346,10 +349,12 @@ async def crossval_stamp(
             "categories": categories,
             "patient_label": patient_label,
             "filename_label": filename_label,
-            "n_folds": n_folds,
+            "n_splits": n_splits,
+        },
+        "advanced_config": {  # Add advanced config for bag_size and batch_size
             "bag_size": bag_size,
             "batch_size": batch_size,
-        }
+        },
     }
     return await _run_stamp(mode="crossval", config=config, ctx=ctx)
 
