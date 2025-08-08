@@ -155,6 +155,10 @@ def test_if_encoding_crashes(*, tmp_path: Path, encoder: EncoderName):
         pytest.skip(f"dependencies for {encoder} not installed")
     except GatedRepoError:
         pytest.skip(f"cannot access gated repo for {encoder}")
+    except OSError as e:
+        if "gated repo" in str(e):
+            pytest.skip(f"cannot access gated repo for {encoder}")
+        raise
 
     # Assert that there is at least one subdirectory in the slide output directory
     subdirs = [d for d in slide_output_dir.iterdir() if d.is_dir()]
