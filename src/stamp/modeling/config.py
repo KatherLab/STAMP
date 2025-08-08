@@ -1,10 +1,12 @@
 import os
+from collections.abc import Sequence
 from pathlib import Path
 
 import torch
 from pydantic import BaseModel, ConfigDict, Field
 
-from stamp.types import PandasLabel
+from stamp.modeling.registry import ModelName
+from stamp.types import Category, PandasLabel
 
 
 class TrainConfig(BaseModel):
@@ -13,7 +15,7 @@ class TrainConfig(BaseModel):
     output_dir: Path = Field(description="The directory to save the results to")
 
     clini_table: Path = Field(description="Excel or CSV to read clinical data from")
-    slide_table: Path = Field(
+    slide_table: Path | None = Field(
         description="Excel or CSV to read patient-slide associations from"
     )
     feature_dir: Path = Field(description="Directory containing feature files")
@@ -21,24 +23,18 @@ class TrainConfig(BaseModel):
     ground_truth_label: PandasLabel = Field(
         description="Name of categorical column in clinical table to train on"
     )
-    categories: list[str] | None = None
+    categories: Sequence[Category] | None = None
 
     patient_label: PandasLabel = "PATIENT"
     filename_label: PandasLabel = "FILENAME"
 
-    # Dataset and -loader parameters
-    bag_size: int = 512
-    num_workers: int = min(os.cpu_count() or 1, 16)
-
-    # Training paramenters
-    batch_size: int = 64
-    max_epochs: int = 64
-    patience: int = 16
-    accelerator: str = "gpu" if torch.cuda.is_available() else "cpu"
+    params_path: Path | None = Field(
+        default=None,
+        description="Optional: Path to a YAML file with advanced training parameters.",
+    )
 
     # Experimental features
     use_vary_precision_transform: bool = False
-    use_alibi: bool = False
 
 
 class CrossvalConfig(TrainConfig):
@@ -61,3 +57,42 @@ class DeploymentConfig(BaseModel):
 
     num_workers: int = min(os.cpu_count() or 1, 16)
     accelerator: str = "gpu" if torch.cuda.is_available() else "cpu"
+
+
+class VitModelParams(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    dim_model: int = 512
+    dim_feedforward: int = 512
+    n_heads: int = 8
+    n_layers: int = 2
+    dropout: float = 0.25
+    # Experimental feature: Use ALiBi positional embedding
+    use_alibi: bool = False
+
+
+class MlpModelParams(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    dim_hidden: int = 512
+    num_layers: int = 2
+    dropout: float = 0.25
+
+
+class ModelParams(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    vit: VitModelParams
+    mlp: MlpModelParams
+
+
+class AdvancedConfig(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    bag_size: int = 512
+    num_workers: int = min(os.cpu_count() or 1, 16)
+    batch_size: int = 64
+    max_epochs: int = 64
+    patience: int = 16
+    accelerator: str = "gpu" if torch.cuda.is_available() else "cpu"
+    model_name: ModelName | None = Field(
+        default=None,
+        description='Optional: "vit" or "mlp". Defaults based on feature type.',
+    )
+    model_params: ModelParams

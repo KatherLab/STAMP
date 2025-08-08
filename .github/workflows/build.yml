@@ -44,7 +44,7 @@ jobs:
     #     python-version: ${{ matrix.python-version }}
         
     - name: Install the project
-      run: uv sync --extra all --dev
+      run: uv sync --extra cpu --dev
     
     - name: Build
       run: uv build
@@ -77,7 +77,7 @@ jobs:
     #     python-version: ${{ matrix.python-version }}
         
     - name: Install the project
-      run: uv sync --extra all --dev
+      run: uv sync --extra cpu --dev
     
     - name: Build
       run: uv build

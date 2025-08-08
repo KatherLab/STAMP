@@ -1,6 +1,6 @@
 [project]
 name = "stamp"
-version = "2.1.0"
+version = "2.2.0"
 authors = [
     { name = "Omar El Nahhas", email = "omar.el_nahhas@tu-dresden.de" },
     { name = "Marko van Treeck", email = "markovantreeck@gmail.com" },
@@ -8,6 +8,8 @@ authors = [
     { name = "Tim Lenz", email = "tim.lenz@tu-dresden.de" },
     { name = "Laura Žigutytė", email = "laura.zigutyte@tu-dresden.de" },
     { name = "Cornelius Kummer", email = "cornelius.kummer@tu-dresden.de" },
+    { name = "Juan Pablo Ricapito", email = "juan_pablo.ricapito@tu-dresden.de" },
+    { name = "Fabian Wolf", email = "fabian.wolf2@tu-dresden.de" }
 ]
 description = "A protocol for Solid Tumor Associative Modeling in Pathology"
 readme = "README.md"
@@ -20,39 +22,52 @@ classifiers = [
 ]
 
 dependencies = [
-    "beartype>=0.19.0",
-    "einops>=0.8.0",
-    "h5py>=3.12.1",
-    "jaxtyping>=0.2.36",
-    "lightning>=2.4.0",
-    "matplotlib>=3.9.2",
+    "beartype>=0.21.0",
+    "einops>=0.8.1",
+    "h5py>=3.14.0",
+    "jaxtyping>=0.3.2",
+    "lightning>=2.5.2",
+    "matplotlib>=3.10.5",
     "numpy>=2.2.2",
-    "opencv-python>=4.10.0.84",
+    "opencv-python>=4.12.0.88",
     "openpyxl>=3.1.5",
-    "openslide-bin>=4.0.0.6",
-    "openslide-python>=1.4.1",
-    "packaging>=24.2",
-    "pandas>=2.2.3",
-    "pillow>=11.1.0",
-    "pydantic>=2.10.3",
+    "openslide-bin>=4.0.0.8",
+    "openslide-python>=1.4.2",
+    "packaging>=25.0",
+    "pandas>=2.3.1",
+    "pillow>=11.3.0",
+    "pydantic>=2.11.7",
     "pyyaml>=6.0.2",
-    "scikit-learn>=1.5.2",
-    "scipy>=1.15.1",
-    "torch>=2.5.1",
+    "scikit-learn>=1.6.1",
+    "scipy>=1.16.1",
+    "torch>=2.7.1",
     "torchmetrics>=1.6.0",
-    "torchvision>=0.20.1",
-    "tqdm>=4.66.6",
-    "timm>=0.9.11",
+    "torchvision>=0.22.1",
+    "tqdm>=4.67.1",
+    "timm>=1.0.19",
+    "transformers>=4.55.0"
 ]
 
 [project.optional-dependencies]
+build = [
+    "setuptools",
+    "hatchling",
+    "psutil",
+    "ninja"
+]
+flash-attention = [
+    "flash-attn>=2.8.2",
+    ]
 conch = [
     "huggingface-hub>=0.26.2",
-    "conch @ git+https://github.com/Mahmoodlab/CONCH.git@02d6ac59cc20874bff0f581de258c2b257f69a84",
+    "conch @ git+https://github.com/KatherLab/CONCH",
 ]
-conch1_5 = [
+conch1_5_cpu = [
     "transformers>=4.45.2",
     "einops-exts==0.0.4",
+]
+conch1_5 = [
+    "stamp[conch1_5_cpu, flash-attention]",
 ]
 ctranspath = [
     "gdown>=5.2.0",
@@ -62,39 +77,64 @@ chief_ctranspath = [
     "torch>=2.0.0"
 ]
 gigapath = [
-    "gigapath @ git+https://github.com/EzicStar/prov-gigapath.git@d4cf55321df37aaf867e24a31c61bcf490a296eb"
+    "stamp[flash-attention]",
+    "gigapath @ git+https://github.com/KatherLab/prov-gigapath.git@ec97baa5f071319680132e18868279b4cca877cc",
+    "fvcore",
+    "iopath",
+    "monai",
+    "scikit-image",
+    "webdataset",
+    "lifelines",
+    "scikit-survival>=0.24.1",
+    "fairscale",
+    "wandb",
 ]
 uni = [
     "huggingface-hub>=0.26.2",
-    "uni @ git+https://github.com/mahmoodlab/UNI.git",
+    "uni @ git+https://github.com/KatherLab/uni.git@f37c299eb0bffa0e585f120974082cfec6ee6d53",
 ]
 virchow2 = [
     "huggingface-hub>=0.27.1",
     "torch>=2.0.0",
 ]
 cobra = [
-    "jinja2>=3.1.4",
-    "cobra @ git+https://github.com/KatherLab/COBRA.git@f1a576e1133330ffc2d1df6ee110701921c7b7c9",
+    "stamp[flash-attention]",
+    "causal-conv1d @ git+https://github.com/KatherLab/causal-conv1d.git@b73d1ca0e0726ba6520c38d342bd411bb5850064",
+    "mamba-ssm @ git+https://github.com/KatherLab/mamba.git@d0d4192621889b26f9669ea4a8e6fe79cc84e8d9",
+    "cobra @ git+http://github.com/KatherLab/COBRA.git@c8aa71ce691e1279f2bb797f536355d6be47b6ac",
+    "jinja2>=3.1.4", 
+    "triton"
+    # "triton==3.2.0", # Fix triton to 3.2.0 (also makes torch==2.6.0) until this is solved: https://github.com/pytorch/pytorch/issues/153737
 ]
-prism = [
+prism_cpu = [
     "sacremoses==0.1.1",
     "environs==11.0.0",
+]
+prism = [
+    "stamp[prism_cpu, flash-attention]",
 ]
 madeleine = [
     "madeleine @ git+https://github.com/mahmoodlab/MADELEINE.git@de7c85acc2bdad352e6df8eee5694f8b6f288012"
 ]
-musk = [
+musk_cpu = [
     "musk @ git+https://github.com/lilab-stanford/MUSK.git@e1699c27687f44bbf6d4adfcbb2abe89795d347f",
+    "fairscale",
 ]
-plip = [
+musk = [
+    "stamp[musk_cpu, flash-attention]",
+]
+plip_cpu = [
     "transformers>=4.45.2"
 ]
-fastmcp = [
-    "fastmcp>=2.7.0"
+plip = [
+    "stamp[plip_cpu, flash-attention]",
 ]
 
+
 # Blanket target
-all = ["stamp[conch,ctranspath,uni,virchow2,chief_ctranspath,conch1_5,prism,madeleine,musk,plip]"]
+cpu = ["stamp[conch,ctranspath,uni,virchow2,chief_ctranspath,conch1_5_cpu,prism_cpu,madeleine,musk_cpu,plip_cpu]"]
+gpu = ["stamp[conch,ctranspath,uni,virchow2,chief_ctranspath,conch1_5,prism,madeleine,musk,plip,gigapath,cobra]"]
+all = ["stamp[cpu]"]
 
 [project.scripts]
 "stamp" = "stamp.__main__:main"
@@ -105,11 +145,11 @@ all = ["stamp[conch,ctranspath,uni,virchow2,chief_ctranspath,conch1_5,prism,made
 
 [dependency-groups]
 dev = [
-    "huggingface-hub>=0.27.1",
-    "ipykernel>=6.29.5",
-    "pyright>=1.1.389,!=1.1.391",
-    "pytest>=8.3.4",
-    "ruff>=0.8.1",
+    "huggingface-hub>=0.34.3",
+    "ipykernel>=6.30.1",
+    "pyright>=1.1.403",
+    "pytest>=8.4.1",
+    "ruff>=0.12.7",
 ]
 
 [build-system]
@@ -128,6 +168,14 @@ markers = [
 [tool.ruff]
 lint.ignore = ["F722"] # https://docs.kidger.site/jaxtyping/faq/#flake8-or-ruff-are-throwing-an-error
 
+[tool.uv]
+conflicts = [
+    [
+        { extra = "cpu" },
+        { extra = "gpu" }
+    ]
+]
+
 [[tool.uv.dependency-metadata]]
 name = "uni"
 version = "v0.1.0"
@@ -142,3 +190,34 @@ requires-dist = [
     "transformers",
     "xformers; sys_platform != 'darwin'"  # xformers is not supported on macOS
 ]
+
+
+[[tool.uv.dependency-metadata]]
+name = "flash-attn"
+version = "2.8.2"
+requires-dist = [
+    "torch",
+    "einops",
+]
+
+
+[[tool.uv.dependency-metadata]]
+name = "mamba-ssm"
+version = "v2.2.4"
+requires-dist = [
+    "setuptools",
+]
+
+[[tool.uv.dependency-metadata]]
+name = "causal-conv1d"
+version = "v1.5.0.post8"
+requires-dist = [
+    "setuptools",
+]
+
+[tool.uv.extra-build-dependencies]
+cobra = [{ requirement = "torch", match-runtime = true }]
+flash-attn = [{ requirement = "torch", match-runtime = true }]
+mamba-ssm = [{ requirement = "torch", match-runtime = true }]
+gigapath = [{ requirement = "torch", match-runtime = true }]
+conch = [{ requirement = "torch", match-runtime = true }]
