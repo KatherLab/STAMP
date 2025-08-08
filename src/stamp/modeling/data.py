@@ -469,12 +469,26 @@ def slide_to_patient_from_slide_table_(
     patient_label: PandasLabel,
     filename_label: PandasLabel,
 ) -> dict[FeaturePath, PatientId]:
-    """Creates a slide-to-patient mapping from a slide table."""
+    """
+    Creates a slide-to-patient mapping from a slide table.
+    Side effects:
+        Verifies that all files in the slide tables filename_label
+        column has an .h5 extension.
+    """
     slide_df = read_table(
         slide_table_path,
         usecols=[patient_label, filename_label],
         dtype=str,
     )
+    # Verify the slide table contains a feature path with .h5 extension by
+    # checking the filename_label.
+    for x in slide_df[filename_label]:
+        if not str(x).endswith(".h5"):
+            raise ValueError(
+                "One or more files are missing the .h5 extension in the "
+                "filename_label column. The first file missing the .h5 "
+                "extension is: " + str(x) + "."
+            )
 
     slide_to_patient: Mapping[FeaturePath, PatientId] = {
         FeaturePath(feature_dir / cast(str, k)): PatientId(cast(str, patient))
