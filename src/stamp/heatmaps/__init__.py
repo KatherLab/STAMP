@@ -10,6 +10,7 @@ import openslide
 import torch
 from jaxtyping import Float, Integer
 from matplotlib.axes import Axes
+from matplotlib.figure import Figure
 from matplotlib.patches import Patch
 from PIL import Image
 from torch import Tensor
@@ -40,15 +41,13 @@ def _gradcam_per_category(
                     model.forward(
                         bags=bags.unsqueeze(0),
                         coords=coords.unsqueeze(0),
-                        mask=torch.zeros(
-                            1, len(bags), dtype=torch.bool, device=bags.device
-                        ),
+                        mask=None,
                     ),
                     dim=1,
                 ).squeeze(0)
             )(feats)
         )
-        .mean(feat)
+        .mean(feat)  # type: ignore
         .abs()
     ).permute(-1, -2)
 
@@ -86,16 +85,73 @@ def _show_class_map(
     top_score_indices: Integer[Tensor, "width height"],
     gradcam_2d: Float[Tensor, "width height category"],
     categories: Collection[str],
-) -> None:
+) -> tuple[np.ndarray, list[Patch]]:
+    """Returns the class map image and legend patches for saving separately"""
     cmap = plt.get_cmap("Pastel1")
     classes = cast(np.ndarray, cmap(top_score_indices.cpu().numpy()))
     classes[..., -1] = (gradcam_2d.sum(-1) > 0).detach().cpu().numpy() * 1.0
     class_ax.imshow(classes)
-    class_ax.legend(
-        handles=[
-            Patch(facecolor=cmap(i), label=cat) for i, cat in enumerate(categories)
-        ]
+
+    legend_patches = [
+        Patch(facecolor=cmap(i), label=cat) for i, cat in enumerate(categories)
+    ]
+    class_ax.legend(handles=legend_patches)
+
+    return classes, legend_patches
+
+
+def _create_overlay(
+    thumb: np.ndarray,
+    score_im: np.ndarray,
+    alpha: float,
+) -> np.ndarray:
+    """Creates an overlay of the heatmap over the thumbnail."""
+    # Resize score_im to match thumbnail size
+    thumb_height, thumb_width = thumb.shape[:2]
+    score_resized = Image.fromarray(np.uint8(score_im * 255)).resize(
+        (thumb_width, thumb_height), resample=Image.Resampling.NEAREST
     )
+    score_resized = np.array(score_resized) / 255.0
+
+    # Convert thumbnail to float for blending
+    thumb_float = thumb.astype(float) / 255.0
+
+    # Create overlay where heatmap alpha channel > 0
+    mask = score_resized[..., -1] > 0
+    overlay = thumb_float.copy()
+
+    # Blend heatmap with thumbnail where mask is True
+    overlay[mask] = alpha * score_resized[mask, :3] + (1 - alpha) * thumb_float[mask]
+
+    return (overlay * 255).astype(np.uint8)
+
+
+def _create_plotted_overlay(
+    thumb: np.ndarray,
+    score_im: np.ndarray,
+    category: str,
+    slide_score: float,
+    alpha: float,
+) -> tuple[Figure, Axes]:
+    """Creates a plotted overlay with title and legend."""
+    overlay = _create_overlay(thumb, score_im, alpha)
+
+    fig, ax = plt.subplots(figsize=(10, 8))
+    ax.imshow(overlay)
+    ax.set_title(f"{category} - Slide Score: {slide_score:.3f}", fontsize=16, pad=20)
+    ax.axis("off")
+
+    # Create legend
+    from matplotlib.patches import Patch
+
+    legend_elements = [
+        Patch(facecolor="red", alpha=0.7, label="Positive"),
+        Patch(facecolor="blue", alpha=0.7, label="Negative"),
+    ]
+    ax.legend(handles=legend_elements, loc="upper right", bbox_to_anchor=(0.98, 0.98))
+
+    plt.tight_layout()
+    return fig, ax
 
 
 def heatmaps_(
@@ -107,6 +163,7 @@ def heatmaps_(
     slide_paths: Iterable[Path] | None,
     device: DeviceLikeType,
     default_slide_mpp: SlideMPP | None,
+    opacity: float,
     # top tiles
     topk: int,
     bottomk: int,
@@ -129,7 +186,14 @@ def heatmaps_(
             continue
 
         slide_output_dir = output_dir / h5_path.stem
-        slide_output_dir.mkdir(exist_ok=True, parents=True)
+        # Create organized folder structure
+        plots_dir = slide_output_dir / "plots"
+        raw_dir = slide_output_dir / "raw"
+        tiles_dir = slide_output_dir / "tiles"
+
+        for dir_path in [plots_dir, raw_dir, tiles_dir]:
+            dir_path.mkdir(exist_ok=True, parents=True)
+
         _logger.info(f"creating heatmaps for {wsi_path.name}")
 
         slide = openslide.open_slide(wsi_path)
@@ -137,6 +201,11 @@ def heatmaps_(
         assert slide_mpp is not None, "could not determine slide MPP"
 
         with h5py.File(h5_path) as h5:
+            feat_type = h5.attrs.get("feat_type", None)
+            if feat_type is not None and feat_type != "tile":
+                raise ValueError(
+                    f"Feature file {h5_path} is a slide or patient level feature. Heatmaps are currently supported for tile-level features only."
+                )
             feats = (
                 torch.tensor(
                     h5["feats"][:]  # pyright: ignore[reportIndexIssue]
@@ -163,11 +232,14 @@ def heatmaps_(
             model.vision_transformer(
                 bags=feats.unsqueeze(0),
                 coords=coords_um.unsqueeze(0),
-                mask=torch.zeros(1, len(feats), dtype=torch.bool, device=device),
+                mask=None,
             )
             .squeeze(0)
             .softmax(0)
         )
+
+        # Find the class with highest probability
+        highest_prob_class_idx = slide_score.argmax().item()
 
         gradcam = _gradcam_per_category(
             model=model.vision_transformer,
@@ -195,11 +267,29 @@ def heatmaps_(
             nrows=2, ncols=max(2, len(model.categories)), figsize=(12, 8)
         )
 
-        _show_class_map(
+        # Generate class map and save it separately
+        classes_img, legend_patches = _show_class_map(
             class_ax=axs[0, 1],
             top_score_indices=scores_2d.topk(2).indices[:, :, 0],
             gradcam_2d=gradcam_2d,
             categories=model.categories,
+        )
+
+        # Save class map to raw folder
+        target_size = np.array(classes_img.shape[:2][::-1]) * 8
+        Image.fromarray(np.uint8(classes_img * 255)).resize(
+            tuple(target_size), resample=Image.Resampling.NEAREST
+        ).save(raw_dir / f"{h5_path.stem}-classmap.png")
+
+        # Generate overview thumbnail first (moved up)
+        thumb = _show_thumb(
+            slide=slide,
+            thumb_ax=axs[0, 0],
+            attention=_vals_to_im(
+                torch.zeros(len(feats), 1).to(device),  # placeholder for initial call
+                coords_norm,
+            ).squeeze(-1),
+            default_slide_mpp=default_slide_mpp,
         )
 
         attention = None
@@ -261,56 +351,73 @@ def heatmaps_(
             Image.fromarray(np.uint8(score_im * 255)).resize(
                 tuple(target_size), resample=Image.Resampling.NEAREST
             ).save(
-                slide_output_dir
-                / f"{h5_path.stem}-{category}={slide_score[pos_idx]:0.2f}.png"
+                raw_dir / f"{h5_path.stem}-{category}={slide_score[pos_idx]:0.2f}.png"
             )
 
-            # Top tiles
-            for score, index in zip(*category_score.topk(topk)):
-                (
-                    slide.read_region(
-                        tuple(coords_tile_slide_px[index].tolist()),
-                        0,
-                        (tile_size_slide_px, tile_size_slide_px),
+            # Create and save overlay to raw folder
+            overlay = _create_overlay(thumb=thumb, score_im=score_im, alpha=opacity)
+            Image.fromarray(overlay).save(
+                raw_dir / f"raw-overlay-{h5_path.stem}-{category}.png"
+            )
+
+            # Create and save plotted overlay to plots folder
+            overlay_fig, overlay_ax = _create_plotted_overlay(
+                thumb=thumb,
+                score_im=score_im,
+                category=category,
+                slide_score=slide_score[pos_idx].item(),
+                alpha=opacity,
+            )
+            overlay_fig.savefig(
+                plots_dir / f"overlay-{h5_path.stem}-{category}.png",
+                dpi=150,
+                bbox_inches="tight",
+            )
+            plt.close(overlay_fig)
+
+            # Only extract tiles for the highest probability class
+            if pos_idx == highest_prob_class_idx:
+                # Top tiles
+                for i, (score, index) in enumerate(zip(*category_score.topk(topk))):
+                    (
+                        slide.read_region(
+                            tuple(coords_tile_slide_px[index].tolist()),
+                            0,
+                            (tile_size_slide_px, tile_size_slide_px),
+                        )
+                        .convert("RGB")
+                        .save(
+                            tiles_dir
+                            / f"top_{i + 1:02d}-{h5_path.stem}-{category}={score:0.2f}.jpg"
+                        )
                     )
-                    .convert("RGB")
-                    .save(
-                        slide_output_dir
-                        / f"top-{h5_path.stem}-{category}={score:0.2f}.jpg"
+                # Bottom tiles
+                for i, (score, index) in enumerate(
+                    zip(*(-category_score).topk(bottomk))
+                ):
+                    (
+                        slide.read_region(
+                            tuple(coords_tile_slide_px[index].tolist()),
+                            0,
+                            (tile_size_slide_px, tile_size_slide_px),
+                        )
+                        .convert("RGB")
+                        .save(
+                            tiles_dir
+                            / f"bottom_{i + 1:02d}-{h5_path.stem}-{category}={-score:0.2f}.jpg"
+                        )
                     )
-                )
-            for score, index in zip(*(-category_score).topk(bottomk)):
-                (
-                    slide.read_region(
-                        tuple(coords_tile_slide_px[index].tolist()),
-                        0,
-                        (tile_size_slide_px, tile_size_slide_px),
-                    )
-                    .convert("RGB")
-                    .save(
-                        slide_output_dir
-                        / f"bottom-{h5_path.stem}-{category}={-score:0.2f}.jpg"
-                    )
-                )
 
         assert attention is not None, (
             "attention should have been set in the for loop above"
         )
 
-        # Generate overview
-        thumb = _show_thumb(
-            slide=slide,
-            thumb_ax=axs[0, 0],
-            attention=_vals_to_im(
-                attention.unsqueeze(-1),
-                coords_norm,  # pyright: ignore[reportPossiblyUnboundVariable]
-            ).squeeze(-1),
-            default_slide_mpp=default_slide_mpp,
-        )
-        Image.fromarray(thumb).save(slide_output_dir / f"thumbnail-{h5_path.stem}.png")
+        # Save thumbnail to raw folder
+        Image.fromarray(thumb).save(raw_dir / f"thumbnail-{h5_path.stem}.png")
 
         for ax in axs.ravel():
             ax.axis("off")
 
-        fig.savefig(slide_output_dir / f"overview-{h5_path.stem}.png")
+        # Save overview plot to plots folder
+        fig.savefig(plots_dir / f"overview-{h5_path.stem}.png")
         plt.close(fig)

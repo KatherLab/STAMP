@@ -203,12 +203,16 @@ heatmaps:
   # Path of the model to generate the heatmaps with.
   checkpoint_path: "/path/to/model.ckpt"
 
+  # Overlay plot opacity. A value of 0 means transparent and 1 opaque.
+  #opacity = 0.6
+
   # Slides to generate the heatmaps for.
   # The slide paths have to be specified relative to `wsi_dir`.
   # If not specified, stamp will generate heatmaps for all slides in `wsi_dir`.
   #slide_paths:
   #- slide1.svs
   #- slide2.mrxs
+  
 
   # The number of top- and bottom-scoring tiles to extract
   #topk: 5
@@ -270,16 +274,18 @@ patient_encoding:
 
 
 advanced_config:
-  max_epochs: 64
+  max_epochs: 32
   patience: 16
   batch_size: 64
   # Only for tile-level training. Reducing its amount could affect
   # model performance. Reduces memory consumption. Default value works
   # fine for most cases.
   bag_size: 512
-  # Optional parameters
   #num_workers: 16 # Default chosen by cpu cores
-
+  # One Cycle Learning Rate Scheduler parameters. Check docs for more info.
+  # Determines the initial learning rate via initial_lr = max_lr/div_factor
+  max_lr: 1e-4
+  div_factor: 25. 
   # Select a model. Not working yet, added for future support.
   # Now it uses a ViT for tile features and a MLP for patient features.
   #model_name: "vit"

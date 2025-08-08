@@ -181,11 +181,18 @@ def setup_model_for_training(
         advanced.model_name.value
     ]
 
-    # 4. Prepare common parameters
+    # 4. Calculate total steps for scheduler
+    steps_per_epoch = len(train_dl)
+    total_steps = steps_per_epoch * advanced.max_epochs
+
+    # 5. Prepare common parameters
     common_params = {
         "categories": train_categories,
         "category_weights": category_weights,
         "dim_input": dim_feats,
+        "total_steps": total_steps,
+        "max_lr": advanced.max_lr,
+        "div_factor": advanced.div_factor,
         # Metadata, has no effect on model training
         "model_name": advanced.model_name.value,
         "ground_truth_label": ground_truth_label,
@@ -196,11 +203,16 @@ def setup_model_for_training(
         "feature_dir": feature_dir,
     }
 
-    # 4. Instantiate the model dynamically
+    # 6. Instantiate the model dynamically
     ModelClass = model_info["model_class"]
     all_params = {**common_params, **model_specific_params}
     _logger.info(
         f"Instantiating model '{advanced.model_name.value}' with parameters: {model_specific_params}"
+    )
+    _logger.info(
+        "Other params: max_epochs=%s, patience=%s",
+        advanced.max_epochs,
+        advanced.patience,
     )
     model = ModelClass(**all_params)
 

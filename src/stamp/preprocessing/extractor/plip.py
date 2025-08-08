@@ -26,6 +26,7 @@ def plip() -> Extractor[PLIP]:
     model = CLIPModel.from_pretrained("vinid/plip")
     transform = torchvision.transforms.Compose(
         [
+            torchvision.transforms.Resize(224),
             torchvision.transforms.ToTensor(),
             torchvision.transforms.Normalize(
                 (0.48145466, 0.4578275, 0.40821073),

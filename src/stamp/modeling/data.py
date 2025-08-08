@@ -5,7 +5,7 @@ from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import KW_ONLY, dataclass
 from itertools import groupby
 from pathlib import Path
-from typing import BinaryIO, Generic, TextIO, TypeAlias, cast
+from typing import IO, BinaryIO, Generic, TextIO, TypeAlias, cast, Union
 
 import h5py
 import numpy as np
@@ -44,6 +44,7 @@ __license__ = "MIT"
 
 _Bag: TypeAlias = Float[Tensor, "tile feature"]
 _EncodedTarget: TypeAlias = Bool[Tensor, "category_is_hot"]  # noqa: F821
+_BinaryIOLike: TypeAlias = Union[BinaryIO, IO[bytes]]
 """The ground truth, encoded numerically (currently: one-hot)"""
 _Coordinates: TypeAlias = Float[Tensor, "tile 2"]
 
@@ -224,7 +225,7 @@ class BagDataset(Dataset[tuple[_Bag, _Coordinates, BagSize, _EncodedTarget]]):
     """A dataset of bags of instances."""
 
     _: KW_ONLY
-    bags: Sequence[Iterable[FeaturePath | BinaryIO]]
+    bags: Sequence[Iterable[FeaturePath | _BinaryIOLike]]
     """The `.h5` files containing the bags.
 
     Each bag consists of the features taken from one or multiple h5 files.

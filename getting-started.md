@@ -396,3 +396,80 @@ The key differences for patient-level modeling are:
 - STAMP will automatically detect that these are patient-level features and use a MultiLayer Perceptron (MLP) classifier instead of the Vision Transformer.
 
 You can then run statistics as done with tile-level features.
+
+## Heatmaps and Top Tiles
+<img src="docs/overlay-heatmap.png" width="500px" align="center"></img>
+
+The `stamp heatmaps` command generates visualization outputs to help interpret model predictions and identify which regions of the slide contribute most to the classification decision. This command creates:
+
+- **Attention heatmaps**: Show which tiles the model focuses on for each class
+- **Overlay visualizations**: Combine heatmaps with slide thumbnails for better spatial context
+- **Class maps**: Display which class each tile is most associated with
+- **Top/bottom tiles**: Extract the most and least predictive image patches from the predicted class. 
+
+To generate heatmaps, you need a trained model checkpoint from either the train or crossval commands. The configuration file should look like this:
+
+```yaml
+# stamp-test-experiment/config.yaml
+
+heatmaps:
+  output_dir: "/absolute/path/to/stamp-test-experiment/heatmaps"
+
+  # Directory where the extracted tile-level features are stored
+  feature_dir: "/absolute/path/to/stamp-test-experiment/xiyuewang-ctranspath-7c998680-112fc79c"
+
+  # Directory containing the original whole slide images
+  wsi_dir: "/absolute/path/to/wsi_dir"
+
+  # Path to the trained model checkpoint
+  checkpoint_path: "/absolute/path/to/stamp-test-experiment/split-0/checkpoints/epoch=15-step=123.ckpt"
+
+  # Optional settings:
+
+  # Overlay plot opacity (0 = transparent, 1 = opaque)
+  opacity: 0.6
+
+  # Number of top-scoring tiles to extract for each slide
+  topk: 5
+
+  # Number of bottom-scoring tiles to extract for each slide  
+  bottomk: 5
+
+  # Specific slides to process (relative to wsi_dir)
+  # If not specified, all slides in wsi_dir will be processed
+  slide_paths:
+  - slide1.svs
+  - slide2.mrxs
+
+  # Device to run heatmap generation on
+  device: "cuda"
+  ```
+
+  > **Note:** Heatmaps currently only work with tile-level features. If you have slide-level or patient-level features, you'll need to use the original tile-level features for heatmap generation.
+
+  Generate the heatmaps by running:
+
+  ```sh
+  stamp --config stamp-test-experiment/config.yaml heatmaps
+  ```
+
+  The heatmap command creates an organized folder structure for each slide:
+
+  ```sh
+  heatmaps/
+└── slide-name/
+    ├── plots/
+    │   ├── overview-slide-name.png     # Complete overview with all classes
+    │   └── overlay-slide-name-class.png # Individual class overlays
+    ├── raw/             # Raw data files
+    │   ├── thumbnail-slide-name.png         # Slide thumbnail
+    │   ├── classmap-slide-name.png          # Class assignment map
+    │   ├── slide-name-class=score.png       # Raw heatmap per class
+    │   └── raw-overlay-slide-name-class.png # Overlay without legends
+    └── tiles/           # Individual tile extractions
+        ├── top_01-slide-name-class=score.jpg    # Highest scoring tiles
+        ├── top_02-slide-name-class=score.jpg
+        └── bottom_01-slide-name-class=score.jpg # Lowest scoring tiles
+  ```
+
+
