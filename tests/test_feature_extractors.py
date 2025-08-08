@@ -67,6 +67,10 @@ def test_if_feature_extraction_crashes(*, tmp_path: Path, extractor: str) -> Non
         pytest.skip(f"dependencies for {extractor} not installed")
     except GatedRepoError:
         pytest.skip(f"cannot access gated repo for {extractor}")
+    except OSError as e:
+        if "gated repo" in str(e):
+            pytest.skip(f"cannot access gated repo for {extractor}")
+        raise
 
     # Check if the file has any contents
     with h5py.File(next((tmp_path / "output").glob("*/*.h5"))) as h5_file:
@@ -125,6 +129,10 @@ def test_backward_compatability(tmp_path: Path) -> None:
         pytest.skip(f"dependencies for {extractor} not installed")
     except GatedRepoError:
         pytest.skip(f"cannot access gated repo for {extractor}")
+    except OSError as e:
+        if "gated repo" in str(e):
+            pytest.skip(f"cannot access gated repo for {extractor}")
+        raise
 
     reference_feature_path = download_file(
         url=f"https://github.com/KatherLab/STAMP/releases/download/2.0.0.dev14/TCGA-G4-6625-01Z-00-DX1.0fa26667-2581-4f96-a891-d78dbc3299b4-{extractor}.h5",
