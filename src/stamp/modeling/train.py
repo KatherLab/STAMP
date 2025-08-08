@@ -401,6 +401,7 @@ def _compute_class_weights_and_check_categories(
         )
     return category_weights
 
+
 def log_total_class_summary(patient_to_data, categories=None):
     from collections import Counter
 
