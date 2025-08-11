@@ -40,7 +40,7 @@ preprocessing:
 
   # A list (.txt, .xlsx or .csv) specifying filenames to preprocess 
   # instead of processing all data in the directory.
-  slide_list: "list.csv"
+  #slide_list: "list.csv"
 
 crossval:
   output_dir: "/path/to/save/files/to"
