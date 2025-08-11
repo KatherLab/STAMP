@@ -129,6 +129,9 @@ plip_cpu = [
 plip = [
     "stamp[plip_cpu, flash-attention]",
 ]
+mcp = [
+    "fastmcp>=2.11.2",
+]
 
 
 # Blanket target
