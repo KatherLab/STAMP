@@ -1,5 +1,6 @@
 import logging
 import shutil
+from collections import Counter
 from collections.abc import Callable, Mapping, Sequence
 from pathlib import Path
 from typing import cast
@@ -402,9 +403,7 @@ def _compute_class_weights_and_check_categories(
     return category_weights
 
 
-def log_total_class_summary(patient_to_data, categories=None):
-    from collections import Counter
-
+def log_total_class_summary(patient_to_data, categories=None) -> None:
     ground_truths = [
         patient_data.ground_truth
         for patient_data in patient_to_data.values()

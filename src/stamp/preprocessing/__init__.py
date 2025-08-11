@@ -9,7 +9,6 @@ import h5py
 import numpy as np
 import numpy.typing as npt
 import openslide
-import pandas as pd
 import torch
 from PIL import Image
 from torch import Tensor
@@ -130,7 +129,7 @@ def extract_(
     brightness_cutoff: int | None,
     canny_cutoff: float | None,
     generate_hash: bool,
-    wsi_list: Path | None = None,
+    slide_list: Path | None = None,
 ) -> None:
     """
     Extracts features from slides.
@@ -250,33 +249,15 @@ def extract_(
 
     feat_output_dir = output_dir / extractor_id
 
-    if wsi_list is not None and wsi_list.exists():
-        suf = wsi_list.suffix.lower()
-        if suf == ".txt":
-            with open(wsi_list) as f:
-                allowed_files = set(line.strip() for line in f if line.strip())
-        elif suf in [".csv", ".xls", ".xlsx"]:
-            df = (
-                pd.read_csv(wsi_list, header=None)
-                if suf == ".csv"
-                else pd.read_excel(wsi_list, header=None)
-            )
-            allowed_files = set(df.iloc[:, 0].astype(str))
-        else:
-            raise ValueError(f"Unsupported file type: {suf}")
-
-        slide_paths = [
-            slide_path
-            for ext in supported_extensions
-            for slide_path in wsi_dir.glob(f"**/*{ext}")
-            if slide_path.name in allowed_files
-        ]
+    # Collect slides for preprocessing
+    if slide_list is not None:
+        slide_paths = _get_slice_paths(slide_list)
+        slide_paths = [wsi_dir / slide for slide in slide_paths]
     else:
         slide_paths = [
-            slide_path
-            for ext in supported_extensions
-            for slide_path in wsi_dir.glob(f"**/*{ext}")
+            p for ext in supported_extensions for p in wsi_dir.glob(f"**/*{ext}")
         ]
+
     # We shuffle so if we run multiple jobs on multiple computers at the same time,
     # They won't interfere with each other too much
     shuffle(slide_paths)
@@ -407,3 +388,27 @@ def _get_rejection_thumb(
 
     thumb.paste(discarded_im, mask=discarded_im)
     return thumb
+
+
+def _get_slice_paths(wsi_list: Path) -> set[str]:
+    """
+    Returns a set of filenames listed in the first (and only) column of a file.
+    Supports .txt, .csv, .xls, .xlsx.
+    """
+    suf = wsi_list.suffix.lower()
+    if suf == ".txt":
+        with open(wsi_list) as f:
+            slice_paths = set(line.strip() for line in f if line.strip())
+    elif suf == ".csv":
+        import pandas as pd
+
+        df = pd.read_csv(wsi_list, header=None)
+        slice_paths = set(df.iloc[:, 0].astype(str))
+    elif suf in [".xls", ".xlsx"]:
+        import pandas as pd
+
+        df = pd.read_excel(wsi_list, header=None)
+        slice_paths = set(df.iloc[:, 0].astype(str))
+    else:
+        raise ValueError(f"Unsupported file type: {suf}")
+    return slice_paths
