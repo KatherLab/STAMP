@@ -36,7 +36,7 @@ class PreprocessingConfig(BaseModel, arbitrary_types_allowed=True):
 
     output_dir: Path
     wsi_dir: Path
-    slide_list: Path | None = Field(
+    wsi_list: Path | None = Field(
         default=None, description="Txt, Excel or CSV to read data filename from"
     )
     cache_dir: Path | None = None

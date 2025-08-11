@@ -232,7 +232,7 @@ def setup_dataloaders_for_training(
         train_dl, valid_dl, categories, feature_dim, train_patients, valid_patients
     """
     # Sample count for training
-    log_total_class_summary(patient_to_data, categories=categories)
+    log_total_class_summary(patient_to_data, categories)
 
     # Stratified split
     ground_truths = [
@@ -403,7 +403,10 @@ def _compute_class_weights_and_check_categories(
     return category_weights
 
 
-def log_total_class_summary(patient_to_data, categories=None) -> None:
+def log_total_class_summary(
+    patient_to_data: Mapping[PatientId, PatientData],
+    categories: Sequence[Category] | None,
+) -> None:
     ground_truths = [
         patient_data.ground_truth
         for patient_data in patient_to_data.values()

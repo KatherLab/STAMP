@@ -9,6 +9,7 @@ import h5py
 import numpy as np
 import numpy.typing as npt
 import openslide
+import pandas as pd
 import torch
 from PIL import Image
 from torch import Tensor
@@ -118,6 +119,7 @@ def extract_(
     *,
     wsi_dir: Path,
     output_dir: Path,
+    wsi_list: Path | None,
     cache_dir: Path | None,
     cache_tiles_ext: ImageExtension,
     extractor: ExtractorName | Extractor,
@@ -129,7 +131,6 @@ def extract_(
     brightness_cutoff: int | None,
     canny_cutoff: float | None,
     generate_hash: bool,
-    slide_list: Path | None,
 ) -> None:
     """
     Extracts features from slides.
@@ -250,8 +251,8 @@ def extract_(
     feat_output_dir = output_dir / extractor_id
 
     # Collect slides for preprocessing
-    if slide_list is not None:
-        slide_paths = _get_slice_paths(slide_list)
+    if wsi_list is not None:
+        slide_paths = _get_slide_paths(wsi_list)
         slide_paths = [wsi_dir / slide for slide in slide_paths]
     else:
         slide_paths = [
@@ -390,7 +391,7 @@ def _get_rejection_thumb(
     return thumb
 
 
-def _get_slice_paths(wsi_list: Path) -> set[str]:
+def _get_slide_paths(wsi_list: Path) -> set[str]:
     """
     Returns a set of filenames listed in the first (and only) column of a file.
     Supports .txt, .csv, .xls, .xlsx.
@@ -398,17 +399,13 @@ def _get_slice_paths(wsi_list: Path) -> set[str]:
     suf = wsi_list.suffix.lower()
     if suf == ".txt":
         with open(wsi_list) as f:
-            slice_paths = set(line.strip() for line in f if line.strip())
+            slide_paths = set(line.strip() for line in f if line.strip())
     elif suf == ".csv":
-        import pandas as pd
-
         df = pd.read_csv(wsi_list, header=None)
-        slice_paths = set(df.iloc[:, 0].astype(str))
+        slide_paths = set(df.iloc[:, 0].astype(str))
     elif suf in [".xls", ".xlsx"]:
-        import pandas as pd
-
         df = pd.read_excel(wsi_list, header=None)
-        slice_paths = set(df.iloc[:, 0].astype(str))
+        slide_paths = set(df.iloc[:, 0].astype(str))
     else:
         raise ValueError(f"Unsupported file type: {suf}")
-    return slice_paths
+    return slide_paths
