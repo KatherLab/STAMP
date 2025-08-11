@@ -114,6 +114,7 @@ class LitVisionTransformer(lightning.LightningModule):
         self.categories = np.array(categories)
         self.train_patients = train_patients
         self.valid_patients = valid_patients
+        self.stamp_version = str(stamp_version)
 
         _ = metadata  # unused, but saved in model
 
@@ -121,7 +122,7 @@ class LitVisionTransformer(lightning.LightningModule):
         # This should only happen when the model is loaded,
         # otherwise the default value will make these checks pass.
         # TODO: Change this on version change
-        if stamp_version < Version("2.0.0.dev8"):
+        if stamp_version < Version("2.3.0"):
             # Update this as we change our model in incompatible ways!
             raise ValueError(
                 f"model has been built with stamp version {stamp_version} "

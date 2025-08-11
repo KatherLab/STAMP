@@ -83,8 +83,26 @@ class LitMLPClassifier(lightning.LightningModule):
         self.total_steps = total_steps
         self.max_lr = max_lr
         self.div_factor = div_factor
+        self.stamp_version = str(stamp_version)
 
-    # TODO: Add version check with version 2.2.1, for both MLP and Transformer
+        # Check if version is compatible.
+        # This should only happen when the model is loaded,
+        # otherwise the default value will make these checks pass.
+        # TODO: Change this on version change
+        if stamp_version < Version("2.3.0"):
+            # Update this as we change our model in incompatible ways!
+            raise ValueError(
+                f"model has been built with stamp version {stamp_version} "
+                f"which is incompatible with the current version."
+            )
+        elif stamp_version > Version(stamp.__version__):
+            # Let's be strict with models "from the future",
+            # better fail deadly than have broken results.
+            raise ValueError(
+                "model has been built with a stamp version newer than the installed one "
+                f"({stamp_version} > {stamp.__version__}). "
+                "Please upgrade stamp to a compatible version."
+            )
 
     def forward(self, x: Tensor) -> Tensor:
         return self.model(x)
