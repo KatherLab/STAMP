@@ -129,7 +129,7 @@ def extract_(
     brightness_cutoff: int | None,
     canny_cutoff: float | None,
     generate_hash: bool,
-    slide_list: Path | None = None,
+    slide_list: Path | None,
 ) -> None:
     """
     Extracts features from slides.
