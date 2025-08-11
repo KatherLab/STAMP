@@ -9,6 +9,8 @@ from random_data import (
     create_random_patient_level_feature_file,
     make_feature_file,
     make_old_feature_file,
+    create_good_and_bad_slide_tables,
+    create_random_slide_tables,
 )
 from torch.utils.data import DataLoader
 
@@ -19,6 +21,7 @@ from stamp.modeling.data import (
     PatientFeatureDataset,
     filter_complete_patient_data_,
     get_coords,
+    slide_to_patient_from_slide_table_,
 )
 from stamp.types import (
     BagSize,
@@ -212,3 +215,97 @@ def test_get_coords_historic_format() -> None:
         assert coords_info.tile_size_um == Microns(256.0)
         assert coords_info.tile_size_px == TilePixels(224)
         assert coords_info.mpp == SlideMPP(256.0 / 224)
+
+
+def test_slide_table_h5_validation(tmp_path: Path) -> None:
+    """
+    Tests that an error is properly raised in
+    slide_to_patient_from_slide_table_() when none of items in the
+    filename_labels column of a slide table have an .h5 extension and
+    verifies that the error isn't raised when there is at least one
+    filename with a .h5 extension in the filename_labels column.
+    """
+    feature_dir = tmp_path
+
+    (
+        good_slide_path,
+        bad_slide_path,
+        one_bad_slide_path,
+    ) = create_good_and_bad_slide_tables(tmp_path=tmp_path)
+
+    # Test with all files having .h5 extensions in filename_label column
+    # (should be no error regarding no .h5 extensions)
+    result = slide_to_patient_from_slide_table_(
+        slide_table_path=good_slide_path,
+        feature_dir=feature_dir,
+        patient_label="PATIENT",
+        filename_label="FILENAME",
+    )
+    assert isinstance(result, dict)
+    # Test without any .h5 extensions in filename_label column
+    with pytest.raises(
+        ValueError,
+        match="One or more files are missing the .h5 extension "
+        "in the filename_label column. The first file missing "
+        "the .h5 extension is: slide1.jpg",
+    ):
+        slide_to_patient_from_slide_table_(
+            slide_table_path=bad_slide_path,
+            feature_dir=feature_dir,
+            patient_label="PATIENT",
+            filename_label="FILENAME",
+        )
+    # Test with one filename missing .h5 extension
+    with pytest.raises(
+        ValueError,
+        match="One or more files are missing the .h5 extension "
+        "in the filename_label column. The first file missing "
+        "the .h5 extension is: slide3.jpg",
+    ):
+        slide_to_patient_from_slide_table_(
+            slide_table_path=one_bad_slide_path,
+            feature_dir=feature_dir,
+            patient_label="PATIENT",
+            filename_label="FILENAME",
+        )
+
+
+def test_slide_table_h5_validation_random(
+    tmp_path: Path,
+) -> None:
+    """
+    Tests that an error is properly raised in
+    slide_to_patient_from_slide_table_() when none of items in the
+    filename_labels column of a slide table have an .h5 extension and
+    verifies that the error isn't raised when there is at least one
+    filename with a .h5 extension in the filename_labels column.
+    Uses random data.
+    """
+
+    feature_dir = tmp_path
+
+    good_slide_path, bad_slide_path = create_random_slide_tables(
+        n_patients=10, tmp_path=tmp_path
+    )
+    # Test with .h5 extensions in filename_label column (should be no error
+    # regarding no .h5 extensions)
+    result = slide_to_patient_from_slide_table_(
+        slide_table_path=good_slide_path,
+        feature_dir=feature_dir,
+        patient_label="PATIENT",
+        filename_label="FILENAME",
+    )
+    assert isinstance(result, dict)
+
+    # Test without .h5 extensions in filename_label column
+    with pytest.raises(
+        ValueError,
+        match="One or more files are missing the .h5 extension "
+        "in the filename_label column",
+    ):
+        slide_to_patient_from_slide_table_(
+            slide_table_path=bad_slide_path,
+            feature_dir=feature_dir,
+            patient_label="PATIENT",
+            filename_label="FILENAME",
+        )

@@ -38,6 +38,10 @@ def test_predict(
         train_patients=np.array(["pat1", "pat2"]),
         valid_patients=np.array(["pat3", "pat4"]),
         use_alibi=False,
+        # these values do not affect at inference time
+        total_steps=320,
+        max_lr=1e-4,
+        div_factor=25.0,
     )
 
     patient_to_data = {
@@ -133,6 +137,10 @@ def test_predict_patient_level(
         ground_truth_label="test",
         train_patients=["pat1", "pat2"],
         valid_patients=["pat3", "pat4"],
+        # these values do not affect at inference time
+        total_steps=320,
+        max_lr=1e-4,
+        div_factor=25.0,
     )
 
     # Create 3 random patient-level feature files on disk
@@ -234,6 +242,9 @@ def test_to_prediction_df() -> None:
         train_patients=np.array(["pat1", "pat2"]),
         valid_patients=np.array(["pat3", "pat4"]),
         use_alibi=False,
+        total_steps=1000,
+        max_lr=1e-4,
+        div_factor=25,
     )
 
     preds_df = _to_prediction_df(

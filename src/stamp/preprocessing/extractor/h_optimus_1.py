@@ -21,6 +21,7 @@ def h_optimus_1() -> Extractor:
 
     transform = transforms.Compose(
         [
+            transforms.Resize(224),
             transforms.ToTensor(),
             transforms.Normalize(
                 mean=(0.707223, 0.578729, 0.703617), std=(0.211883, 0.230117, 0.177517)

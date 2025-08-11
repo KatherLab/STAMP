@@ -5,7 +5,7 @@ from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import KW_ONLY, dataclass
 from itertools import groupby
 from pathlib import Path
-from typing import BinaryIO, Generic, TextIO, TypeAlias, cast
+from typing import IO, BinaryIO, Generic, TextIO, TypeAlias, cast, Union
 
 import h5py
 import numpy as np
@@ -44,6 +44,7 @@ __license__ = "MIT"
 
 _Bag: TypeAlias = Float[Tensor, "tile feature"]
 _EncodedTarget: TypeAlias = Bool[Tensor, "category_is_hot"]  # noqa: F821
+_BinaryIOLike: TypeAlias = Union[BinaryIO, IO[bytes]]
 """The ground truth, encoded numerically (currently: one-hot)"""
 _Coordinates: TypeAlias = Float[Tensor, "tile 2"]
 
@@ -224,7 +225,7 @@ class BagDataset(Dataset[tuple[_Bag, _Coordinates, BagSize, _EncodedTarget]]):
     """A dataset of bags of instances."""
 
     _: KW_ONLY
-    bags: Sequence[Iterable[FeaturePath | BinaryIO]]
+    bags: Sequence[Iterable[FeaturePath | _BinaryIOLike]]
     """The `.h5` files containing the bags.
 
     Each bag consists of the features taken from one or multiple h5 files.
@@ -468,12 +469,26 @@ def slide_to_patient_from_slide_table_(
     patient_label: PandasLabel,
     filename_label: PandasLabel,
 ) -> dict[FeaturePath, PatientId]:
-    """Creates a slide-to-patient mapping from a slide table."""
+    """
+    Creates a slide-to-patient mapping from a slide table.
+    Side effects:
+        Verifies that all files in the slide tables filename_label
+        column has an .h5 extension.
+    """
     slide_df = read_table(
         slide_table_path,
         usecols=[patient_label, filename_label],
         dtype=str,
     )
+    # Verify the slide table contains a feature path with .h5 extension by
+    # checking the filename_label.
+    for x in slide_df[filename_label]:
+        if not str(x).endswith(".h5"):
+            raise ValueError(
+                "One or more files are missing the .h5 extension in the "
+                "filename_label column. The first file missing the .h5 "
+                "extension is: " + str(x) + "."
+            )
 
     slide_to_patient: Mapping[FeaturePath, PatientId] = {
         FeaturePath(feature_dir / cast(str, k)): PatientId(cast(str, patient))

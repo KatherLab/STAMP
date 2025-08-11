@@ -4,7 +4,7 @@ import lightning
 import numpy as np
 import torch
 from packaging.version import Version
-from torch import Tensor, nn
+from torch import Tensor, nn, optim
 from torchmetrics.classification import MulticlassAUROC
 
 import stamp
@@ -59,6 +59,10 @@ class LitMLPClassifier(lightning.LightningModule):
         train_patients: Iterable[PatientId],
         valid_patients: Iterable[PatientId],
         stamp_version: Version = Version(stamp.__version__),
+        # Learning Rate Scheduler params, used only in training
+        total_steps: int,
+        max_lr: float,
+        div_factor: float,
         **metadata,
     ):
         super().__init__()
@@ -76,6 +80,9 @@ class LitMLPClassifier(lightning.LightningModule):
         self.categories = np.array(categories)
         self.train_patients = train_patients
         self.valid_patients = valid_patients
+        self.total_steps = total_steps
+        self.max_lr = max_lr
+        self.div_factor = div_factor
 
     # TODO: Add version check with version 2.2.1, for both MLP and Transformer
 
@@ -122,5 +129,29 @@ class LitMLPClassifier(lightning.LightningModule):
         feats, _ = batch
         return self.model(feats)
 
-    def configure_optimizers(self):
-        return torch.optim.Adam(self.parameters(), lr=1e-3)
+    def configure_optimizers(
+        self,
+    ) -> tuple[list[optim.Optimizer], list[optim.lr_scheduler.LRScheduler]]:
+        optimizer = optim.AdamW(
+            self.parameters(), lr=1e-3
+        )  # this lr value should be ignored with the scheduler
+
+        scheduler = optim.lr_scheduler.OneCycleLR(
+            optimizer=optimizer,
+            total_steps=self.total_steps,
+            max_lr=self.max_lr,
+            div_factor=25.0,
+        )
+        return [optimizer], [scheduler]
+
+    def on_train_batch_end(self, outputs, batch, batch_idx):
+        # Log learning rate at the end of each training batch
+        current_lr = self.trainer.optimizers[0].param_groups[0]["lr"]
+        self.log(
+            "learning_rate",
+            current_lr,
+            on_step=False,
+            on_epoch=True,
+            prog_bar=True,
+            sync_dist=True,
+        )

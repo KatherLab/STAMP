@@ -16,7 +16,7 @@ class TrainConfig(BaseModel):
 
     clini_table: Path = Field(description="Excel or CSV to read clinical data from")
     slide_table: Path | None = Field(
-        description="Excel or CSV to read patient-slide associations from"
+        default=None, description="Excel or CSV to read patient-slide associations from"
     )
     feature_dir: Path = Field(description="Directory containing feature files")
 
@@ -65,7 +65,7 @@ class VitModelParams(BaseModel):
     dim_feedforward: int = 512
     n_heads: int = 8
     n_layers: int = 2
-    dropout: float = 0.25
+    dropout: float = 0.0
     # Experimental feature: Use ALiBi positional embedding
     use_alibi: bool = False
 
@@ -88,9 +88,11 @@ class AdvancedConfig(BaseModel):
     bag_size: int = 512
     num_workers: int = min(os.cpu_count() or 1, 16)
     batch_size: int = 64
-    max_epochs: int = 64
+    max_epochs: int = 32
     patience: int = 16
     accelerator: str = "gpu" if torch.cuda.is_available() else "cpu"
+    max_lr: float = 1e-4
+    div_factor: float = 25.0
     model_name: ModelName | None = Field(
         default=None,
         description='Optional: "vit" or "mlp". Defaults based on feature type.',

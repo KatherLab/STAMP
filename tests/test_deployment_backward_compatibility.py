@@ -13,14 +13,14 @@ from stamp.types import FeaturePath, PatientId
 )
 def test_backwards_compatibility() -> None:
     example_checkpoint_path = download_file(
-        url="https://github.com/KatherLab/STAMP/releases/download/2.0.0-dev8/example-model.ckpt",
-        file_name="example-model.ckpt",
-        sha256sum="a71dffd4b5fdb82acd5f84064880efd3382e200b07e5a008cb53e03197b6de56",
+        url="https://github.com/KatherLab/STAMP/releases/download/2.2.0/example-model.ckpt",
+        file_name="example-modelv2_3.ckpt",
+        sha256sum="1caa5b56a02d09e6df72f087ebe9f87bae4e53de0516e2291e6dd1ce7dfff054",
     )
     example_feature_path = download_file(
-        url="https://github.com/KatherLab/STAMP/releases/download/2.0.0-dev8/TCGA-AA-3860-01Z-00-DX1.a63df9ca-6141-4bdc-8545-719fd9ae0aa5.h5",
-        file_name="TCGA-AA-3860-01Z-00-DX1.a63df9ca-6141-4bdc-8545-719fd9ae0aa5.h5",
-        sha256sum="c180f6029ca1defbe0f5a972e9333848a28245f1ca79e343c7ff06c4804a12f7",
+        url="https://github.com/KatherLab/STAMP/releases/download/2.2.0/TCGA-AA-3877-01Z-00-DX1.36902310-bc0b-4437-9f86-6df85703e0ad.h5",
+        file_name="TCGA-AA-3877-01Z-00-DX1.36902310-bc0b-4437-9f86-6df85703e0ad.h5",
+        sha256sum="9ee5172c205c15d55eb9a8b99e98319c1a75b7fdd6adde7a3ae042d3c991285e",
     )
 
     model = LitVisionTransformer.load_from_checkpoint(example_checkpoint_path)
@@ -51,5 +51,5 @@ def test_backwards_compatibility() -> None:
     )
 
     assert torch.allclose(
-        predictions["TestPatient"], torch.tensor([0.0331, 0.9669]), atol=1e-4
+        predictions["TestPatient"], torch.tensor([0.0083, 0.9917]), atol=1e-4
     ), f"prediction does not match that of stamp {model.hparams['stamp_version']}"

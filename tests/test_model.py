@@ -89,6 +89,10 @@ def test_mlp_classifier_dims(
         ground_truth_label="test",
         train_patients=["pat1", "pat2"],
         valid_patients=["pat3", "pat4"],
+        # these values do not affect at inference time
+        total_steps=320,
+        max_lr=1e-4,
+        div_factor=25.0,
     )
     feats = torch.rand((batch_size, input_dim))
     logits = model.forward(feats)
@@ -112,6 +116,10 @@ def test_mlp_inference_reproducibility(
         ground_truth_label="test",
         train_patients=["pat1", "pat2"],
         valid_patients=["pat3", "pat4"],
+        # these values do not affect at inference time
+        total_steps=320,
+        max_lr=1e-4,
+        div_factor=25.0,
     )
     model = model.eval()
     feats = torch.rand((batch_size, input_dim))
