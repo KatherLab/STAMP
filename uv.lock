@@ -3669,7 +3669,6 @@ source = { editable = "." }
 dependencies = [
     { name = "beartype" },
     { name = "einops" },
-    { name = "fastmcp" },
     { name = "h5py" },
     { name = "jaxtyping" },
     { name = "lightning" },
@@ -3805,6 +3804,9 @@ gpu = [
 madeleine = [
     { name = "madeleine" },
 ]
+mcp = [
+    { name = "fastmcp" },
+]
 musk = [
     { name = "fairscale" },
     { name = "flash-attn" },
@@ -3859,7 +3861,7 @@ requires-dist = [
     { name = "environs", marker = "extra == 'prism-cpu'", specifier = "==11.0.0" },
     { name = "fairscale", marker = "extra == 'gigapath'" },
     { name = "fairscale", marker = "extra == 'musk-cpu'" },
-    { name = "fastmcp", specifier = ">=2.11.2" },
+    { name = "fastmcp", marker = "extra == 'mcp'", specifier = ">=2.11.2" },
     { name = "flash-attn", marker = "extra == 'flash-attention'", specifier = ">=2.8.2" },
     { name = "fvcore", marker = "extra == 'gigapath'" },
     { name = "gdown", marker = "extra == 'chief-ctranspath'", specifier = ">=5.2.0" },
@@ -3922,7 +3924,7 @@ requires-dist = [
     { name = "wandb", marker = "extra == 'gigapath'" },
     { name = "webdataset", marker = "extra == 'gigapath'" },
 ]
-provides-extras = ["build", "flash-attention", "conch", "conch1-5-cpu", "conch1-5", "ctranspath", "chief-ctranspath", "gigapath", "uni", "virchow2", "cobra", "prism-cpu", "prism", "madeleine", "musk-cpu", "musk", "plip-cpu", "plip", "cpu", "gpu", "all"]
+provides-extras = ["build", "flash-attention", "conch", "conch1-5-cpu", "conch1-5", "ctranspath", "chief-ctranspath", "gigapath", "uni", "virchow2", "cobra", "prism-cpu", "prism", "madeleine", "musk-cpu", "musk", "plip-cpu", "plip", "mcp", "cpu", "gpu", "all"]
 
 [package.metadata.requires-dev]
 dev = [

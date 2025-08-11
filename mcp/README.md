@@ -19,6 +19,12 @@ This server lets LLM agents invoke STAMP tools via structured calls. It exposes 
 
 Each tool serializes config into YAML, launches `stamp <mode>`, streams logs back, and returns stdout/stderr.
 
+## Installation
+To run the MCP server is as simple as intalling STAMP as it is explained in the main README.md file, but adding `--extra mcp` to the command. For a GPU repository installation it would be like this:
+```bash
+uv sync --extra build --extra gpu --extra mcp
+```
+
 ## Example using OpenAI Agents SDK
 
 This example demonstrates how to connect an STAMP MCP server into an agent workflow using the official OpenAI Agents SDK v0.1.0
