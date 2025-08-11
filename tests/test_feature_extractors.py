@@ -51,6 +51,7 @@ def test_if_feature_extraction_crashes(*, tmp_path: Path, extractor: str) -> Non
         extract_(
             wsi_dir=wsi_dir,
             output_dir=tmp_path / "output",
+            wsi_list=None,
             extractor=extractor,
             cache_dir=None,
             cache_tiles_ext="png",
@@ -109,6 +110,7 @@ def test_backward_compatability(tmp_path: Path) -> None:
         extract_(
             wsi_dir=wsi_dir,
             output_dir=tmp_path / "output",
+            wsi_list=None,
             extractor=extractor,
             cache_dir=None,
             cache_tiles_ext="png",
