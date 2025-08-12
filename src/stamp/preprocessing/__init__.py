@@ -9,6 +9,7 @@ import h5py
 import numpy as np
 import numpy.typing as npt
 import openslide
+import pandas as pd
 import torch
 from PIL import Image
 from torch import Tensor
@@ -118,6 +119,7 @@ def extract_(
     *,
     wsi_dir: Path,
     output_dir: Path,
+    wsi_list: Path | None,
     cache_dir: Path | None,
     cache_tiles_ext: ImageExtension,
     extractor: ExtractorName | Extractor,
@@ -248,11 +250,15 @@ def extract_(
 
     feat_output_dir = output_dir / extractor_id
 
-    slide_paths = [
-        slide_path
-        for extension in supported_extensions
-        for slide_path in wsi_dir.glob(f"**/*{extension}")
-    ]
+    # Collect slides for preprocessing
+    if wsi_list is not None:
+        slide_paths = _get_slide_paths(wsi_list)
+        slide_paths = [wsi_dir / slide for slide in slide_paths]
+    else:
+        slide_paths = [
+            p for ext in supported_extensions for p in wsi_dir.glob(f"**/*{ext}")
+        ]
+
     # We shuffle so if we run multiple jobs on multiple computers at the same time,
     # They won't interfere with each other too much
     shuffle(slide_paths)
@@ -383,3 +389,23 @@ def _get_rejection_thumb(
 
     thumb.paste(discarded_im, mask=discarded_im)
     return thumb
+
+
+def _get_slide_paths(wsi_list: Path) -> set[str]:
+    """
+    Returns a set of filenames listed in the first (and only) column of a file.
+    Supports .txt, .csv, .xls, .xlsx.
+    """
+    suf = wsi_list.suffix.lower()
+    if suf == ".txt":
+        with open(wsi_list) as f:
+            slide_paths = set(line.strip() for line in f if line.strip())
+    elif suf == ".csv":
+        df = pd.read_csv(wsi_list, header=None)
+        slide_paths = set(df.iloc[:, 0].astype(str))
+    elif suf in [".xls", ".xlsx"]:
+        df = pd.read_excel(wsi_list, header=None)
+        slide_paths = set(df.iloc[:, 0].astype(str))
+    else:
+        raise ValueError(f"Unsupported file type: {suf}")
+    return slide_paths
