@@ -22,6 +22,8 @@ from stamp.modeling.vision_transformer import VisionTransformer
 from stamp.preprocessing import supported_extensions
 from stamp.preprocessing.tiling import get_slide_mpp_
 from stamp.types import DeviceLikeType, Microns, SlideMPP, TilePixels
+from packaging.version import Version
+
 
 _logger = logging.getLogger("stamp")
 
@@ -168,8 +170,6 @@ def heatmaps_(
     topk: int,
     bottomk: int,
 ) -> None:
-    model = LitVisionTransformer.load_from_checkpoint(checkpoint_path).to(device).eval()
-
     # Collect slides to generate heatmaps for
     if slide_paths is not None:
         wsis_to_process = (wsi_dir / slide for slide in slide_paths)
@@ -226,6 +226,17 @@ def heatmaps_(
 
         # coordinates as used by OpenSlide
         coords_tile_slide_px = torch.round(coords_um / slide_mpp).long()
+
+        model = (
+            LitVisionTransformer.load_from_checkpoint(checkpoint_path).to(device).eval()
+        )
+
+        # TODO: Update version when a newer model logic breaks heatmaps.
+        if Version(model.stamp_version) < Version("2.3.0"):
+            raise ValueError(
+                f"model has been built with stamp version {model.stamp_version} "
+                f"which is incompatible with the current version."
+            )
 
         # Score for the entire slide
         slide_score = (

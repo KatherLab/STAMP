@@ -13,9 +13,9 @@ from stamp.types import FeaturePath, PatientId
 )
 def test_backwards_compatibility() -> None:
     example_checkpoint_path = download_file(
-        url="https://github.com/KatherLab/STAMP/releases/download/2.2.0/example-model.ckpt",
-        file_name="example-modelv2_3.ckpt",
-        sha256sum="1caa5b56a02d09e6df72f087ebe9f87bae4e53de0516e2291e6dd1ce7dfff054",
+        url="https://github.com/KatherLab/STAMP/releases/download/2.2.0/example-model-v2_3_0.ckpt",
+        file_name="example-modelv2_3_0.ckpt",
+        sha256sum="eb6225fcdea7f33dee80fd5dc4e7a0da6cd0d91a758e3ee9605d6869b30ab657",
     )
     example_feature_path = download_file(
         url="https://github.com/KatherLab/STAMP/releases/download/2.2.0/TCGA-AA-3877-01Z-00-DX1.36902310-bc0b-4437-9f86-6df85703e0ad.h5",

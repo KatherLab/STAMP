@@ -10,9 +10,9 @@ from stamp.heatmaps import heatmaps_
 @pytest.mark.filterwarnings("ignore:There is a performance drop")
 def test_heatmap_integration(tmp_path: Path) -> None:
     example_checkpoint_path = download_file(
-        url="https://github.com/KatherLab/STAMP/releases/download/2.2.0/example-model.ckpt",
-        file_name="example-modelv2_3.ckpt",
-        sha256sum="1caa5b56a02d09e6df72f087ebe9f87bae4e53de0516e2291e6dd1ce7dfff054",
+        url="https://github.com/KatherLab/STAMP/releases/download/2.2.0/example-model-v2_3_0.ckpt",
+        file_name="example-modelv2_3_0.ckpt",
+        sha256sum="eb6225fcdea7f33dee80fd5dc4e7a0da6cd0d91a758e3ee9605d6869b30ab657",
     )
     example_slide_path = download_file(
         url="https://github.com/KatherLab/STAMP/releases/download/2.0.0.dev14/TCGA-G4-6625-01Z-00-DX1.0fa26667-2581-4f96-a891-d78dbc3299b4.svs",
