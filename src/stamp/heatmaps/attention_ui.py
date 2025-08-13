@@ -162,7 +162,9 @@ class AttentionViewer:
         self.selected_token_idx = None
         self.selected_filename = None
         self.num_layer = 0
+        self.n_layers = 2
         self.num_head = 0
+        self.n_heads = 8
 
         # Initialize empty heatmap
         self.heatmap = np.zeros((self.height, self.width, 4), dtype=float)
@@ -266,6 +268,8 @@ class AttentionViewer:
         self.attention_handling.addItem("Mean of overall given attention", 4)
         self.attention_handling.addItem("Mean of overall received attention", 5)
         self.attention_handling.addItem("Class token attention", 6)
+        self.attention_handling.addItem("Mutual attention", 7)
+        self.attention_handling.addItem("Max mutual attention", 8)
 
         # Connect the dropdown to the update function
         self.attention_handling.currentIndexChanged.connect(
@@ -285,11 +289,11 @@ class AttentionViewer:
         # Layer slider
         self.layer_slider = QSlider(Qt.Horizontal)
         self.layer_slider.setMinimum(0)
-        self.layer_slider.setMaximum(2)  # Will be updated with actual layer count
+        self.layer_slider.setMaximum(self.n_layers-1)  # Will be updated with actual layer count
         self.layer_slider.setValue(0)
         self.layer_slider.valueChanged.connect(
             lambda value: (
-                self.layer_value_label.setText(str(value)),
+                self.layer_value_label.setText(str(value+1) + f"/{self.n_layers}"),
                 self._on_update_attention_map(),
             )
         )
@@ -312,7 +316,7 @@ class AttentionViewer:
         layer_layout.addWidget(self.layer_right_btn)
 
         # Layer value display
-        self.layer_value_label = QLabel("0")
+        self.layer_value_label = QLabel("1/2")
         self.layer_value_label.setMinimumWidth(25)
         self.layer_value_label.setAlignment(Qt.AlignCenter)
         layer_layout.addWidget(self.layer_value_label)
@@ -320,7 +324,7 @@ class AttentionViewer:
         layout.addLayout(layer_layout)
 
         # === HEAD SELECTION ===
-        head_label = QLabel("Number of Prediction Head\n(-1 for average):")
+        head_label = QLabel("Number of Prediction Head\n(0 for average):")
         layout.addWidget(head_label)
 
         # Create head selection controls with arrows and slider
@@ -329,11 +333,11 @@ class AttentionViewer:
         # Head slider
         self.head_slider = QSlider(Qt.Horizontal)
         self.head_slider.setMinimum(-1)
-        self.head_slider.setMaximum(8)  # Will be updated with actual head count
-        self.head_slider.setValue(0)
+        self.head_slider.setMaximum(self.n_heads-1)  # Will be updated with actual head count
+        self.head_slider.setValue(-1)
         self.head_slider.valueChanged.connect(
             lambda value: (
-                self.head_value_label.setText(str(value)),
+                self.head_value_label.setText(str(value+1) + f"/{self.n_heads}"),
                 self._on_update_attention_map(),
             )
         )
@@ -356,7 +360,7 @@ class AttentionViewer:
         head_layout.addWidget(self.head_right_btn)
 
         # Head value display
-        self.head_value_label = QLabel("0")
+        self.head_value_label = QLabel("1/8")
         self.head_value_label.setMinimumWidth(25)
         self.head_value_label.setAlignment(Qt.AlignCenter)
         head_layout.addWidget(self.head_value_label)
@@ -660,10 +664,13 @@ class AttentionViewer:
                 )
 
                 # Determine number of heads and layers and update UI elements
-                num_layers = len(self.attention_weights)
-                num_heads = self.attention_weights[0].shape[1]
-                self.layer_slider.setMaximum(num_layers - 1)
-                self.head_slider.setMaximum(num_heads - 1)
+                self.n_layers = len(self.attention_weights)
+                self.n_heads = self.attention_weights[0].shape[1]
+                self.layer_slider.setMaximum(self.n_layers-1)
+                self.head_slider.setMaximum(self.n_heads-1)
+                self.layer_value_label.setText(f"{self.layer_slider.value()+1}/{self.n_layers}")
+                self.head_value_label.setText(f"{self.head_slider.value()+1}/{self.n_heads}")
+
 
                 # Get thumbnail of the slide
                 self.image = _get_thumb(self.slide, slide_mpp)
@@ -692,6 +699,9 @@ class AttentionViewer:
                 ]  # Shape: [batch, tokens, tokens]
             # Cut out batch dimension
             self.attention_map = self.attention_map[0, ...]  # Shape: [tokens, tokens]
+
+            # Take absolute values to account positive and negative attention similarly
+            self.attention_map = self.attention_map.abs()
 
             # Normalize attention map to [0, 1] by using percentiles (not considering cls token)
             percentile_low = np.percentile(self.attention_map[1:, 1:], 0.5)
@@ -774,7 +784,7 @@ class AttentionViewer:
         selected_label = QLabel()
     
         # Create label text and selected image
-        if  self.attention_handling.currentData() == 6: # Class token attention (no reference image)
+        if  self.attention_handling.currentData() in (2,3, 4, 5, 6, 8): # If heatmap type is agnostic to token selection
             # Create QLabel for Class token
             selected_pixmap = QPixmap(200, 200) # blank image
             selected_pixmap.fill(Qt.transparent)  
@@ -1032,6 +1042,16 @@ class AttentionViewer:
             token_attn = (token_attn - percentile_low) / (
                 percentile_high - percentile_low + 1e-8
             )
+
+        # Mutual attention
+        elif selected_direction == 7:
+            mutual_attn_matrix = self.attention_map[1:, 1:] * self.attention_map[1:, 1:].T
+            token_attn = mutual_attn_matrix[:,selected_token_idx]
+
+        # Mean mutual attention
+        elif selected_direction == 8:
+            mutual_attn_matrix = self.attention_map[1:, 1:] * self.attention_map[1:, 1:].T
+            token_attn = torch.max(mutual_attn_matrix, dim=1)[0]
 
         else:
             raise ValueError(f"Invalid direction selected: {selected_direction}")
