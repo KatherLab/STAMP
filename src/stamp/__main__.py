@@ -237,6 +237,27 @@ def _run_cli(args: argparse.Namespace) -> None:
                 opacity=config.heatmaps.opacity,
             )
 
+        case "attentionui":
+            from stamp.heatmaps import attention_ui_
+
+            if config.attentionui is None:
+                raise ValueError("no attention configuration supplied")
+
+            _add_file_handle_(_logger, output_dir=config.attentionui.output_dir)
+            _logger.info(
+                "using the following configuration:\n"
+                f"{yaml.dump(config.attentionui.model_dump(mode='json'))}"
+            )
+            attention_ui_(
+                feature_dir=config.attentionui.feature_dir,
+                wsi_dir=config.attentionui.wsi_dir,
+                checkpoint_path=config.attentionui.checkpoint_path,
+                output_dir=config.attentionui.output_dir,
+                slide_paths=config.attentionui.slide_paths,
+                device=config.attentionui.device,
+                default_slide_mpp=config.attentionui.default_slide_mpp,
+            )
+
         case _:
             raise RuntimeError(
                 "unreachable: the argparser should only allow valid commands"
@@ -296,6 +317,9 @@ def main() -> None:
     )
     commands.add_parser("config", help="Print the loaded configuration")
     commands.add_parser("heatmaps", help="Generate heatmaps for a trained model")
+    commands.add_parser(
+        "attentionui", help="Provides an interactive UI for exploring attention maps"
+    )
 
     args = parser.parse_args()
 

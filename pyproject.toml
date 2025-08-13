@@ -97,6 +97,10 @@ virchow2 = [
     "huggingface-hub>=0.27.1",
     "torch>=2.0.0",
 ]
+attentionui =[
+    "napari>=0.6.0",
+    "pyqt5>=5.15.11",
+]
 cobra = [
     "stamp[flash-attention]",
     "causal-conv1d @ git+https://github.com/KatherLab/causal-conv1d.git@b73d1ca0e0726ba6520c38d342bd411bb5850064",
