@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import os
+from pathlib import Path
 import platform
 import subprocess
 import tempfile
@@ -18,6 +19,7 @@ mcp = FastMCP("STAMP MCP Server")
 STAMP_LOGGER = logging.getLogger("stamp")
 # TODO: add proper filesystem management
 base_dir = "./"
+base = Path(base_dir).resolve()
 
 
 class MCPLogHandler(logging.Handler):
@@ -694,23 +696,11 @@ async def encode_patients_stamp(
     return await _run_stamp(mode="encode_patients", config=config, ctx=ctx)
 
 
-def _resolve_path(path: str) -> str:
-    """
-    Resolves the absolute path and ensures it's within the allowed base directory.
-
-    Args:
-        path (str): Relative path from the allowed base directory.
-
-    Returns:
-        str: Safe, absolute path.
-
-    Raises:
-        PermissionError: If the resolved path is outside the allowed directory.
-    """
-    abs_path = os.path.abspath(os.path.join(base_dir, path))
-    if not abs_path.startswith(base_dir):
-        raise PermissionError(f"Access denied to path: {path}")
-    return abs_path
+def _resolve_path(subpath: str) -> Path:
+    requested = (base / subpath).resolve()
+    if base not in requested.parents and requested != base:
+        raise PermissionError(f"Access denied: {subpath}")
+    return requested
 
 
 @mcp.tool
@@ -732,7 +722,7 @@ def read_file(path: str) -> str:
 @mcp.tool
 def list_files(subdir: str = "") -> list:
     """
-    List all files under the given subdirectory (default is root), recursively,
+    List all files and directories under the given subdirectory (default is root), recursively,
     returning paths relative to the base directory.
 
     Args:
@@ -741,14 +731,20 @@ def list_files(subdir: str = "") -> list:
     Returns:
         list: List of relative file paths found.
     """
-    safe_path = _resolve_path(subdir)
-    file_list = []
-    for root, _, files in os.walk(safe_path):
+    safe = _resolve_path(subdir)
+    if not safe.is_dir():
+        raise FileNotFoundError(f"Subdirectory does not exist: {subdir}")
+    results = []
+    base_len = len(str(base)) + 1  # To slice off base path + separator
+    for root, dirs, files in os.walk(safe):
+        rel_root = str(root)[base_len:]  # relative path under base_dir
+        for d in dirs:
+            path = os.path.join(rel_root, d)
+            results.append(path + "/")
         for f in files:
-            full_path = os.path.join(root, f)
-            rel_path = os.path.relpath(full_path, base_dir)
-            file_list.append(rel_path)
-    return file_list
+            path = os.path.join(rel_root, f)
+            results.append(path)
+    return sorted(results)
 
 
 @mcp.tool
