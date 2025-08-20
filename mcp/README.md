@@ -29,13 +29,19 @@ uv sync --extra build --extra gpu --extra mcp
 
 This example demonstrates how to connect an STAMP MCP server into an agent workflow using the official OpenAI Agents SDK v0.1.0
 
-Install OpenAI Agents SDK in your virtual environment.
+Start STAMP MCP server with:
 
-```bash
-uv pip install openai-agents==0.1.0
+```
+python server.py
 ```
 
-The following scripts defines an agent that extract features from given Whole Slide Images:
+The server should start successfully. After that, create a separate workspace with a new virtual environment and install the following:
+
+```bash
+uv pip install openai-agents>=0.1.0
+```
+
+The following file defines an agent that extract features from given Whole Slide Images:
 
 ```python
 # stamp_agent.py
@@ -86,13 +92,9 @@ if __name__ == "__main__":
 
 > :warning: Note: Some STAMP tools (e.g., preprocessing, cross-validation) may run for a long time—please adjust both timeout and sse_read_timeout to avoid connection drops.
 
-Start STAMP MCP server with:
 
-```
-python server.py
-```
 
-On a different console, run your agent:
+On a different console from the one you are running the MCP server, run your agent:
 
 ```
 python stamp_agent.py
