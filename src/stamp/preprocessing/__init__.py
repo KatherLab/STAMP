@@ -41,7 +41,7 @@ __license__ = "MIT"
 # Our images can be rather large, so let's remove the decompression bomb warning
 Image.MAX_IMAGE_PIXELS = None
 
-supported_extensions = {
+_base_extensions = {
     ".czi",
     ".svs",
     ".tif",
@@ -55,6 +55,12 @@ supported_extensions = {
     ".bif",
     ".qptiff",
 }
+
+# Generate both lowercase and uppercase variants for case-insensitive matching
+supported_extensions = set()
+for ext in _base_extensions:
+    supported_extensions.add(ext.lower())
+    supported_extensions.add(ext.upper())
 
 _logger = logging.getLogger("stamp")
 
@@ -255,9 +261,12 @@ def extract_(
         slide_paths = _get_slide_paths(wsi_list)
         slide_paths = [wsi_dir / slide for slide in slide_paths]
     else:
-        slide_paths = [
-            p for ext in supported_extensions for p in wsi_dir.glob(f"**/*{ext}")
-        ]
+        # Use case-insensitive extension matching to find all WSI files recursively
+        all_files = wsi_dir.glob("**/*")
+        slide_paths = []
+        for file_path in all_files:
+            if file_path.is_file() and file_path.suffix.lower() in _base_extensions:
+                slide_paths.append(file_path)
 
     # We shuffle so if we run multiple jobs on multiple computers at the same time,
     # They won't interfere with each other too much
