@@ -19,7 +19,7 @@ from torch.func import jacrev  # pyright: ignore[reportPrivateImportUsage]
 from stamp.modeling.data import get_coords, get_stride
 from stamp.modeling.lightning_model import LitVisionTransformer
 from stamp.modeling.vision_transformer import VisionTransformer
-from stamp.preprocessing import supported_extensions
+from stamp.preprocessing import supported_extensions, _base_extensions
 from stamp.preprocessing.tiling import get_slide_mpp_
 from stamp.types import DeviceLikeType, Microns, SlideMPP, TilePixels
 from packaging.version import Version
@@ -174,8 +174,11 @@ def heatmaps_(
     if slide_paths is not None:
         wsis_to_process = (wsi_dir / slide for slide in slide_paths)
     else:
+        # Use case-insensitive extension matching to find all WSI files recursively
+        all_files = wsi_dir.glob("**/*")
         wsis_to_process = (
-            p for ext in supported_extensions for p in wsi_dir.glob(f"**/*{ext}")
+            p for p in all_files 
+            if p.is_file() and p.suffix.lower() in _base_extensions
         )
 
     for wsi_path in wsis_to_process:
