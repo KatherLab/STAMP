@@ -29,13 +29,13 @@ STAMP is an **end‑to‑end, weakly‑supervised deep‑learning pipeline** tha
 
 - **[Squamous Tumors & Survival](https://www.sciencedirect.com/science/article/pii/S0893395225001425):** In a multi-cohort study spanning four squamous carcinoma types (head & neck, esophageal, lung, cervical), STAMP was used to extract slide-level features for a deep learning model that predicted patient survival directly from H&E whole-slide images.  
 
-- **[Inflammatory Bowel Disease Atlas](https://www.nature.com/articles/s41591-024-03167-6):** In a 1,002-patient multi-center IBD study, all histology slides were processed with the STAMP workflow, enabling a weakly-supervised MIL model to accurately predict histologic disease activity scores from H&E tissue sections.  
+- **[Inflammatory Bowel Disease Atlas](https://www.researchsquare.com/article/rs-6443303/v1):** In a 1,002-patient multi-center IBD study, all histology slides were processed with the STAMP workflow, enabling a weakly-supervised MIL model to accurately predict histologic disease activity scores from H&E tissue sections.  
 
-- **[Foundation Model Benchmarking](https://www.nature.com/articles/s41586-024-07428-w):** A large-scale evaluation of 19 pathology foundation models built its pipeline on STAMP (v1.1.0) for standardized WSI tiling and feature extraction, demonstrating STAMP’s utility as an open-source framework for reproducible model training across diverse cancer biomarkers.  
+- **[Foundation Model Benchmarking](https://arxiv.org/pdf/2408.15823):** A large-scale evaluation of 19 pathology foundation models built its pipeline on STAMP (v1.1.0) for standardized WSI tiling and feature extraction, demonstrating STAMP’s utility as an open-source framework for reproducible model training across diverse cancer biomarkers.  
 
-- **[Breast Cancer Risk Stratification](https://www.sciencedirect.com/science/article/pii/S2590177X2400072X):** In an international early breast cancer study, STAMP performed slide tessellation and color normalization (e.g. 1.14 µm/px resolution, Macenko norm) as part of a multimodal transformer pipeline to predict recurrence risk (Oncotype DX scores) from pathology images.  
+- **[Breast Cancer Risk Stratification](https://doi.org/10.1038/s41467-025-57283-x):** In an international early breast cancer study, STAMP performed slide tessellation and color normalization (e.g. 1.14 µm/px resolution, Macenko norm) as part of a multimodal transformer pipeline to predict recurrence risk (Oncotype DX scores) from pathology images.  
 
-- **[Endometrial Cancer Subtyping](https://www.medrxiv.org/content/10.1101/2024.06.12.24308434v1):** A recent endometrial cancer project employed a modified STAMP pipeline with a pre-trained vision transformer (Virchow2) to predict molecular tumor subtypes directly from H&E slides, achieving strong diagnostic performance in cross-validation.  
+- **[Endometrial Cancer Subtyping](https://www.actscience.org/Portals/0/Translational%20Science%202025/Top%2050%20Posters/TS25_VincentWagner_OralPosterSession.pdf):** A recent endometrial cancer project employed a modified STAMP pipeline with a pre-trained vision transformer (Virchow2) to predict molecular tumor subtypes directly from H&E slides, achieving strong diagnostic performance in cross-validation.  
 
 
 ## Installation
