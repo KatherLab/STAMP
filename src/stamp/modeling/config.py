@@ -1,5 +1,6 @@
 import os
 from collections.abc import Sequence
+from enum import StrEnum
 from pathlib import Path
 
 import torch
@@ -76,11 +77,25 @@ class MlpModelParams(BaseModel):
     num_layers: int = 2
     dropout: float = 0.25
 
+class TransformerModelParams(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    embed_dim: int = 512
+    num_heads: int = 8
+    ff_dim: int = 2048
+    dropout: float = 0.1
+
+
+class TransMILModelParams(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    dim_hidden: int = 512
+
 
 class ModelParams(BaseModel):
     model_config = ConfigDict(extra="forbid")
     vit: VitModelParams
     mlp: MlpModelParams
+    transformer: TransformerModelParams | None = None
+    trans_mil: TransMILModelParams | None = None
 
 
 class AdvancedConfig(BaseModel):
@@ -95,6 +110,6 @@ class AdvancedConfig(BaseModel):
     div_factor: float = 25.0
     model_name: ModelName | None = Field(
         default=None,
-        description='Optional: "vit" or "mlp". Defaults based on feature type.',
+        description='Optional. "vit" or "mlp" are defaults based on feature type.',
     )
     model_params: ModelParams

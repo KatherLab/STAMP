@@ -1,4 +1,5 @@
 import logging
+import random
 import shutil
 from collections import Counter
 from collections.abc import Callable, Mapping, Sequence
@@ -9,6 +10,7 @@ import lightning
 import lightning.pytorch
 import lightning.pytorch.accelerators
 import lightning.pytorch.accelerators.accelerator
+import numpy as np
 import torch
 from lightning.pytorch.accelerators.accelerator import Accelerator
 from lightning.pytorch.callbacks import EarlyStopping, ModelCheckpoint
@@ -45,12 +47,20 @@ __license__ = "MIT"
 _logger = logging.getLogger("stamp")
 
 
+
 def train_categorical_model_(
     *,
     config: TrainConfig,
     advanced: AdvancedConfig,
 ) -> None:
     """Trains a model based on the feature type."""
+    seed = 42
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+    lightning.pytorch.seed_everything(seed, workers=True)
+
     feature_type = detect_feature_type(config.feature_dir)
     _logger.info(f"Detected feature type: {feature_type}")
 
@@ -206,7 +216,48 @@ def setup_model_for_training(
 
     # 6. Instantiate the model dynamically
     ModelClass = model_info["model_class"]
-    all_params = {**common_params, **model_specific_params}
+    all_params = {**common_params}
+
+    match advanced.model_name.value:
+        case ModelName.VIT:
+            from stamp.modeling.classifier.vision_tranformers import VisionTransformer
+
+            classifier = VisionTransformer(
+                dim_output=len(train_categories),
+                dim_input=dim_feats,
+                **model_specific_params,
+            )
+
+        case ModelName.TRANSFORMER:
+            from stamp.modeling.classifier.transformer import Transformer
+
+            classifier = Transformer(
+                dim_output=len(train_categories),
+                dim_input=dim_feats,
+                **model_specific_params,
+            )
+
+        case ModelName.TRANS_MIL:
+            from stamp.modeling.classifier.trans_mil import TransMIL
+
+            classifier = TransMIL(
+                dim_output=len(train_categories),
+                dim_input=dim_feats,
+                **model_specific_params,
+            )
+
+        case ModelName.MLP:
+            from stamp.modeling.classifier.mlp import MLPClassifier
+
+            classifier = MLPClassifier(
+                dim_output=len(train_categories),
+                dim_input=dim_feats,
+                **model_specific_params,
+            )
+
+        case _:
+            raise ValueError(f"Unknown model name: {advanced.model_name.value}")
+
     _logger.info(
         f"Instantiating model '{advanced.model_name.value}' with parameters: {model_specific_params}"
     )
@@ -215,7 +266,7 @@ def setup_model_for_training(
         advanced.max_epochs,
         advanced.patience,
     )
-    model = ModelClass(**all_params)
+    model = ModelClass(**all_params, model=classifier)
 
     return model, train_dl, valid_dl
 

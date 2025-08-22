@@ -136,7 +136,10 @@ def _run_cli(args: argparse.Namespace) -> None:
             # use default advanced config in case none is provided
             if config.advanced_config is None:
                 config.advanced_config = AdvancedConfig(
-                    model_params=ModelParams(vit=VitModelParams(), mlp=MlpModelParams())
+                    model_params=ModelParams(
+                        vit=VitModelParams(),
+                        mlp=MlpModelParams(),
+                    )
                 )
 
             _add_file_handle_(_logger, output_dir=config.training.output_dir)
@@ -188,7 +191,10 @@ def _run_cli(args: argparse.Namespace) -> None:
             # use default advanced config in case none is provided
             if config.advanced_config is None:
                 config.advanced_config = AdvancedConfig(
-                    model_params=ModelParams(vit=VitModelParams(), mlp=MlpModelParams())
+                    model_params=ModelParams(
+                        vit=VitModelParams(),
+                        mlp=MlpModelParams(),
+                    )
                 )
 
             categorical_crossval_(

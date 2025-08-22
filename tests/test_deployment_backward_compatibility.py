@@ -2,9 +2,10 @@ import pytest
 import torch
 
 from stamp.cache import download_file
+from stamp.modeling.classifier import LitTileClassifier
+from stamp.modeling.classifier.vision_tranformers import VisionTransformer
 from stamp.modeling.data import PatientData, tile_bag_dataloader
 from stamp.modeling.deploy import _predict
-from stamp.modeling.lightning_model import LitVisionTransformer
 from stamp.types import FeaturePath, PatientId
 
 
@@ -23,7 +24,27 @@ def test_backwards_compatibility() -> None:
         sha256sum="9ee5172c205c15d55eb9a8b99e98319c1a75b7fdd6adde7a3ae042d3c991285e",
     )
 
-    model = LitVisionTransformer.load_from_checkpoint(example_checkpoint_path)
+    # Load hparams from the checkpoint (without rebuilding the model yet)
+    checkpoint = torch.load(
+        example_checkpoint_path, map_location="cpu", weights_only=False
+    )
+    hparams = checkpoint["hyper_parameters"]
+
+    vision_transformer = VisionTransformer(
+        dim_output=len(hparams["categories"]),
+        dim_input=hparams["dim_input"],
+        dim_model=hparams["dim_model"],
+        dim_feedforward=hparams["dim_feedforward"],
+        n_heads=hparams["n_heads"],
+        n_layers=hparams["n_layers"],
+        dropout=hparams["dropout"],
+        use_alibi=hparams["use_alibi"],
+    )
+
+    model = LitTileClassifier.load_from_checkpoint(
+        example_checkpoint_path,
+        model=vision_transformer,
+    )
 
     # Prepare PatientData and DataLoader for the test patient
     patient_id = PatientId("TestPatient")

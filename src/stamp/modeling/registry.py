@@ -3,8 +3,7 @@ from typing import Sequence, Type, TypedDict
 
 import lightning
 
-from stamp.modeling.lightning_model import LitVisionTransformer
-from stamp.modeling.mlp_classifier import LitMLPClassifier
+from stamp.modeling.classifier import LitPatientlassifier, LitTileClassifier
 
 
 class ModelName(StrEnum):
@@ -12,6 +11,8 @@ class ModelName(StrEnum):
 
     VIT = "vit"
     MLP = "mlp"
+    TRANS_MIL = "trans_mil"
+    TRANSFORMER = "transformer"
 
 
 class ModelInfo(TypedDict):
@@ -24,11 +25,19 @@ class ModelInfo(TypedDict):
 
 MODEL_REGISTRY: dict[ModelName, ModelInfo] = {
     ModelName.VIT: {
-        "model_class": LitVisionTransformer,
-        "supported_features": LitVisionTransformer.supported_features,
+        "model_class": LitTileClassifier,
+        "supported_features": LitTileClassifier.supported_features,
     },
     ModelName.MLP: {
-        "model_class": LitMLPClassifier,
-        "supported_features": LitMLPClassifier.supported_features,
+        "model_class": LitPatientlassifier,
+        "supported_features": LitPatientlassifier.supported_features,
+    },
+    ModelName.TRANS_MIL: {
+        "model_class": LitTileClassifier,
+        "supported_features": LitTileClassifier.supported_features,
+    },
+    ModelName.TRANSFORMER: {
+        "model_class": LitTileClassifier,
+        "supported_features": LitTileClassifier.supported_features,
     },
 }
