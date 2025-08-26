@@ -1,9 +1,8 @@
 import torch
 
-from stamp.modeling.classifier import LitPatientlassifier, LitTileClassifier
+from stamp.modeling.classifier import LitPatientlassifier
 from stamp.modeling.classifier.mlp import MLPClassifier
-from stamp.modeling.classifier.vision_tranformers import VisionTransformer
-from stamp.modeling.mlp_classifier import LitMLPClassifier
+from stamp.modeling.classifier.vision_tranformer import VisionTransformer
 
 
 def test_vision_transformer_dims(
@@ -84,10 +83,11 @@ def test_mlp_classifier_dims(
     model = LitPatientlassifier(
         categories=[str(i) for i in range(num_classes)],
         category_weights=torch.ones(num_classes),
+        dim_input=input_dim,
         model=MLPClassifier(
+            input_dim,
+            dim_hidden,
             dim_output=num_classes,
-            dim_input=input_dim,
-            dim_hidden=dim_hidden,
             num_layers=num_layers,
             dropout=0.1,
         ),
@@ -114,12 +114,13 @@ def test_mlp_inference_reproducibility(
     model = LitPatientlassifier(
         categories=[str(i) for i in range(num_classes)],
         category_weights=torch.ones(num_classes),
+        dim_input=input_dim,
         model=MLPClassifier(
-            dim_output=num_classes,
-            dim_input=input_dim,
-            dim_hidden=dim_hidden,
-            num_layers=num_layers,
-            dropout=0.1,
+            input_dim,
+            dim_hidden,
+            num_classes,
+            num_layers,
+            0.1,
         ),
         ground_truth_label="test",
         train_patients=["pat1", "pat2"],

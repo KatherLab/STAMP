@@ -12,24 +12,23 @@ from jaxtyping import Float, Integer
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 from matplotlib.patches import Patch
+from packaging.version import Version
 from PIL import Image
-from torch import Tensor
+from torch import Tensor, nn
 from torch.func import jacrev  # pyright: ignore[reportPrivateImportUsage]
 
+from stamp.modeling.classifier import LitTileClassifier
+from stamp.modeling.classifier.vision_tranformer import VisionTransformer
 from stamp.modeling.data import get_coords, get_stride
-from stamp.modeling.lightning_model import LitVisionTransformer
-from stamp.modeling.vision_transformer import VisionTransformer
 from stamp.preprocessing import supported_extensions
 from stamp.preprocessing.tiling import get_slide_mpp_
 from stamp.types import DeviceLikeType, Microns, SlideMPP, TilePixels
-from packaging.version import Version
-
 
 _logger = logging.getLogger("stamp")
 
 
 def _gradcam_per_category(
-    model: VisionTransformer,
+    model: nn.Module,
     feats: Float[Tensor, "tile feat"],
     coords: Float[Tensor, "tile 2"],
 ) -> Float[Tensor, "tile category"]:
@@ -228,7 +227,7 @@ def heatmaps_(
         coords_tile_slide_px = torch.round(coords_um / slide_mpp).long()
 
         model = (
-            LitVisionTransformer.load_from_checkpoint(checkpoint_path).to(device).eval()
+            LitTileClassifier.load_from_checkpoint(checkpoint_path).to(device).eval()
         )
 
         # TODO: Update version when a newer model logic breaks heatmaps.
@@ -240,7 +239,7 @@ def heatmaps_(
 
         # Score for the entire slide
         slide_score = (
-            model.vision_transformer(
+            model.model(
                 bags=feats.unsqueeze(0),
                 coords=coords_um.unsqueeze(0),
                 mask=None,
@@ -253,7 +252,7 @@ def heatmaps_(
         highest_prob_class_idx = slide_score.argmax().item()
 
         gradcam = _gradcam_per_category(
-            model=model.vision_transformer,
+            model=model.model,
             feats=feats,
             coords=coords_um,
         )  # shape: [tile, category]
@@ -263,7 +262,7 @@ def heatmaps_(
         ).detach()  # shape: [width, height, category]
 
         scores = torch.softmax(
-            model.vision_transformer.forward(
+            model.model.forward(
                 bags=feats.unsqueeze(-2),
                 coords=coords_um.unsqueeze(-2),
                 mask=torch.zeros(len(feats), 1, dtype=torch.bool, device=device),

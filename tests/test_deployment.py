@@ -7,7 +7,7 @@ from random_data import create_random_patient_level_feature_file, make_old_featu
 
 from stamp.modeling.classifier import LitPatientlassifier, LitTileClassifier
 from stamp.modeling.classifier.mlp import MLPClassifier
-from stamp.modeling.classifier.vision_tranformers import VisionTransformer
+from stamp.modeling.classifier.vision_tranformer import VisionTransformer
 from stamp.modeling.data import (
     PatientData,
     patient_feature_dataloader,
@@ -29,9 +29,10 @@ def test_predict(
     model = LitTileClassifier(
         categories=list(categories),
         category_weights=torch.rand(len(categories)),
+        dim_input=dim_input,
         model=VisionTransformer(
-            dim_output=len(categories),
             dim_input=dim_input,
+            dim_output=len(categories),
             dim_model=n_heads * 3,
             dim_feedforward=56,
             n_heads=n_heads,

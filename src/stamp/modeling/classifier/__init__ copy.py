@@ -43,9 +43,15 @@ class LitTileClassifier(lightning.LightningModule):
         categories: List of class labels.
         category_weights: Class weights for cross-entropy loss to handle imbalance.
         dim_input: Input feature dimensionality per tile.
+        dim_model: Latent dimensionality used inside the transformer.
+        dim_feedforward: Dimensionality of the transformer MLP block.
+        n_heads: Number of self-attention heads.
+        n_layers: Number of transformer layers.
+        dropout: Dropout rate used throughout the model.
         total_steps: Number of steps done in the LR Scheduler cycle.
         max_lr: max learning rate.
         div_factor: Determines the initial learning rate via initial_lr = max_lr/div_factor
+        use_alibi: Whether to use ALiBi-style positional bias in attention (optional).
         ground_truth_label: Column name for accessing ground-truth labels from metadata.
         train_patients: List of patient IDs used for training.
         valid_patients: List of patient IDs used for validation.
@@ -60,8 +66,12 @@ class LitTileClassifier(lightning.LightningModule):
         *,
         categories: Sequence[Category],
         category_weights: Float[Tensor, "category_weight"],  # noqa: F821
-        # Classifier model instance
-        model: nn.Module,
+        dim_input: int,
+        dim_output: int,
+        # Classifier model
+        model: type[nn.Module],
+        # Model specific params
+        model_specific_params: dict,
         # Learning Rate Scheduler params, not used in inference
         total_steps: int,
         max_lr: float,
@@ -80,11 +90,13 @@ class LitTileClassifier(lightning.LightningModule):
             raise ValueError(
                 "the number of category weights has to match the number of categories!"
             )
-        # classifier_param_keys = inspect.signature(model).parameters.keys()
-        # model_params = {
-        #     k: v for k, v in model_specific_params.items() if k in classifier_param_keys
-        # }
-        self.vision_transformer = model
+        classifier_param_keys = inspect.signature(model).parameters.keys()
+        model_params = {
+            k: v for k, v in model_specific_params.items() if k in classifier_param_keys
+        }
+        self.model = model(
+            dim_output=len(categories), dim_input=dim_input, **model_params
+        )
 
         self.class_weights = category_weights
         self.valid_auroc = MulticlassAUROC(len(categories))
@@ -126,7 +138,7 @@ class LitTileClassifier(lightning.LightningModule):
         self,
         bags: Bags,
     ) -> Float[Tensor, "batch logit"]:
-        return self.vision_transformer(bags)
+        return self.model(bags)
 
     def _step(
         self,
@@ -139,7 +151,7 @@ class LitTileClassifier(lightning.LightningModule):
 
         mask = _mask_from_bags(bags=bags, bag_sizes=bag_sizes) if use_mask else None
 
-        logits = self.vision_transformer(bags, coords=coords, mask=mask)
+        logits = self.model(bags, coords=coords, mask=mask)
 
         loss = nn.functional.cross_entropy(
             logits,
@@ -197,7 +209,7 @@ class LitTileClassifier(lightning.LightningModule):
     ) -> Float[Tensor, "batch logit"]:
         bags, coords, bag_sizes, _ = batch
         # adding a mask here will *drastically* and *unbearably* increase memory usage
-        return self.vision_transformer(bags, coords=coords, mask=None)
+        return self.model(bags, coords=coords, mask=None)
 
     def configure_optimizers(
         self,
@@ -266,10 +278,6 @@ class LitPatientlassifier(lightning.LightningModule):
     ):
         super().__init__()
         self.save_hyperparameters()
-        # classifier_param_keys = inspect.signature(model).parameters.keys()
-        # model_params = {
-        #     k: v for k, v in model_specific_params.items() if k in classifier_param_keys
-        # }
         self.model = model
 
         self.class_weights = category_weights

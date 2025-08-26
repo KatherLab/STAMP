@@ -20,8 +20,6 @@ from stamp.modeling.data import (
     slide_to_patient_from_slide_table_,
     tile_bag_dataloader,
 )
-from stamp.modeling.lightning_model import LitVisionTransformer
-from stamp.modeling.mlp_classifier import LitMLPClassifier
 from stamp.types import GroundTruth, PandasLabel, PatientId
 
 __all__ = ["deploy_categorical_model_"]

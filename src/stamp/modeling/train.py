@@ -31,14 +31,18 @@ from stamp.modeling.data import (
     slide_to_patient_from_slide_table_,
     tile_bag_dataloader,
 )
-from stamp.modeling.lightning_model import (
-    Bags,
-    BagSizes,
-    EncodedTargets,
-)
 from stamp.modeling.registry import MODEL_REGISTRY, ModelName
 from stamp.modeling.transforms import VaryPrecisionTransform
-from stamp.types import Category, CoordinatesBatch, GroundTruth, PandasLabel, PatientId
+from stamp.types import (
+    Bags,
+    BagSizes,
+    Category,
+    CoordinatesBatch,
+    EncodedTargets,
+    GroundTruth,
+    PandasLabel,
+    PatientId,
+)
 
 __author__ = "Marko van Treeck"
 __copyright__ = "Copyright (C) 2024 Marko van Treeck"
@@ -54,13 +58,6 @@ def train_categorical_model_(
     advanced: AdvancedConfig,
 ) -> None:
     """Trains a model based on the feature type."""
-    seed = 42
-    random.seed(seed)
-    np.random.seed(seed)
-    torch.manual_seed(seed)
-    torch.cuda.manual_seed_all(seed)
-    lightning.pytorch.seed_everything(seed, workers=True)
-
     feature_type = detect_feature_type(config.feature_dir)
     _logger.info(f"Detected feature type: {feature_type}")
 
@@ -216,47 +213,31 @@ def setup_model_for_training(
 
     # 6. Instantiate the model dynamically
     ModelClass = model_info["model_class"]
-    all_params = {**common_params}
 
     match advanced.model_name.value:
         case ModelName.VIT:
-            from stamp.modeling.classifier.vision_tranformers import VisionTransformer
-
-            classifier = VisionTransformer(
-                dim_output=len(train_categories),
-                dim_input=dim_feats,
-                **model_specific_params,
+            from stamp.modeling.classifier.vision_tranformer import (
+                VisionTransformer as Classifier,
             )
 
         case ModelName.TRANSFORMER:
-            from stamp.modeling.classifier.transformer import Transformer
-
-            classifier = Transformer(
-                dim_output=len(train_categories),
-                dim_input=dim_feats,
-                **model_specific_params,
-            )
+            from stamp.modeling.classifier.transformer import Transformer as Classifier
 
         case ModelName.TRANS_MIL:
-            from stamp.modeling.classifier.trans_mil import TransMIL
-
-            classifier = TransMIL(
-                dim_output=len(train_categories),
-                dim_input=dim_feats,
-                **model_specific_params,
-            )
+            from stamp.modeling.classifier.trans_mil import TransMIL as Classifier
 
         case ModelName.MLP:
-            from stamp.modeling.classifier.mlp import MLPClassifier
-
-            classifier = MLPClassifier(
-                dim_output=len(train_categories),
-                dim_input=dim_feats,
-                **model_specific_params,
-            )
+            from stamp.modeling.classifier.mlp import MLPClassifier as Classifier
 
         case _:
             raise ValueError(f"Unknown model name: {advanced.model_name.value}")
+
+    # Build the backbone instance
+    backbone = Classifier(
+        dim_output=len(train_categories),
+        dim_input=dim_feats,
+        **model_specific_params,
+    )
 
     _logger.info(
         f"Instantiating model '{advanced.model_name.value}' with parameters: {model_specific_params}"
@@ -266,7 +247,11 @@ def setup_model_for_training(
         advanced.max_epochs,
         advanced.patience,
     )
-    model = ModelClass(**all_params, model=classifier)
+
+    model = ModelClass(
+        **common_params,
+        model=backbone,
+    )
 
     return model, train_dl, valid_dl
 
@@ -403,6 +388,7 @@ def train_model_(
     )
     trainer = lightning.Trainer(
         default_root_dir=output_dir,
+        # check_val_every_n_epoch=5,
         callbacks=[
             EarlyStopping(monitor="validation_loss", mode="min", patience=patience),
             model_checkpoint,
@@ -414,7 +400,7 @@ def train_model_(
         #     the default strategy no multiple GPUs
         #  2. `barspoon.model.SafeMulticlassAUROC` breaks on multiple GPUs
         accelerator=accelerator,
-        devices=1,
+        devices=[1],
         gradient_clip_val=0.5,
         logger=CSVLogger(save_dir=output_dir),
         log_every_n_steps=len(train_dl),

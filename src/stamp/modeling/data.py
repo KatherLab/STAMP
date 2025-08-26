@@ -5,7 +5,7 @@ from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import KW_ONLY, dataclass
 from itertools import groupby
 from pathlib import Path
-from typing import IO, BinaryIO, Generic, TextIO, TypeAlias, cast, Union
+from typing import IO, BinaryIO, Generic, TextIO, TypeAlias, Union, cast
 
 import h5py
 import numpy as np

@@ -6,6 +6,7 @@ import numpy as np
 from pydantic import BaseModel
 from sklearn.model_selection import StratifiedKFold
 
+from stamp.modeling.classifier import LitPatientlassifier, LitTileClassifier
 from stamp.modeling.config import AdvancedConfig, CrossvalConfig
 from stamp.modeling.data import (
     PatientData,
@@ -18,8 +19,6 @@ from stamp.modeling.data import (
     tile_bag_dataloader,
 )
 from stamp.modeling.deploy import _predict, _to_prediction_df
-from stamp.modeling.lightning_model import LitVisionTransformer
-from stamp.modeling.mlp_classifier import LitMLPClassifier
 from stamp.modeling.train import setup_model_for_training, train_model_
 from stamp.modeling.transforms import VaryPrecisionTransform
 from stamp.types import (
@@ -179,11 +178,11 @@ def categorical_crossval_(
             )
         else:
             if feature_type == "tile":
-                model = LitVisionTransformer.load_from_checkpoint(
+                model = LitTileClassifier.load_from_checkpoint(split_dir / "model.ckpt")
+            else:
+                model = LitPatientlassifier.load_from_checkpoint(
                     split_dir / "model.ckpt"
                 )
-            else:
-                model = LitMLPClassifier.load_from_checkpoint(split_dir / "model.ckpt")
 
         # Deploy on test set
         if not (split_dir / "patient-preds.csv").exists():
