@@ -93,16 +93,19 @@ class TransMILModelParams(BaseModel):
     dim_hidden: int = 512
 
 class CTransformerModelParams(BaseModel):
-    model_config = ConfigDict(extra="forbid")
     dim_hidden: int = 512
+    model_config = ConfigDict(extra="forbid")
 
 
 class ModelParams(BaseModel):
     model_config = ConfigDict(extra="forbid")
+    # Tile level models
     vit: VitModelParams
-    mlp: MlpModelParams
+    ctransformer: CTransformerModelParams | None = None
     transformer: TransformerModelParams | None = None
     trans_mil: TransMILModelParams | None = None
+    # Patient level models
+    mlp: MlpModelParams
 
 
 class AdvancedConfig(BaseModel):
