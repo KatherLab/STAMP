@@ -29,9 +29,42 @@ def test_backwards_compatibility() -> None:
         example_checkpoint_path, map_location="cpu", weights_only=False
     )
     hparams = checkpoint["hyper_parameters"]
+    # can reverse back to this code after new test weight updated
+    # model = LitTileClassifier.load_from_checkpoint(
+    #     example_checkpoint_path,
+    #     model=VisionTransformer(
+    #         dim_input=hparams["dim_input"],
+    #         dim_output=len(hparams["categories"]),
+    #         dim_model=hparams["dim_model"],
+    #         dim_feedforward=hparams["dim_feedforward"],
+    #         n_heads=hparams["n_heads"],
+    #         n_layers=hparams["n_layers"],
+    #         dropout=hparams["dropout"],
+    #         use_alibi=hparams["use_alibi"],
+    #     ),
+    #     strict=False,
+    # )
 
-    model = LitTileClassifier.load_from_checkpoint(
-        example_checkpoint_path,
+    # this is for changing old keys to new keys because of old weight
+    state_dict = checkpoint["state_dict"]
+
+    old_keys = [k for k in state_dict.keys() if k.startswith("vision_transformer.")]
+
+    for k in old_keys:
+        v = state_dict.pop(k)  # remove old entry
+        new_k = k.replace("vision_transformer.", "tile_classifier.")
+        state_dict[new_k] = v
+
+    model = LitTileClassifier(
+        categories=hparams["categories"],
+        category_weights=hparams.get("category_weights"),
+        total_steps=hparams.get("total_steps"),
+        max_lr=hparams.get("max_lr"),
+        div_factor=hparams.get("div_factor"),
+        ground_truth_label=hparams.get("ground_truth_label"),
+        train_patients=hparams.get("train_patients"),
+        valid_patients=hparams.get("valid_patients"),
+        # ... whatever else your __init__ needs
         model=VisionTransformer(
             dim_input=hparams["dim_input"],
             dim_output=len(hparams["categories"]),
@@ -43,6 +76,7 @@ def test_backwards_compatibility() -> None:
             use_alibi=hparams["use_alibi"],
         ),
     )
+    model.load_state_dict(state_dict, strict=False)
 
     # Prepare PatientData and DataLoader for the test patient
     patient_id = PatientId("TestPatient")

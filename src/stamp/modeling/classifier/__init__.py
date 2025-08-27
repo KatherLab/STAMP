@@ -84,7 +84,7 @@ class LitTileClassifier(lightning.LightningModule):
         # model_params = {
         #     k: v for k, v in model_specific_params.items() if k in classifier_param_keys
         # }
-        self.vision_transformer = model
+        self.tile_classifier = model
 
         self.class_weights = category_weights
         self.valid_auroc = MulticlassAUROC(len(categories))
@@ -126,7 +126,7 @@ class LitTileClassifier(lightning.LightningModule):
         self,
         bags: Bags,
     ) -> Float[Tensor, "batch logit"]:
-        return self.vision_transformer(bags)
+        return self.tile_classifier(bags)
 
     def _step(
         self,
@@ -139,7 +139,7 @@ class LitTileClassifier(lightning.LightningModule):
 
         mask = _mask_from_bags(bags=bags, bag_sizes=bag_sizes) if use_mask else None
 
-        logits = self.vision_transformer(bags, coords=coords, mask=mask)
+        logits = self.tile_classifier(bags, coords=coords, mask=mask)
 
         loss = nn.functional.cross_entropy(
             logits,
@@ -197,7 +197,7 @@ class LitTileClassifier(lightning.LightningModule):
     ) -> Float[Tensor, "batch logit"]:
         bags, coords, bag_sizes, _ = batch
         # adding a mask here will *drastically* and *unbearably* increase memory usage
-        return self.vision_transformer(bags, coords=coords, mask=None)
+        return self.tile_classifier(bags, coords=coords, mask=None)
 
     def configure_optimizers(
         self,
@@ -270,7 +270,7 @@ class LitPatientlassifier(lightning.LightningModule):
         # model_params = {
         #     k: v for k, v in model_specific_params.items() if k in classifier_param_keys
         # }
-        self.model = model
+        self.patient_classifier = model
 
         self.class_weights = category_weights
         self.valid_auroc = MulticlassAUROC(len(categories))
@@ -303,11 +303,11 @@ class LitPatientlassifier(lightning.LightningModule):
             )
 
     def forward(self, x: Tensor) -> Tensor:
-        return self.model(x)
+        return self.patient_classifier(x)
 
     def _step(self, batch, step_name: str):
         feats, targets = batch
-        logits = self.model(feats)
+        logits = self.patient_classifier(feats)
         loss = nn.functional.cross_entropy(
             logits,
             targets.type_as(logits),
@@ -343,7 +343,7 @@ class LitPatientlassifier(lightning.LightningModule):
 
     def predict_step(self, batch, batch_idx):
         feats, _ = batch
-        return self.model(feats)
+        return self.patient_classifier(feats)
 
     def configure_optimizers(
         self,

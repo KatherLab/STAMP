@@ -1,5 +1,4 @@
 import logging
-import random
 import shutil
 from collections import Counter
 from collections.abc import Callable, Mapping, Sequence
@@ -7,10 +6,6 @@ from pathlib import Path
 from typing import cast
 
 import lightning
-import lightning.pytorch
-import lightning.pytorch.accelerators
-import lightning.pytorch.accelerators.accelerator
-import numpy as np
 import torch
 from lightning.pytorch.accelerators.accelerator import Accelerator
 from lightning.pytorch.callbacks import EarlyStopping, ModelCheckpoint
@@ -18,7 +13,7 @@ from lightning.pytorch.loggers import CSVLogger
 from sklearn.model_selection import train_test_split
 from torch.utils.data.dataloader import DataLoader
 
-from stamp.modeling.config import AdvancedConfig, TrainConfig
+from stamp.modeling.config import AdvancedConfig, Seed, TrainConfig
 from stamp.modeling.data import (
     BagDataset,
     PatientData,
@@ -226,13 +221,18 @@ def setup_model_for_training(
         case ModelName.TRANS_MIL:
             from stamp.modeling.classifier.trans_mil import TransMIL as Classifier
 
+        case ModelName.CTRANSFORMER:
+            from stamp.modeling.classifier.ctransformer import (
+                CTransformer as Classifier,
+            )
+
         case ModelName.MLP:
             from stamp.modeling.classifier.mlp import MLPClassifier as Classifier
 
         case _:
             raise ValueError(f"Unknown model name: {advanced.model_name.value}")
 
-    # Build the backbone instance
+    # 7. Build the backbone instance
     backbone = Classifier(
         dim_output=len(train_categories),
         dim_input=dim_feats,
@@ -380,6 +380,7 @@ def train_model_(
         The model with the best validation loss during training.
     """
     torch.set_float32_matmul_precision("high")
+    Seed.set(42)
 
     model_checkpoint = ModelCheckpoint(
         monitor="validation_loss",

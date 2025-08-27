@@ -47,14 +47,6 @@ class Transformer(nn.Module):
         Returns:
             Class logits for each sample: [batch, dim_output]
         """
-
-        if kwargs:
-            unused_keys = ", ".join(kwargs.keys())
-            if unused_keys:
-                # Optional: log or warn that these kwargs are ignored
-                # You can use `warnings.warn(...)` here instead if preferred
-                print(f"[Transformer] Ignored kwargs: {unused_keys}")
-
         B, N, D = x.shape
         x = self.embedding(x)
 
