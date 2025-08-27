@@ -1,11 +1,9 @@
-import math
-
 import numpy as np
 import torch
 import torch.nn as nn
 from beartype import beartype
 from jaxtyping import Bool, Float, jaxtyped
-from torch import Tensor, nn
+from torch import Tensor
 
 __author__ = "Minh Duc Nguyen"
 __copyright__ = "Copyright (C) 2025 MMinh Duc Nguyen"

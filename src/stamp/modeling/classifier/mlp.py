@@ -30,6 +30,7 @@ class MLPClassifier(nn.Module):
     def forward(self, x: Tensor) -> Tensor:
         return self.mlp(x)
 
+
 class LinearClassifier(nn.Module):
     def __init__(self, dim_in: int, dim_out: int):
         super().__init__()

@@ -1,6 +1,5 @@
 """Lightning wrapper around the model"""
 
-import inspect
 from collections.abc import Iterable, Sequence
 from typing import TypeAlias
 
@@ -84,7 +83,7 @@ class LitTileClassifier(lightning.LightningModule):
         # model_params = {
         #     k: v for k, v in model_specific_params.items() if k in classifier_param_keys
         # }
-        self.tile_classifier = model
+        self.vision_transformer = model  # will chage to self.tile_classifier for
 
         self.class_weights = category_weights
         self.valid_auroc = MulticlassAUROC(len(categories))
@@ -126,7 +125,7 @@ class LitTileClassifier(lightning.LightningModule):
         self,
         bags: Bags,
     ) -> Float[Tensor, "batch logit"]:
-        return self.tile_classifier(bags)
+        return self.vision_transformer(bags)
 
     def _step(
         self,
@@ -139,7 +138,7 @@ class LitTileClassifier(lightning.LightningModule):
 
         mask = _mask_from_bags(bags=bags, bag_sizes=bag_sizes) if use_mask else None
 
-        logits = self.tile_classifier(bags, coords=coords, mask=mask)
+        logits = self.vision_transformer(bags, coords=coords, mask=mask)
 
         loss = nn.functional.cross_entropy(
             logits,
@@ -197,7 +196,7 @@ class LitTileClassifier(lightning.LightningModule):
     ) -> Float[Tensor, "batch logit"]:
         bags, coords, bag_sizes, _ = batch
         # adding a mask here will *drastically* and *unbearably* increase memory usage
-        return self.tile_classifier(bags, coords=coords, mask=None)
+        return self.vision_transformer(bags, coords=coords, mask=None)
 
     def configure_optimizers(
         self,
@@ -266,10 +265,7 @@ class LitPatientlassifier(lightning.LightningModule):
     ):
         super().__init__()
         self.save_hyperparameters()
-        # classifier_param_keys = inspect.signature(model).parameters.keys()
-        # model_params = {
-        #     k: v for k, v in model_specific_params.items() if k in classifier_param_keys
-        # }
+
         self.patient_classifier = model
 
         self.class_weights = category_weights

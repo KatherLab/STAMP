@@ -27,12 +27,12 @@ def moore_penrose_iter_pinv(x: Tensor, iters: int = 6) -> Tensor:
     row = abs_x.sum(dim=-2)
     z = rearrange(x, "... i j -> ... j i") / (torch.max(col) * torch.max(row))
 
-    I = torch.eye(x.shape[-1], device=device)
-    I = rearrange(I, "i j -> () i j")
+    I_mat = torch.eye(x.shape[-1], device=device)
+    I_mat = rearrange(I_mat, "i j -> () i j")
 
     for _ in range(iters):
         xz = x @ z
-        z = 0.25 * z @ (13 * I - (xz @ (15 * I - (xz @ (7 * I - xz)))))
+        z = 0.25 * z @ (13 * I_mat - (xz @ (15 * I_mat - (xz @ (7 * I_mat - xz)))))
 
     return z
 
@@ -110,13 +110,13 @@ class NystromAttention(nn.Module):
 
         q = q * self.scale
 
-        l = ceil(n / m)
-        q_landmarks = reduce(q, "... (n l) d -> ... n d", "sum", l=l)
-        k_landmarks = reduce(k, "... (n l) d -> ... n d", "sum", l=l)
+        len = ceil(n / m)
+        q_landmarks = reduce(q, "... (n l) d -> ... n d", "sum", l=len)
+        k_landmarks = reduce(k, "... (n l) d -> ... n d", "sum", l=len)
 
-        divisor = l
+        divisor = len
         if mask is not None:
-            mask_landmarks_sum = reduce(mask, "... (n l) -> ... n", "sum", l=l)
+            mask_landmarks_sum = reduce(mask, "... (n l) -> ... n", "sum", l=len)
             divisor = mask_landmarks_sum[..., None] + eps
             mask_landmarks = mask_landmarks_sum > 0
 

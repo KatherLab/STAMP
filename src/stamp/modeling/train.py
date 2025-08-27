@@ -46,7 +46,6 @@ __license__ = "MIT"
 _logger = logging.getLogger("stamp")
 
 
-
 def train_categorical_model_(
     *,
     config: TrainConfig,
@@ -396,7 +395,7 @@ def train_model_(
         #     the default strategy no multiple GPUs
         #  2. `barspoon.model.SafeMulticlassAUROC` breaks on multiple GPUs
         accelerator=accelerator,
-        devices=[1],
+        devices=1,
         gradient_clip_val=0.5,
         logger=CSVLogger(save_dir=output_dir),
         log_every_n_steps=len(train_dl),

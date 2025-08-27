@@ -235,6 +235,7 @@ def test_predict_patient_level(
         predictions[patient_ids[0]], more_predictions[patient_ids[0]]
     ), "the same inputs should repeatedly yield the same results"
 
+
 def test_to_prediction_df(
     categories: list[str] = ["foo", "bar", "baz"],
     n_heads: int = 7,

@@ -14,7 +14,7 @@ from matplotlib.figure import Figure
 from matplotlib.patches import Patch
 from packaging.version import Version
 from PIL import Image
-from torch import Tensor, nn
+from torch import Tensor
 from torch.func import jacrev  # pyright: ignore[reportPrivateImportUsage]
 
 from stamp.modeling.classifier import LitTileClassifier
@@ -28,7 +28,7 @@ _logger = logging.getLogger("stamp")
 
 
 def _gradcam_per_category(
-    model: nn.Module,
+    model: VisionTransformer,
     feats: Float[Tensor, "tile feat"],
     coords: Float[Tensor, "tile 2"],
 ) -> Float[Tensor, "tile category"]:
@@ -226,9 +226,32 @@ def heatmaps_(
         # coordinates as used by OpenSlide
         coords_tile_slide_px = torch.round(coords_um / slide_mpp).long()
 
+        # Load hparams from the checkpoint (without rebuilding the model yet)
+        checkpoint = torch.load(checkpoint_path, map_location="cpu", weights_only=False)
+        hparams = checkpoint["hyper_parameters"]
+
         model = (
-            LitTileClassifier.load_from_checkpoint(checkpoint_path).to(device).eval()
+            LitTileClassifier.load_from_checkpoint(
+                checkpoint_path,
+                model=VisionTransformer(
+                    dim_input=hparams["dim_input"],
+                    dim_output=len(hparams["categories"]),
+                    dim_model=hparams["dim_model"],
+                    dim_feedforward=hparams["dim_feedforward"],
+                    n_heads=hparams["n_heads"],
+                    n_layers=hparams["n_layers"],
+                    dropout=hparams["dropout"],
+                    use_alibi=hparams["use_alibi"],
+                ),
+                strict=False,
+            )
+            .to(device)
+            .eval()
         )
+
+        # model = (
+        #     LitTileClassifier.load_from_checkpoint(checkpoint_path).to(device).eval()
+        # )
 
         # TODO: Update version when a newer model logic breaks heatmaps.
         if Version(model.stamp_version) < Version("2.3.0"):
@@ -239,7 +262,7 @@ def heatmaps_(
 
         # Score for the entire slide
         slide_score = (
-            model.model(
+            model.vision_transformer(
                 bags=feats.unsqueeze(0),
                 coords=coords_um.unsqueeze(0),
                 mask=None,
@@ -252,7 +275,7 @@ def heatmaps_(
         highest_prob_class_idx = slide_score.argmax().item()
 
         gradcam = _gradcam_per_category(
-            model=model.model,
+            model=model.vision_transformer,  # type: ignore
             feats=feats,
             coords=coords_um,
         )  # shape: [tile, category]
@@ -262,7 +285,7 @@ def heatmaps_(
         ).detach()  # shape: [width, height, category]
 
         scores = torch.softmax(
-            model.model.forward(
+            model.vision_transformer.forward(
                 bags=feats.unsqueeze(-2),
                 coords=coords_um.unsqueeze(-2),
                 mask=torch.zeros(len(feats), 1, dtype=torch.bool, device=device),
