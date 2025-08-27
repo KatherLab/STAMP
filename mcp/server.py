@@ -26,11 +26,16 @@ class MCPLogHandler(logging.Handler):
     def __init__(self, ctx):
         super().__init__()
         self.ctx = ctx
+        self.buffer = []
 
     def emit(self, record):
         msg = self.format(record)
-        # Fire-and-forget the coroutine
-        asyncio.create_task(self.ctx.log(msg))
+        # Fire-and-forget; map std logging levels → MCP levels
+        level = (record.levelname or "INFO").lower()
+        if level not in {"debug", "info", "warning", "error"}:
+            level = "info"
+        # Send with logger name for easier filtering on the client
+        asyncio.create_task(self.ctx.log(level, msg, logger_name=record.name))
 
 
 async def _run_stamp(mode, config, ctx):
@@ -54,14 +59,31 @@ async def _run_stamp(mode, config, ctx):
     handler.setLevel(logging.DEBUG)
     STAMP_LOGGER.addHandler(handler)
 
-    print("Running command...")
+    await ctx.info("Running command...")
 
     try:
         cmd = ["stamp", "--config", tmp_config_path, mode]
-        result = subprocess.run(cmd, capture_output=True, text=True, check=True)
-        print("Result returned...")
-        print(f"Command completed successfully:\n{result.stdout}\n{result.stderr}")
-        return f"Command completed successfully:\n{result.stdout}\n{result.stderr}"
+        # Prefer asyncio subprocess so logs can flush while we await reads
+        process = await asyncio.create_subprocess_exec(
+            *cmd,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.STDOUT,
+            env={**os.environ, "PYTHONUNBUFFERED": "1"},  # helps if child is Python
+        )
+
+        assert process.stdout is not None
+        # Stream lines as they arrive
+        while True:
+            line = await process.stdout.readline()
+            if not line:
+                break
+            # Decode bytes → str, strip trailing newline
+            text = line.decode(errors="replace").rstrip("\n")
+            handler.buffer.append(text)
+            await ctx.info(text)
+
+        return_code = await process.wait()
+        return "\n".join(handler.buffer)
     except subprocess.CalledProcessError as e:
         return f"Command failed with error:\n{e.stdout}\n{e.stderr}"
     finally:
@@ -206,17 +228,6 @@ async def train_stamp(
             "in the slide table containing the feature file path relative to `feature_dir`"
         ),
     ] = "FILENAME",
-    bag_size: Annotated[
-        int,
-        Field(
-            description="Amount of tiles to sample when training. "
-            "Reducing this value reduces memory usage, but it is not recommended as the model can miss"
-            "relevant regions of the slide. Default value works well on H&E tissue images."
-        ),
-    ] = 512,
-    batch_size: Annotated[
-        int, Field(description="Amount of bags processed together.")
-    ] = 64,
 ) -> str:
     """
     Train a model using clinical data and WSI-derived features via STAMP.
@@ -250,8 +261,6 @@ async def train_stamp(
             "categories": categories,
             "patient_label": patient_label,
             "filename_label": filename_label,
-            "bag_size": bag_size,
-            "batch_size": batch_size,
         }
     }
     return await _run_stamp(mode="train", config=config, ctx=ctx)
@@ -306,17 +315,6 @@ async def crossval_stamp(
             description="Number of folds to split the data into for cross-validation"
         ),
     ] = 5,
-    bag_size: Annotated[
-        int,
-        Field(
-            description="Amount of tiles to sample when training. "
-            "Reducing this value reduces memory usage, but it is not recommended as the model can miss"
-            "relevant regions of the slide. Default value works well on H&E tissue images."
-        ),
-    ] = 512,
-    batch_size: Annotated[
-        int, Field(description="Amount of bags processed together.")
-    ] = 64,
 ) -> str:
     """
     Perform cross-validation for model training using STAMP.
@@ -352,10 +350,6 @@ async def crossval_stamp(
             "patient_label": patient_label,
             "filename_label": filename_label,
             "n_splits": n_splits,
-        },
-        "advanced_config": {  # Add advanced config for bag_size and batch_size
-            "bag_size": bag_size,
-            "batch_size": batch_size,
         },
     }
     return await _run_stamp(mode="crossval", config=config, ctx=ctx)
@@ -777,4 +771,4 @@ def check_available_devices() -> str:
 
 
 if __name__ == "__main__":
-    mcp.run(transport="streamable-http")
+    mcp.run(transport="streamable-http", port=8088)
