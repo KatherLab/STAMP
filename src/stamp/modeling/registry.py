@@ -12,8 +12,7 @@ class ModelName(StrEnum):
     VIT = "vit"
     MLP = "mlp"
     TRANS_MIL = "trans_mil"
-    TRANSFORMER = "transformer"
-    CTRANSFORMER = "ctransformer"
+    LINEAR = "linear"
 
 
 class ModelInfo(TypedDict):
@@ -37,12 +36,8 @@ MODEL_REGISTRY: dict[ModelName, ModelInfo] = {
         "model_class": LitTileClassifier,
         "supported_features": LitTileClassifier.supported_features,
     },
-    ModelName.TRANSFORMER: {
-        "model_class": LitTileClassifier,
-        "supported_features": LitTileClassifier.supported_features,
-    },
-    ModelName.CTRANSFORMER: {
-        "model_class": LitTileClassifier,
-        "supported_features": LitTileClassifier.supported_features,
+    ModelName.LINEAR: {
+        "model_class": LitPatientlassifier,
+        "supported_features": LitPatientlassifier.supported_features,
     },
 }

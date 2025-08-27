@@ -304,8 +304,13 @@ advanced_config:
       # Experimental feature: Use ALiBi positional embedding
       use_alibi: false
 
+    # trans_mil:
+    #   dim_hidden: 512
+
     # Patient-level training models:
     mlp: # Multilayer Perceptron
       dim_hidden: 512
       num_layers: 2
       dropout: 0.25
+
+    # linear:

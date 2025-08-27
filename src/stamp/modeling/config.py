@@ -80,20 +80,13 @@ class MlpModelParams(BaseModel):
     num_layers: int = 2
     dropout: float = 0.25
 
-class TransformerModelParams(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-    embed_dim: int = 512
-    num_heads: int = 8
-    ff_dim: int = 2048
-    dropout: float = 0.1
-
 
 class TransMILModelParams(BaseModel):
     model_config = ConfigDict(extra="forbid")
     dim_hidden: int = 512
 
-class CTransformerModelParams(BaseModel):
-    dim_hidden: int = 512
+
+class LinearModelParams(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
 
@@ -101,11 +94,10 @@ class ModelParams(BaseModel):
     model_config = ConfigDict(extra="forbid")
     # Tile level models
     vit: VitModelParams
-    ctransformer: CTransformerModelParams | None = None
-    transformer: TransformerModelParams | None = None
     trans_mil: TransMILModelParams | None = None
     # Patient level models
     mlp: MlpModelParams
+    linear: LinearModelParams | None = None
 
 
 class AdvancedConfig(BaseModel):

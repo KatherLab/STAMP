@@ -24,7 +24,7 @@ class CoordAttention(nn.Module):
 
         # MLP for continuous coordinate-based relative positional bias
         self.cpb_mlp = nn.Sequential(
-            nn.Linear(2, 128), nn.ReLU(inplace=True), nn.Linear(128, num_heads)
+            nn.Linear(2, 32), nn.ReLU(inplace=True), nn.Linear(32, num_heads)
         )
 
         self.qkv = nn.Linear(dim, dim * 3, bias=qkv_bias)

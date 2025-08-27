@@ -215,19 +215,14 @@ def setup_model_for_training(
                 VisionTransformer as Classifier,
             )
 
-        case ModelName.TRANSFORMER:
-            from stamp.modeling.classifier.transformer import Transformer as Classifier
-
         case ModelName.TRANS_MIL:
             from stamp.modeling.classifier.trans_mil import TransMIL as Classifier
 
-        case ModelName.CTRANSFORMER:
-            from stamp.modeling.classifier.ctransformer import (
-                CTransformer as Classifier,
-            )
-
         case ModelName.MLP:
             from stamp.modeling.classifier.mlp import MLPClassifier as Classifier
+
+        case ModelName.LINEAR:
+            from stamp.modeling.classifier.mlp import LinearClassifier as Classifier
 
         case _:
             raise ValueError(f"Unknown model name: {advanced.model_name.value}")
