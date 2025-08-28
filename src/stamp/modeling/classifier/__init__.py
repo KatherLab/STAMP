@@ -79,11 +79,9 @@ class LitTileClassifier(lightning.LightningModule):
             raise ValueError(
                 "the number of category weights has to match the number of categories!"
             )
-        # classifier_param_keys = inspect.signature(model).parameters.keys()
-        # model_params = {
-        #     k: v for k, v in model_specific_params.items() if k in classifier_param_keys
-        # }
-        self.vision_transformer = model  # will chage to self.tile_classifier for
+
+        # will chage to self.tile_classifier for the next update
+        self.vision_transformer = model
 
         self.class_weights = category_weights
         self.valid_auroc = MulticlassAUROC(len(categories))
