@@ -2,8 +2,10 @@ from beartype import beartype
 from jaxtyping import Float, jaxtyped
 from torch import Tensor, nn
 
+from stamp.modeling.classifier import LitPatientlassifier
 
-class MLPClassifier(nn.Module):
+
+class MLP(nn.Module):
     """
     Simple MLP for classification from a single feature vector.
     """
@@ -31,15 +33,43 @@ class MLPClassifier(nn.Module):
         return self.mlp(x)
 
 
-class LinearClassifier(nn.Module):
-    def __init__(self, dim_in: int, dim_out: int):
+class MLPClassifier(LitPatientlassifier):
+    model_name: str = "mlp"
+
+    def build_backbone(
+        self, dim_input: int, dim_output: int, metadata: dict
+    ) -> nn.Module:
+        params = self.get_model_params(MLP, metadata)
+        return MLP(
+            dim_input=dim_input,
+            dim_output=dim_output,
+            **params,
+        )
+
+
+class Linear(nn.Module):
+    def __init__(self, dim_input: int, dim_output: int):
         super().__init__()
-        self.fc = nn.Linear(dim_in, dim_out)
+        self.fc = nn.Linear(dim_input, dim_output)
 
     @jaxtyped
     @beartype
     def forward(
         self,
         x: Float[Tensor, "batch dim_in"],  # batch of feature vectors
-    ) -> Float[Tensor, "batch dim_out"]:
+    ) -> Float[Tensor, "batch dim_output"]:
         return self.fc(x)
+
+
+class LinearClassifier(LitPatientlassifier):
+    model_name: str = "linear"
+
+    def build_backbone(
+        self, dim_input: int, dim_output: int, metadata: dict
+    ) -> nn.Module:
+        params = self.get_model_params(Linear, metadata)
+        return Linear(
+            dim_input=dim_input,
+            dim_output=dim_output,
+            **params,
+        )

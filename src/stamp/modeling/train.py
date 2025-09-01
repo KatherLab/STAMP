@@ -26,7 +26,7 @@ from stamp.modeling.data import (
     slide_to_patient_from_slide_table_,
     tile_bag_dataloader,
 )
-from stamp.modeling.registry import MODEL_REGISTRY, ModelName
+from stamp.modeling.registry import ModelName, load_model_class
 from stamp.modeling.transforms import VaryPrecisionTransform
 from stamp.types import (
     Bags,
@@ -170,24 +170,26 @@ def setup_model_for_training(
             f"No model specified, defaulting to '{advanced.model_name.value}' for feature type '{feature_type}'"
         )
 
-    # 2. Validate that the chosen model supports the feature type
-    model_info = MODEL_REGISTRY[advanced.model_name]
-    if feature_type not in model_info["supported_features"]:
+    # 2. Instantiate the model dynamically
+    ModelClass = load_model_class(advanced.model_name)
+
+    # 3. Validate that the chosen model supports the feature type
+    if feature_type not in ModelClass.supported_features:
         raise ValueError(
             f"Model '{advanced.model_name.value}' does not support feature type '{feature_type}'. "
-            f"Supported types are: {model_info['supported_features']}"
+            f"Supported types are: {ModelClass.supported_features}"
         )
 
-    # 3. Get model-specific hyperparameters
+    # 4. Get model-specific hyperparameters
     model_specific_params = advanced.model_params.model_dump()[
         advanced.model_name.value
     ]
 
-    # 4. Calculate total steps for scheduler
+    # 5. Calculate total steps for scheduler
     steps_per_epoch = len(train_dl)
     total_steps = steps_per_epoch * advanced.max_epochs
 
-    # 5. Prepare common parameters
+    # 6. Prepare common parameters
     common_params = {
         "categories": train_categories,
         "category_weights": category_weights,
@@ -205,33 +207,7 @@ def setup_model_for_training(
         "feature_dir": feature_dir,
     }
 
-    # 6. Instantiate the model dynamically
-    ModelClass = model_info["model_class"]
-
-    match advanced.model_name.value:
-        case ModelName.VIT:
-            from stamp.modeling.classifier.vision_tranformer import (
-                VisionTransformer as Classifier,
-            )
-
-        case ModelName.TRANS_MIL:
-            from stamp.modeling.classifier.trans_mil import TransMIL as Classifier
-
-        case ModelName.MLP:
-            from stamp.modeling.classifier.mlp import MLPClassifier as Classifier
-
-        case ModelName.LINEAR:
-            from stamp.modeling.classifier.mlp import LinearClassifier as Classifier
-
-        case _:
-            raise ValueError(f"Unknown model name: {advanced.model_name.value}")
-
-    # 7. Build the backbone instance
-    backbone = Classifier(
-        dim_output=len(train_categories),
-        dim_input=dim_feats,
-        **model_specific_params,
-    )
+    all_params = {**common_params, **model_specific_params}
 
     _logger.info(
         f"Instantiating model '{advanced.model_name.value}' with parameters: {model_specific_params}"
@@ -242,10 +218,7 @@ def setup_model_for_training(
         advanced.patience,
     )
 
-    model = ModelClass(
-        **common_params,
-        model=backbone,
-    )
+    model = ModelClass(**all_params)
 
     return model, train_dl, valid_dl
 

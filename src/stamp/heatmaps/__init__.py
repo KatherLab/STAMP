@@ -17,8 +17,10 @@ from PIL import Image
 from torch import Tensor
 from torch.func import jacrev  # pyright: ignore[reportPrivateImportUsage]
 
-from stamp.modeling.classifier import LitTileClassifier
-from stamp.modeling.classifier.vision_tranformer import VisionTransformer
+from stamp.modeling.classifier.vision_tranformer import (
+    LitVisionTransformer,
+    VisionTransformer,
+)
 from stamp.modeling.data import get_coords, get_stride
 from stamp.preprocessing import supported_extensions
 from stamp.preprocessing.tiling import get_slide_mpp_
@@ -226,32 +228,9 @@ def heatmaps_(
         # coordinates as used by OpenSlide
         coords_tile_slide_px = torch.round(coords_um / slide_mpp).long()
 
-        # Load hparams from the checkpoint (without rebuilding the model yet)
-        checkpoint = torch.load(checkpoint_path, map_location="cpu", weights_only=False)
-        hparams = checkpoint["hyper_parameters"]
-
         model = (
-            LitTileClassifier.load_from_checkpoint(
-                checkpoint_path,
-                model=VisionTransformer(
-                    dim_input=hparams["dim_input"],
-                    dim_output=len(hparams["categories"]),
-                    dim_model=hparams["dim_model"],
-                    dim_feedforward=hparams["dim_feedforward"],
-                    n_heads=hparams["n_heads"],
-                    n_layers=hparams["n_layers"],
-                    dropout=hparams["dropout"],
-                    use_alibi=hparams["use_alibi"],
-                ),
-                strict=False,
-            )
-            .to(device)
-            .eval()
+            LitVisionTransformer.load_from_checkpoint(checkpoint_path).to(device).eval()
         )
-
-        # model = (
-        #     LitTileClassifier.load_from_checkpoint(checkpoint_path).to(device).eval()
-        # )
 
         # TODO: Update version when a newer model logic breaks heatmaps.
         if Version(model.stamp_version) < Version("2.3.0"):

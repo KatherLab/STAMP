@@ -11,6 +11,8 @@ from einops import repeat
 from jaxtyping import Bool, Float, jaxtyped
 from torch import Tensor, nn
 
+from stamp.modeling.classifier import LitTileClassifier
+
 
 class _RunningMeanScaler(nn.Module):
     """Scales values by the inverse of the mean of values seen before."""
@@ -384,3 +386,17 @@ class VisionTransformer(nn.Module):
         bags = bags[:, 0]
 
         return self.mlp_head(bags)
+
+
+class LitVisionTransformer(LitTileClassifier):
+    model_name: str = "vit"
+
+    def build_backbone(
+        self, dim_input: int, dim_output: int, metadata: dict
+    ) -> nn.Module:
+        params = self.get_model_params(VisionTransformer, metadata)
+        return VisionTransformer(
+            dim_input=dim_input,
+            dim_output=dim_output,
+            **params,
+        )

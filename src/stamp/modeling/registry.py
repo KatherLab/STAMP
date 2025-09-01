@@ -41,3 +41,27 @@ MODEL_REGISTRY: dict[ModelName, ModelInfo] = {
         "supported_features": LitPatientlassifier.supported_features,
     },
 }
+
+
+def load_model_class(model_name: ModelName):
+    match model_name:
+        case ModelName.VIT:
+            from stamp.modeling.classifier.vision_tranformer import (
+                LitVisionTransformer as ModelClass,
+            )
+
+        case ModelName.TRANS_MIL:
+            from stamp.modeling.classifier.trans_mil import (
+                TransMILClassifier as ModelClass,
+            )
+
+        case ModelName.MLP:
+            from stamp.modeling.classifier.mlp import MLPClassifier as ModelClass
+
+        case ModelName.LINEAR:
+            from stamp.modeling.classifier.mlp import LinearClassifier as ModelClass
+
+        case _:
+            raise ValueError(f"Unknown model name: {model_name}")
+
+    return ModelClass

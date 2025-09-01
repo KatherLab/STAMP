@@ -1,5 +1,7 @@
 """Lightning wrapper around the model"""
 
+import inspect
+from abc import ABC, abstractmethod
 from collections.abc import Iterable, Sequence
 from typing import TypeAlias
 
@@ -59,8 +61,7 @@ class LitTileClassifier(lightning.LightningModule):
         *,
         categories: Sequence[Category],
         category_weights: Float[Tensor, "category_weight"],  # noqa: F821
-        # Classifier model instance
-        model: nn.Module,
+        dim_input: int,
         # Learning Rate Scheduler params, not used in inference
         total_steps: int,
         max_lr: float,
@@ -81,7 +82,9 @@ class LitTileClassifier(lightning.LightningModule):
             )
 
         # will chage to self.tile_classifier for the next update
-        self.vision_transformer = model
+        self.vision_transformer = self.build_backbone(
+            dim_input, len(categories), metadata
+        )
 
         self.class_weights = category_weights
         self.valid_auroc = MulticlassAUROC(len(categories))
@@ -118,6 +121,19 @@ class LitTileClassifier(lightning.LightningModule):
             )
 
         self.save_hyperparameters()
+
+    @abstractmethod
+    def build_backbone(
+        self, dim_input: int, dim_output: int, metadata: dict
+    ) -> nn.Module:
+        pass
+
+    @staticmethod
+    def get_model_params(model_class: type[nn.Module], metadata: dict) -> dict:
+        keys = [
+            k for k in inspect.signature(model_class.__init__).parameters if k != "self"
+        ]
+        return {k: v for k, v in metadata.items() if k in keys}
 
     def forward(
         self,
@@ -237,7 +253,7 @@ def _mask_from_bags(
     return mask
 
 
-class LitPatientlassifier(lightning.LightningModule):
+class LitPatientlassifier(lightning.LightningModule, ABC):
     """
     PyTorch Lightning wrapper for MLPClassifier.
     """
@@ -253,8 +269,7 @@ class LitPatientlassifier(lightning.LightningModule):
         train_patients: Iterable[PatientId],
         valid_patients: Iterable[PatientId],
         stamp_version: Version = Version(stamp.__version__),
-        # Classifier model
-        model: nn.Module,
+        dim_input: int,
         # Learning Rate Scheduler params, used only in training
         total_steps: int,
         max_lr: float,
@@ -264,7 +279,9 @@ class LitPatientlassifier(lightning.LightningModule):
         super().__init__()
         self.save_hyperparameters()
 
-        self.patient_classifier = model
+        self.patient_classifier = self.build_backbone(
+            dim_input, len(categories), metadata
+        )
 
         self.class_weights = category_weights
         self.valid_auroc = MulticlassAUROC(len(categories))
@@ -295,6 +312,19 @@ class LitPatientlassifier(lightning.LightningModule):
                 f"({stamp_version} > {stamp.__version__}). "
                 "Please upgrade stamp to a compatible version."
             )
+
+    @abstractmethod
+    def build_backbone(
+        self, dim_input: int, dim_output: int, metadata: dict
+    ) -> nn.Module:
+        pass
+
+    @staticmethod
+    def get_model_params(model_class: type[nn.Module], metadata: dict) -> dict:
+        keys = [
+            k for k in inspect.signature(model_class.__init__).parameters if k != "self"
+        ]
+        return {k: v for k, v in metadata.items() if k in keys}
 
     def forward(self, x: Tensor) -> Tensor:
         return self.patient_classifier(x)

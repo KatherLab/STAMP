@@ -5,9 +5,8 @@ import pytest
 import torch
 from random_data import create_random_patient_level_feature_file, make_old_feature_file
 
-from stamp.modeling.classifier import LitPatientlassifier, LitTileClassifier
 from stamp.modeling.classifier.mlp import MLPClassifier
-from stamp.modeling.classifier.vision_tranformer import VisionTransformer
+from stamp.modeling.classifier.vision_tranformer import LitVisionTransformer
 from stamp.modeling.data import (
     PatientData,
     patient_feature_dataloader,
@@ -26,20 +25,15 @@ def test_predict(
     n_heads: int = 7,
     dim_input: int = 12,
 ) -> None:
-    model = LitTileClassifier(
+    model = LitVisionTransformer(
         categories=list(categories),
         category_weights=torch.rand(len(categories)),
         dim_input=dim_input,
-        model=VisionTransformer(
-            dim_input=dim_input,
-            dim_output=len(categories),
-            dim_model=n_heads * 3,
-            dim_feedforward=56,
-            n_heads=n_heads,
-            n_layers=2,
-            dropout=0.5,
-            use_alibi=False,
-        ),
+        dim_model=n_heads * 3,
+        dim_feedforward=56,
+        n_heads=n_heads,
+        n_layers=2,
+        dropout=0.5,
         ground_truth_label="test",
         train_patients=np.array(["pat1", "pat2"]),
         valid_patients=np.array(["pat3", "pat4"]),
@@ -133,16 +127,13 @@ def test_predict(
 def test_predict_patient_level(
     tmp_path: Path, categories: list[str] = ["foo", "bar", "baz"], dim_feats: int = 12
 ):
-    model = LitPatientlassifier(
+    model = MLPClassifier(
         categories=categories,
         category_weights=torch.rand(len(categories)),
-        model=MLPClassifier(
-            dim_output=len(categories),
-            dim_input=dim_feats,
-            dim_hidden=32,
-            num_layers=2,
-            dropout=0.2,
-        ),
+        dim_input=dim_feats,
+        dim_hidden=32,
+        num_layers=2,
+        dropout=0.2,
         ground_truth_label="test",
         train_patients=["pat1", "pat2"],
         valid_patients=["pat3", "pat4"],
@@ -236,23 +227,17 @@ def test_predict_patient_level(
     ), "the same inputs should repeatedly yield the same results"
 
 
-def test_to_prediction_df(
-    categories: list[str] = ["foo", "bar", "baz"],
-    n_heads: int = 7,
-) -> None:
-    model = LitTileClassifier(
-        categories=list(categories),
+def test_to_prediction_df() -> None:
+    n_heads = 7
+    model = LitVisionTransformer(
+        categories=["foo", "bar", "baz"],
         category_weights=torch.tensor([0.1, 0.2, 0.7]),
-        model=VisionTransformer(
-            dim_output=len(categories),
-            dim_input=12,
-            dim_model=n_heads * 3,
-            dim_feedforward=56,
-            n_heads=n_heads,
-            n_layers=2,
-            dropout=0.5,
-            use_alibi=False,
-        ),
+        dim_input=12,
+        dim_model=n_heads * 3,
+        dim_feedforward=56,
+        n_heads=n_heads,
+        n_layers=2,
+        dropout=0.5,
         ground_truth_label="test",
         train_patients=np.array(["pat1", "pat2"]),
         valid_patients=np.array(["pat3", "pat4"]),
