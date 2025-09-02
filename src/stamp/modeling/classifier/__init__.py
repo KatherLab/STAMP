@@ -29,8 +29,7 @@ Loss: TypeAlias = Float[Tensor, ""]
 
 class LitBaseClassifier(lightning.LightningModule, ABC):
     """
-    PyTorch Lightning wrapper for the Vision Transformer (ViT) model used in weakly supervised
-    learning settings, such as Multiple Instance Learning (MIL) for whole-slide images or patch-based data.
+    PyTorch Lightning wrapper for tile level and patient level clasification.
 
     This class encapsulates training, validation, testing, and prediction logic, along with:
     - Masking logic that ensures only valid tiles (patches) participate in attention during training (deactivated)
