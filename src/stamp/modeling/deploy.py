@@ -10,7 +10,8 @@ import torch
 from jaxtyping import Float
 from lightning.pytorch.accelerators.accelerator import Accelerator
 
-from stamp.modeling.classifier import LitPatientlassifier, LitTileClassifier
+from stamp.modeling.classifier.mlp import MLPClassifier
+from stamp.modeling.classifier.vision_tranformer import LitVisionTransformer
 from stamp.modeling.data import (
     detect_feature_type,
     filter_complete_patient_data_,
@@ -60,9 +61,9 @@ def deploy_categorical_model_(
     _logger.info(f"Detected feature type: {feature_type}")
 
     if feature_type == "tile":
-        ModelClass = LitTileClassifier
+        ModelClass = LitVisionTransformer
     elif feature_type == "patient":
-        ModelClass = LitPatientlassifier
+        ModelClass = MLPClassifier
     else:
         raise RuntimeError(
             f"Unsupported feature type for deployment: {feature_type}. Only 'tile' and 'patient' are supported."
