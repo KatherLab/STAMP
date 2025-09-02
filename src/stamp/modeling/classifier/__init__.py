@@ -27,7 +27,7 @@ from stamp.types import (
 Loss: TypeAlias = Float[Tensor, ""]
 
 
-class LitTileClassifier(lightning.LightningModule):
+class LitBaseClassifier(lightning.LightningModule, ABC):
     """
     PyTorch Lightning wrapper for the Vision Transformer (ViT) model used in weakly supervised
     learning settings, such as Multiple Instance Learning (MIL) for whole-slide images or patch-based data.
@@ -54,8 +54,6 @@ class LitTileClassifier(lightning.LightningModule):
         **metadata: Additional metadata to store with the model.
     """
 
-    supported_features = ["tile"]
-
     def __init__(
         self,
         *,
@@ -81,10 +79,9 @@ class LitTileClassifier(lightning.LightningModule):
                 "the number of category weights has to match the number of categories!"
             )
 
-        # will chage to self.tile_classifier for the next update
-        self.vision_transformer = self.build_backbone(
-            dim_input, len(categories), metadata
-        )
+        # self.model: nn.Module = self.build_backbone(
+        #     dim_input, len(categories), metadata
+        # )
 
         self.class_weights = category_weights
         self.valid_auroc = MulticlassAUROC(len(categories))
@@ -135,6 +132,43 @@ class LitTileClassifier(lightning.LightningModule):
         ]
         return {k: v for k, v in metadata.items() if k in keys}
 
+    def configure_optimizers(self):
+        optimizer = optim.AdamW(self.parameters(), lr=1e-3)
+        scheduler = optim.lr_scheduler.OneCycleLR(
+            optimizer=optimizer,
+            total_steps=self.total_steps,
+            max_lr=self.max_lr,
+            div_factor=self.div_factor,
+        )
+        return [optimizer], [scheduler]
+
+    def on_train_batch_end(self, outputs, batch, batch_idx):
+        current_lr = self.trainer.optimizers[0].param_groups[0]["lr"]
+        self.log(
+            "learning_rate",
+            current_lr,
+            on_step=False,
+            on_epoch=True,
+            prog_bar=True,
+            sync_dist=True,
+        )
+
+
+class LitTileClassifier(LitBaseClassifier):
+    """
+    PyTorch Lightning wrapper for the model used in weakly supervised
+    learning settings, such as Multiple Instance Learning (MIL) for whole-slide images or patch-based data.
+    """
+
+    supported_features = ["tile"]
+
+    def __init__(self, *, dim_input: int, **kwargs):
+        super().__init__(dim_input=dim_input, **kwargs)
+
+        self.vision_transformer: nn.Module = self.build_backbone(
+            dim_input, len(self.categories), kwargs
+        )
+
     def forward(
         self,
         bags: Bags,
@@ -150,7 +184,9 @@ class LitTileClassifier(lightning.LightningModule):
     ) -> Loss:
         bags, coords, bag_sizes, targets = batch
 
-        mask = _mask_from_bags(bags=bags, bag_sizes=bag_sizes) if use_mask else None
+        mask = (
+            self._mask_from_bags(bags=bags, bag_sizes=bag_sizes) if use_mask else None
+        )
 
         logits = self.vision_transformer(bags, coords=coords, mask=mask)
 
@@ -212,126 +248,39 @@ class LitTileClassifier(lightning.LightningModule):
         # adding a mask here will *drastically* and *unbearably* increase memory usage
         return self.vision_transformer(bags, coords=coords, mask=None)
 
-    def configure_optimizers(
-        self,
-    ) -> tuple[list[optim.Optimizer], list[optim.lr_scheduler.LRScheduler]]:
-        optimizer = optim.AdamW(
-            self.parameters(), lr=1e-3
-        )  # this lr value should be ignored with the scheduler
+    def _mask_from_bags(
+        *,
+        bags: Bags,
+        bag_sizes: BagSizes,
+    ) -> Bool[Tensor, "batch tile"]:
+        max_possible_bag_size = bags.size(1)
+        mask = torch.arange(max_possible_bag_size).type_as(bag_sizes).unsqueeze(
+            0
+        ).repeat(len(bags), 1) >= bag_sizes.unsqueeze(1)
 
-        scheduler = optim.lr_scheduler.OneCycleLR(
-            optimizer=optimizer,
-            total_steps=self.total_steps,
-            max_lr=self.max_lr,
-            div_factor=self.div_factor,
-        )
-        return [optimizer], [scheduler]
-
-    def on_train_batch_end(self, outputs, batch, batch_idx):
-        # Log learning rate at the end of each training batch
-        current_lr = self.trainer.optimizers[0].param_groups[0]["lr"]
-        self.log(
-            "learning_rate",
-            current_lr,
-            on_step=False,
-            on_epoch=True,
-            prog_bar=True,
-            sync_dist=True,
-        )
+        return mask
 
 
-def _mask_from_bags(
-    *,
-    bags: Bags,
-    bag_sizes: BagSizes,
-) -> Bool[Tensor, "batch tile"]:
-    max_possible_bag_size = bags.size(1)
-    mask = torch.arange(max_possible_bag_size).type_as(bag_sizes).unsqueeze(0).repeat(
-        len(bags), 1
-    ) >= bag_sizes.unsqueeze(1)
-
-    return mask
-
-
-class LitPatientlassifier(lightning.LightningModule, ABC):
+class LitPatientlassifier(LitBaseClassifier):
     """
     PyTorch Lightning wrapper for MLPClassifier.
     """
 
     supported_features = ["patient"]
 
-    def __init__(
-        self,
-        *,
-        categories: Sequence[Category],
-        category_weights: torch.Tensor,
-        ground_truth_label: PandasLabel,
-        train_patients: Iterable[PatientId],
-        valid_patients: Iterable[PatientId],
-        stamp_version: Version = Version(stamp.__version__),
-        dim_input: int,
-        # Learning Rate Scheduler params, used only in training
-        total_steps: int,
-        max_lr: float,
-        div_factor: float,
-        **metadata,
-    ):
-        super().__init__()
-        self.save_hyperparameters()
+    def __init__(self, *, dim_input: int, **kwargs):
+        super().__init__(dim_input=dim_input, **kwargs)
 
-        self.patient_classifier = self.build_backbone(
-            dim_input, len(categories), metadata
+        self.model: nn.Module = self.build_backbone(
+            dim_input, len(self.categories), kwargs
         )
 
-        self.class_weights = category_weights
-        self.valid_auroc = MulticlassAUROC(len(categories))
-        self.ground_truth_label = ground_truth_label
-        self.categories = np.array(categories)
-        self.train_patients = train_patients
-        self.valid_patients = valid_patients
-        self.total_steps = total_steps
-        self.max_lr = max_lr
-        self.div_factor = div_factor
-        self.stamp_version = str(stamp_version)
-
-        # Check if version is compatible.
-        # This should only happen when the model is loaded,
-        # otherwise the default value will make these checks pass.
-        # TODO: Change this on version change
-        if stamp_version < Version("2.3.0"):
-            # Update this as we change our model in incompatible ways!
-            raise ValueError(
-                f"model has been built with stamp version {stamp_version} "
-                f"which is incompatible with the current version."
-            )
-        elif stamp_version > Version(stamp.__version__):
-            # Let's be strict with models "from the future",
-            # better fail deadly than have broken results.
-            raise ValueError(
-                "model has been built with a stamp version newer than the installed one "
-                f"({stamp_version} > {stamp.__version__}). "
-                "Please upgrade stamp to a compatible version."
-            )
-
-    @abstractmethod
-    def build_backbone(
-        self, dim_input: int, dim_output: int, metadata: dict
-    ) -> nn.Module:
-        pass
-
-    @staticmethod
-    def get_model_params(model_class: type[nn.Module], metadata: dict) -> dict:
-        keys = [
-            k for k in inspect.signature(model_class.__init__).parameters if k != "self"
-        ]
-        return {k: v for k, v in metadata.items() if k in keys}
-
     def forward(self, x: Tensor) -> Tensor:
-        return self.patient_classifier(x)
+        return self.model(x)
 
     def _step(self, batch, step_name: str):
         feats, targets = batch
-        logits = self.patient_classifier(feats)
+        logits = self.model(feats)
         loss = nn.functional.cross_entropy(
             logits,
             targets.type_as(logits),
@@ -367,31 +316,4 @@ class LitPatientlassifier(lightning.LightningModule, ABC):
 
     def predict_step(self, batch, batch_idx):
         feats, _ = batch
-        return self.patient_classifier(feats)
-
-    def configure_optimizers(
-        self,
-    ) -> tuple[list[optim.Optimizer], list[optim.lr_scheduler.LRScheduler]]:
-        optimizer = optim.AdamW(
-            self.parameters(), lr=1e-3
-        )  # this lr value should be ignored with the scheduler
-
-        scheduler = optim.lr_scheduler.OneCycleLR(
-            optimizer=optimizer,
-            total_steps=self.total_steps,
-            max_lr=self.max_lr,
-            div_factor=25.0,
-        )
-        return [optimizer], [scheduler]
-
-    def on_train_batch_end(self, outputs, batch, batch_idx):
-        # Log learning rate at the end of each training batch
-        current_lr = self.trainer.optimizers[0].param_groups[0]["lr"]
-        self.log(
-            "learning_rate",
-            current_lr,
-            on_step=False,
-            on_epoch=True,
-            prog_bar=True,
-            sync_dist=True,
-        )
+        return self.model(feats)
