@@ -3,18 +3,40 @@
 <img src="docs/STAMP_logo.svg" width="250px" align="right"></img>
 
 ![CI](https://github.com/KatherLab/STAMP/actions/workflows/ci.yml/badge.svg)
+[![STAMP • Nature Protocols](https://img.shields.io/badge/Nature%20Protocols%20Paper-gray.svg)](https://www.nature.com/articles/s41596-024-01047-2)
 
-This repository contains the accompanying code for the steps described in the [Nature Protocols paper][stamp paper]:
-"From Whole Slide Image to Biomarker Prediction:
-A Protocol for End-to-End Deep Learning in Computational Pathology".
+*An efficient, ready‑to‑use workflow from whole‑slide image to biomarker prediction.*
 
-> [!NOTE]
-> This repo contains an updated version of the codebase.
-> For a version compatible with the instructions in the paper,
-> please check out [version 1 of STAMP][stamp v1].
+STAMP is an **end‑to‑end, weakly‑supervised deep‑learning pipeline** that helps discover and evaluate candidate image‑based biomarkers from gigapixel histopathology slides, no pixel‑level annotations required. Backed by a peer‑reviewed protocol and used in multi‑center studies across several tumor types, STAMP lets clinical researchers and machine‑learning engineers collaborate on reproducible computational‑pathology projects with a clear, structured workflow.
 
-[stamp paper]: https://www.nature.com/articles/s41596-024-01047-2 "From whole-slide image to biomarker prediction: end-to-end weakly supervised deep learning in computational pathology"
-[stamp v1]: https://github.com/KatherLab/STAMP/tree/v1
+**Want to start now?** [Jump to Installation](#installation) or [walk through our Getting Started guide](getting-started.md) for a hands-on tutorial.
+
+
+
+## **Why choose STAMP?**
+
+* 🚀 **Scalable**: Run locally or on HPC (SLURM) with the same CLI; built to handle multi‑center cohorts and large WSI collections.  
+* 🎓 **Beginner‑friendly & expert‑ready**: Zero‑code CLI and YAML config for routine use; optional code‑level customization for advanced research.  
+* 🧩 **Model‑rich**: Out‑of‑the‑box support for **+20 foundation models** at [tile level](getting-started.md#feature-extraction) (e.g., *Virchow‑v2*, *UNI‑v2*) and [slide level](getting-started.md#slide-level-encoding) (e.g., *TITAN*, *COBRA*).  
+* 🔬 **Weakly‑supervised**: End‑to‑end MIL with Transformer aggregation for training, cross‑validation and external deployment; no pixel‑level labels required.  
+* 📊 **Stats & results**: Built‑in metrics (AUROC/AUPRC \+ 95% CI) and patient‑level predictions, ready for analysis and reporting.  
+* 🖼️ **Explainable**: Generates heatmaps and top‑tile exports out‑of‑the‑box for transparent model auditing and publication‑ready figures.  
+* 🤝 **Collaborative by design**: Clinicians drive hypothesis & interpretation while engineers handle compute; STAMP’s modular CLI mirrors real‑world workflows and tracks every step for full reproducibility.  
+* 📑 **Peer‑reviewed**: Protocol published in [*Nature Protocols*](https://www.nature.com/articles/s41596-024-01047-2) and validated across multiple tumor types and centers.  
+* **🔗 MCP Support**: Compatible with Model Context Protocol (MCP) via the \`mcp/\` module, ready for integration into next-gen agentic AI workflows.
+
+## **Real-World Examples of STAMP in Action**
+
+- **[Squamous Tumors & Survival](https://www.sciencedirect.com/science/article/pii/S0893395225001425):** In a multi-cohort study spanning four squamous carcinoma types (head & neck, esophageal, lung, cervical), STAMP was used to extract slide-level features for a deep learning model that predicted patient survival directly from H&E whole-slide images.  
+
+- **[Inflammatory Bowel Disease Atlas](https://www.researchsquare.com/article/rs-6443303/v1):** In a 1,002-patient multi-center IBD study, all histology slides were processed with the STAMP workflow, enabling a weakly-supervised MIL model to accurately predict histologic disease activity scores from H&E tissue sections.  
+
+- **[Foundation Model Benchmarking](https://arxiv.org/pdf/2408.15823):** A large-scale evaluation of 19 pathology foundation models built its pipeline on STAMP (v1.1.0) for standardized WSI tiling and feature extraction, demonstrating STAMP’s utility as an open-source framework for reproducible model training across diverse cancer biomarkers.  
+
+- **[Breast Cancer Risk Stratification](https://doi.org/10.1038/s41467-025-57283-x):** In an international early breast cancer study, STAMP performed slide tessellation and color normalization (e.g. 1.14 µm/px resolution, Macenko norm) as part of a multimodal transformer pipeline to predict recurrence risk (Oncotype DX scores) from pathology images.  
+
+- **[Endometrial Cancer Subtyping](https://www.actscience.org/Portals/0/Translational%20Science%202025/Top%2050%20Posters/TS25_VincentWagner_OralPosterSession.pdf):** A recent endometrial cancer project employed a modified STAMP pipeline with a pre-trained vision transformer (Virchow2) to predict molecular tumor subtypes directly from H&E slides, achieving strong diagnostic performance in cross-validation.  
+
 
 ## Installation
 To setup STAMP you need [uv](https://docs.astral.sh/uv/).
@@ -39,11 +61,11 @@ uv self update
 uv venv --python=3.12
 source .venv/bin/activate
 
-# For a CPU-only installation:
-uv pip install "git+https://github.com/KatherLab/STAMP.git[cpu]" --torch-backend=cpu
-
 # For a GPU (CUDA) installation:
 uv pip install "git+https://github.com/KatherLab/STAMP.git[gpu]"
+
+# For a CPU-only installation:
+uv pip install "git+https://github.com/KatherLab/STAMP.git[cpu]" --torch-backend=cpu
 ```
 
 ### Install STAMP from the Repository:
@@ -68,6 +90,8 @@ uv sync --extra cpu
 source .venv/bin/activate
 ```
 
+If you encounter errors during installation please read Installation Troubleshooting [below](#installation-troubleshooting).
+
 ### Additional Dependencies
 
 > [!IMPORTANT]
@@ -83,10 +107,6 @@ source .venv/bin/activate
 > ```bash
 > apt update && apt install -y libgl1 libglx-mesa0 libglib2.0-0
 > ```
-
-If you encounters error during installation please read Installation Troubleshooting [below](#installation-troubleshooting).
-
-
 
 ## Basic Usage
 
@@ -139,6 +159,14 @@ please consider citing our [Nature Protocols publication](https://www.nature.com
   url={https://doi.org/10.1038/s41596-024-01047-2}
 }
 ```
+
+> [!NOTE]
+> This repo contains an updated version of the codebase.
+> For a version compatible with the instructions in the paper,
+> please check out [version 1 of STAMP][stamp v1].
+
+[stamp paper]: https://www.nature.com/articles/s41596-024-01047-2 "From whole-slide image to biomarker prediction: end-to-end weakly supervised deep learning in computational pathology"
+[stamp v1]: https://github.com/KatherLab/STAMP/tree/v1
 
 ## Installation Troubleshooting
 

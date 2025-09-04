@@ -279,16 +279,17 @@ Slide encoders take as input the already extracted tile-level features in the
 preprocessing step. Each encoder accepts only certain extractors and most
 work only on CUDA devices:
 
-| Encoder | Required Extractor | Compatible Devices |
-|--|--|--|
-| CHIEF | CHIEF-CTRANSPATH | CUDA only |
-| TITAN | CONCH1.5 | CUDA, cpu, mps
+| Encoder | Required Extractor | Compatible Devices | Notes
+|--|--|--|--|
+| CHIEF | CHIEF-CTRANSPATH | CUDA only | Text encoding removed
+| TITAN | CONCH1.5 | CUDA, cpu, mps | 
 | GIGAPATH | GIGAPATH | CUDA only
 | COBRA2 | CONCH, UNI, VIRCHOW2 or H-OPTIMUS-0 | CUDA only
 | EAGLE | CTRANSPATH, CHIEF-CTRANSPATH | CUDA only
 | MADELEINE | CONCH | CUDA only
 | PRISM | VIRCHOW_FULL | CUDA only
 
+> **Note:** Slide-level features cannot be used directly for modeling because the clinical labels are at the patient level. However, if only one slide is available per patient, using **[Patient-Level Encoding](#patient-level-encoding)** will produce the same representation as slide-level encoding—but supports downstream modeling.
 
 As with feature extractors, most of these models require you to request
 access. The following example uses CHIEF, which is available if you installed 
@@ -381,9 +382,6 @@ you can train models directly on these features. This is useful because:
 - **Efficient with Limited Data**: Patient-level modeling often performs better when data is scarce, since pretrained encoders can extract robust features from each slide as a whole.
 - **Faster Training & Reduced Overfitting**: With fewer parameters to train compared to tile-level models, patient-level models train more quickly and are less prone to overfitting.
 - **Enables Interpretable Cohort Analysis**: Patient-level features can be used for unsupervised analyses, such as clustering, making it easier to interpret and explore patient subgroups within your cohort.
-
-> **Note:** Slide-level features are not supported for modeling because the ground truth 
-> labels in the clinical table are at the patient level. 
 
 To train a model using patient-level features, you can use the same command as before:
 ```sh
