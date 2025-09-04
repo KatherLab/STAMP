@@ -44,9 +44,12 @@ __copyright__ = "Copyright (C) 2022-2025 Marko van Treeck"
 __license__ = "MIT"
 
 _Bag: TypeAlias = Float[Tensor, "tile feature"]
-_EncodedTarget: TypeAlias = Bool[Tensor, "category_is_hot"]  # noqa: F821
+_EncodedTarget: TypeAlias = Float[Tensor, "category_is_hot"] | Float[Tensor, "1"]  # noqa: F821
 _BinaryIOLike: TypeAlias = Union[BinaryIO, IO[bytes]]
-"""The ground truth, encoded numerically (currently: one-hot)"""
+"""The ground truth, encoded numerically
+- classification: one-hot float [C]
+- regression: float [1]
+"""
 _Coordinates: TypeAlias = Float[Tensor, "tile 2"]
 
 
@@ -89,7 +92,10 @@ def tile_bag_dataloader(
         categories = (
             categories if categories is not None else list(np.unique(raw_ground_truths))
         )
-        one_hot = torch.tensor(raw_ground_truths.reshape(-1, 1) == categories)
+        # one_hot = torch.tensor(raw_ground_truths.reshape(-1, 1) == categories)
+        one_hot = torch.tensor(
+            raw_ground_truths.reshape(-1, 1) == categories, dtype=torch.float32
+        )
         ds = BagDataset(
             bags=[patient.feature_files for patient in patient_data],
             bag_size=bag_size,
@@ -270,8 +276,10 @@ class BagDataset(Dataset[tuple[_Bag, _Coordinates, BagSize, _EncodedTarget]]):
     If `bag_size` is None, all the samples will be used.
     """
 
-    ground_truths: Bool[Tensor, "index category_is_hot"]
-    """The ground truth for each bag, one-hot encoded."""
+    ground_truths: Float[Tensor, "index category_is_hot"] | Float[Tensor, "index 1"]
+
+    # ground_truths: Bool[Tensor, "index category_is_hot"]
+    # """The ground truth for each bag, one-hot encoded."""
 
     transform: Callable[[Tensor], Tensor] | None
 
@@ -317,6 +325,14 @@ class BagDataset(Dataset[tuple[_Bag, _Coordinates, BagSize, _EncodedTarget]]):
                 self.ground_truths[index],
             )
 
+# class BagDatasetClassification(BagDataset):
+#     ground_truths: Bool[Tensor, "index category_is_hot"]
+#     """The ground truth for each bag, one-hot encoded."""
+
+
+# class BagDatasetRegression(BagDataset):
+#     ground_truths: Float[Tensor, "index 1"]
+#     """float tensor of shape [N, 1]."""
 
 class PatientFeatureDataset(Dataset):
     """

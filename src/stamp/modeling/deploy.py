@@ -126,10 +126,14 @@ def deploy_categorical_model_(
             slide_to_patient=slide_to_patient,
             drop_patients_with_missing_ground_truth=False,
         )
+        # hashcode for testing regression
+        is_cls = hasattr(models[0], "categories")
+        cats = list(models[0].categories) if is_cls else None
         test_dl, _ = tile_bag_dataloader(
             patient_data=list(patient_to_data.values()),
+            task="classification" if is_cls else "regression",
             bag_size=None,  # We want all tiles to be seen by the model
-            categories=list(models[0].categories),
+            categories=cats,
             batch_size=1,
             shuffle=False,
             num_workers=num_workers,
@@ -239,6 +243,38 @@ def _predict(
     return dict(zip(patient_ids, predictions, strict=True))
 
 
+# def _to_prediction_df(
+#     *,
+#     categories: Sequence[GroundTruth],
+#     patient_to_ground_truth: Mapping[PatientId, GroundTruth | None],
+#     predictions: Mapping[PatientId, torch.Tensor],
+#     patient_label: PandasLabel,
+#     ground_truth_label: PandasLabel,
+# ) -> pd.DataFrame:
+#     """Compiles deployment results into a DataFrame."""
+#     return pd.DataFrame(
+#         [
+#             {
+#                 patient_label: patient_id,
+#                 ground_truth_label: patient_to_ground_truth.get(patient_id),
+#                 "pred": categories[int(prediction.argmax())],
+#                 **{
+#                     f"{ground_truth_label}_{category}": prediction[i_cat].item()
+#                     for i_cat, category in enumerate(categories)
+#                 },
+#                 "loss": (
+#                     torch.nn.functional.cross_entropy(
+#                         prediction.reshape(1, -1),
+#                         torch.tensor(np.where(np.array(categories) == ground_truth)[0]),
+#                     ).item()
+#                     if (ground_truth := patient_to_ground_truth.get(patient_id))
+#                     is not None
+#                     else None
+#                 ),
+#             }
+#             for patient_id, prediction in predictions.items()
+#         ]
+#     ).sort_values(by="loss")
 def _to_prediction_df(
     *,
     categories: Sequence[GroundTruth],
@@ -247,27 +283,69 @@ def _to_prediction_df(
     patient_label: PandasLabel,
     ground_truth_label: PandasLabel,
 ) -> pd.DataFrame:
-    """Compiles deployment results into a DataFrame."""
-    return pd.DataFrame(
-        [
-            {
-                patient_label: patient_id,
-                ground_truth_label: patient_to_ground_truth.get(patient_id),
-                "pred": categories[int(prediction.argmax())],
-                **{
-                    f"{ground_truth_label}_{category}": prediction[i_cat].item()
-                    for i_cat, category in enumerate(categories)
-                },
-                "loss": (
-                    torch.nn.functional.cross_entropy(
-                        prediction.reshape(1, -1),
-                        torch.tensor(np.where(np.array(categories) == ground_truth)[0]),
-                    ).item()
-                    if (ground_truth := patient_to_ground_truth.get(patient_id))
-                    is not None
-                    else None
-                ),
-            }
-            for patient_id, prediction in predictions.items()
-        ]
-    ).sort_values(by="loss")
+    """Compiles deployment results into a DataFrame.
+    Works for:
+      - classification: prediction has shape [C] (one logit/prob per class)
+      - regression:     prediction has shape [1] (single scalar)
+    """
+    rows: list[dict] = []
+    cats_arr = np.array(list(categories))
+    num_classes = len(cats_arr)
+
+    for patient_id, pred in predictions.items():
+        pred = pred.detach().flatten()  # [C] or [1]
+        gt = patient_to_ground_truth.get(patient_id)
+
+        row: dict = {
+            patient_label: patient_id,
+            ground_truth_label: gt,
+        }
+
+        if pred.numel() == num_classes and num_classes > 0:
+            # Classification
+            # Use softmax for readable per-class scores; keep logits for CE.
+            logits = pred
+            probs = torch.softmax(logits, dim=0)
+
+            # predicted category name
+            row["pred"] = categories[int(probs.argmax().item())]
+
+            # per-class probability columns
+            for i_cat, category in enumerate(categories):
+                row[f"{ground_truth_label}_{category}"] = float(probs[i_cat].item())
+
+            # CE loss only if GT is present and inside categories
+            if gt is not None:
+                # find index of ground-truth in categories
+                matches = (cats_arr == gt).nonzero()[0]
+                if matches.size > 0:
+                    target_idx = int(matches[0])
+                    target = torch.tensor(
+                        [target_idx], dtype=torch.long, device=logits.device
+                    )
+                    loss = torch.nn.functional.cross_entropy(logits.view(1, -1), target)
+                    row["loss"] = float(loss.item())
+                else:
+                    row["loss"] = None
+            else:
+                row["loss"] = None
+
+        elif pred.numel() == 1:
+            # Regression
+            row["pred"] = float(pred.item())
+            row["loss"] = None  # no CE in regression
+            # Optional: you could also add a column like f"{ground_truth_label}_pred" if you prefer.
+        else:
+            # Unexpected shape; record raw values and skip loss
+            row["pred"] = pred.cpu().tolist()
+            row["loss"] = None
+
+        rows.append(row)
+
+    df = pd.DataFrame(rows)
+
+    # Sort with NAs last if loss exists; otherwise just return as-is
+    if "loss" in df.columns:
+        df = df.sort_values(by="loss", na_position="last")
+
+    return df

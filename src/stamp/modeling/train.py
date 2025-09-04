@@ -162,12 +162,14 @@ def setup_model_for_training(
         advanced.num_workers,
         advanced.task,
     )
-
-    category_weights = _compute_class_weights_and_check_categories(
-        train_dl=train_dl,
-        feature_type=feature_type,
-        train_categories=train_categories,
-    )
+    ##temopary for test regression
+    category_weights = []
+    if task == "classification":
+        category_weights = _compute_class_weights_and_check_categories(
+            train_dl=train_dl,
+            feature_type=feature_type,
+            train_categories=train_categories,
+        )
 
     # 1. Default to a model if none is specified
     if advanced.model_name is None:

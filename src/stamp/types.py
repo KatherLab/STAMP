@@ -46,8 +46,10 @@ BagSize: TypeAlias = int
 # A batch of the above
 Bags: TypeAlias = Float[Tensor, "batch tile feature"]
 BagSizes: TypeAlias = Integer[Tensor, "batch"]  # noqa: F821
-EncodedTargets: TypeAlias = Bool[Tensor, "batch category_is_hot"]
-"""The ground truth, encoded numerically (currently: one-hot)"""
+EncodedTargets: TypeAlias = (
+    Float[Tensor, "index category_is_hot"] | Float[Tensor, "index 1"]
+)
+"""Ground truth tensor for supervision."""
 CoordinatesBatch: TypeAlias = Float[Tensor, "batch tile 2"]
 
 PandasLabel: TypeAlias = str
