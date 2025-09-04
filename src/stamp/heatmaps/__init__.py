@@ -156,6 +156,13 @@ def _create_plotted_overlay(
     plt.tight_layout()
     return fig, ax
 
+def _sym_log(x: torch.Tensor, scale: float = 50.0) -> torch.Tensor:
+    """
+    y = sign(x) * log1p(scale * |x|) / log1p(scale)
+    """
+    denom = torch.log1p(torch.tensor(scale, device=x.device, dtype=x.dtype))
+    return torch.sign(x) * torch.log1p(scale * torch.abs(x)) / denom
+
 
 def heatmaps_(
     *,
@@ -339,10 +346,12 @@ def heatmaps_(
                 category_support * attention / attention.max()
             )  # shape: [tile]
 
+            log_norm = (_sym_log(category_score) / 2) + 0.5
+
             score_im = cast(
                 np.ndarray,
                 plt.get_cmap("RdBu_r")(
-                    _vals_to_im(category_score.unsqueeze(-1) / 2 + 0.5, coords_norm)
+                    _vals_to_im(log_norm.unsqueeze(-1), coords_norm)
                     .squeeze(-1)
                     .cpu()
                     .detach()

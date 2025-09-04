@@ -7,7 +7,11 @@ from stamp.modeling.classifier import LitPatientlassifier
 
 class MLP(nn.Module):
     """
-    Simple MLP for classification from a single feature vector.
+    Simple MLP for regression/classification from a feature vector.
+
+    Accepts:
+      - (B, F) single feature vector per sample
+      - (B, T, F) bag of feature vectors per sample (mean pooled to (B, F))
     """
 
     def __init__(
@@ -29,7 +33,16 @@ class MLP(nn.Module):
         layers.append(nn.Linear(in_dim, dim_output))
         self.mlp = nn.Sequential(*layers)
 
-    def forward(self, x: Tensor) -> Tensor:
+    @beartype
+    def forward(
+        self,
+        x: Float[Tensor, "..."],
+        **kwargs,
+    ) -> Float[Tensor, "batch dim_output"]:
+        if x.ndim == 3:  # (B, T, F)
+            x = x.mean(dim=1)  # → (B, F)
+        elif x.ndim != 2:
+            raise ValueError(f"Expected 2D or 3D input, got {x.shape}")
         return self.mlp(x)
 
 
@@ -56,8 +69,13 @@ class Linear(nn.Module):
     @beartype
     def forward(
         self,
-        x: Float[Tensor, "batch dim_in"],  # batch of feature vectors
+        x: Float[Tensor, "..."],
+        **kwargs,
     ) -> Float[Tensor, "batch dim_output"]:
+        if x.ndim == 3:
+            x = x.mean(dim=1)  # (B, F)
+        elif x.ndim != 2:
+            raise ValueError(f"Expected 2D or 3D input, got {x.shape}")
         return self.fc(x)
 
 

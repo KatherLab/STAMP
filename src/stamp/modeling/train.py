@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import cast
 
 import lightning
+import numpy as np
 import torch
 from lightning.pytorch.accelerators.accelerator import Accelerator
 from lightning.pytorch.callbacks import EarlyStopping, ModelCheckpoint
@@ -37,6 +38,7 @@ from stamp.types import (
     GroundTruth,
     PandasLabel,
     PatientId,
+    Task,
 )
 
 __author__ = "Marko van Treeck"
@@ -96,6 +98,7 @@ def train_categorical_model_(
     model, train_dl, valid_dl = setup_model_for_training(
         patient_to_data=patient_to_data,
         categories=config.categories,
+        task=advanced.task,
         advanced=advanced,
         ground_truth_label=config.ground_truth_label,
         clini_table=config.clini_table,
@@ -122,6 +125,7 @@ def train_categorical_model_(
 def setup_model_for_training(
     *,
     patient_to_data: Mapping[PatientId, PatientData[GroundTruth]],
+    task: Task,
     categories: Sequence[Category] | None,
     train_transform: Callable[[torch.Tensor], torch.Tensor] | None,
     feature_type: str,
@@ -141,6 +145,7 @@ def setup_model_for_training(
     train_dl, valid_dl, train_categories, dim_feats, train_patients, valid_patients = (
         setup_dataloaders_for_training(
             patient_to_data=patient_to_data,
+            task=task,
             categories=categories,
             bag_size=advanced.bag_size,
             batch_size=advanced.batch_size,
@@ -155,6 +160,7 @@ def setup_model_for_training(
         advanced.bag_size,
         advanced.batch_size,
         advanced.num_workers,
+        advanced.task,
     )
 
     category_weights = _compute_class_weights_and_check_categories(
@@ -181,9 +187,9 @@ def setup_model_for_training(
         )
 
     # 4. Get model-specific hyperparameters
-    model_specific_params = advanced.model_params.model_dump()[
-        advanced.model_name.value
-    ]
+    model_specific_params = (
+        advanced.model_params.model_dump().get(advanced.model_name.value) or {}
+    )
 
     # 5. Calculate total steps for scheduler
     steps_per_epoch = len(train_dl)
@@ -226,6 +232,7 @@ def setup_model_for_training(
 def setup_dataloaders_for_training(
     *,
     patient_to_data: Mapping[PatientId, PatientData[GroundTruth]],
+    task: Task,
     categories: Sequence[Category] | None,
     bag_size: int,
     batch_size: int,
@@ -246,8 +253,7 @@ def setup_dataloaders_for_training(
     Returns:
         train_dl, valid_dl, categories, feature_dim, train_patients, valid_patients
     """
-    # Sample count for training
-    log_total_class_summary(patient_to_data, categories)
+
 
     # Stratified split
     ground_truths = [
@@ -255,6 +261,22 @@ def setup_dataloaders_for_training(
         for patient_data in patient_to_data.values()
         if patient_data.ground_truth is not None
     ]
+    # if task == "regression":
+    #     # check if all ground truths are numeric
+    #     if not all(isinstance(gt, (int, float, np.number)) for gt in ground_truths):
+    #         _logger.warning(
+    #             "Task was set to 'regression' but non-numeric ground truths detected. "
+    #             "Switching to 'classification'."
+    #         )
+    #         task = "classification"
+
+    if task == "classification":
+        _logger.info(f"Task: {feature_type} {task}")
+        # Sample count for training
+        log_total_class_summary(ground_truths, categories)
+    elif task == "regression":
+        pass
+
     if len(ground_truths) != len(patient_to_data):
         raise ValueError(
             "patient_to_data must have a ground truth defined for all targets!"
@@ -271,6 +293,7 @@ def setup_dataloaders_for_training(
         # Use existing BagDataset logic
         train_dl, train_categories = tile_bag_dataloader(
             patient_data=[patient_to_data[pid] for pid in train_patients],
+            task=task,
             categories=categories,
             bag_size=bag_size,
             batch_size=batch_size,
@@ -280,6 +303,7 @@ def setup_dataloaders_for_training(
         )
         valid_dl, _ = tile_bag_dataloader(
             patient_data=[patient_to_data[pid] for pid in valid_patients],
+            task=task,
             bag_size=None,
             categories=train_categories,
             batch_size=1,
@@ -421,14 +445,9 @@ def _compute_class_weights_and_check_categories(
 
 
 def log_total_class_summary(
-    patient_to_data: Mapping[PatientId, PatientData],
+    ground_truths: list,
     categories: Sequence[Category] | None,
 ) -> None:
-    ground_truths = [
-        patient_data.ground_truth
-        for patient_data in patient_to_data.values()
-        if patient_data.ground_truth is not None
-    ]
     cats = categories or sorted(set(ground_truths))
     counter = Counter(ground_truths)
     _logger.info(

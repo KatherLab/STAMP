@@ -10,7 +10,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from torch import Generator
 
 from stamp.modeling.registry import ModelName
-from stamp.types import Category, PandasLabel
+from stamp.types import Category, PandasLabel, Task
 
 
 class TrainConfig(BaseModel):
@@ -89,6 +89,9 @@ class TransMILModelParams(BaseModel):
 class LinearModelParams(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
+class LinearRegressorModelParams(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
 
 class ModelParams(BaseModel):
     model_config = ConfigDict(extra="forbid")
@@ -98,6 +101,7 @@ class ModelParams(BaseModel):
     # Patient level models
     mlp: MlpModelParams
     linear: LinearModelParams | None = None
+    linear_regressor: LinearRegressorModelParams | None = None
 
 
 class AdvancedConfig(BaseModel):
@@ -115,6 +119,7 @@ class AdvancedConfig(BaseModel):
         description='Optional. "vit" or "mlp" are defaults based on feature type.',
     )
     model_params: ModelParams
+    task: Task
 
 
 class Seed:

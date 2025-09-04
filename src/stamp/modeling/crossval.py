@@ -145,6 +145,7 @@ def categorical_crossval_(
                 feature_dir=config.feature_dir,
                 ground_truth_label=config.ground_truth_label,
                 advanced=advanced,
+                task=advanced.task,
                 patient_to_data={
                     patient_id: patient_data
                     for patient_id, patient_data in patient_to_data.items()
@@ -195,6 +196,7 @@ def categorical_crossval_(
                 test_dl, _ = tile_bag_dataloader(
                     patient_data=test_patient_data,
                     bag_size=None,
+                    task=advanced.task,
                     categories=categories,
                     batch_size=1,
                     shuffle=False,

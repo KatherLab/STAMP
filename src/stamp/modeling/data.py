@@ -5,7 +5,7 @@ from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import KW_ONLY, dataclass
 from itertools import groupby
 from pathlib import Path
-from typing import IO, BinaryIO, Generic, TextIO, TypeAlias, Union, cast
+from typing import IO, BinaryIO, Generic, Literal, TextIO, TypeAlias, Union, cast
 
 import h5py
 import numpy as np
@@ -31,6 +31,7 @@ from stamp.types import (
     PandasLabel,
     PatientId,
     SlideMPP,
+    Task,
     TilePixels,
 )
 
@@ -49,6 +50,7 @@ _BinaryIOLike: TypeAlias = Union[BinaryIO, IO[bytes]]
 _Coordinates: TypeAlias = Float[Tensor, "tile 2"]
 
 
+
 @dataclass
 class PatientData(Generic[GroundTruthType]):
     """All raw (i.e. non-generated) information we have on the patient."""
@@ -62,6 +64,7 @@ def tile_bag_dataloader(
     *,
     patient_data: Sequence[PatientData[GroundTruth | None]],
     bag_size: int | None,
+    task: Task,
     categories: Sequence[Category] | None = None,
     batch_size: int,
     shuffle: bool,
@@ -74,22 +77,47 @@ def tile_bag_dataloader(
     """Creates a dataloader from patient data for tile-level (bagged) features.
 
     Args:
-        categories:
-            Order of classes for one-hot encoding.
-            If `None`, classes are inferred from patient data.
+        task='classification':
+            categories:
+                Order of classes for one-hot encoding.
+                If `None`, classes are inferred from patient data.
+        task='regression':
+            returns float targets
     """
+    if task == "classification":
+        raw_ground_truths = np.array([patient.ground_truth for patient in patient_data])
+        categories = (
+            categories if categories is not None else list(np.unique(raw_ground_truths))
+        )
+        one_hot = torch.tensor(raw_ground_truths.reshape(-1, 1) == categories)
+        ds = BagDataset(
+            bags=[patient.feature_files for patient in patient_data],
+            bag_size=bag_size,
+            ground_truths=one_hot,
+            transform=transform,
+        )
+        cats_out: Sequence[Category] = list(categories)
 
-    raw_ground_truths = np.array([patient.ground_truth for patient in patient_data])
-    categories = (
-        categories if categories is not None else list(np.unique(raw_ground_truths))
-    )
-    one_hot = torch.tensor(raw_ground_truths.reshape(-1, 1) == categories)
-    ds = BagDataset(
-        bags=[patient.feature_files for patient in patient_data],
-        bag_size=bag_size,
-        ground_truths=one_hot,
-        transform=transform,
-    )
+    elif task == "regression":
+        raw_targets = np.array(
+            [
+                np.nan if p.ground_truth is None else float(p.ground_truth)
+                for p in patient_data
+            ],
+            dtype=np.float32,
+        )
+        y = torch.from_numpy(raw_targets).reshape(-1, 1)
+
+        ds = BagDataset(
+            bags=[patient.feature_files for patient in patient_data],
+            bag_size=bag_size,
+            ground_truths=y,
+            transform=transform,
+        )
+        cats_out = []
+
+    else:
+        raise ValueError(f"Unknown task: {task}")
 
     return (
         cast(
@@ -102,7 +130,7 @@ def tile_bag_dataloader(
                 collate_fn=_collate_to_tuple,
             ),
         ),
-        list(categories),
+        cats_out,
     )
 
 

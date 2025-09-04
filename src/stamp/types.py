@@ -53,3 +53,5 @@ CoordinatesBatch: TypeAlias = Float[Tensor, "batch tile 2"]
 PandasLabel: TypeAlias = str
 
 GroundTruthType = TypeVar("GroundTruthType", covariant=True)
+
+Task: TypeAlias = Literal["classification", "regression"]
