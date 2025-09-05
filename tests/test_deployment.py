@@ -4,8 +4,10 @@ import numpy as np
 import pytest
 import torch
 from random_data import create_random_patient_level_feature_file, make_old_feature_file
+from torch import nn
 
 from stamp.modeling.classifier.mlp import MLPClassifier
+from stamp.modeling.classifier.trans_mil import TransMIL
 from stamp.modeling.classifier.vision_tranformer import LitVisionTransformer
 from stamp.modeling.data import (
     PatientData,
@@ -13,36 +15,57 @@ from stamp.modeling.data import (
     tile_bag_dataloader,
 )
 from stamp.modeling.deploy import _predict, _to_prediction_df
+from stamp.seed import Seed
 from stamp.types import GroundTruth, PatientId
 
 
+@pytest.mark.parametrize("model_class", [LitVisionTransformer, TransMIL])
 @pytest.mark.filterwarnings("ignore:GPU available but not used")
 @pytest.mark.filterwarnings(
     "ignore:The 'predict_dataloader' does not have many workers which may be a bottleneck"
 )
 def test_predict(
+    model_class: type[nn.Module],
     categories: list[str] = ["foo", "bar", "baz"],
     n_heads: int = 7,
     dim_input: int = 12,
 ) -> None:
-    model = LitVisionTransformer(
-        categories=list(categories),
-        category_weights=torch.rand(len(categories)),
-        dim_input=dim_input,
-        dim_model=n_heads * 3,
-        dim_feedforward=56,
-        n_heads=n_heads,
-        n_layers=2,
-        dropout=0.5,
-        ground_truth_label="test",
-        train_patients=np.array(["pat1", "pat2"]),
-        valid_patients=np.array(["pat3", "pat4"]),
-        use_alibi=False,
-        # these values do not affect at inference time
-        total_steps=320,
-        max_lr=1e-4,
-        div_factor=25.0,
-    )
+    Seed.set(42)
+    if model_class is LitVisionTransformer:
+        model = LitVisionTransformer(
+            categories=list(categories),
+            category_weights=torch.rand(len(categories)),
+            dim_input=dim_input,
+            dim_model=n_heads * 3,
+            dim_feedforward=56,
+            n_heads=n_heads,
+            n_layers=2,
+            dropout=0.5,
+            ground_truth_label="test",
+            train_patients=np.array(["pat1", "pat2"]),
+            valid_patients=np.array(["pat3", "pat4"]),
+            use_alibi=False,
+            # these values do not affect at inference time
+            total_steps=320,
+            max_lr=1e-4,
+            div_factor=25.0,
+        )
+    elif model_class is TransMIL:
+        model = TransMIL(
+            categories=list(categories),
+            category_weights=torch.rand(len(categories)),
+            dim_input=dim_input,
+            dim_hidden=512,
+            ground_truth_label="test",
+            train_patients=np.array(["pat1", "pat2"]),
+            valid_patients=np.array(["pat3", "pat4"]),
+            # these values do not affect at inference time
+            total_steps=320,
+            max_lr=1e-4,
+            div_factor=25.0,
+        )
+    else:
+        raise ValueError(f"Unsupported model: {model_class}")
 
     patient_to_data = {
         PatientId("pat5"): PatientData(

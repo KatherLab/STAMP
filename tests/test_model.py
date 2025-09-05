@@ -1,6 +1,7 @@
 import torch
 
 from stamp.modeling.classifier.mlp import MLPClassifier
+from stamp.modeling.classifier.trans_mil import TransMIL
 from stamp.modeling.classifier.vision_tranformer import VisionTransformer
 
 
@@ -127,3 +128,47 @@ def test_mlp_inference_reproducibility(
         logits1 = model.forward(feats)
         logits2 = model.forward(feats)
     assert torch.allclose(logits1, logits2)
+
+
+def test_transmil_dims(
+    # arbitrarily chosen constants
+    num_classes: int = 3,
+    batch_size: int = 6,
+    n_tiles: int = 75,
+    input_dim: int = 456,
+) -> None:
+    model = TransMIL(
+        dim_output=num_classes,
+        dim_input=input_dim,
+    )
+
+    bags = torch.rand((batch_size, n_tiles, input_dim))
+    logits = model.forward(bags)
+    assert logits.shape == (batch_size, num_classes)
+
+
+def test_trans_mil_inference_reproducibility(
+    # arbitrarily chosen constants
+    num_classes: int = 4,
+    batch_size: int = 7,
+    n_tiles: int = 76,
+    input_dim: int = 457,
+) -> None:
+    model = TransMIL(
+        dim_output=num_classes,
+        dim_input=input_dim,
+    )
+
+    model = model.eval()
+
+    bags = torch.rand((batch_size, n_tiles, input_dim))
+
+    with torch.inference_mode():
+        logits1 = model.forward(
+            bags,
+        )
+        logits2 = model.forward(
+            bags,
+        )
+
+    assert logits1.allclose(logits2)

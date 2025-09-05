@@ -52,7 +52,7 @@ def load_model_class(model_name: ModelName):
 
         case ModelName.TRANS_MIL:
             from stamp.modeling.classifier.trans_mil import (
-                TransMILClassifier as ModelClass,
+                TransMIL as ModelClass,
             )
 
         case ModelName.MLP:

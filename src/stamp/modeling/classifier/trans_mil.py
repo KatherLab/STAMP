@@ -285,7 +285,7 @@ class PPEG(nn.Module):
         return x
 
 
-class TransMIL(nn.Module):
+class TransMILBackbone(nn.Module):
     def __init__(self, dim_output: int, dim_input: int, dim_hidden: int):
         super().__init__()
         self.pos_layer = PPEG(dim=dim_hidden)
@@ -328,14 +328,14 @@ class TransMIL(nn.Module):
         return logits
 
 
-class TransMILClassifier(LitTileClassifier):
+class TransMIL(LitTileClassifier):
     model_name: str = "trans_mil"
 
     def build_backbone(
         self, dim_input: int, dim_output: int, metadata: dict
     ) -> nn.Module:
-        params = self.get_model_params(TransMIL, metadata)
-        return TransMIL(
+        params = self.get_model_params(TransMILBackbone, metadata)
+        return TransMILBackbone(
             dim_input=dim_input,
             dim_output=dim_output,
             **params,
