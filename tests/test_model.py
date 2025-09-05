@@ -1,7 +1,7 @@
 import torch
 
 from stamp.modeling.classifier.mlp import MLPClassifier
-from stamp.modeling.classifier.trans_mil import TransMIL
+from stamp.modeling.classifier.trans_mil import TransMILBackbone
 from stamp.modeling.classifier.vision_tranformer import VisionTransformer
 
 
@@ -42,7 +42,7 @@ def test_inference_reproducibility(
     model = VisionTransformer(
         dim_output=num_classes,
         dim_input=input_dim,
-        dim_model=n_heads * 34,
+        dim_model=n_heads * 33,
         n_layers=3,
         n_heads=n_heads,
         dim_feedforward=135,
@@ -137,9 +137,8 @@ def test_transmil_dims(
     n_tiles: int = 75,
     input_dim: int = 456,
 ) -> None:
-    model = TransMIL(
-        dim_output=num_classes,
-        dim_input=input_dim,
+    model = TransMILBackbone(
+        dim_output=num_classes, dim_input=input_dim, dim_hidden=512
     )
 
     bags = torch.rand((batch_size, n_tiles, input_dim))
@@ -154,9 +153,8 @@ def test_trans_mil_inference_reproducibility(
     n_tiles: int = 76,
     input_dim: int = 457,
 ) -> None:
-    model = TransMIL(
-        dim_output=num_classes,
-        dim_input=input_dim,
+    model = TransMILBackbone(
+        dim_output=num_classes, dim_input=input_dim, dim_hidden=512
     )
 
     model = model.eval()
