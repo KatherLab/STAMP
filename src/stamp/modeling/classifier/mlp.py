@@ -1,5 +1,5 @@
 from beartype import beartype
-from jaxtyping import Float, jaxtyped
+from jaxtyping import Float
 from torch import Tensor, nn
 
 from stamp.modeling.classifier import LitPatientlassifier
@@ -19,7 +19,7 @@ class MLP(nn.Module):
         dropout: float,
     ):
         super().__init__()
-        layers = []
+        layers: list[nn.Module] = []
         in_dim = dim_input
         for i in range(num_layers - 1):
             layers.append(nn.Linear(in_dim, dim_hidden))
@@ -29,7 +29,10 @@ class MLP(nn.Module):
         layers.append(nn.Linear(in_dim, dim_output))
         self.mlp = nn.Sequential(*layers)
 
-    def forward(self, x: Tensor) -> Tensor:
+    def forward(
+        self,
+        x: Float[Tensor, "batch dim_input"],
+    ) -> Float[Tensor, "batch dim_output"]:
         return self.mlp(x)
 
 
@@ -52,7 +55,6 @@ class Linear(nn.Module):
         super().__init__()
         self.fc = nn.Linear(dim_input, dim_output)
 
-    @jaxtyped
     @beartype
     def forward(
         self,

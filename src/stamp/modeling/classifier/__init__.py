@@ -126,6 +126,11 @@ class LitBaseClassifier(lightning.LightningModule, ABC):
 
     @staticmethod
     def get_model_params(model_class: type[nn.Module], metadata: dict) -> dict:
+        """
+        Extracts all constructor argument names (excluding 'self') from the given model class,
+        and returns a dict of key-value pairs where the keys exist in both the model's __init__
+        signature and the provided metadata dict.
+        """
         keys = [
             k for k in inspect.signature(model_class.__init__).parameters if k != "self"
         ]

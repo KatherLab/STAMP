@@ -13,7 +13,7 @@ from lightning.pytorch.loggers import CSVLogger
 from sklearn.model_selection import train_test_split
 from torch.utils.data.dataloader import DataLoader
 
-from stamp.modeling.config import AdvancedConfig, Seed, TrainConfig
+from stamp.modeling.config import AdvancedConfig, TrainConfig
 from stamp.modeling.data import (
     BagDataset,
     PatientData,
@@ -347,7 +347,6 @@ def train_model_(
         The model with the best validation loss during training.
     """
     torch.set_float32_matmul_precision("high")
-    Seed.set(42)
 
     model_checkpoint = ModelCheckpoint(
         monitor="validation_loss",
