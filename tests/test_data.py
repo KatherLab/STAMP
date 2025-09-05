@@ -6,11 +6,11 @@ import h5py
 import pytest
 import torch
 from random_data import (
+    create_good_and_bad_slide_tables,
     create_random_patient_level_feature_file,
+    create_random_slide_tables,
     make_feature_file,
     make_old_feature_file,
-    create_good_and_bad_slide_tables,
-    create_random_slide_tables,
 )
 from torch.utils.data import DataLoader
 
@@ -23,6 +23,7 @@ from stamp.modeling.data import (
     get_coords,
     slide_to_patient_from_slide_table_,
 )
+from stamp.seed import Seed
 from stamp.types import (
     BagSize,
     FeaturePath,

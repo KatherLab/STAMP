@@ -5,6 +5,7 @@ from stamp.cache import download_file
 from stamp.modeling.classifier.vision_tranformer import LitVisionTransformer
 from stamp.modeling.data import PatientData, tile_bag_dataloader
 from stamp.modeling.deploy import _predict
+from stamp.seed import Seed
 from stamp.types import FeaturePath, PatientId
 
 
@@ -12,6 +13,7 @@ from stamp.types import FeaturePath, PatientId
     "ignore:The 'predict_dataloader' does not have many workers"
 )
 def test_backwards_compatibility() -> None:
+    Seed.set(42)
     example_checkpoint_path = download_file(
         url="https://github.com/KatherLab/STAMP/releases/download/2.2.0/example-model-v2_3_0.ckpt",
         file_name="example-modelv2_3_0.ckpt",
