@@ -11,6 +11,7 @@ import torch
 import yaml
 from fastmcp import Context, FastMCP
 from pydantic import Field
+import pandas as pd
 
 # Initialize the FastMCP server
 mcp = FastMCP("STAMP MCP Server")
@@ -720,31 +721,246 @@ def read_file(path: str) -> str:
 
 
 @mcp.tool
-def list_files(subdir: str = "") -> list:
+def list_files(subdir: str = "") -> str:
     """
     List all files and directories under the given subdirectory (default is root), recursively,
-    returning paths relative to the base directory.
+    returning paths relative to the base directory. If the list is too long, shows only directories
+    with file type summaries. If still too long, shows a truncated message.
 
     Args:
         subdir (str): Relative subdirectory path to list files from.
 
     Returns:
-        list: List of relative file paths found.
+        str: Formatted list of files/directories or summary information.
     """
+    max_items = 50
     safe = _resolve_path(subdir)
     if not safe.is_dir():
         raise FileNotFoundError(f"Subdirectory does not exist: {subdir}")
-    results = []
+    
+    # Collect all files and directories
+    all_items = []
+    directories = {}
     base_len = len(str(base)) + 1  # To slice off base path + separator
+    
     for root, dirs, files in os.walk(safe):
         rel_root = str(root)[base_len:]  # relative path under base_dir
+        
+        # Track file types in each directory
+        if rel_root not in directories:
+            directories[rel_root] = {"subdirs": [], "file_types": {}, "file_count": 0}
+        
+        # Add subdirectories
         for d in dirs:
             path = os.path.join(rel_root, d)
-            results.append(path + "/")
+            all_items.append(path + "/")
+            directories[rel_root]["subdirs"].append(d)
+        
+        # Add files and track their extensions
         for f in files:
             path = os.path.join(rel_root, f)
-            results.append(path)
-    return sorted(results)
+            all_items.append(path)
+            
+            # Track file extension
+            ext = Path(f).suffix.lower() or "no extension"
+            directories[rel_root]["file_types"][ext] = directories[rel_root]["file_types"].get(ext, 0) + 1
+            directories[rel_root]["file_count"] += 1
+    
+    # If the list is manageable, return the full list
+    if len(all_items) <= max_items:
+        return "\n".join(sorted(all_items))
+    
+    # Try directory summary instead
+    dir_summary = []
+    for dir_path, info in sorted(directories.items()):
+        if not dir_path:  # Root directory
+            dir_display = f"/ (root)"
+        else:
+            dir_display = f"{dir_path}/"
+        
+        # File type summary
+        if info["file_count"] > 0:
+            file_types = []
+            for ext, count in sorted(info["file_types"].items()):
+                file_types.append(f"{count} {ext}")
+            file_summary = f" [{', '.join(file_types)}]"
+        else:
+            file_summary = " [empty]"
+        
+        # Subdirectory info
+        if info["subdirs"]:
+            subdir_info = f" (contains {len(info['subdirs'])} subdirs)"
+        else:
+            subdir_info = ""
+        
+        dir_summary.append(f"{dir_display}{file_summary}{subdir_info}")
+    
+    # If directory summary is still too long, truncate
+    if len(dir_summary) > max_items:
+        total_dirs = len(directories)
+        total_files = sum(info["file_count"] for info in directories.values())
+        
+        # Show first few directories and a summary
+        shown_dirs = dir_summary[:max_items//2]
+        summary_text = (
+            f"\n... (showing first {len(shown_dirs)} of {total_dirs} directories)\n\n"
+            f"SUMMARY:\n"
+            f"- Total directories: {total_dirs}\n"
+            f"- Total files: {total_files}\n"
+            f"- Directory '{subdir or '/'}' contains too many items to display completely.\n"
+            f"- Use a more specific subdirectory path to see detailed listings."
+        )
+        
+        # Get overall file type statistics
+        all_extensions = {}
+        for info in directories.values():
+            for ext, count in info["file_types"].items():
+                all_extensions[ext] = all_extensions.get(ext, 0) + count
+        
+        if all_extensions:
+            ext_summary = []
+            for ext, count in sorted(all_extensions.items(), key=lambda x: x[1], reverse=True)[:10]:
+                ext_summary.append(f"  {ext}: {count} files")
+            summary_text += f"\n\nTop file types:\n" + "\n".join(ext_summary)
+            if len(all_extensions) > 10:
+                summary_text += f"\n  ... and {len(all_extensions) - 10} more file types"
+        
+        return "\n".join(shown_dirs) + summary_text
+    
+    # Return directory summary
+    header = f"Directory listing for '{subdir or '/'}' (showing directories with file type summaries):\n"
+    return header + "\n".join(dir_summary)
+
+
+@mcp.tool
+def analyze_csv(path: str) -> str:
+    """
+    Analyze a CSV file and provide detailed information about its structure and contents.
+    
+    Args:
+        path (str): Relative path to the CSV file.
+        
+    Returns:
+        str: Detailed information about the CSV including dimensions, columns, and sample data.
+    """
+    safe_path = _resolve_path(path)
+    
+    if not safe_path.exists():
+        raise FileNotFoundError(f"CSV file does not exist: {path}")
+    
+    if not safe_path.suffix.lower() in ['.csv', '.tsv']:
+        raise ValueError(f"File is not a CSV file: {path}")
+    
+    try:
+        # Read the CSV file
+        df = pd.read_csv(safe_path)
+        
+        # Get basic information
+        num_rows, num_columns = df.shape
+        column_names = df.columns.tolist()
+        
+        # Get first 3 rows as examples
+        sample_rows = df.head(3).to_string(index=True, max_cols=None)
+        
+        # Format the output
+        result = f"""CSV File Analysis: {path}
+        
+Dimensions:
+- Number of rows: {num_rows:,}
+- Number of columns: {num_columns}
+
+Column Names:
+{', '.join([f'"{col}"' for col in column_names])}
+
+First 3 rows (sample data):
+{sample_rows}
+
+Data Types:
+{df.dtypes.to_string()}
+        """
+        
+        return result.strip()
+        
+    except pd.errors.EmptyDataError:
+        return f"CSV file is empty: {path}"
+    except pd.errors.ParserError as e:
+        return f"Error parsing CSV file {path}: {str(e)}"
+    except Exception as e:
+        return f"Error analyzing CSV file {path}: {str(e)}"
+    
+
+@mcp.tool
+def list_column_values(path: str, column_name: str) -> str:
+    """
+    List all unique values in a specific column of a CSV file.
+    
+    Args:
+        path (str): Relative path to the CSV file.
+        column_name (str): Name of the column to analyze.
+        
+    Returns:
+        str: Information about the unique values in the specified column.
+    """
+    safe_path = _resolve_path(path)
+    
+    if not safe_path.exists():
+        raise FileNotFoundError(f"CSV file does not exist: {path}")
+    
+    if not safe_path.suffix.lower() in ['.csv', '.tsv']:
+        raise ValueError(f"File is not a CSV file: {path}")
+    
+    try:
+        # Read the CSV file
+        df = pd.read_csv(safe_path)
+        
+        # Check if column exists
+        if column_name not in df.columns:
+            available_columns = ', '.join([f'"{col}"' for col in df.columns])
+            return f"Column '{column_name}' not found in CSV file: {path}\nAvailable columns: {available_columns}"
+        
+        # Get unique values
+        unique_values = df[column_name].unique()
+        
+        # Count occurrences of each value
+        value_counts = df[column_name].value_counts().sort_index()
+        
+        # Handle missing values
+        null_count = df[column_name].isnull().sum()
+        
+        # Format the output
+        result = f"""Column Analysis for '{column_name}' in {path}
+
+Total rows: {len(df):,}
+Unique values: {len(unique_values):,}
+Missing/null values: {null_count:,}
+
+Value distribution:
+{value_counts.to_string()}
+        """
+        
+        # If there are many unique values, show a sample
+        if len(unique_values) > 20:
+            result += f"""
+
+First 20 unique values:
+{', '.join([str(val) for val in unique_values[:20]])}
+... and {len(unique_values) - 20} more values
+            """
+        else:
+            result += f"""
+
+All unique values:
+{', '.join([str(val) for val in unique_values if pd.notna(val)])}
+            """
+        
+        return result.strip()
+        
+    except pd.errors.EmptyDataError:
+        return f"CSV file is empty: {path}"
+    except pd.errors.ParserError as e:
+        return f"Error parsing CSV file {path}: {str(e)}"
+    except Exception as e:
+        return f"Error analyzing column in CSV file {path}: {str(e)}"
 
 
 @mcp.tool
