@@ -52,7 +52,7 @@ async def _run_stamp(mode, config, ctx):
         tmp_config_path = tmp_config.name
 
     handler = MCPLogHandler(ctx)
-    handler.setLevel(logging.DEBUG)
+    handler.setLevel(logging.INFO)
     STAMP_LOGGER.addHandler(handler)
 
     print("Running command...")
@@ -207,22 +207,11 @@ async def train_stamp(
             "in the slide table containing the feature file path relative to `feature_dir`"
         ),
     ] = "FILENAME",
-    bag_size: Annotated[
-        int,
-        Field(
-            description="Amount of tiles to sample when training. "
-            "Reducing this value reduces memory usage, but it is not recommended as the model can miss"
-            "relevant regions of the slide. Default value works well on H&E tissue images."
-        ),
-    ] = 512,
-    batch_size: Annotated[
-        int, Field(description="Amount of bags processed together.")
-    ] = 64,
 ) -> str:
     """
     Train a model using clinical data and WSI-derived features via STAMP.
     Takes in a clinical table, slide associations, and extracted features
-    to train a model on a specified label.
+    to train a model on a specified label. Best option when an external cohort is available.
 
     Returns:
         str: message indicating the success or failure of the training operation,
@@ -251,8 +240,6 @@ async def train_stamp(
             "categories": categories,
             "patient_label": patient_label,
             "filename_label": filename_label,
-            "bag_size": bag_size,
-            "batch_size": batch_size,
         }
     }
     return await _run_stamp(mode="train", config=config, ctx=ctx)
@@ -307,22 +294,12 @@ async def crossval_stamp(
             description="Number of folds to split the data into for cross-validation"
         ),
     ] = 5,
-    bag_size: Annotated[
-        int,
-        Field(
-            description="Amount of tiles to sample when training. "
-            "Reducing this value reduces memory usage, but it is not recommended as the model can miss"
-            "relevant regions of the slide. Default value works well on H&E tissue images."
-        ),
-    ] = 512,
-    batch_size: Annotated[
-        int, Field(description="Amount of bags processed together.")
-    ] = 64,
 ) -> str:
     """
     Perform cross-validation for model training using STAMP.
     Splits the data into folds and trains a model on each to assess
     generalization. Uses clinical data, features, and slide mappings.
+    Best option when only one cohort is available.
 
     Returns:
         str: A message indicating the success or failure of the cross-validation operation, along with
@@ -353,10 +330,6 @@ async def crossval_stamp(
             "patient_label": patient_label,
             "filename_label": filename_label,
             "n_splits": n_splits,
-        },
-        "advanced_config": {  # Add advanced config for bag_size and batch_size
-            "bag_size": bag_size,
-            "batch_size": batch_size,
         },
     }
     return await _run_stamp(mode="crossval", config=config, ctx=ctx)
