@@ -6,12 +6,15 @@ import platform
 import subprocess
 import tempfile
 from typing import Annotated
+import argparse
 
 import torch
 import yaml
 from fastmcp import Context, FastMCP
 from pydantic import Field
 import pandas as pd
+from stamp.__main__ import _run_cli
+
 
 # Initialize the FastMCP server
 mcp = FastMCP("STAMP MCP Server")
@@ -27,16 +30,19 @@ class MCPLogHandler(logging.Handler):
     def __init__(self, ctx):
         super().__init__()
         self.ctx = ctx
+        self.captured_logs = []  # Store captured logs
 
     def emit(self, record):
         msg = self.format(record)
+        # Store the log message
+        self.captured_logs.append(msg)
         # Fire-and-forget the coroutine
         asyncio.create_task(self.ctx.log(msg))
 
 
 async def _run_stamp(mode, config, ctx):
     """
-    Run the STAMP command as a subprocess and capture its console output.
+    Run the STAMP command directly by calling _run_cli() instead of subprocess.
 
     Args:
         mode (str): The mode to run the STAMP command in (e.g., "preprocess", "train").
@@ -51,20 +57,30 @@ async def _run_stamp(mode, config, ctx):
         yaml.dump(config, tmp_config)
         tmp_config_path = tmp_config.name
 
+    # Set up logging handler to capture STAMP logs
     handler = MCPLogHandler(ctx)
     handler.setLevel(logging.INFO)
     STAMP_LOGGER.addHandler(handler)
 
-    print("Running command...")
-
     try:
-        cmd = ["stamp", "--config", tmp_config_path, mode]
-        result = subprocess.run(cmd, capture_output=True, text=True, check=True)
-        print("Result returned...")
-        print(f"Command completed successfully:\n{result.stdout}\n{result.stderr}")
-        return f"Command completed successfully:\n{result.stdout}\n{result.stderr}"
-    except subprocess.CalledProcessError as e:
-        return f"Command failed with error:\n{e.stdout}\n{e.stderr}"
+        # Create argparse Namespace object to mimic command line arguments
+        args = argparse.Namespace(
+            command=mode,
+            config_file_path=Path(tmp_config_path)
+        )
+        
+        # Call the STAMP CLI function directly
+        _run_cli(args)
+        
+        # Get captured logs
+        captured_logs_text = "\n".join(handler.captured_logs) if handler.captured_logs else "Command completed successfully (no logs captured)"
+        return f"Command completed successfully:\n{captured_logs_text}"
+        
+    except Exception as e:
+        captured_logs_text = "\n".join(handler.captured_logs) if handler.captured_logs else ""
+        error_msg = f"Command failed with error: {str(e)}\n{captured_logs_text}"
+        return error_msg
+        
     finally:
         os.remove(tmp_config_path)
         STAMP_LOGGER.removeHandler(handler)
@@ -460,7 +476,7 @@ async def statistics_stamp(
                 output_dir="output/statistics",
                 ground_truth_label="OUTCOME",
                 true_class="Positive",
-                pred_csvs=["predictions/fold1.csv", "predictions/fold2.csv"]
+                pred_csvs=["/pathto/split-0/patient-preds.csv", "/pathto/split-1/patient-preds.csv"]
             )
         "Command completed successfully: ..."
     """
