@@ -16,18 +16,12 @@ from torch import Tensor
 
 import stamp
 from stamp.preprocessing.config import ExtractorName
+from stamp.seed import Seed
 from stamp.types import Category, FeaturePath, Microns, PatientId, TilePixels
 
 CliniPath: TypeAlias = Path
 SlidePath: TypeAlias = Path
 FeatureDir: TypeAlias = Path
-
-
-def seed_rng(seed: int) -> None:
-    """Seeds all the random number generators"""
-    random.seed(seed)
-    torch.manual_seed(seed)
-    np.random.seed(seed)
 
 
 def create_random_dataset(
@@ -50,6 +44,8 @@ def create_random_dataset(
 
     feat_dir = dir / "feats"
     feat_dir.mkdir()
+
+    Seed.set(42)
 
     if categories is not None:
         if n_categories is not None:

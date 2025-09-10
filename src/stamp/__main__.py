@@ -13,6 +13,7 @@ from stamp.modeling.config import (
     ModelParams,
     VitModelParams,
 )
+from stamp.seed import Seed
 
 STAMP_FACTORY_SETTINGS = Path(__file__).with_name("config.yaml")
 
@@ -48,6 +49,10 @@ def _run_cli(args: argparse.Namespace) -> None:
     # Load YAML configuration
     with open(args.config_file_path, "r") as config_yaml:
         config = StampConfig.model_validate(yaml.safe_load(config_yaml))
+
+    if config.advanced_config is None:
+        config.advanced_config = AdvancedConfig()
+    Seed.set(config.advanced_config.seed)
 
     match args.command:
         case "init":
