@@ -25,6 +25,8 @@ STAMP_LOGGER = logging.getLogger("stamp")
 WORKSPACE_FOLDER = "./" # Folder where the agent can work on.
 WORKSPACE_PATH = Path(WORKSPACE_FOLDER).resolve()
 LIST_OUTSIDE = True # Let the agent list files from folders outside the working directory
+MAX_ITEMS = 100 # Max amount of files listed with list_files tool.
+# Big values could exceed LLM's context length. When it exceeds, values are summarized.
 
 
 class MCPLogHandler(logging.Handler):
@@ -740,7 +742,6 @@ def list_files(subdir: str = "") -> str:
     Returns:
         str: Formatted list of files/directories or summary information.
     """
-    max_items = 100
     if LIST_OUTSIDE:
         subdir_path = Path(subdir)
     else:        
@@ -777,7 +778,7 @@ def list_files(subdir: str = "") -> str:
             directories[rel_root]["file_count"] += 1
     
     # If the list is manageable, return the full list
-    if len(all_items) <= max_items:
+    if len(all_items) <= MAX_ITEMS:
         return "\n".join(sorted(all_items))
     
     # Try directory summary instead
@@ -806,12 +807,12 @@ def list_files(subdir: str = "") -> str:
         dir_summary.append(f"{dir_display}{file_summary}{subdir_info}")
     
     # If directory summary is still too long, truncate
-    if len(dir_summary) > max_items:
+    if len(dir_summary) > MAX_ITEMS:
         total_dirs = len(directories)
         total_files = sum(info["file_count"] for info in directories.values())
         
         # Show first few directories and a summary
-        shown_dirs = dir_summary[:max_items//2]
+        shown_dirs = dir_summary[:MAX_ITEMS//2]
         summary_text = (
             f"\n... (showing first {len(shown_dirs)} of {total_dirs} directories)\n\n"
             f"SUMMARY:\n"
