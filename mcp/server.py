@@ -22,8 +22,9 @@ mcp = FastMCP("STAMP MCP Server")
 
 STAMP_LOGGER = logging.getLogger("stamp")
 # TODO: add proper filesystem management
-base_dir = "./"
-base = Path(base_dir).resolve()
+WORKSPACE_FOLDER = "./" # Folder where the agent can work on.
+WORKSPACE_PATH = Path(WORKSPACE_FOLDER).resolve()
+LIST_OUTSIDE = True # Let the agent list files from folders outside the working directory
 
 
 class MCPLogHandler(logging.Handler):
@@ -507,24 +508,40 @@ async def heatmaps_stamp(
         str, Field(description="Path of the model to generate the heatmaps with.")
     ],
     slide_paths: Annotated[
-        list[str] | None,
+        list[str],
         Field(
-            description="List of slide paths relative "
-            "to `wsi_dir` to generate heatmaps for. If not specified, heatmaps will be generated "
-            "for all slides in `wsi_dir`."
+            description="List of slide paths relative to `wsi_dir` to " \
+            "generate heatmaps for. The slide paths HAVE to be specified relative to `wsi_dir`.",
+            min_length=1,
         ),
-    ] = None,
+    ],
     topk: Annotated[
         int | None, Field(description="Number of top-scoring tiles to extract")
     ] = None,
     bottomk: Annotated[
         int | None, Field(description="Number of bottom-scoring tiles to extract")
     ] = None,
+    device: Annotated[
+        str | None,
+        Field(
+            description="The device to use for computation. "
+            "Possible options are 'cuda' for NVIDIA GPUs, 'cpu' for general-purpose "
+            "processors, and 'mps' for Apple Silicon GPUs. Default is detected automatically"
+        ),
+    ] = None,
 ) -> str:
     """
     Generate heatmaps and tile scorings from WSIs using a trained model.
-    Produces visual explanations and optionally extracts top/bottom
-    scoring tiles.
+    
+    Creates visual attention maps showing which regions the model focuses on for predictions.
+    Works only with tile-level features. For each slide, generates:
+    - Overview plots with complete heatmaps and class overlays
+    - Raw data including thumbnails, class maps, and per-class heatmaps  
+    - Individual tile extractions (top/bottom scoring if specified)
+    
+    Output structure: Each slide gets its own folder
+    (slide name without file extension)containing plots/, raw/, and tiles/ subdirectories.
+    
 
     Returns:
         str: A message indicating the success or failure of the heatmap generation operation,
@@ -537,8 +554,8 @@ async def heatmaps_stamp(
                 wsi_dir="input/slides",
                 checkpoint_path="models/checkpoint.pth",
                 slide_paths=["slide1.svs", "slide2.svs"],
-                topk=10,
-                bottomk=5
+                topk=3,
+                bottomk=3
             )
         "Command completed successfully: ..."
     """
@@ -551,6 +568,7 @@ async def heatmaps_stamp(
             "slide_paths": slide_paths,
             "topk": topk,
             "bottomk": bottomk,
+            "device": device,
         }
     }
     return await _run_stamp(mode="heatmaps", config=config, ctx=ctx)
@@ -687,8 +705,8 @@ async def encode_patients_stamp(
 
 
 def _resolve_path(subpath: str) -> Path:
-    requested = (base / subpath).resolve()
-    if base not in requested.parents and requested != base:
+    requested = (WORKSPACE_PATH / subpath).resolve()
+    if WORKSPACE_PATH not in requested.parents and requested != WORKSPACE_PATH:
         raise PermissionError(f"Access denied: {subpath}")
     return requested
 
@@ -722,17 +740,20 @@ def list_files(subdir: str = "") -> str:
     Returns:
         str: Formatted list of files/directories or summary information.
     """
-    max_items = 50
-    safe = _resolve_path(subdir)
-    if not safe.is_dir():
+    max_items = 100
+    if LIST_OUTSIDE:
+        subdir_path = Path(subdir)
+    else:        
+        subdir_path = _resolve_path(subdir)
+    if not subdir_path.is_dir():
         raise FileNotFoundError(f"Subdirectory does not exist: {subdir}")
     
     # Collect all files and directories
     all_items = []
     directories = {}
-    base_len = len(str(base)) + 1  # To slice off base path + separator
+    base_len = len(str(WORKSPACE_PATH)) + 1  # To slice off base path + separator
     
-    for root, dirs, files in os.walk(safe):
+    for root, dirs, files in os.walk(subdir_path):
         rel_root = str(root)[base_len:]  # relative path under base_dir
         
         # Track file types in each directory
