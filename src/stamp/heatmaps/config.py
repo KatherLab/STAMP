@@ -17,12 +17,12 @@ class HeatmapConfig(BaseModel):
 
     slide_paths: list[Path] | None = Field(
         default=None,
-        description="Specific slide paths to process. If None, processes all slides in wsi_dir"
+        description="Specific slide paths to process. If None, processes all slides in wsi_dir",
     )
 
     device: str = Field(
         default_factory=lambda: "cuda" if torch.cuda.is_available() else "cpu",
-        description="Device to use for computation"
+        description="Device to use for computation",
     )
 
     opacity: float = Field(
@@ -35,16 +35,16 @@ class HeatmapConfig(BaseModel):
     topk: int = Field(
         default=0,
         description="Number of top patches to highlight. 0 means no highlighting.",
-        ge=0
+        ge=0,
     )
 
     bottomk: int = Field(
         default=0,
         description="Number of bottom patches to highlight. 0 means no highlighting.",
-        ge=0
+        ge=0,
     )
 
     default_slide_mpp: SlideMPP | None = Field(
         default=None,
-        description="MPP of the slide to use if none can be inferred from the WSI"
+        description="MPP of the slide to use if none can be inferred from the WSI",
     )
