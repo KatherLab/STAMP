@@ -51,7 +51,9 @@ def _run_cli(args: argparse.Namespace) -> None:
         config = StampConfig.model_validate(yaml.safe_load(config_yaml))
 
     if config.advanced_config is None:
-        config.advanced_config = AdvancedConfig()
+        config.advanced_config = AdvancedConfig(
+            model_params=ModelParams(vit=VitModelParams(), mlp=MlpModelParams())
+        )
     Seed.set(config.advanced_config.seed)
 
     match args.command:

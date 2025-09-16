@@ -45,8 +45,6 @@ def create_random_dataset(
     feat_dir = dir / "feats"
     feat_dir.mkdir()
 
-    Seed.set(42)
-
     if categories is not None:
         if n_categories is not None:
             raise ValueError("only one of `categories` and `n_categories` can be set")

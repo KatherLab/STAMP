@@ -6,13 +6,19 @@ import torch
 from torch import Generator
 
 
+def _seed_worker(worker_id: int) -> None:
+    worker_seed = torch.initial_seed() % 2**32
+    np.random.seed(worker_seed)
+    random.seed(worker_seed)
+
+
 class Seed:
     seed: int
 
     @classmethod
     def torch(cls, seed: int) -> None:
         torch.manual_seed(seed)
-        torch.cuda.manual_seed(seed)
+        torch.cuda.manual_seed_all(seed)
 
     @classmethod
     def python(cls, seed: int) -> None:
@@ -35,18 +41,19 @@ class Seed:
 
     @classmethod
     def get_loader_worker_init(cls) -> Callable[[int], None]:
-        def seed_worker(worker_id):
-            worker_seed = torch.initial_seed() % 2**32
-            np.random.seed(worker_seed)
-            random.seed(worker_seed)
-
         if cls._is_set():
-            return seed_worker
+            return _seed_worker
         else:
-            return lambda x: None
+            raise RuntimeError(
+                "Seed has not been set. Call Seed.set(seed) before using a DataLoader."
+            )
 
     @classmethod
     def get_torch_generator(cls, device="cpu") -> Generator:
+        if not cls._is_set():
+            raise RuntimeError(
+                "Seed has not been set. Call Seed.set(seed) before requesting a generator."
+            )
         g = torch.Generator(device)
         g.manual_seed(cls.seed)
         return g
