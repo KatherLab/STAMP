@@ -6,11 +6,11 @@ import h5py
 import pytest
 import torch
 from random_data import (
+    create_good_and_bad_slide_tables,
     create_random_patient_level_feature_file,
+    create_random_slide_tables,
     make_feature_file,
     make_old_feature_file,
-    create_good_and_bad_slide_tables,
-    create_random_slide_tables,
 )
 from torch.utils.data import DataLoader
 
@@ -23,6 +23,7 @@ from stamp.modeling.data import (
     get_coords,
     slide_to_patient_from_slide_table_,
 )
+from stamp.seed import Seed
 from stamp.types import (
     BagSize,
     FeaturePath,
@@ -94,6 +95,7 @@ def test_bag_dataset(
     dim_feats: int = 34,
     batch_size: int = 2,
 ) -> None:
+    Seed.set(1234)
     ds = BagDataset(
         bags=[
             [
@@ -126,7 +128,14 @@ def test_bag_dataset(
     assert item_bag_size <= bag_size
 
     # Test batching
-    dl = DataLoader(ds, batch_size=batch_size, shuffle=False)
+    dl = DataLoader(
+        ds,
+        batch_size=batch_size,
+        shuffle=True,
+        num_workers=1,
+        worker_init_fn=Seed.get_loader_worker_init(),
+        generator=Seed.get_torch_generator(),
+    )
     bag, coords, bag_sizes, _ = next(iter(dl))
     assert bag.shape == (batch_size, bag_size, dim_feats)
     assert coords.shape == (batch_size, bag_size, 2)
@@ -136,6 +145,7 @@ def test_bag_dataset(
 def test_patient_feature_dataset(
     tmp_path: Path, dim_feats: int = 16, batch_size: int = 2
 ) -> None:
+    Seed.set(1234)
     # Create 3 random patient-level feature files on disk
     files = [
         create_random_patient_level_feature_file(tmp_path=tmp_path, feat_dim=dim_feats)
@@ -153,7 +163,15 @@ def test_patient_feature_dataset(
     assert torch.allclose(label, labels[0])
 
     # Test batching
-    dl = DataLoader(ds, batch_size=batch_size, shuffle=False)
+    dl = DataLoader(
+        ds,
+        batch_size=batch_size,
+        shuffle=False,
+        num_workers=1,
+        worker_init_fn=Seed.get_loader_worker_init(),
+        generator=Seed.get_torch_generator(),
+    )
+
     feats_batch, labels_batch = next(iter(dl))
     assert feats_batch.shape == (batch_size, dim_feats)
     assert labels_batch.shape == (batch_size, 4)
@@ -309,3 +327,45 @@ def test_slide_table_h5_validation_random(
             patient_label="PATIENT",
             filename_label="FILENAME",
         )
+
+
+def test_two_dataloaders_dont_match(tmp_path: Path) -> None:
+    Seed.set(1234)
+
+    ds = BagDataset(
+        bags=[
+            [make_feature_file(feats=torch.rand((12, 8)), coords=torch.rand(12, 2))],
+            [make_feature_file(feats=torch.rand((12, 8)), coords=torch.rand(12, 2))],
+        ],
+        bag_size=BagSize(5),
+        ground_truths=torch.rand(2, 3) > 0.5,
+        transform=None,
+    )
+
+    # Two different generators => different random draws
+    g1 = Seed.get_torch_generator()
+    g2 = Seed.get_torch_generator()
+    g2.seed()
+
+    dl1 = DataLoader(
+        ds,
+        batch_size=1,
+        shuffle=True,
+        num_workers=1,
+        worker_init_fn=Seed.get_loader_worker_init(),
+        generator=g1,
+    )
+    dl2 = DataLoader(
+        ds,
+        batch_size=1,
+        shuffle=True,
+        num_workers=1,
+        worker_init_fn=Seed.get_loader_worker_init(),
+        generator=g2,
+    )
+
+    first_batch_dl1 = next(iter(dl1))[0]
+    first_batch_dl2 = next(iter(dl2))[0]
+
+    # They should not be exactly equal
+    assert not torch.equal(first_batch_dl1, first_batch_dl2)
