@@ -16,7 +16,6 @@ from torch import Tensor
 
 import stamp
 from stamp.preprocessing.config import ExtractorName
-from stamp.seed import Seed
 from stamp.types import Category, FeaturePath, Microns, PatientId, TilePixels
 
 CliniPath: TypeAlias = Path
