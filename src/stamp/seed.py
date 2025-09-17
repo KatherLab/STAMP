@@ -1,5 +1,5 @@
 import random
-from typing import Callable
+from typing import Callable, ClassVar
 
 import numpy as np
 import torch
@@ -13,7 +13,7 @@ def _seed_worker(worker_id: int) -> None:
 
 
 class Seed:
-    seed: int
+    seed: ClassVar[int | None] = None
 
     @classmethod
     def torch(cls, seed: int) -> None:
@@ -50,10 +50,11 @@ class Seed:
 
     @classmethod
     def get_torch_generator(cls, device="cpu") -> Generator:
-        if not cls._is_set():
+        seed = cls.seed
+        if seed is None:
             raise RuntimeError(
                 "Seed has not been set. Call Seed.set(seed) before requesting a generator."
             )
         g = torch.Generator(device)
-        g.manual_seed(cls.seed)
+        g.manual_seed(seed)
         return g

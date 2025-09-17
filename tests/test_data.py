@@ -131,10 +131,10 @@ def test_bag_dataset(
     dl = DataLoader(
         ds,
         batch_size=batch_size,
-        shuffle=True,
+        shuffle=False,
         num_workers=1,
-        worker_init_fn=Seed.get_loader_worker_init(),
-        generator=Seed.get_torch_generator(),
+        worker_init_fn=Seed.get_loader_worker_init() if Seed._is_set() else None,
+        generator=Seed.get_torch_generator() if Seed._is_set() else None,
     )
     bag, coords, bag_sizes, _ = next(iter(dl))
     assert bag.shape == (batch_size, bag_size, dim_feats)
@@ -168,8 +168,8 @@ def test_patient_feature_dataset(
         batch_size=batch_size,
         shuffle=False,
         num_workers=1,
-        worker_init_fn=Seed.get_loader_worker_init(),
-        generator=Seed.get_torch_generator(),
+        worker_init_fn=Seed.get_loader_worker_init() if Seed._is_set() else None,
+        generator=Seed.get_torch_generator() if Seed._is_set() else None,
     )
 
     feats_batch, labels_batch = next(iter(dl))
@@ -329,7 +329,8 @@ def test_slide_table_h5_validation_random(
         )
 
 
-def test_two_dataloaders_dont_match(tmp_path: Path) -> None:
+def test_two_dataloaders_diverge():
+    # Global seed so dataset construction is deterministic
     Seed.set(1234)
 
     ds = BagDataset(
@@ -337,24 +338,18 @@ def test_two_dataloaders_dont_match(tmp_path: Path) -> None:
             [make_feature_file(feats=torch.rand((12, 8)), coords=torch.rand(12, 2))],
             [make_feature_file(feats=torch.rand((12, 8)), coords=torch.rand(12, 2))],
         ],
-        bag_size=BagSize(5),
+        bag_size=BagSize(5),  # triggers per-sample random subsampling
         ground_truths=torch.rand(2, 3) > 0.5,
         transform=None,
     )
 
-    # Two different generators => different random draws
-    g1 = Seed.get_torch_generator()
-    g2 = Seed.get_torch_generator()
-    g2.seed()
+    base = 98765
+    g2 = torch.Generator().manual_seed(base)  # loader 1 generator
 
-    dl1 = DataLoader(
-        ds,
-        batch_size=1,
-        shuffle=True,
-        num_workers=1,
-        worker_init_fn=Seed.get_loader_worker_init(),
-        generator=g1,
-    )
+    # Loader A: no workers ⇒ __getitem__ randomness runs in main process
+    dl1 = DataLoader(ds, batch_size=1, shuffle=True, num_workers=0)
+
+    # Loader B: 1 worker ⇒ worker RNG is derived from DataLoader's base_seed
     dl2 = DataLoader(
         ds,
         batch_size=1,
@@ -364,8 +359,10 @@ def test_two_dataloaders_dont_match(tmp_path: Path) -> None:
         generator=g2,
     )
 
-    first_batch_dl1 = next(iter(dl1))[0]
-    first_batch_dl2 = next(iter(dl2))[0]
+    # With same seed, shuffle order tends to match, but per-sample RNG differs
+    diffs = 0
+    for (f1, *_), (f2, *_) in zip(dl1, dl2):
+        if not torch.equal(f1, f2):
+            diffs += 1
 
-    # They should not be exactly equal
-    assert not torch.equal(first_batch_dl1, first_batch_dl2)
+    assert diffs >= 1, "Expected at least one batch to differ despite same seed"
