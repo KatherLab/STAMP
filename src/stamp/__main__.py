@@ -52,9 +52,13 @@ def _run_cli(args: argparse.Namespace) -> None:
 
     if config.advanced_config is None:
         config.advanced_config = AdvancedConfig(
-            model_params=ModelParams(vit=VitModelParams(), mlp=MlpModelParams())
+            model_params=None,
+            seed=None,
         )
-    Seed.set(config.advanced_config.seed)
+
+    # Set global random seed
+    if config.advanced_config.seed is not None:
+        Seed.set(config.advanced_config.seed)
 
     match args.command:
         case "init":
