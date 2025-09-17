@@ -1,6 +1,8 @@
 import os
+import random
 from pathlib import Path
 
+import numpy as np
 import pytest
 import torch
 from random_data import create_random_dataset, create_random_patient_level_dataset
@@ -13,7 +15,6 @@ from stamp.modeling.config import (
     VitModelParams,
 )
 from stamp.modeling.crossval import categorical_crossval_
-from stamp.seed import Seed
 
 
 @pytest.mark.slow
@@ -31,7 +32,9 @@ def test_crossval_integration(
     use_alibi: bool = False,
     use_vary_precision_transform: bool = False,
 ) -> None:
-    Seed.set(42)
+    random.seed(0)
+    torch.manual_seed(0)
+    np.random.seed(0)
 
     if feature_type == "tile":
         clini_path, slide_path, feature_dir, categories = create_random_dataset(

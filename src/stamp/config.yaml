@@ -277,8 +277,6 @@ patient_encoding:
 
 
 advanced_config:
-  # Optional random seed
-  # seed: 42
   max_epochs: 32
   patience: 16
   batch_size: 64

@@ -23,6 +23,13 @@ SlidePath: TypeAlias = Path
 FeatureDir: TypeAlias = Path
 
 
+def seed_rng(seed: int) -> None:
+    """Seeds all the random number generators"""
+    random.seed(seed)
+    torch.manual_seed(seed)
+    np.random.seed(seed)
+
+
 def create_random_dataset(
     *,
     dir: Path,

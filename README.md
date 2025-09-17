@@ -218,9 +218,3 @@ uv pip install "git+https://github.com/KatherLab/STAMP.git[build,gpu] --no-build
 uv sync --extra build
 uv sync --extra build --extra gpu
 ```
-
-## Reproducibility
-
-We use a central `Seed` utility to set seeds for PyTorch, NumPy, and Python’s `random`. This makes data loading and model initialization reproducible. Always call `Seed.set(seed)` once at startup.
-
-We do not enable [`torch.use_deterministic_algorithms()`](https://pytorch.org/docs/stable/notes/randomness.html#reproducibility) because it can cause large performance drops. Expect runs with the same seed to follow the same training trajectory, but not bit-for-bit identical low-level kernels.
