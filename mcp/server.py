@@ -23,9 +23,12 @@ STAMP_LOGGER = logging.getLogger("stamp")
 # TODO: add proper filesystem management
 WORKSPACE_FOLDER = "./"  # Folder where the agent can work on.
 WORKSPACE_PATH = Path(WORKSPACE_FOLDER).resolve()
-LIST_OUTSIDE = (
-    True  # Let the agent list files from folders outside the working directory
-)
+# List of additional allowed paths outside workspace
+ALLOWED_EXTERNAL_PATHS = [
+    "/mnt/bulk-curie/peter/fmbenchmark/images/tcga_crc",
+    "/mnt/bulk-curie/peter/fmbenchmark/20mag_experiments/features/tcga_crc/ctranspath/STAMP_raw_xiyuewang-ctranspath-7c998680",
+    # Add other specific paths you want to allow
+]
 MAX_ITEMS = 100  # Max amount of files listed with list_files tool.
 # Big values could exceed LLM's context length. When it exceeds, values are summarized.
 
@@ -711,10 +714,21 @@ async def encode_patients_stamp(
 
 
 def _resolve_path(subpath: str) -> Path:
-    requested = (WORKSPACE_PATH / subpath).resolve()
-    if WORKSPACE_PATH not in requested.parents and requested != WORKSPACE_PATH:
-        raise PermissionError(f"Access denied: {subpath}")
-    return requested
+    requested = Path(subpath).resolve()
+    
+    # Check if it's within workspace
+    if WORKSPACE_PATH in requested.parents or requested == WORKSPACE_PATH:
+        return requested
+    
+    # Check if it's in allowed external paths
+    for allowed_path in ALLOWED_EXTERNAL_PATHS:
+        allowed_path = Path(allowed_path).resolve()
+        # Check both: exact match OR if allowed_path is a parent of requested
+        if requested == allowed_path or allowed_path in requested.parents:
+            return requested
+    
+    # If not allowed, raise error
+    raise PermissionError(f"Access denied: {subpath}")
 
 
 @mcp.tool
@@ -746,10 +760,7 @@ def list_files(subdir: str = "") -> str:
     Returns:
         str: Formatted list of files/directories or summary information.
     """
-    if LIST_OUTSIDE:
-        subdir_path = Path(subdir)
-    else:
-        subdir_path = _resolve_path(subdir)
+    subdir_path = _resolve_path(subdir) if subdir else WORKSPACE_PATH
     if not subdir_path.is_dir():
         raise FileNotFoundError(f"Subdirectory does not exist: {subdir}")
 
