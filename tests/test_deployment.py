@@ -6,16 +6,15 @@ import torch
 from random_data import create_random_patient_level_feature_file, make_old_feature_file
 from torch import nn
 
-from stamp.modeling.classifier.mlp import MLPClassifier
-from stamp.modeling.classifier.trans_mil import TransMIL
-from stamp.modeling.classifier.vision_tranformer import LitVisionTransformer
 from stamp.modeling.data import (
     PatientData,
     patient_feature_dataloader,
     tile_bag_dataloader,
 )
 from stamp.modeling.deploy import _predict, _to_prediction_df
-from stamp.seed import Seed
+from stamp.modeling.models.classifier.mlp import MLPClassifier
+from stamp.modeling.models.classifier.trans_mil import TransMIL
+from stamp.modeling.models.classifier.vision_tranformer import LitVisionTransformer
 from stamp.types import GroundTruth, PatientId
 
 
@@ -30,7 +29,6 @@ def test_predict(
     n_heads: int = 7,
     dim_input: int = 12,
 ) -> None:
-    Seed.set(42)
     if model_class is LitVisionTransformer:
         model = LitVisionTransformer(
             categories=list(categories),

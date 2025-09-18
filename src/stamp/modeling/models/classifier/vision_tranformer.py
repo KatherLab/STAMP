@@ -11,7 +11,7 @@ from einops import repeat
 from jaxtyping import Bool, Float, jaxtyped
 from torch import Tensor, nn
 
-from stamp.modeling.classifier import LitTileClassifier
+from stamp.modeling.models.classifier import LitTileClassifier
 
 
 class _RunningMeanScaler(nn.Module):

@@ -3,7 +3,7 @@ from typing import Sequence, Type, TypedDict
 
 import lightning
 
-from stamp.modeling.classifier import LitPatientlassifier, LitTileClassifier
+from stamp.modeling.models.classifier import LitPatientlassifier, LitTileClassifier
 
 
 class ModelName(StrEnum):
@@ -46,20 +46,22 @@ MODEL_REGISTRY: dict[ModelName, ModelInfo] = {
 def load_model_class(model_name: ModelName):
     match model_name:
         case ModelName.VIT:
-            from stamp.modeling.classifier.vision_tranformer import (
+            from stamp.modeling.models.classifier.vision_tranformer import (
                 LitVisionTransformer as ModelClass,
             )
 
         case ModelName.TRANS_MIL:
-            from stamp.modeling.classifier.trans_mil import (
+            from stamp.modeling.models.classifier.trans_mil import (
                 TransMIL as ModelClass,
             )
 
         case ModelName.MLP:
-            from stamp.modeling.classifier.mlp import MLPClassifier as ModelClass
+            from stamp.modeling.models.classifier.mlp import MLPClassifier as ModelClass
 
         case ModelName.LINEAR:
-            from stamp.modeling.classifier.mlp import LinearClassifier as ModelClass
+            from stamp.modeling.models.classifier.mlp import (
+                LinearClassifier as ModelClass,
+            )
 
         case _:
             raise ValueError(f"Unknown model name: {model_name}")

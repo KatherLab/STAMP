@@ -114,4 +114,3 @@ class AdvancedConfig(BaseModel):
         ),
     )
     model_params: ModelParams
-    seed: int = 42

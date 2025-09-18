@@ -13,7 +13,6 @@ from stamp.modeling.config import (
     VitModelParams,
 )
 from stamp.modeling.crossval import categorical_crossval_
-from stamp.seed import Seed
 
 
 @pytest.mark.slow
@@ -31,8 +30,6 @@ def test_crossval_integration(
     use_alibi: bool = False,
     use_vary_precision_transform: bool = False,
 ) -> None:
-    Seed.set(42)
-
     if feature_type == "tile":
         clini_path, slide_path, feature_dir, categories = create_random_dataset(
             dir=tmp_path,

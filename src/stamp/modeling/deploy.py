@@ -10,8 +10,6 @@ import torch
 from jaxtyping import Float
 from lightning.pytorch.accelerators.accelerator import Accelerator
 
-from stamp.modeling.classifier.mlp import MLPClassifier
-from stamp.modeling.classifier.vision_tranformer import LitVisionTransformer
 from stamp.modeling.data import (
     detect_feature_type,
     filter_complete_patient_data_,
@@ -21,6 +19,8 @@ from stamp.modeling.data import (
     slide_to_patient_from_slide_table_,
     tile_bag_dataloader,
 )
+from stamp.modeling.models.classifier.mlp import MLPClassifier
+from stamp.modeling.models.classifier.vision_tranformer import LitVisionTransformer
 from stamp.types import GroundTruth, PandasLabel, PatientId
 
 __all__ = ["deploy_categorical_model_"]

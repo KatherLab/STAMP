@@ -16,7 +16,6 @@ from stamp.modeling.config import (
 )
 from stamp.modeling.deploy import deploy_categorical_model_
 from stamp.modeling.train import train_categorical_model_
-from stamp.seed import Seed
 
 
 @pytest.mark.slow
@@ -36,8 +35,6 @@ def test_train_deploy_integration(
     use_alibi: bool,
     use_vary_precision_transform: bool,
 ) -> None:
-    Seed.set(42)
-
     (tmp_path / "train").mkdir()
     (tmp_path / "deploy").mkdir()
 

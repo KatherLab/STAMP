@@ -1,8 +1,8 @@
 import torch
 
-from stamp.modeling.classifier.mlp import MLPClassifier
-from stamp.modeling.classifier.trans_mil import TransMILBackbone
-from stamp.modeling.classifier.vision_tranformer import VisionTransformer
+from stamp.modeling.models.classifier.mlp import MLPClassifier
+from stamp.modeling.models.classifier.trans_mil import TransMILBackbone
+from stamp.modeling.models.classifier.vision_tranformer import VisionTransformer
 
 
 def test_vision_transformer_dims(

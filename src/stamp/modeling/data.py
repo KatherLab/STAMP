@@ -17,7 +17,6 @@ from torch import Tensor
 from torch.utils.data import DataLoader, Dataset
 
 import stamp
-from stamp.seed import Seed
 from stamp.types import (
     Bags,
     BagSize,
@@ -101,8 +100,6 @@ def tile_bag_dataloader(
                 shuffle=shuffle,
                 num_workers=num_workers,
                 collate_fn=_collate_to_tuple,
-                worker_init_fn=Seed.get_loader_worker_init(),
-                generator=Seed.get_torch_generator(),
             ),
         ),
         list(categories),
