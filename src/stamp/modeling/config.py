@@ -97,4 +97,5 @@ class AdvancedConfig(BaseModel):
         default=None,
         description='Optional: "vit" or "mlp". Defaults based on feature type.',
     )
-    model_params: ModelParams
+    model_params: ModelParams | None
+    seed: int = 42
