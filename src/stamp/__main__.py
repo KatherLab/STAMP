@@ -50,11 +50,15 @@ def _run_cli(args: argparse.Namespace) -> None:
     with open(args.config_file_path, "r") as config_yaml:
         config = StampConfig.model_validate(yaml.safe_load(config_yaml))
 
+    # use default advanced config in case none is provided
     if config.advanced_config is None:
         config.advanced_config = AdvancedConfig(
             model_params=ModelParams(vit=VitModelParams(), mlp=MlpModelParams())
         )
-    Seed.set(config.advanced_config.seed)
+
+    # Set global random seed
+    if config.advanced_config.seed is not None:
+        Seed.set(config.advanced_config.seed)
 
     match args.command:
         case "init":
@@ -140,12 +144,6 @@ def _run_cli(args: argparse.Namespace) -> None:
             if config.training is None:
                 raise ValueError("no training configuration supplied")
 
-            # use default advanced config in case none is provided
-            if config.advanced_config is None:
-                config.advanced_config = AdvancedConfig(
-                    model_params=ModelParams(vit=VitModelParams(), mlp=MlpModelParams())
-                )
-
             _add_file_handle_(_logger, output_dir=config.training.output_dir)
             _logger.info(
                 "using the following configuration:\n"
@@ -191,12 +189,6 @@ def _run_cli(args: argparse.Namespace) -> None:
                 "using the following configuration:\n"
                 f"{yaml.dump(config.crossval.model_dump(mode='json'))}"
             )
-
-            # use default advanced config in case none is provided
-            if config.advanced_config is None:
-                config.advanced_config = AdvancedConfig(
-                    model_params=ModelParams(vit=VitModelParams(), mlp=MlpModelParams())
-                )
 
             categorical_crossval_(
                 config=config.crossval,
