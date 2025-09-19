@@ -156,6 +156,7 @@ def _create_plotted_overlay(
     plt.tight_layout()
     return fig, ax
 
+
 def _sym_log(x: torch.Tensor, scale: float = 50.0) -> torch.Tensor:
     """
     y = sign(x) * log1p(scale * |x|) / log1p(scale)

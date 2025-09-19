@@ -76,6 +76,7 @@ def test_train_deploy_integration(
     )
 
     advanced = AdvancedConfig(
+        task="classification",
         # Dataset and -loader parameters
         bag_size=500,
         num_workers=min(os.cpu_count() or 1, 16),
@@ -159,6 +160,7 @@ def test_train_deploy_patient_level_integration(
     )
 
     advanced = AdvancedConfig(
+        task="classification",
         # Dataset and -loader parameters
         bag_size=1,  # Not used for patient-level, but required by signature
         num_workers=min(os.cpu_count() or 1, 16),

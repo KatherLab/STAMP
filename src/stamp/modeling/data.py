@@ -5,13 +5,13 @@ from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import KW_ONLY, dataclass
 from itertools import groupby
 from pathlib import Path
-from typing import IO, BinaryIO, Generic, Literal, TextIO, TypeAlias, Union, cast
+from typing import IO, BinaryIO, Generic, TextIO, TypeAlias, Union, cast
 
 import h5py
 import numpy as np
 import pandas as pd
 import torch
-from jaxtyping import Bool, Float
+from jaxtyping import Float
 from packaging.version import Version
 from torch import Tensor
 from torch.utils.data import DataLoader, Dataset
@@ -51,7 +51,6 @@ _BinaryIOLike: TypeAlias = Union[BinaryIO, IO[bytes]]
 - regression: float [1]
 """
 _Coordinates: TypeAlias = Float[Tensor, "tile 2"]
-
 
 
 @dataclass
@@ -325,6 +324,7 @@ class BagDataset(Dataset[tuple[_Bag, _Coordinates, BagSize, _EncodedTarget]]):
                 self.ground_truths[index],
             )
 
+
 # class BagDatasetClassification(BagDataset):
 #     ground_truths: Bool[Tensor, "index category_is_hot"]
 #     """The ground truth for each bag, one-hot encoded."""
@@ -333,6 +333,7 @@ class BagDataset(Dataset[tuple[_Bag, _Coordinates, BagSize, _EncodedTarget]]):
 # class BagDatasetRegression(BagDataset):
 #     ground_truths: Float[Tensor, "index 1"]
 #     """float tensor of shape [N, 1]."""
+
 
 class PatientFeatureDataset(Dataset):
     """

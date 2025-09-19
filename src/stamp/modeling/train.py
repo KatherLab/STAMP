@@ -6,7 +6,6 @@ from pathlib import Path
 from typing import cast
 
 import lightning
-import numpy as np
 import torch
 from lightning.pytorch.accelerators.accelerator import Accelerator
 from lightning.pytorch.callbacks import EarlyStopping, ModelCheckpoint
@@ -14,7 +13,7 @@ from lightning.pytorch.loggers import CSVLogger
 from sklearn.model_selection import train_test_split
 from torch.utils.data.dataloader import DataLoader
 
-from stamp.modeling.config import AdvancedConfig, Seed, TrainConfig
+from stamp.modeling.config import AdvancedConfig, TrainConfig
 from stamp.modeling.data import (
     BagDataset,
     PatientData,
@@ -256,7 +255,6 @@ def setup_dataloaders_for_training(
         train_dl, valid_dl, categories, feature_dim, train_patients, valid_patients
     """
 
-
     # Stratified split
     ground_truths = [
         patient_data.ground_truth
@@ -373,7 +371,6 @@ def train_model_(
         The model with the best validation loss during training.
     """
     torch.set_float32_matmul_precision("high")
-    Seed.set(42)
 
     model_checkpoint = ModelCheckpoint(
         monitor="validation_loss",

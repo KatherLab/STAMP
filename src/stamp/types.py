@@ -9,7 +9,7 @@ from typing import (
 
 import torch
 from beartype.typing import Mapping
-from jaxtyping import Bool, Float, Integer
+from jaxtyping import Float, Integer
 from torch import Tensor
 
 # tiling

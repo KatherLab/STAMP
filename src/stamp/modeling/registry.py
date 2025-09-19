@@ -4,7 +4,7 @@ from typing import Sequence, Type, TypedDict
 import lightning
 
 from stamp.modeling.classifier import LitPatientlassifier, LitTileClassifier
-from stamp.modeling.regressor import LitTileRegressor
+from stamp.modeling.models.regressor import LitTileRegressor
 
 
 class ModelName(StrEnum):
@@ -68,7 +68,9 @@ def load_model_class(model_name: ModelName):
             from stamp.modeling.classifier.mlp import LinearClassifier as ModelClass
 
         case ModelName.LINEAR_REGRESSOR:
-            from stamp.modeling.regressor.mlp import LinearRegressor as ModelClass
+            from stamp.modeling.models.regressor.mlp import (
+                LinearRegressor as ModelClass,
+            )
 
         case _:
             raise ValueError(f"Unknown model name: {model_name}")

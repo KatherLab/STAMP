@@ -249,7 +249,7 @@ class LitTileRegressor(LitBaseRegressor):
 # from jaxtyping import Float
 # from torch import Tensor, nn
 
-# from stamp.modeling.regressor import LitTileRegressor
+# from stamp.modeling.models.regressor import LitTileRegressor
 
 
 # class DummyBackbone(nn.Module):
@@ -279,7 +279,7 @@ class LitTileRegressor(LitBaseRegressor):
 #         return DummyBackbone(dim_input)
 
 
-# from stamp.modeling.regressor.mlp import LinearRegressor
+# from stamp.modeling.models.regressor.mlp import LinearRegressor
 
 # kwargs = dict(
 #     total_steps=10,
