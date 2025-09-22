@@ -13,7 +13,7 @@ from einops import rearrange, reduce
 from jaxtyping import Bool, Float, jaxtyped
 from torch import Tensor, einsum, nn
 
-from stamp.modeling.classifier import LitTileClassifier
+from stamp.modeling.models.regressor import LitTileClassifier
 
 # --- Helpers ---
 

@@ -2,7 +2,7 @@ from beartype import beartype
 from jaxtyping import Float, jaxtyped
 from torch import Tensor, nn
 
-from stamp.modeling.classifier import LitPatientlassifier
+from stamp.modeling.models.regressor import LitPatientlassifier
 
 
 class MLP(nn.Module):

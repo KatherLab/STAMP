@@ -1,7 +1,7 @@
 from torch import nn
 
-from stamp.modeling.classifier.mlp import MLP, Linear
 from stamp.modeling.models.regressor import LitTileRegressor
+from stamp.modeling.models.regressor.mlp import MLP, Linear
 
 
 class LinearRegressor(LitTileRegressor):

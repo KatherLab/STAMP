@@ -5,14 +5,14 @@ import pytest
 import torch
 from random_data import create_random_patient_level_feature_file, make_old_feature_file
 
-from stamp.modeling.classifier.mlp import MLPClassifier
-from stamp.modeling.classifier.vision_tranformer import LitVisionTransformer
 from stamp.modeling.data import (
     PatientData,
     patient_feature_dataloader,
     tile_bag_dataloader,
 )
 from stamp.modeling.deploy import _predict, _to_prediction_df
+from stamp.modeling.models.classifier.mlp import MLPClassifier
+from stamp.modeling.models.classifier.vision_tranformer import LitVisionTransformer
 from stamp.types import GroundTruth, PatientId
 
 

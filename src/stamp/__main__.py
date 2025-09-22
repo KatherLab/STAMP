@@ -220,6 +220,7 @@ def _run_cli(args: argparse.Namespace) -> None:
                 pred_csvs=config.statistics.pred_csvs,
                 ground_truth_label=config.statistics.ground_truth_label,
                 true_class=config.statistics.true_class,
+                pred_label=config.statistics.pred_label,
             )
 
         case "heatmaps":

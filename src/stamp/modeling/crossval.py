@@ -6,7 +6,6 @@ import numpy as np
 from pydantic import BaseModel
 from sklearn.model_selection import StratifiedKFold
 
-from stamp.modeling.classifier import LitPatientlassifier, LitTileClassifier
 from stamp.modeling.config import AdvancedConfig, CrossvalConfig
 from stamp.modeling.data import (
     PatientData,
@@ -19,6 +18,7 @@ from stamp.modeling.data import (
     tile_bag_dataloader,
 )
 from stamp.modeling.deploy import _predict, _to_prediction_df
+from stamp.modeling.models.regressor import LitPatientlassifier, LitTileClassifier
 from stamp.modeling.train import setup_model_for_training, train_model_
 from stamp.modeling.transforms import VaryPrecisionTransform
 from stamp.types import (

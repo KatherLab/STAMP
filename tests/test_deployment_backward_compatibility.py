@@ -2,9 +2,9 @@ import pytest
 import torch
 
 from stamp.cache import download_file
-from stamp.modeling.classifier.vision_tranformer import LitVisionTransformer
 from stamp.modeling.data import PatientData, tile_bag_dataloader
 from stamp.modeling.deploy import _predict
+from stamp.modeling.models.classifier.vision_tranformer import LitVisionTransformer
 from stamp.types import FeaturePath, PatientId
 
 

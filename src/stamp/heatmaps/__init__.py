@@ -17,11 +17,11 @@ from PIL import Image
 from torch import Tensor
 from torch.func import jacrev  # pyright: ignore[reportPrivateImportUsage]
 
-from stamp.modeling.classifier.vision_tranformer import (
+from stamp.modeling.data import get_coords, get_stride
+from stamp.modeling.models.classifier.vision_tranformer import (
     LitVisionTransformer,
     VisionTransformer,
 )
-from stamp.modeling.data import get_coords, get_stride
 from stamp.preprocessing import supported_extensions
 from stamp.preprocessing.tiling import get_slide_mpp_
 from stamp.types import DeviceLikeType, Microns, SlideMPP, TilePixels

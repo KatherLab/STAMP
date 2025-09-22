@@ -3,8 +3,11 @@ from typing import Sequence, Type, TypedDict
 
 import lightning
 
-from stamp.modeling.classifier import LitPatientlassifier, LitTileClassifier
-from stamp.modeling.models.regressor import LitTileRegressor
+from stamp.modeling.models import (
+    LitPatientlassifier,
+    LitTileClassifier,
+    LitTileRegressor,
+)
 
 
 class ModelName(StrEnum):
@@ -52,20 +55,22 @@ MODEL_REGISTRY: dict[ModelName, ModelInfo] = {
 def load_model_class(model_name: ModelName):
     match model_name:
         case ModelName.VIT:
-            from stamp.modeling.classifier.vision_tranformer import (
+            from stamp.modeling.models.classifier.vision_tranformer import (
                 LitVisionTransformer as ModelClass,
             )
 
         case ModelName.TRANS_MIL:
-            from stamp.modeling.classifier.trans_mil import (
+            from stamp.modeling.models.classifier.trans_mil import (
                 TransMILClassifier as ModelClass,
             )
 
         case ModelName.MLP:
-            from stamp.modeling.classifier.mlp import MLPClassifier as ModelClass
+            from stamp.modeling.models.classifier.mlp import MLPClassifier as ModelClass
 
         case ModelName.LINEAR:
-            from stamp.modeling.classifier.mlp import LinearClassifier as ModelClass
+            from stamp.modeling.models.classifier.mlp import (
+                LinearClassifier as ModelClass,
+            )
 
         case ModelName.LINEAR_REGRESSOR:
             from stamp.modeling.models.regressor.mlp import (
