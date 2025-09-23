@@ -2,7 +2,6 @@
 
 import asyncio
 import logging
-import logging.handlers
 import os
 from pathlib import Path
 import platform
@@ -30,6 +29,7 @@ WORKSPACE_PATH = Path(WORKSPACE_FOLDER).resolve()
 ALLOWED_EXTERNAL_PATHS = [
     "/mnt/bulk-curie/peter/fmbenchmark/images/tcga_crc",
     "/mnt/bulk-curie/peter/fmbenchmark/20mag_experiments/features/tcga_crc/ctranspath/STAMP_raw_xiyuewang-ctranspath-7c998680",
+    "/mnt/bulk-sirius/juan/pap_screening/datasets/example/wsi_small"
     # Add other specific paths you want to allow
 ]
 MAX_ITEMS = 100  # Max amount of files listed with list_files tool.
@@ -37,42 +37,23 @@ MAX_ITEMS = 100  # Max amount of files listed with list_files tool.
 
 
 class MCPLogHandler(logging.Handler):
-    def __init__(self, ctx):
+    def __init__(self, ctx, loop: asyncio.AbstractEventLoop):
         super().__init__()
         self.ctx = ctx
-        self.captured_logs = []
-        # Store reference to the event loop where the context is valid
-        try:
-            self.loop = asyncio.get_running_loop()
-        except RuntimeError:
-            # No running loop, we'll handle this in emit()
-            self.loop = None
+        self.loop = loop
+        self.captured_logs = [] # FIXME: Implement so the agent can see the logs when finished. Logging is viewed by the user only.
 
-    def emit(self, record):
+    def emit(self, record: logging.LogRecord) -> None:
+        msg = self.format(record)
         try:
-            msg = self.format(record)
             self.captured_logs.append(msg)
-            
-            # Try to schedule the coroutine safely
-            if self.loop and not self.loop.is_closed():
-                # Use call_soon_threadsafe for thread-safe scheduling
-                self.loop.call_soon_threadsafe(
-                    lambda: asyncio.create_task(self._safe_log(msg))
-                )
-            # If no loop or loop is closed, just store the message
-            # The captured_logs will still be available for the return value
-            
-        except Exception as e:
-            # Fallback: just capture the log without async context logging
-            pass  # The message is already in captured_logs
-
-    async def _safe_log(self, msg):
-        """Safely log to context, handling any exceptions"""
-        try:
-            await self.ctx.info(msg)
+            # Thread-safe: schedule on the captured event loop
+            asyncio.run_coroutine_threadsafe(self.ctx.log(msg), self.loop)
+            # Alternatively:
+            # self.loop.call_soon_threadsafe(self.loop.create_task, self.ctx.log(msg))
         except Exception:
-            # If context logging fails, the message is still in captured_logs
-            pass
+            self.handleError(record)
+
 
 
 async def _run_stamp(mode, config, ctx):
@@ -93,8 +74,8 @@ async def _run_stamp(mode, config, ctx):
         tmp_config_path = tmp_config.name
 
     # Set up logging handler to capture STAMP logs
-    handler = MCPLogHandler(ctx)
-    handler.setLevel(logging.INFO)
+    loop = asyncio.get_running_loop()
+    handler = MCPLogHandler(ctx, loop)
     STAMP_LOGGER.addHandler(handler)
 
     try:
@@ -103,7 +84,7 @@ async def _run_stamp(mode, config, ctx):
         args = argparse.Namespace(command=mode, config_file_path=Path(tmp_config_path))
 
         # Call the STAMP CLI function directly
-        _run_cli(args)
+        await asyncio.to_thread(_run_cli, args)
 
         # Get captured logs
         captured_logs_text = (
