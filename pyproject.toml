@@ -13,7 +13,7 @@ authors = [
 ]
 description = "A protocol for Solid Tumor Associative Modeling in Pathology"
 readme = "README.md"
-requires-python = ">=3.12"
+requires-python = ">=3.11"
 
 classifiers = [
     "Programming Language :: Python :: 3",
@@ -103,7 +103,7 @@ cobra = [
     "mamba-ssm",
     # "causal-conv1d @ git+https://github.com/KatherLab/causal-conv1d.git@dededae18d0258ccec833ab950d45279f1616fd1",
     # "mamba-ssm @ git+https://github.com/KatherLab/mamba.git@3dad301098b721ee5c93d9ad16aafbbc1dc42cfd",
-    "cobra @ git+http://github.com/KatherLab/COBRA.git@969903e14a076b5d9ca8aabbc18631c8ce89f026",
+    "cobra @ git+http://github.com/KatherLab/COBRA.git@73712e9ffa4d1bdecf9be9826d66094bd2b17534",
     "jinja2>=3.1.4", 
     "triton"
 ]
