@@ -1,5 +1,8 @@
+"""STAMP MCP Server"""
+
 import asyncio
 import logging
+import logging.handlers
 import os
 from pathlib import Path
 import platform
@@ -37,14 +40,39 @@ class MCPLogHandler(logging.Handler):
     def __init__(self, ctx):
         super().__init__()
         self.ctx = ctx
-        self.captured_logs = []  # Store captured logs
+        self.captured_logs = []
+        # Store reference to the event loop where the context is valid
+        try:
+            self.loop = asyncio.get_running_loop()
+        except RuntimeError:
+            # No running loop, we'll handle this in emit()
+            self.loop = None
 
     def emit(self, record):
-        msg = self.format(record)
-        # Store the log message
-        self.captured_logs.append(msg)
-        # Fire-and-forget the coroutine
-        asyncio.create_task(self.ctx.log(msg))
+        try:
+            msg = self.format(record)
+            self.captured_logs.append(msg)
+            
+            # Try to schedule the coroutine safely
+            if self.loop and not self.loop.is_closed():
+                # Use call_soon_threadsafe for thread-safe scheduling
+                self.loop.call_soon_threadsafe(
+                    lambda: asyncio.create_task(self._safe_log(msg))
+                )
+            # If no loop or loop is closed, just store the message
+            # The captured_logs will still be available for the return value
+            
+        except Exception as e:
+            # Fallback: just capture the log without async context logging
+            pass  # The message is already in captured_logs
+
+    async def _safe_log(self, msg):
+        """Safely log to context, handling any exceptions"""
+        try:
+            await self.ctx.info(msg)
+        except Exception:
+            # If context logging fails, the message is still in captured_logs
+            pass
 
 
 async def _run_stamp(mode, config, ctx):
@@ -70,6 +98,7 @@ async def _run_stamp(mode, config, ctx):
     STAMP_LOGGER.addHandler(handler)
 
     try:
+        await ctx.info(f"Starting STAMP {mode} command...")
         # Create argparse Namespace object to mimic command line arguments
         args = argparse.Namespace(command=mode, config_file_path=Path(tmp_config_path))
 
@@ -82,6 +111,7 @@ async def _run_stamp(mode, config, ctx):
             if handler.captured_logs
             else "Command completed successfully (no logs captured)"
         )
+        await ctx.info(f"STAMP {mode} completed successfully")
         return f"Command completed successfully:\n{captured_logs_text}"
 
     except Exception as e:
@@ -89,6 +119,7 @@ async def _run_stamp(mode, config, ctx):
             "\n".join(handler.captured_logs) if handler.captured_logs else ""
         )
         error_msg = f"Command failed with error: {str(e)}\n{captured_logs_text}"
+        await ctx.error(f"STAMP {mode} failed: {str(e)}")
         return error_msg
 
     finally:
@@ -1022,6 +1053,14 @@ def check_available_devices() -> str:
         return f"Available devices: {', '.join(devices)}"
     else:
         return "No computation devices are available."
+    
+
+@mcp.tool
+async def ping_logs(ctx: Context) -> str:
+    await ctx.info("ping_logs: starting")
+    await ctx.warning("ping_logs: still working…")
+    await ctx.info("ping_logs: done")
+    return "pong"
 
 
 if __name__ == "__main__":
