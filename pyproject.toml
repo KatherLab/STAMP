@@ -103,7 +103,7 @@ cobra = [
     "mamba-ssm @ git+https://github.com/KatherLab/mamba.git@d0d4192621889b26f9669ea4a8e6fe79cc84e8d9",
     "cobra @ git+http://github.com/KatherLab/COBRA.git@c8aa71ce691e1279f2bb797f536355d6be47b6ac",
     "jinja2>=3.1.4", 
-    "triton",
+    "triton"
     # "triton==3.2.0", # Fix triton to 3.2.0 (also makes torch==2.6.0) until this is solved: https://github.com/pytorch/pytorch/issues/153737
 ]
 prism_cpu = [
@@ -156,7 +156,7 @@ dev = [
 ]
 
 [build-system]
-requires = ["hatchling", "editables"]
+requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.metadata]
@@ -219,8 +219,8 @@ requires-dist = [
 ]
 
 [tool.uv.extra-build-dependencies]
+cobra = [{ requirement = "torch", match-runtime = true }]
 flash-attn = [{ requirement = "torch", match-runtime = true }]
 mamba-ssm = [{ requirement = "torch", match-runtime = true }]
 gigapath = [{ requirement = "torch", match-runtime = true }]
 conch = [{ requirement = "torch", match-runtime = true }]
-cobra = [{ requirement = "torch", match-runtime = true }]
