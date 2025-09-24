@@ -290,10 +290,6 @@ def _has_enough_texture(tile: Image.Image, cutoff: float) -> bool:
     # we deem it to have enough texture
     return bool(edge_score >= cutoff)
 
-def _compute_size() -> Microns:
-    if default_slide_mpp is not None:
-        return Microns(tile_size_um * len_of_supertile_in_tiles)
-    return Microns(supertile_size_slide_px * slide_mpp)
 
 def _supertiles(
     slide: openslide.AbstractSlide,
