@@ -2,7 +2,7 @@ from beartype import beartype
 from jaxtyping import Float, jaxtyped
 from torch import Tensor, nn
 
-from stamp.modeling.models.regressor import LitPatientlassifier
+from stamp.modeling.models import LitPatientlassifier
 
 
 class MLP(nn.Module):
@@ -33,7 +33,7 @@ class MLP(nn.Module):
         layers.append(nn.Linear(in_dim, dim_output))
         self.mlp = nn.Sequential(*layers)
 
-    @beartype
+    @jaxtyped(typechecker=beartype)
     def forward(
         self,
         x: Float[Tensor, "..."],
@@ -65,8 +65,7 @@ class Linear(nn.Module):
         super().__init__()
         self.fc = nn.Linear(dim_input, dim_output)
 
-    @jaxtyped
-    @beartype
+    @jaxtyped(typechecker=beartype)
     def forward(
         self,
         x: Float[Tensor, "..."],

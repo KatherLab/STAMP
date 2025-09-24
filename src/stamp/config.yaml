@@ -277,6 +277,7 @@ patient_encoding:
 
 
 advanced_config:
+  task: "classification"
   max_epochs: 32
   patience: 16
   batch_size: 64
@@ -291,7 +292,7 @@ advanced_config:
   div_factor: 25. 
   # Select a model. Not working yet, added for future support.
   # Now it uses a ViT for tile features and a MLP for patient features.
-  #model_name: "vit"
+  model_name: "vit"
 
   model_params:
     # Tile-level training models:
@@ -313,4 +314,4 @@ advanced_config:
       num_layers: 2
       dropout: 0.25
 
-    # linear:
+    linear_regressor:

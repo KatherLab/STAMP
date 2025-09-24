@@ -18,6 +18,7 @@ class ModelName(StrEnum):
     TRANS_MIL = "trans_mil"
     LINEAR = "linear"
     LINEAR_REGRESSOR = "linear_regressor"
+    MLP_REGRESSOR = "mlp_regressor"
 
 
 class ModelInfo(TypedDict):
@@ -49,6 +50,10 @@ MODEL_REGISTRY: dict[ModelName, ModelInfo] = {
         "model_class": LitTileRegressor,
         "supported_features": LitTileRegressor.supported_features,
     },
+    ModelName.MLP_REGRESSOR: {
+        "model_class": LitTileRegressor,
+        "supported_features": LitTileRegressor.supported_features,
+    },
 }
 
 
@@ -75,6 +80,11 @@ def load_model_class(model_name: ModelName):
         case ModelName.LINEAR_REGRESSOR:
             from stamp.modeling.models.regressor.mlp import (
                 LinearRegressor as ModelClass,
+            )
+
+        case ModelName.MLP_REGRESSOR:
+            from stamp.modeling.models.regressor.mlp import (
+                MLPRegressor as ModelClass,
             )
 
         case _:
