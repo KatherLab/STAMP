@@ -290,6 +290,10 @@ def _has_enough_texture(tile: Image.Image, cutoff: float) -> bool:
     # we deem it to have enough texture
     return bool(edge_score >= cutoff)
 
+def _compute_size() -> Microns:
+    if default_slide_mpp is not None:
+        return Microns(tile_size_um * len_of_supertile_in_tiles)
+    return Microns(supertile_size_slide_px * slide_mpp)
 
 def _supertiles(
     slide: openslide.AbstractSlide,
@@ -314,6 +318,11 @@ def _supertiles(
     )
     supertile_size_tile_px = TilePixels(tile_size_px * len_of_supertile_in_tiles)
 
+    if default_slide_mpp is not None:
+        supertile_size_um = Microns(tile_size_um * len_of_supertile_in_tiles)
+    else:
+        supertile_size_um = Microns(supertile_size_slide_px * slide_mpp)
+
     with futures.ThreadPoolExecutor(max_workers) as executor:
         futs = []
         for coords_slide_px in _foreground_coords(
@@ -334,8 +343,7 @@ def _supertiles(
                         x=Microns(x_slide_px * slide_mpp),
                         y=Microns(y_slide_px * slide_mpp),
                     ),
-                    # size=Microns(supertile_size_slide_px * slide_mpp), # --> old
-                    size=Microns(tile_size_um * len_of_supertile_in_tiles),  # --> new
+                    size=supertile_size_um,
                 ),
                 x_slide_px=coords_slide_px.x,
                 y_slide_px=coords_slide_px.y,
