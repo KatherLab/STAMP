@@ -334,7 +334,8 @@ def _supertiles(
                         x=Microns(x_slide_px * slide_mpp),
                         y=Microns(y_slide_px * slide_mpp),
                     ),
-                    size=Microns(supertile_size_slide_px * slide_mpp),
+                    # size=Microns(supertile_size_slide_px * slide_mpp), # --> old
+                    size=Microns(tile_size_um * len_of_supertile_in_tiles),  # --> new
                 ),
                 x_slide_px=coords_slide_px.x,
                 y_slide_px=coords_slide_px.y,
