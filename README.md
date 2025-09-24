@@ -55,19 +55,6 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 uv self update
 ```
 
-### Install STAMP in a Virtual Environment:
-
-```bash
-uv venv --python=3.12
-source .venv/bin/activate
-
-# For a GPU (CUDA) installation:
-uv pip install "git+https://github.com/KatherLab/STAMP.git[gpu]"
-
-# For a CPU-only installation:
-uv pip install "git+https://github.com/KatherLab/STAMP.git[cpu]" --torch-backend=cpu
-```
-
 ### Install STAMP from the Repository:
 
 ```bash
@@ -209,10 +196,6 @@ uv cache clean mamba-ssm
 uv cache clean causal_conv1d
 
 # Now it should re-build the packages with the correct torch version
-
-# With uv pip install
-uv pip install "git+https://github.com/KatherLab/STAMP.git[build]"
-uv pip install "git+https://github.com/KatherLab/STAMP.git[build,gpu] --no-build-isolation"
 
 # With uv sync in the cloned repository
 uv sync --extra build
