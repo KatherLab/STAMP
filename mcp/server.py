@@ -79,7 +79,7 @@ async def _run_stamp(mode, config, ctx):
     STAMP_LOGGER.addHandler(handler)
 
     try:
-        await ctx.info(f"Starting STAMP {mode} command...")
+        await ctx.info(f"Starting STAMP {mode} tool...")
         # Create argparse Namespace object to mimic command line arguments
         args = argparse.Namespace(command=mode, config_file_path=Path(tmp_config_path))
 
@@ -90,16 +90,16 @@ async def _run_stamp(mode, config, ctx):
         captured_logs_text = (
             "\n".join(handler.captured_logs)
             if handler.captured_logs
-            else "Command completed successfully (no logs captured)"
+            else "Tool completed successfully (no logs captured)"
         )
         await ctx.info(f"STAMP {mode} completed successfully")
-        return f"Command completed successfully:\n{captured_logs_text}"
+        return f"Tool completed successfully:\n{captured_logs_text}"
 
     except Exception as e:
         captured_logs_text = (
             "\n".join(handler.captured_logs) if handler.captured_logs else ""
         )
-        error_msg = f"Command failed with error: {str(e)}\n{captured_logs_text}"
+        error_msg = f"Tool failed with error: {str(e)}\n{captured_logs_text}"
         await ctx.error(f"STAMP {mode} failed: {str(e)}")
         return error_msg
 
@@ -744,7 +744,7 @@ def _resolve_path(subpath: str) -> Path:
 
 
 @mcp.tool
-def read_file(path: str) -> str:
+async def read_file(ctx: Context, path: str) -> str:
     """
     Read the contents of a file inside the allowed folder.
 
@@ -754,13 +754,14 @@ def read_file(path: str) -> str:
     Returns:
         str: Content of the file.
     """
+    await ctx.info(f"Starting read_file tool...")
     safe_path = _resolve_path(path)
     with open(safe_path, "r", encoding="utf-8") as f:
         return f.read()
 
 
 @mcp.tool
-def list_files(subdir: str = "") -> str:
+async def list_files(ctx: Context, subdir: str = "") -> str:
     """
     List all files and directories under the given subdirectory (default is root), recursively,
     returning paths relative to the base directory. If the list is too long, shows only directories
@@ -772,6 +773,7 @@ def list_files(subdir: str = "") -> str:
     Returns:
         str: Formatted list of files/directories or summary information.
     """
+    await ctx.info(f"Starting list_files tool...")
     subdir_path = _resolve_path(subdir) if subdir else WORKSPACE_PATH
     if not subdir_path.is_dir():
         raise FileNotFoundError(f"Subdirectory does not exist: {subdir}")
@@ -877,7 +879,7 @@ def list_files(subdir: str = "") -> str:
 
 
 @mcp.tool
-def analyze_csv(path: str) -> str:
+async def analyze_csv(ctx: Context, path: str) -> str:
     """
     Analyze a CSV file and provide detailed information about its structure and contents.
 
@@ -887,6 +889,7 @@ def analyze_csv(path: str) -> str:
     Returns:
         str: Detailed information about the CSV including dimensions, columns, and sample data.
     """
+    await ctx.info(f"Starting analyze_csv tool...")
     safe_path = _resolve_path(path)
 
     if not safe_path.exists():
@@ -934,7 +937,7 @@ Data Types:
 
 
 @mcp.tool
-def list_column_values(path: str, column_name: str) -> str:
+async def list_column_values(ctx: Context, path: str, column_name: str) -> str:
     """
     List all unique values in a specific column of a CSV file.
 
@@ -945,6 +948,7 @@ def list_column_values(path: str, column_name: str) -> str:
     Returns:
         str: Information about the unique values in the specified column.
     """
+    await ctx.info(f"Starting list_column_values tool...")
     safe_path = _resolve_path(path)
 
     if not safe_path.exists():
@@ -1008,7 +1012,7 @@ All unique values:
 
 
 @mcp.tool
-def check_available_devices() -> str:
+async def check_available_devices(ctx: Context) -> str:
     """
     Check which computation devices are available on the system.
     This includes checking for cuda (NVIDIA GPUs) and mps (Apple Silicon GPUs).
@@ -1016,6 +1020,7 @@ def check_available_devices() -> str:
     Returns:
         A string describing the available devices.
     """
+    await ctx.info(f"Starting check_available_devices tool...")
     devices = []
 
     # Check for CUDA availability
