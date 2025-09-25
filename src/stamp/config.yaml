@@ -222,6 +222,25 @@ heatmaps:
   #bottomk: 5
 
 
+attentionui:
+  output_dir: "/path/to/save/files/to"
+
+  # Directory the extracted features are saved in.
+  feature_dir: "/path/your/extracted/features/are/stored/in"
+
+  wsi_dir: "/path/containing/whole/slide/images/to/extract/features/from"
+
+  # Path of the model to generate the attention maps with.
+  checkpoint_path: "/path/to/model.ckpt"
+
+  # Slides to generate the attention maps for.
+  # The slide paths have to be specified relative to `wsi_dir`.
+  # If not specified, stamp will allow processing for all slides in `wsi_dir`.
+  #slide_paths:
+  #- slide1.svs
+  #- slide2.mrxs
+
+
 slide_encoding:
   # Encoder to use for slide encoding. Possible options are "cobra",
   # "eagle", "titan", "gigapath", "chief", "prism", "madeleine".
