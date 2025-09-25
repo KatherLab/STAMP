@@ -4,7 +4,6 @@ from typing import (
     Literal,
     NewType,
     TypeAlias,
-    TypedDict,
     TypeVar,
 )
 

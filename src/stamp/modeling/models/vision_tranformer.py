@@ -11,8 +11,6 @@ from einops import repeat
 from jaxtyping import Bool, Float, jaxtyped
 from torch import Tensor, nn
 
-from stamp.modeling.models import LitTileClassifier
-
 
 class _RunningMeanScaler(nn.Module):
     """Scales values by the inverse of the mean of values seen before."""

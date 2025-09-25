@@ -101,6 +101,7 @@ class LinearModelParams(BaseModel):
 class LinearRegressorModelParams(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
+
 class MLPRegressorModelParams(BaseModel):
     model_config = ConfigDict(extra="forbid")
     dim_hidden: int = 512

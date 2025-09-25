@@ -8,6 +8,7 @@ from sklearn import metrics
 
 _score_labels_regression = ["l1", "cc", "cc_p_value", "r2", "binarized_auc", "count"]
 
+
 def _regression(
     preds_df: pd.DataFrame, target_label: str, pred_label: str
 ) -> pd.DataFrame:

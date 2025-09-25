@@ -510,6 +510,7 @@ def patient_to_ground_truth_from_clini_table_(
 
     return patient_to_ground_truth
 
+
 def patient_to_survival_from_clini_table_(
     *,
     clini_table_path: Path | TextIO,

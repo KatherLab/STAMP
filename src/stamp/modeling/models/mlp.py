@@ -2,8 +2,6 @@ from beartype import beartype
 from jaxtyping import Float, jaxtyped
 from torch import Tensor, nn
 
-from stamp.modeling.models import LitPatientClassifier, LitTileRegressor
-
 
 class MLP(nn.Module):
     """

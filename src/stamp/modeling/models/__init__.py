@@ -1,7 +1,7 @@
 """Lightning wrapper around the model"""
 
 import inspect
-from abc import ABC, abstractmethod
+from abc import ABC
 from collections.abc import Iterable, Sequence
 from typing import TypeAlias
 
@@ -25,7 +25,12 @@ from stamp.types import (
     PatientId,
 )
 
+__author__ = "Minh Duc Nguyen"
+__copyright__ = "Copyright (C) 2025 Minh Duc Nguyen"
+__license__ = "MIT"
+
 Loss: TypeAlias = Float[Tensor, ""]
+
 
 class Base(lightning.LightningModule, ABC):
     """
@@ -191,7 +196,7 @@ class LitTileClassifier(LitBaseClassifier):
     supported_features = ["tile"]
 
     def __init__(self, *, dim_input: int, model_class: type[nn.Module], **kwargs):
-        super().__init__(dim_input=dim_input,model_class=model_class, **kwargs)
+        super().__init__(dim_input=dim_input, model_class=model_class, **kwargs)
 
         self.vision_transformer: nn.Module = self._build_backbone(
             model_class, dim_input, len(self.categories), kwargs
@@ -297,7 +302,7 @@ class LitPatientClassifier(LitBaseClassifier):
     supported_features = ["patient"]
 
     def __init__(self, *, dim_input: int, model_class: type[nn.Module], **kwargs):
-        super().__init__(dim_input=dim_input,model_class=model_class, **kwargs)
+        super().__init__(dim_input=dim_input, model_class=model_class, **kwargs)
 
         self.model: nn.Module = self._build_backbone(
             model_class, dim_input, len(self.categories), kwargs
