@@ -106,7 +106,7 @@ def tile_bag_dataloader(
     elif task == "regression":
         raw_targets = np.array(
             [
-                np.nan if p.ground_truth is None else float(p.ground_truth)
+                np.nan if p.ground_truth is None else float(p.ground_truth)  # type: ignore
                 for p in patient_data
             ],
             dtype=np.float32,
@@ -120,6 +120,10 @@ def tile_bag_dataloader(
             transform=transform,
         )
         cats_out = []
+
+    # elif task == "survival":
+
+    #     cats_out = []  # survival has no categories
 
     else:
         raise ValueError(f"Unknown task: {task}")
@@ -505,6 +509,37 @@ def patient_to_ground_truth_from_clini_table_(
             raise e from e
 
     return patient_to_ground_truth
+
+def patient_to_survival_from_clini_table_(
+    *,
+    clini_table_path: Path | TextIO,
+    patient_label: PandasLabel,
+    status_label: PandasLabel,
+    time_label: PandasLabel,
+) -> Mapping[PatientId, GroundTruth]:
+    """
+    Loads survival ground truth from a clinical table.
+
+    Returns:
+        dict mapping PatientId -> {"time": float, "event": int}
+    """
+    clini_df = read_table(
+        clini_table_path,
+        usecols=[patient_label, status_label, time_label],
+        dtype=str,
+    ).dropna()
+
+    patient_to_ground_truth: dict[PatientId, dict[str, float | int]] = {}
+    for _, row in clini_df.iterrows():
+        pid = PatientId(str(row.at[patient_label]))
+        status = str(row.at[status_label]).lower()
+        time = float(row.at[time_label])
+
+        event = 1 if status == "dead" else 0
+
+        patient_to_ground_truth[pid] = {"time": time, "event": event}
+
+    return patient_to_ground_truth  # type: ignore
 
 
 def slide_to_patient_from_slide_table_(

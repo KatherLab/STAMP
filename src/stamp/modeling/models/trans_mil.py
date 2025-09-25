@@ -13,7 +13,7 @@ from einops import rearrange, reduce
 from jaxtyping import Bool, Float, jaxtyped
 from torch import Tensor, einsum, nn
 
-from stamp.modeling.models.regressor import LitTileClassifier
+from stamp.modeling.models import LitTileClassifier
 
 # --- Helpers ---
 
@@ -326,17 +326,3 @@ class TransMIL(nn.Module):
         # Classifier
         logits = self._fc2(h)  # [B, n_classes]
         return logits
-
-
-class TransMILClassifier(LitTileClassifier):
-    model_name: str = "trans_mil"
-
-    def build_backbone(
-        self, dim_input: int, dim_output: int, metadata: dict
-    ) -> nn.Module:
-        params = self.get_model_params(TransMIL, metadata)
-        return TransMIL(
-            dim_input=dim_input,
-            dim_output=dim_output,
-            **params,
-        )

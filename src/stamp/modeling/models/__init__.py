@@ -27,23 +27,13 @@ from stamp.types import (
 
 Loss: TypeAlias = Float[Tensor, ""]
 
-
-class LitBaseClassifier(lightning.LightningModule, ABC):
+class Base(lightning.LightningModule, ABC):
     """
-    PyTorch Lightning wrapper for tile level and patient level clasification.
+    PyTorch Lightning wrapper for tile level and patient level clasification/regression.
 
-    This class encapsulates training, validation, testing, and prediction logic, along with:
-    - Masking logic that ensures only valid tiles (patches) participate in attention during training (deactivated)
-    - AUROC metric tracking during validation for multiclass classification.
     - Compatibility checks based on the `stamp` framework version.
-    - Integration of class imbalance handling through weighted cross-entropy loss.
-
-    The attention mask is currently deactivated to reduce memory usage.
 
     Args:
-        categories: List of class labels.
-        category_weights: Class weights for cross-entropy loss to handle imbalance.
-        dim_input: Input feature dimensionality per tile.
         total_steps: Number of steps done in the LR Scheduler cycle.
         max_lr: max learning rate.
         div_factor: Determines the initial learning rate via initial_lr = max_lr/div_factor
@@ -57,9 +47,6 @@ class LitBaseClassifier(lightning.LightningModule, ABC):
     def __init__(
         self,
         *,
-        categories: Sequence[Category],
-        category_weights: Float[Tensor, "category_weight"],  # noqa: F821
-        dim_input: int,
         # Learning Rate Scheduler params, not used in inference
         total_steps: int,
         max_lr: float,
@@ -74,29 +61,18 @@ class LitBaseClassifier(lightning.LightningModule, ABC):
     ) -> None:
         super().__init__()
 
-        if len(categories) != len(category_weights):
-            raise ValueError(
-                "the number of category weights has to match the number of categories!"
-            )
-
-        # self.model: nn.Module = self.build_backbone(
-        #     dim_input, len(categories), metadata
-        # )
-
-        self.class_weights = category_weights
-        self.valid_auroc = MulticlassAUROC(len(categories))
+        # LR scheduler config
         self.total_steps = total_steps
         self.max_lr = max_lr
         self.div_factor = div_factor
 
-        # Used during deployment
+        # Deployment
         self.ground_truth_label = ground_truth_label
-        self.categories = np.array(categories)
         self.train_patients = train_patients
         self.valid_patients = valid_patients
         self.stamp_version = str(stamp_version)
 
-        _ = metadata  # unused, but saved in model
+        _ = metadata  # unused here, but saved in model
 
         # Check if version is compatible.
         # This should only happen when the model is loaded,
@@ -119,18 +95,26 @@ class LitBaseClassifier(lightning.LightningModule, ABC):
 
         self.save_hyperparameters()
 
-    @abstractmethod
-    def build_backbone(
-        self, dim_input: int, dim_output: int, metadata: dict
-    ) -> nn.Module:
-        pass
-
     @staticmethod
-    def get_model_params(model_class: type[nn.Module], metadata: dict) -> dict:
+    def _get_model_params(model_class: type[nn.Module], metadata: dict) -> dict:
         keys = [
             k for k in inspect.signature(model_class.__init__).parameters if k != "self"
         ]
         return {k: v for k, v in metadata.items() if k in keys}
+
+    def _build_backbone(
+        self,
+        model_class: type[nn.Module],
+        dim_input: int,
+        dim_output: int,
+        metadata: dict,
+    ) -> nn.Module:
+        params = self._get_model_params(model_class, metadata)
+        return model_class(
+            dim_input=dim_input,
+            dim_output=dim_output,
+            **params,
+        )
 
     def configure_optimizers(self):
         optimizer = optim.AdamW(self.parameters(), lr=1e-3)
@@ -154,6 +138,50 @@ class LitBaseClassifier(lightning.LightningModule, ABC):
         )
 
 
+class LitBaseClassifier(Base):
+    """
+    PyTorch Lightning wrapper for tile level and patient level clasification.
+
+    This class encapsulates training, validation, testing, and prediction logic, along with:
+    - Masking logic that ensures only valid tiles (patches) participate in attention during training (deactivated)
+    - AUROC metric tracking during validation for multiclass classification.
+    - Integration of class imbalance handling through weighted cross-entropy loss.
+
+    The attention mask is currently deactivated to reduce memory usage.
+
+    Args:
+        categories: List of class labels.
+        category_weights: Class weights for cross-entropy loss to handle imbalance.
+        dim_input: Input feature dimensionality per tile.
+    """
+
+    def __init__(
+        self,
+        *,
+        categories: Sequence[Category],
+        category_weights: Float[Tensor, "category_weight"],  # noqa: F821
+        dim_input: int,
+        **kwargs,
+    ) -> None:
+        super().__init__(
+            categories=categories, category_weights=category_weights, **kwargs
+        )
+
+        if len(categories) != len(category_weights):
+            raise ValueError(
+                "the number of category weights has to match the number of categories!"
+            )
+
+        # self.model: nn.Module = self._build_backbone(
+        #     dim_input, len(categories), metadata
+        # )
+
+        self.class_weights = category_weights
+        self.valid_auroc = MulticlassAUROC(len(categories))
+        # Number classes
+        self.categories = np.array(categories)
+
+
 class LitTileClassifier(LitBaseClassifier):
     """
     PyTorch Lightning wrapper for the model used in weakly supervised
@@ -162,11 +190,11 @@ class LitTileClassifier(LitBaseClassifier):
 
     supported_features = ["tile"]
 
-    def __init__(self, *, dim_input: int, **kwargs):
-        super().__init__(dim_input=dim_input, **kwargs)
+    def __init__(self, *, dim_input: int, model_class: type[nn.Module], **kwargs):
+        super().__init__(dim_input=dim_input,model_class=model_class, **kwargs)
 
-        self.vision_transformer: nn.Module = self.build_backbone(
-            dim_input, len(self.categories), kwargs
+        self.vision_transformer: nn.Module = self._build_backbone(
+            model_class, dim_input, len(self.categories), kwargs
         )
 
     def forward(
@@ -261,18 +289,18 @@ class LitTileClassifier(LitBaseClassifier):
         return mask
 
 
-class LitPatientlassifier(LitBaseClassifier):
+class LitPatientClassifier(LitBaseClassifier):
     """
     PyTorch Lightning wrapper for MLPClassifier.
     """
 
     supported_features = ["patient"]
 
-    def __init__(self, *, dim_input: int, **kwargs):
-        super().__init__(dim_input=dim_input, **kwargs)
+    def __init__(self, *, dim_input: int, model_class: type[nn.Module], **kwargs):
+        super().__init__(dim_input=dim_input,model_class=model_class, **kwargs)
 
-        self.model: nn.Module = self.build_backbone(
-            dim_input, len(self.categories), kwargs
+        self.model: nn.Module = self._build_backbone(
+            model_class, dim_input, len(self.categories), kwargs
         )
 
     def forward(self, x: Tensor) -> Tensor:
@@ -319,7 +347,7 @@ class LitPatientlassifier(LitBaseClassifier):
         return self.model(feats)
 
 
-class LitBaseRegressor(lightning.LightningModule, ABC):
+class LitBaseRegressor(Base):
     """
     PyTorch Lightning wrapper for tile-level / patient-level regression.
 
@@ -330,112 +358,32 @@ class LitBaseRegressor(lightning.LightningModule, ABC):
     Args:
         dim_input: Input feature dimensionality per tile.
         loss_type: 'l1'.
-        total_steps: Number of steps for OneCycleLR.
-        max_lr: Maximum LR for OneCycleLR.
-        div_factor: initial_lr = max_lr / div_factor.
-        ground_truth_label: Column name for ground-truth values in metadata.
-        train_patients: IDs used for training.
-        valid_patients: IDs used for validation.
-        stamp_version: Version of `stamp` used during training.
-        **metadata: Stored alongside the model checkpoint.
     """
 
     def __init__(
         self,
         *,
         dim_input: int,
-        # Learning Rate Scheduler params, not used in inference
-        total_steps: int,
-        max_lr: float,
-        div_factor: float,
-        # Metadata used by other parts of stamp, but not by the model itself
-        ground_truth_label: PandasLabel,
-        train_patients: Iterable[PatientId],
-        valid_patients: Iterable[PatientId],
-        stamp_version: Version = Version(stamp.__version__),
-        # Other metadata
-        **metadata,
+        model_class: type[nn.Module],
+        **kwargs,
     ) -> None:
-        super().__init__()
+        super().__init__(dim_input=dim_input, model_class=model_class, **kwargs)
 
-        self.model: nn.Module = self.build_backbone(dim_input, metadata)
+        self.task = "regression"
+
+        self.model: nn.Module = self._build_backbone(model_class, dim_input, 1, kwargs)
 
         self.valid_mae = MeanAbsoluteError()
         self.valid_mse = MeanSquaredError()
         self.valid_pearson = PearsonCorrCoef()
 
-        # LR scheduler config
-        self.total_steps = total_steps
-        self.max_lr = max_lr
-        self.div_factor = div_factor
-
-        # Deployment
-        self.ground_truth_label = ground_truth_label
-        self.train_patients = train_patients
-        self.valid_patients = valid_patients
-        self.stamp_version = str(stamp_version)
-
-        _ = metadata  # unused here, but saved in model
-
-        # Check if version is compatible.
-        # This should only happen when the model is loaded,
-        # otherwise the default value will make these checks pass.
-        # TODO: Change this on version change
-        if stamp_version < Version("2.3.0"):
-            # Update this as we change our model in incompatible ways!
-            raise ValueError(
-                f"model has been built with stamp version {stamp_version} "
-                f"which is incompatible with the current version."
-            )
-        elif stamp_version > Version(stamp.__version__):
-            # Let's be strict with models "from the future",
-            # better fail deadly than have broken results.
-            raise ValueError(
-                "model has been built with a stamp version newer than the installed one "
-                f"({stamp_version} > {stamp.__version__}). "
-                "Please upgrade stamp to a compatible version."
-            )
-
-        self.save_hyperparameters()
-
-    @abstractmethod
-    def build_backbone(self, dim_input: int, metadata: dict) -> nn.Module:
-        pass
-
     @staticmethod
-    def get_model_params(model_class: type[nn.Module], metadata: dict) -> dict:
-        keys = [
-            k for k in inspect.signature(model_class.__init__).parameters if k != "self"
-        ]
-        return {k: v for k, v in metadata.items() if k in keys}
-
-    @staticmethod
-    def _l1_loss(pred: Tensor, target: Tensor) -> Loss:
+    def _compute_loss(y_true: Tensor, y_pred: Tensor) -> Loss:
+        # l1 loss
         # expects shapes [..., 1] or [...]
-        pred = pred.squeeze(-1)
-        target = target.squeeze(-1)
+        pred = y_pred.squeeze(-1)
+        target = y_true.squeeze(-1)
         return torch.mean(torch.abs(pred - target))
-
-    def configure_optimizers(self):
-        optimizer = optim.AdamW(self.parameters(), lr=1e-3)
-        scheduler = optim.lr_scheduler.OneCycleLR(
-            optimizer=optimizer,
-            total_steps=self.total_steps,
-            max_lr=self.max_lr,
-            div_factor=self.div_factor,
-        )
-        return [optimizer], [scheduler]
-
-    def on_train_batch_end(self, outputs, batch, batch_idx):
-        current_lr = self.trainer.optimizers[0].param_groups[0]["lr"]
-        self.log(
-            "learning_rate",
-            current_lr,
-            on_step=False,
-            on_epoch=True,
-            prog_bar=True,
-            sync_dist=True,
-        )
 
 
 class LitTileRegressor(LitBaseRegressor):
@@ -475,7 +423,7 @@ class LitTileRegressor(LitBaseRegressor):
         if y.ndim == preds.ndim - 1:
             y = y.unsqueeze(-1)
 
-        loss = self._l1_loss(preds, y)
+        loss = self._compute_loss(preds, y)
 
         self.log(
             f"{step_name}_loss",
@@ -537,3 +485,33 @@ class LitTileRegressor(LitBaseRegressor):
         ).repeat(len(bags), 1) >= bag_sizes.unsqueeze(1)
 
         return mask
+
+
+class LitTileSurvival(LitTileRegressor):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+        self.task = "survival"
+
+    @staticmethod
+    def _compute_loss(y_true: Tensor, y_pred: Tensor) -> Loss:
+        # cox loss
+        time_value = torch.squeeze(y_true[0:, 0])
+        event = torch.squeeze(y_true[0:, 1]).type(torch.bool)
+        score = torch.squeeze(y_pred)
+
+        ix = torch.where(event)[0]
+
+        sel_time = time_value[ix]
+        sel_mat = (
+            sel_time.unsqueeze(1)
+            .expand(1, sel_time.size()[0], time_value.size()[0])
+            .squeeze()
+            <= time_value
+        ).float()
+
+        p_lik = score[ix] - torch.log(torch.sum(sel_mat * torch.exp(score), dim=-1))
+
+        loss = -torch.mean(p_lik)
+
+        return loss

@@ -4,7 +4,7 @@ import torch
 from stamp.cache import download_file
 from stamp.modeling.data import PatientData, tile_bag_dataloader
 from stamp.modeling.deploy import _predict
-from stamp.modeling.models.classifier.vision_tranformer import LitVisionTransformer
+from stamp.modeling.models.vision_tranformer import LitVisionTransformer
 from stamp.types import FeaturePath, PatientId
 
 
@@ -34,6 +34,7 @@ def test_backwards_compatibility() -> None:
         )
     }
     test_dl, _ = tile_bag_dataloader(
+        task="classification",
         patient_data=list(patient_to_data.values()),
         bag_size=None,
         categories=list(model.categories),

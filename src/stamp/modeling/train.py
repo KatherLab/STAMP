@@ -177,14 +177,16 @@ def setup_model_for_training(
             f"No model specified, defaulting to '{advanced.model_name.value}' for feature type '{feature_type}'"
         )
 
-    # 2. Instantiate the model dynamically
-    ModelClass = load_model_class(advanced.model_name)
+    # 2. Instantiate the lightning wrapper (based on provided task, feature type) and model backbone dynamically
+    LitModelClass, ModelClass = load_model_class(
+        advanced.task, feature_type, advanced.model_name
+    )
 
     # 3. Validate that the chosen model supports the feature type
-    if feature_type not in ModelClass.supported_features:
+    if feature_type not in LitModelClass.supported_features:
         raise ValueError(
             f"Model '{advanced.model_name.value}' does not support feature type '{feature_type}'. "
-            f"Supported types are: {ModelClass.supported_features}"
+            f"Supported types are: {LitModelClass.supported_features}"
         )
 
     # 4. Get model-specific hyperparameters
@@ -225,7 +227,7 @@ def setup_model_for_training(
         advanced.patience,
     )
 
-    model = ModelClass(**all_params)
+    model = LitModelClass(model_class=ModelClass, **all_params)
 
     return model, train_dl, valid_dl
 
@@ -261,21 +263,11 @@ def setup_dataloaders_for_training(
         for patient_data in patient_to_data.values()
         if patient_data.ground_truth is not None
     ]
-    # if task == "regression":
-    #     # check if all ground truths are numeric
-    #     if not all(isinstance(gt, (int, float, np.number)) for gt in ground_truths):
-    #         _logger.warning(
-    #             "Task was set to 'regression' but non-numeric ground truths detected. "
-    #             "Switching to 'classification'."
-    #         )
-    #         task = "classification"
 
     if task == "classification":
         _logger.info(f"Task: {feature_type} {task}")
         # Sample count for training
         log_total_class_summary(ground_truths, categories)
-    elif task == "regression":
-        pass
 
     if len(ground_truths) != len(patient_to_data):
         raise ValueError(

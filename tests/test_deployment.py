@@ -11,8 +11,8 @@ from stamp.modeling.data import (
     tile_bag_dataloader,
 )
 from stamp.modeling.deploy import _predict, _to_prediction_df
-from stamp.modeling.models.classifier.mlp import MLPClassifier
-from stamp.modeling.models.classifier.vision_tranformer import LitVisionTransformer
+from stamp.modeling.models.mlp import MLPClassifier
+from stamp.modeling.models.vision_tranformer import LitVisionTransformer
 from stamp.types import GroundTruth, PatientId
 
 
@@ -56,6 +56,7 @@ def test_predict(
     }
 
     test_dl, _ = tile_bag_dataloader(
+        task="classification",
         patient_data=list(patient_to_data.values()),
         bag_size=None,
         categories=list(model.categories),
@@ -99,6 +100,7 @@ def test_predict(
     }
 
     more_test_dl, _ = tile_bag_dataloader(
+        task="classification",
         patient_data=list(more_patients_to_data.values()),
         bag_size=None,
         categories=list(model.categories),

@@ -1,13 +1,12 @@
 from enum import StrEnum
-from typing import Sequence, Type, TypedDict
-
-import lightning
 
 from stamp.modeling.models import (
-    LitPatientlassifier,
+    LitPatientClassifier,
     LitTileClassifier,
     LitTileRegressor,
+    LitTileSurvival,
 )
+from stamp.types import Task
 
 
 class ModelName(StrEnum):
@@ -17,77 +16,40 @@ class ModelName(StrEnum):
     MLP = "mlp"
     TRANS_MIL = "trans_mil"
     LINEAR = "linear"
-    LINEAR_REGRESSOR = "linear_regressor"
-    MLP_REGRESSOR = "mlp_regressor"
 
 
-class ModelInfo(TypedDict):
-    """A dictionary to map a model to supported feature types. For example,
-    a linear classifier is not compatible with tile-evel feats."""
-
-    model_class: Type[lightning.LightningModule]
-    supported_features: Sequence[str]
-
-
-MODEL_REGISTRY: dict[ModelName, ModelInfo] = {
-    ModelName.VIT: {
-        "model_class": LitTileClassifier,
-        "supported_features": LitTileClassifier.supported_features,
-    },
-    ModelName.MLP: {
-        "model_class": LitPatientlassifier,
-        "supported_features": LitPatientlassifier.supported_features,
-    },
-    ModelName.TRANS_MIL: {
-        "model_class": LitTileClassifier,
-        "supported_features": LitTileClassifier.supported_features,
-    },
-    ModelName.LINEAR: {
-        "model_class": LitPatientlassifier,
-        "supported_features": LitPatientlassifier.supported_features,
-    },
-    ModelName.LINEAR_REGRESSOR: {
-        "model_class": LitTileRegressor,
-        "supported_features": LitTileRegressor.supported_features,
-    },
-    ModelName.MLP_REGRESSOR: {
-        "model_class": LitTileRegressor,
-        "supported_features": LitTileRegressor.supported_features,
-    },
+# Map (feature_type, task) → correct Lightning wrapper class
+MODEL_REGISTRY = {
+    ("tile", "classification"): LitTileClassifier,
+    ("tile", "regression"): LitTileRegressor,
+    ("tile", "survival"): LitTileSurvival,
+    ("patient", "classification"): LitPatientClassifier,
 }
 
 
-def load_model_class(model_name: ModelName):
+def load_model_class(task: Task, feature_type: str, model_name: ModelName):
+    LitModelClass = MODEL_REGISTRY[(feature_type, task)]
+
     match model_name:
         case ModelName.VIT:
-            from stamp.modeling.models.classifier.vision_tranformer import (
-                LitVisionTransformer as ModelClass,
+            from stamp.modeling.models.vision_tranformer import (
+                VisionTransformer as ModelClass,
             )
 
         case ModelName.TRANS_MIL:
-            from stamp.modeling.models.classifier.trans_mil import (
-                TransMILClassifier as ModelClass,
+            from stamp.modeling.models.trans_mil import (
+                TransMIL as ModelClass,
             )
 
         case ModelName.MLP:
-            from stamp.modeling.models.classifier.mlp import MLPClassifier as ModelClass
+            from stamp.modeling.models.mlp import MLP as ModelClass
 
         case ModelName.LINEAR:
-            from stamp.modeling.models.classifier.mlp import (
-                LinearClassifier as ModelClass,
-            )
-
-        case ModelName.LINEAR_REGRESSOR:
-            from stamp.modeling.models.regressor.mlp import (
-                LinearRegressor as ModelClass,
-            )
-
-        case ModelName.MLP_REGRESSOR:
-            from stamp.modeling.models.regressor.mlp import (
-                MLPRegressor as ModelClass,
+            from stamp.modeling.models.mlp import (
+                Linear as ModelClass,
             )
 
         case _:
             raise ValueError(f"Unknown model name: {model_name}")
 
-    return ModelClass
+    return LitModelClass, ModelClass

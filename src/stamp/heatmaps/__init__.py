@@ -18,7 +18,7 @@ from torch import Tensor
 from torch.func import jacrev  # pyright: ignore[reportPrivateImportUsage]
 
 from stamp.modeling.data import get_coords, get_stride
-from stamp.modeling.models.classifier.vision_tranformer import (
+from stamp.modeling.models.vision_tranformer import (
     LitVisionTransformer,
     VisionTransformer,
 )

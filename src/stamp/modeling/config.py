@@ -25,6 +25,14 @@ class TrainConfig(BaseModel):
     )
     categories: Sequence[Category] | None = None
 
+    status_label: PandasLabel = Field(
+        description="Column in the clinical table indicating patient status (e.g. alive, dead, censored)."
+    )
+
+    time_label: PandasLabel = Field(
+        description="Column in the clinical table indicating follow-up or survival time (e.g. days)."
+    )
+
     patient_label: PandasLabel = "PATIENT"
     filename_label: PandasLabel = "FILENAME"
 
@@ -54,6 +62,10 @@ class DeploymentConfig(BaseModel):
     ground_truth_label: PandasLabel | None = None
     patient_label: PandasLabel = "PATIENT"
     filename_label: PandasLabel = "FILENAME"
+
+    # For survival prediction
+    status_label: PandasLabel | None = None
+    time_label: PandasLabel | None = None
 
     num_workers: int = min(os.cpu_count() or 1, 16)
     accelerator: str = "gpu" if torch.cuda.is_available() else "cpu"

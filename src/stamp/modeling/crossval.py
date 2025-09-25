@@ -18,7 +18,7 @@ from stamp.modeling.data import (
     tile_bag_dataloader,
 )
 from stamp.modeling.deploy import _predict, _to_prediction_df
-from stamp.modeling.models import LitPatientlassifier, LitTileClassifier
+from stamp.modeling.models import LitPatientClassifier, LitTileClassifier
 from stamp.modeling.train import setup_model_for_training, train_model_
 from stamp.modeling.transforms import VaryPrecisionTransform
 from stamp.types import (
@@ -181,7 +181,7 @@ def categorical_crossval_(
             if feature_type == "tile":
                 model = LitTileClassifier.load_from_checkpoint(split_dir / "model.ckpt")
             else:
-                model = LitPatientlassifier.load_from_checkpoint(
+                model = LitPatientClassifier.load_from_checkpoint(
                     split_dir / "model.ckpt"
                 )
 

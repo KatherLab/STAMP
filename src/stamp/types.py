@@ -4,6 +4,7 @@ from typing import (
     Literal,
     NewType,
     TypeAlias,
+    TypedDict,
     TypeVar,
 )
 
@@ -56,4 +57,4 @@ PandasLabel: TypeAlias = str
 
 GroundTruthType = TypeVar("GroundTruthType", covariant=True)
 
-Task: TypeAlias = Literal["classification", "regression"]
+Task: TypeAlias = Literal["classification", "regression", "survival"]

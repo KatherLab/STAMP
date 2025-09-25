@@ -2,7 +2,7 @@ from beartype import beartype
 from jaxtyping import Float, jaxtyped
 from torch import Tensor, nn
 
-from stamp.modeling.models import LitPatientlassifier
+from stamp.modeling.models import LitPatientClassifier, LitTileRegressor
 
 
 class MLP(nn.Module):
@@ -46,20 +46,6 @@ class MLP(nn.Module):
         return self.mlp(x)
 
 
-class MLPClassifier(LitPatientlassifier):
-    model_name: str = "mlp"
-
-    def build_backbone(
-        self, dim_input: int, dim_output: int, metadata: dict
-    ) -> nn.Module:
-        params = self.get_model_params(MLP, metadata)
-        return MLP(
-            dim_input=dim_input,
-            dim_output=dim_output,
-            **params,
-        )
-
-
 class Linear(nn.Module):
     def __init__(self, dim_input: int, dim_output: int):
         super().__init__()
@@ -76,17 +62,3 @@ class Linear(nn.Module):
         elif x.ndim != 2:
             raise ValueError(f"Expected 2D or 3D input, got {x.shape}")
         return self.fc(x)
-
-
-class LinearClassifier(LitPatientlassifier):
-    model_name: str = "linear"
-
-    def build_backbone(
-        self, dim_input: int, dim_output: int, metadata: dict
-    ) -> nn.Module:
-        params = self.get_model_params(Linear, metadata)
-        return Linear(
-            dim_input=dim_input,
-            dim_output=dim_output,
-            **params,
-        )
