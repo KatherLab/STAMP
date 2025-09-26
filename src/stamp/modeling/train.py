@@ -161,7 +161,7 @@ def setup_model_for_training(
     )
 
     _logger.info(
-        "Training dataloaders: bag_size=%s, batch_size=%s, num_workers=%s",
+        "Training dataloaders: bag_size=%s, batch_size=%s, num_workers=%s, task=%s",
         advanced.bag_size,
         advanced.batch_size,
         advanced.num_workers,
