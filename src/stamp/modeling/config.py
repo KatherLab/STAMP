@@ -20,17 +20,20 @@ class TrainConfig(BaseModel):
     )
     feature_dir: Path = Field(description="Directory containing feature files")
 
-    ground_truth_label: PandasLabel = Field(
-        description="Name of categorical column in clinical table to train on"
+    ground_truth_label: PandasLabel | None = Field(
+        default=None,
+        description="Name of categorical column in clinical table to train on",
     )
     categories: Sequence[Category] | None = None
 
-    status_label: PandasLabel = Field(
-        description="Column in the clinical table indicating patient status (e.g. alive, dead, censored)."
+    status_label: PandasLabel | None = Field(
+        default=None,
+        description="Column in the clinical table indicating patient status (e.g. alive, dead, censored).",
     )
 
-    time_label: PandasLabel = Field(
-        description="Column in the clinical table indicating follow-up or survival time (e.g. days)."
+    time_label: PandasLabel | None = Field(
+        default=None,
+        description="Column in the clinical table indicating follow-up or survival time (e.g. days).",
     )
 
     patient_label: PandasLabel = "PATIENT"

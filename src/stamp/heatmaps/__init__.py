@@ -18,8 +18,9 @@ from torch import Tensor
 from torch.func import jacrev  # pyright: ignore[reportPrivateImportUsage]
 
 from stamp.modeling.data import get_coords, get_stride
+from stamp.modeling.deploy import load_model_from_ckpt
+from stamp.modeling.models import LitTileClassifier
 from stamp.modeling.models.vision_tranformer import (
-    LitVisionTransformer,
     VisionTransformer,
 )
 from stamp.preprocessing import supported_extensions
@@ -237,8 +238,10 @@ def heatmaps_(
         coords_tile_slide_px = torch.round(coords_um / slide_mpp).long()
 
         model = (
-            LitVisionTransformer.load_from_checkpoint(checkpoint_path).to(device).eval()
+            LitTileClassifier.load_from_checkpoint(checkpoint_path).to(device).eval()
         )
+
+        model = load_model_from_ckpt(checkpoint_path)
 
         # TODO: Update version when a newer model logic breaks heatmaps.
         if Version(model.stamp_version) < Version("2.3.0"):
@@ -249,7 +252,7 @@ def heatmaps_(
 
         # Score for the entire slide
         slide_score = (
-            model.vision_transformer(
+            model.model(
                 bags=feats.unsqueeze(0),
                 coords=coords_um.unsqueeze(0),
                 mask=None,
@@ -262,7 +265,7 @@ def heatmaps_(
         highest_prob_class_idx = slide_score.argmax().item()
 
         gradcam = _gradcam_per_category(
-            model=model.vision_transformer,  # type: ignore
+            model=model.model,  # type: ignore
             feats=feats,
             coords=coords_um,
         )  # shape: [tile, category]
@@ -272,7 +275,7 @@ def heatmaps_(
         ).detach()  # shape: [width, height, category]
 
         scores = torch.softmax(
-            model.vision_transformer.forward(
+            model.model.forward(
                 bags=feats.unsqueeze(-2),
                 coords=coords_um.unsqueeze(-2),
                 mask=torch.zeros(len(feats), 1, dtype=torch.bool, device=device),

@@ -511,36 +511,47 @@ def patient_to_ground_truth_from_clini_table_(
     return patient_to_ground_truth
 
 
-def patient_to_survival_from_clini_table_(
-    *,
-    clini_table_path: Path | TextIO,
-    patient_label: PandasLabel,
-    status_label: PandasLabel,
-    time_label: PandasLabel,
-) -> Mapping[PatientId, GroundTruth]:
-    """
-    Loads survival ground truth from a clinical table.
+# def patient_to_survival_from_clini_table_(
+#     *,
+#     clini_table_path: Path | TextIO,
+#     patient_label: str,
+#     time_label: str,
+#     status_label: str,
+# ) -> dict[PatientId, GroundTruth]:
+#     """
+#     Loads patients and their survival ground truths (time + event) from a clini table.
 
-    Returns:
-        dict mapping PatientId -> {"time": float, "event": int}
-    """
-    clini_df = read_table(
-        clini_table_path,
-        usecols=[patient_label, status_label, time_label],
-        dtype=str,
-    ).dropna()
+#     Returns
+#     -------
+#     dict[PatientId, GroundTruth]
+#         Mapping patient_id -> "time status" (e.g. "13 alive", "42 dead").
+#     """
+#     clini_df = pd.read_table(
+#         clini_table_path,
+#         usecols=[patient_label, time_label, status_label],
+#         dtype=str,
+#     ).dropna()
 
-    patient_to_ground_truth: dict[PatientId, dict[str, float | int]] = {}
-    for _, row in clini_df.iterrows():
-        pid = PatientId(str(row.at[patient_label]))
-        status = str(row.at[status_label]).lower()
-        time = float(row.at[time_label])
+#     try:
+#         patient_to_ground_truth: dict[PatientId, GroundTruth] = (
+#             clini_df.set_index(patient_label, verify_integrity=True)[
+#                 [time_label, status_label]
+#             ]
+#             .apply(lambda row: f"{row[time_label]} {row[status_label]}", axis=1)
+#             .to_dict()
+#         )
+#     except KeyError as e:
+#         missing = [
+#             col
+#             for col in [patient_label, time_label, status_label]
+#             if col not in clini_df
+#         ]
+#         raise ValueError(
+#             f"Missing columns in clini table: {missing}. "
+#             f"Available: {list(clini_df.columns)}"
+#         ) from e
 
-        event = 1 if status == "dead" else 0
-
-        patient_to_ground_truth[pid] = {"time": time, "event": event}
-
-    return patient_to_ground_truth  # type: ignore
+#     return patient_to_ground_truth
 
 
 def slide_to_patient_from_slide_table_(

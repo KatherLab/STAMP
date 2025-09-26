@@ -1,7 +1,7 @@
 import logging
 from collections.abc import Mapping, Sequence
 from pathlib import Path
-from typing import TypeAlias, cast
+from typing import TypeAlias, Union, cast
 
 import lightning
 import numpy as np
@@ -19,8 +19,10 @@ from stamp.modeling.data import (
     slide_to_patient_from_slide_table_,
     tile_bag_dataloader,
 )
-from stamp.modeling.models.mlp import MLPClassifier
-from stamp.modeling.models.vision_tranformer import LitVisionTransformer
+from stamp.modeling.models import LitPatientClassifier, LitTileClassifier
+from stamp.modeling.models.mlp import MLP
+from stamp.modeling.models.vision_tranformer import VisionTransformer
+from stamp.modeling.registry import ModelName, load_model_class
 from stamp.types import GroundTruth, PandasLabel, PatientId
 
 __all__ = ["deploy_categorical_model_"]
@@ -32,6 +34,16 @@ __license__ = "MIT"
 _logger = logging.getLogger("stamp")
 
 Logit: TypeAlias = float
+
+def load_model_from_ckpt(path: Union[str, Path]):
+    ckpt = torch.load(path, map_location="cpu", weights_only=False)
+    hparams = ckpt["hyper_parameters"]
+
+    LitModelClass, ModelClass = load_model_class(
+        hparams["task"], hparams["supported_features"], ModelName(hparams["model_name"])
+    )
+
+    return LitModelClass.load_from_checkpoint(path, model_class=ModelClass)
 
 
 def deploy_categorical_model_(
@@ -61,9 +73,9 @@ def deploy_categorical_model_(
     _logger.info(f"Detected feature type: {feature_type}")
 
     if feature_type == "tile":
-        ModelClass = LitVisionTransformer
+        ModelClass = LitTileClassifier
     elif feature_type == "patient":
-        ModelClass = MLPClassifier
+        ModelClass = LitPatientClassifier
     else:
         raise RuntimeError(
             f"Unsupported feature type for deployment: {feature_type}. Only 'tile' and 'patient' are supported."

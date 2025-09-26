@@ -59,6 +59,8 @@ def train_categorical_model_(
     if feature_type == "tile":
         if config.slide_table is None:
             raise ValueError("A slide table is required for tile-level modeling")
+        if config.ground_truth_label is None:
+            raise ValueError("Ground truth label is required for tile-level modeling")
         patient_to_ground_truth = patient_to_ground_truth_from_clini_table_(
             clini_table_path=config.clini_table,
             ground_truth_label=config.ground_truth_label,
@@ -79,6 +81,10 @@ def train_categorical_model_(
         # Patient-level: ignore slide_table
         if config.slide_table is not None:
             _logger.warning("slide_table is ignored for patient-level features.")
+        if config.ground_truth_label is None:
+            raise ValueError(
+                "Ground truth label is required for patient-level modeling"
+            )
         patient_to_data = load_patient_level_data(
             clini_table=config.clini_table,
             feature_dir=config.feature_dir,

@@ -3,7 +3,7 @@
 import inspect
 from abc import ABC
 from collections.abc import Iterable, Sequence
-from typing import TypeAlias
+from typing import ClassVar, TypeAlias
 
 import lightning
 import numpy as np
@@ -98,6 +98,9 @@ class Base(lightning.LightningModule, ABC):
                 "Please upgrade stamp to a compatible version."
             )
 
+        supported_features = getattr(self, "supported_features", None)
+        if supported_features is not None:
+            self.hparams["supported_features"] = supported_features[0]
         self.save_hyperparameters()
 
     @staticmethod
@@ -163,13 +166,18 @@ class LitBaseClassifier(Base):
     def __init__(
         self,
         *,
+        model_class: type[nn.Module],
         categories: Sequence[Category],
         category_weights: Float[Tensor, "category_weight"],  # noqa: F821
         dim_input: int,
         **kwargs,
     ) -> None:
         super().__init__(
-            categories=categories, category_weights=category_weights, **kwargs
+            model_class=model_class,
+            categories=categories,
+            category_weights=category_weights,
+            dim_input=dim_input,
+            **kwargs,
         )
 
         if len(categories) != len(category_weights):
@@ -177,14 +185,16 @@ class LitBaseClassifier(Base):
                 "the number of category weights has to match the number of categories!"
             )
 
-        # self.model: nn.Module = self._build_backbone(
-        #     dim_input, len(categories), metadata
-        # )
+        self.model: nn.Module = self._build_backbone(
+            model_class, dim_input, len(categories), kwargs
+        )
 
         self.class_weights = category_weights
         self.valid_auroc = MulticlassAUROC(len(categories))
         # Number classes
         self.categories = np.array(categories)
+
+        self.hparams["task"] = "classification"
 
 
 class LitTileClassifier(LitBaseClassifier):
@@ -195,18 +205,11 @@ class LitTileClassifier(LitBaseClassifier):
 
     supported_features = ["tile"]
 
-    def __init__(self, *, dim_input: int, model_class: type[nn.Module], **kwargs):
-        super().__init__(dim_input=dim_input, model_class=model_class, **kwargs)
-
-        self.vision_transformer: nn.Module = self._build_backbone(
-            model_class, dim_input, len(self.categories), kwargs
-        )
-
     def forward(
         self,
         bags: Bags,
     ) -> Float[Tensor, "batch logit"]:
-        return self.vision_transformer(bags)
+        return self.model(bags)
 
     def _step(
         self,
@@ -221,7 +224,7 @@ class LitTileClassifier(LitBaseClassifier):
             self._mask_from_bags(bags=bags, bag_sizes=bag_sizes) if use_mask else None
         )
 
-        logits = self.vision_transformer(bags, coords=coords, mask=mask)
+        logits = self.model(bags, coords=coords, mask=mask)
 
         loss = nn.functional.cross_entropy(
             logits,
@@ -279,7 +282,7 @@ class LitTileClassifier(LitBaseClassifier):
     ) -> Float[Tensor, "batch logit"]:
         bags, coords, bag_sizes, _ = batch
         # adding a mask here will *drastically* and *unbearably* increase memory usage
-        return self.vision_transformer(bags, coords=coords, mask=None)
+        return self.model(bags, coords=coords, mask=None)
 
     def _mask_from_bags(
         *,
@@ -300,13 +303,6 @@ class LitPatientClassifier(LitBaseClassifier):
     """
 
     supported_features = ["patient"]
-
-    def __init__(self, *, dim_input: int, model_class: type[nn.Module], **kwargs):
-        super().__init__(dim_input=dim_input, model_class=model_class, **kwargs)
-
-        self.model: nn.Module = self._build_backbone(
-            model_class, dim_input, len(self.categories), kwargs
-        )
 
     def forward(self, x: Tensor) -> Tensor:
         return self.model(x)
@@ -374,13 +370,13 @@ class LitBaseRegressor(Base):
     ) -> None:
         super().__init__(dim_input=dim_input, model_class=model_class, **kwargs)
 
-        self.task = "regression"
-
         self.model: nn.Module = self._build_backbone(model_class, dim_input, 1, kwargs)
 
         self.valid_mae = MeanAbsoluteError()
         self.valid_mse = MeanSquaredError()
         self.valid_pearson = PearsonCorrCoef()
+
+        self.hparams["task"] = "regression"
 
     @staticmethod
     def _compute_loss(y_true: Tensor, y_pred: Tensor) -> Loss:
@@ -493,10 +489,11 @@ class LitTileRegressor(LitBaseRegressor):
 
 
 class LitTileSurvival(LitTileRegressor):
+    supported_features = ["tile"]
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-        self.task = "survival"
+        self.hparams["task"] = "survival"
 
     @staticmethod
     def _compute_loss(y_true: Tensor, y_pred: Tensor) -> Loss:

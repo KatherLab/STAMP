@@ -53,6 +53,8 @@ def categorical_crossval_(
     if feature_type == "tile":
         if config.slide_table is None:
             raise ValueError("A slide table is required for tile-level modeling")
+        if config.ground_truth_label is None:
+            raise ValueError("Ground truth label is required for tile-level modeling")
         patient_to_ground_truth: dict[PatientId, GroundTruth] = (
             patient_to_ground_truth_from_clini_table_(
                 clini_table_path=config.clini_table,
@@ -76,6 +78,10 @@ def categorical_crossval_(
             )
         )
     elif feature_type == "patient":
+        if config.ground_truth_label is None:
+            raise ValueError(
+                "Ground truth label is required for patient-level modeling"
+            )
         patient_to_data: Mapping[PatientId, PatientData] = load_patient_level_data(
             clini_table=config.clini_table,
             feature_dir=config.feature_dir,
