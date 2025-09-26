@@ -17,6 +17,7 @@ from torch import Tensor
 from torch.utils.data import DataLoader, Dataset
 
 import stamp
+from stamp.seed import Seed
 from stamp.types import (
     Bags,
     BagSize,
@@ -121,9 +122,48 @@ def tile_bag_dataloader(
         )
         cats_out = []
 
-    # elif task == "survival":
+    elif task == "survival":
+        times: list[float] = []
+        events: list[float] = []
 
-    #     cats_out = []  # survival has no categories
+        for p in patient_data:
+            if p.ground_truth is None:
+                times.append(np.nan)
+                events.append(np.nan)
+                continue
+
+            try:
+                time_str, status_str = p.ground_truth.split(" ", 1)
+
+                # Handle missing values encoded as "nan"
+                if time_str.lower() == "nan":
+                    times.append(np.nan)
+                else:
+                    times.append(float(time_str))
+
+                if status_str.lower() == "nan":
+                    events.append(np.nan)
+                elif status_str.lower() in {"dead", "event", "1"}:
+                    events.append(1.0)
+                elif status_str.lower() in {"alive", "censored", "0"}:
+                    events.append(0.0)
+                else:
+                    events.append(np.nan)  # unknown status → mark missing
+
+            except Exception:
+                times.append(np.nan)
+                events.append(np.nan)
+
+        # Final tensor shape: (N, 2)
+        y = torch.tensor(np.column_stack([times, events]), dtype=torch.float32)
+
+        ds = BagDataset(
+            bags=[patient.feature_files for patient in patient_data],
+            bag_size=bag_size,
+            ground_truths=y,
+            transform=transform,
+        )
+        cats_out: Sequence[Category] = []  # survival has no categories
 
     else:
         raise ValueError(f"Unknown task: {task}")
@@ -137,6 +177,10 @@ def tile_bag_dataloader(
                 shuffle=shuffle,
                 num_workers=num_workers,
                 collate_fn=_collate_to_tuple,
+                worker_init_fn=Seed.get_loader_worker_init()
+                if Seed._is_set()
+                else None,
+                generator=Seed.get_torch_generator() if Seed._is_set() else None,
             ),
         ),
         cats_out,
@@ -511,47 +555,47 @@ def patient_to_ground_truth_from_clini_table_(
     return patient_to_ground_truth
 
 
-# def patient_to_survival_from_clini_table_(
-#     *,
-#     clini_table_path: Path | TextIO,
-#     patient_label: str,
-#     time_label: str,
-#     status_label: str,
-# ) -> dict[PatientId, GroundTruth]:
-#     """
-#     Loads patients and their survival ground truths (time + event) from a clini table.
+def patient_to_survival_from_clini_table_(
+    *,
+    clini_table_path: Path | TextIO,
+    patient_label: str,
+    time_label: str,
+    status_label: str,
+) -> dict[PatientId, GroundTruth]:
+    """
+    Loads patients and their survival ground truths (time + event) from a clini table.
 
-#     Returns
-#     -------
-#     dict[PatientId, GroundTruth]
-#         Mapping patient_id -> "time status" (e.g. "13 alive", "42 dead").
-#     """
-#     clini_df = pd.read_table(
-#         clini_table_path,
-#         usecols=[patient_label, time_label, status_label],
-#         dtype=str,
-#     ).dropna()
+    Returns
+    -------
+    dict[PatientId, GroundTruth]
+        Mapping patient_id -> "time status" (e.g. "13 alive", "42 dead").
+    """
+    clini_df = read_table(
+        clini_table_path,
+        usecols=[patient_label, time_label, status_label],
+        dtype=str,
+    ).dropna()
 
-#     try:
-#         patient_to_ground_truth: dict[PatientId, GroundTruth] = (
-#             clini_df.set_index(patient_label, verify_integrity=True)[
-#                 [time_label, status_label]
-#             ]
-#             .apply(lambda row: f"{row[time_label]} {row[status_label]}", axis=1)
-#             .to_dict()
-#         )
-#     except KeyError as e:
-#         missing = [
-#             col
-#             for col in [patient_label, time_label, status_label]
-#             if col not in clini_df
-#         ]
-#         raise ValueError(
-#             f"Missing columns in clini table: {missing}. "
-#             f"Available: {list(clini_df.columns)}"
-#         ) from e
+    try:
+        patient_to_ground_truth: dict[PatientId, GroundTruth] = (
+            clini_df.set_index(patient_label, verify_integrity=True)[
+                [time_label, status_label]
+            ]
+            .apply(lambda row: f"{row[time_label]} {row[status_label]}", axis=1)
+            .to_dict()
+        )
+    except KeyError as e:
+        missing = [
+            col
+            for col in [patient_label, time_label, status_label]
+            if col not in clini_df
+        ]
+        raise ValueError(
+            f"Missing columns in clini table: {missing}. "
+            f"Available: {list(clini_df.columns)}"
+        ) from e
 
-#     return patient_to_ground_truth
+    return patient_to_ground_truth
 
 
 def slide_to_patient_from_slide_table_(

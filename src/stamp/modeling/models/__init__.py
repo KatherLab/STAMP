@@ -3,7 +3,7 @@
 import inspect
 from abc import ABC
 from collections.abc import Iterable, Sequence
-from typing import ClassVar, TypeAlias
+from typing import TypeAlias
 
 import lightning
 import numpy as np

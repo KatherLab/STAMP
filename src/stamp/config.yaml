@@ -277,6 +277,8 @@ patient_encoding:
 
 
 advanced_config:
+  # Optional random seed
+  # seed: 42
   task: "classification"
   max_epochs: 32
   patience: 16

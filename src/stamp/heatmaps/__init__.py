@@ -35,25 +35,26 @@ def _gradcam_per_category(
     feats: Float[Tensor, "tile feat"],
     coords: Float[Tensor, "tile 2"],
 ) -> Float[Tensor, "tile category"]:
-    feat = -1  # feats dimension
+    feat_dim = -1
 
-    return (
+    cam = (
         (
             feats
             * jacrev(
-                lambda bags: torch.softmax(
-                    model.forward(
-                        bags=bags.unsqueeze(0),
-                        coords=coords.unsqueeze(0),
-                        mask=None,
-                    ),
-                    dim=1,
+                lambda bags: model.forward(
+                    bags=bags.unsqueeze(0),
+                    coords=coords.unsqueeze(0),
+                    mask=None,
                 ).squeeze(0)
             )(feats)
         )
-        .mean(feat)  # type: ignore
+        .mean(feat_dim)  # type: ignore
         .abs()
-    ).permute(-1, -2)
+    )
+
+    cam = torch.softmax(cam, dim=-1)
+
+    return cam.permute(-1, -2)
 
 
 def _vals_to_im(

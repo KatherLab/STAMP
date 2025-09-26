@@ -140,4 +140,5 @@ class AdvancedConfig(BaseModel):
         description='Optional. "vit" or "mlp" are defaults based on feature type.',
     )
     model_params: ModelParams
+    seed: int | None = None
     task: Task
