@@ -52,9 +52,7 @@ class Seed:
     def get_torch_generator(cls, device="cpu") -> Generator:
         seed = cls.seed
         if seed is None:
-            raise RuntimeError(
-                "Seed has not been set. Call Seed.set(seed) before requesting a generator."
-            )
+            raise RuntimeError("Seed has not been set.")
         g = torch.Generator(device)
         g.manual_seed(seed)
         return g
