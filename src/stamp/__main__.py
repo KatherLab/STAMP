@@ -78,7 +78,8 @@ def _run_cli(args: argparse.Namespace) -> None:
                 "using the following configuration:\n"
                 f"{yaml.dump(config.preprocessing.model_dump(mode='json'))}"
             )
-            extract_(
+            _logger.info("Starting preprocessing...")
+            summary = extract_(
                 output_dir=config.preprocessing.output_dir,
                 wsi_dir=config.preprocessing.wsi_dir,
                 wsi_list=config.preprocessing.wsi_list,
@@ -94,6 +95,11 @@ def _run_cli(args: argparse.Namespace) -> None:
                 cache_tiles_ext=config.preprocessing.cache_tiles_ext,
                 generate_hash=config.preprocessing.generate_hash,
             )
+            _logger.info("preprocessing finished.")
+            _logger.info(
+                f"Slides processed: {summary['processed']}, "
+                f"failed: {summary['failed']}, skipped: {summary['skipped']}"
+            )
 
         case "encode_slides":
             from stamp.encoding import init_slide_encoder_
@@ -106,13 +112,19 @@ def _run_cli(args: argparse.Namespace) -> None:
                 "using the following configuration:\n"
                 f"{yaml.dump(config.slide_encoding.model_dump(mode='json'))}"
             )
-            init_slide_encoder_(
+            _logger.info("Starting slide encoding...")
+            summary = init_slide_encoder_(
                 encoder=config.slide_encoding.encoder,
                 output_dir=config.slide_encoding.output_dir,
                 feat_dir=config.slide_encoding.feat_dir,
                 device=config.slide_encoding.device,
                 agg_feat_dir=config.slide_encoding.agg_feat_dir,
                 generate_hash=config.slide_encoding.generate_hash,
+            )
+            _logger.info("slide encoding finished.")
+            _logger.info(
+                f"Slides processed: {summary['processed']}, "
+                f"failed: {summary['failed']}, skipped: {summary['skipped']}"
             )
 
         case "encode_patients":
@@ -126,7 +138,8 @@ def _run_cli(args: argparse.Namespace) -> None:
                 "using the following configuration:\n"
                 f"{yaml.dump(config.patient_encoding.model_dump(mode='json'))}"
             )
-            init_patient_encoder_(
+            _logger.info("Starting patient encoding...")
+            summary = init_patient_encoder_(
                 encoder=config.patient_encoding.encoder,
                 output_dir=config.patient_encoding.output_dir,
                 feat_dir=config.patient_encoding.feat_dir,
@@ -136,6 +149,11 @@ def _run_cli(args: argparse.Namespace) -> None:
                 device=config.patient_encoding.device,
                 agg_feat_dir=config.patient_encoding.agg_feat_dir,
                 generate_hash=config.patient_encoding.generate_hash,
+            )
+            _logger.info("patient encoding finished.")
+            _logger.info(
+                f"Patients processed: {summary['processed']}, "
+                f"failed: {summary['failed']}, skipped: {summary['skipped']}"
             )
 
         case "train":
@@ -149,10 +167,12 @@ def _run_cli(args: argparse.Namespace) -> None:
                 "using the following configuration:\n"
                 f"{yaml.dump(config.training.model_dump(mode='json'))}"
             )
+            _logger.info("Starting training...")
 
             train_categorical_model_(
                 config=config.training, advanced=config.advanced_config
             )
+            _logger.info("Training finished.")
 
         case "deploy":
             from stamp.modeling.deploy import deploy_categorical_model_
@@ -165,6 +185,7 @@ def _run_cli(args: argparse.Namespace) -> None:
                 "using the following configuration:\n"
                 f"{yaml.dump(config.deployment.model_dump(mode='json'))}"
             )
+            _logger.info("Starting deployment...")
             deploy_categorical_model_(
                 output_dir=config.deployment.output_dir,
                 checkpoint_paths=config.deployment.checkpoint_paths,
@@ -177,6 +198,7 @@ def _run_cli(args: argparse.Namespace) -> None:
                 num_workers=config.deployment.num_workers,
                 accelerator=config.deployment.accelerator,
             )
+            _logger.info("Deployment finished...")
 
         case "crossval":
             from stamp.modeling.crossval import categorical_crossval_
@@ -189,11 +211,13 @@ def _run_cli(args: argparse.Namespace) -> None:
                 "using the following configuration:\n"
                 f"{yaml.dump(config.crossval.model_dump(mode='json'))}"
             )
-
+            
+            _logger.info("Starting crossval...")
             categorical_crossval_(
                 config=config.crossval,
                 advanced=config.advanced_config,
             )
+            _logger.info("Crossval finished...")
 
         case "statistics":
             from stamp.statistics import compute_stats_
@@ -224,6 +248,7 @@ def _run_cli(args: argparse.Namespace) -> None:
                 "using the following configuration:\n"
                 f"{yaml.dump(config.heatmaps.model_dump(mode='json'))}"
             )
+            _logger.info("Starting heatmap generation...")
             heatmaps_(
                 feature_dir=config.heatmaps.feature_dir,
                 wsi_dir=config.heatmaps.wsi_dir,
@@ -236,6 +261,7 @@ def _run_cli(args: argparse.Namespace) -> None:
                 default_slide_mpp=config.heatmaps.default_slide_mpp,
                 opacity=config.heatmaps.opacity,
             )
+            _logger.info("Heatmaps finished...")
 
         case _:
             raise RuntimeError(

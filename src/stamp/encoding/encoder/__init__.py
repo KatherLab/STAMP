@@ -44,9 +44,12 @@ class Encoder(ABC):
         device: DeviceLikeType,
         generate_hash: bool,
         **kwargs,
-    ) -> None:
+    ) -> dict:
         """General method for encoding slide-level features. Called by init_slide_encoder_.
         Override this function if coords are required. See init_slide_encoder_ for full description"""
+        processed = 0
+        failed = 0
+        skipped = 0
         # generate the name for the folder containing the feats
         if generate_hash:
             encode_dir = f"{self.identifier}-slide-{get_processing_code_hash(Path(__file__))[:8]}"
@@ -71,12 +74,14 @@ class Encoder(ABC):
                 _logger.info(
                     f"skipping {str(slide_name)} because {output_path} already exists"
                 )
+                skipped += 1
                 continue
 
             try:
                 feats, coords = self._validate_and_read_features(h5_path)
             except ValueError as e:
                 tqdm.write(s=str(e))
+                failed += 1
                 continue
 
             slide_embedding = self._generate_slide_embedding(
@@ -85,6 +90,8 @@ class Encoder(ABC):
             self._save_features_(
                 output_path=output_path, feats=slide_embedding, feat_type="slide"
             )
+            processed += 1
+        return {"processed": processed, "failed": failed, "skipped": skipped}
 
     def encode_patients_(
         self,
@@ -96,9 +103,12 @@ class Encoder(ABC):
         device: DeviceLikeType,
         generate_hash: bool,
         **kwargs,
-    ) -> None:
+    ) -> dict:
         """General method for encoding patient-level features. Called by init_patient_encoder_.
         Override this function if coords are required. See init_patient_encoder_ for full description"""
+        processed = 0
+        failed = 0
+        skipped = 0
         # generate the name for the folder containing the feats
         if generate_hash:
             encode_dir = (
@@ -126,26 +136,33 @@ class Encoder(ABC):
                 _logger.info(
                     f"skipping {str(patient_id)} because {output_path} already exists"
                 )
+                skipped += 1
                 continue
 
             feats_list = []
+            try: 
+                for _, row in group.iterrows():
+                    slide_filename = row[filename_label]
+                    h5_path = os.path.join(feat_dir, slide_filename)
+                    feats, _ = self._validate_and_read_features(h5_path)
+                    feats_list.append(feats)
 
-            for _, row in group.iterrows():
-                slide_filename = row[filename_label]
-                h5_path = os.path.join(feat_dir, slide_filename)
-                feats, _ = self._validate_and_read_features(h5_path)
-                feats_list.append(feats)
+                if not feats_list:
+                    tqdm.write(f"No features found for patient {patient_id}, skipping.")
+                    skipped += 1
+                    continue
 
-            if not feats_list:
-                tqdm.write(f"No features found for patient {patient_id}, skipping.")
+                patient_embedding = self._generate_patient_embedding(
+                    feats_list, device, **kwargs
+                )
+                self._save_features_(
+                    output_path=output_path, feats=patient_embedding, feat_type="patient"
+                )
+                processed += 1
+            except Exception as e:
+                tqdm.write(f"Failed to process patient {patient_id}: {e}")
+                failed += 1
                 continue
-
-            patient_embedding = self._generate_patient_embedding(
-                feats_list, device, **kwargs
-            )
-            self._save_features_(
-                output_path=output_path, feats=patient_embedding, feat_type="patient"
-            )
 
     @abstractmethod
     def _generate_slide_embedding(

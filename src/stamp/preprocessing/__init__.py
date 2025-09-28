@@ -131,7 +131,7 @@ def extract_(
     brightness_cutoff: int | None,
     canny_cutoff: float | None,
     generate_hash: bool,
-) -> None:
+) -> dict[str, int]:
     """
     Extracts features from slides.
     Build in a fail-safe way, i.e. slides for which feature extraction triggers an exception
@@ -142,6 +142,9 @@ def extract_(
             If not `None`, ignore the slide metadata MPP, instead replacing it with this value.
             Useful for slides without metadata.
     """
+    processed = 0
+    skipped = 0
+    failed = 0
     match extractor:
         case ExtractorName.CTRANSPATH:
             from stamp.preprocessing.extractor.ctranspath import ctranspath
@@ -274,6 +277,7 @@ def extract_(
             _logger.debug(
                 f"skipping {slide_path} because {feature_output_path} already exists"
             )
+            skipped += 1
             continue
 
         feature_output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -306,13 +310,16 @@ def extract_(
                 "failed to extract MPP from slide. "
                 "You can try manually setting it by adding `preprocessing.default_slide_mpp = <MPP>` "
             )
+            failed += 1
             continue
         except Exception:
             _logger.exception(f"error while extracting features from {slide_path}")
+            failed += 1
             continue
 
         if len(feats) == 0:
             _logger.info(f"no tiles found in {slide_path}, skipping")
+            skipped += 1
             continue
 
         coords = torch.stack([torch.concat(xs_um), torch.concat(ys_um)], dim=1).numpy()
@@ -341,6 +348,7 @@ def extract_(
 
             Path(tmp_h5_file.name).rename(feature_output_path)
             _logger.debug(f"saved features to {feature_output_path}")
+            processed += 1
 
         # Save rejection thumbnail
         thumbnail_path = feat_output_dir / slide_path.relative_to(wsi_dir).with_suffix(
@@ -354,6 +362,8 @@ def extract_(
             tile_size_um=tile_size_um,
             default_slide_mpp=default_slide_mpp,
         ).convert("RGB").save(thumbnail_path)
+
+    return {"processed": processed, "failed": failed, "skipped": skipped}
 
 
 def _get_rejection_thumb(
