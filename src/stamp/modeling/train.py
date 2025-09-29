@@ -280,10 +280,14 @@ def setup_dataloaders_for_training(
             "patient_to_data must have a ground truth defined for all targets!"
         )
 
+    stratify = (
+        None if task == "survival" else ground_truths
+    )  # survival does not need stratified split
+
     train_patients, valid_patients = cast(
         tuple[Sequence[PatientId], Sequence[PatientId]],
         train_test_split(
-            list(patient_to_data), stratify=ground_truths, shuffle=True, random_state=0
+            list(patient_to_data), stratify=stratify, shuffle=True, random_state=0
         ),
     )
 

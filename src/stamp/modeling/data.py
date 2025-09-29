@@ -187,13 +187,37 @@ def tile_bag_dataloader(
     )
 
 
+# def _collate_to_tuple(
+#     items: list[tuple[_Bag, _Coordinates, BagSize, _EncodedTarget]],
+# ) -> tuple[Bags, CoordinatesBatch, BagSizes, EncodedTargets]:
+#     bags = torch.stack([bag for bag, _, _, _ in items])
+#     coords = torch.stack([coord for _, coord, _, _ in items])
+#     bag_sizes = torch.tensor([bagsize for _, _, bagsize, _ in items])
+#     encoded_targets = torch.stack([encoded_target for _, _, _, encoded_target in items])
+
+
+#     return (bags, coords, bag_sizes, encoded_targets)
 def _collate_to_tuple(
     items: list[tuple[_Bag, _Coordinates, BagSize, _EncodedTarget]],
 ) -> tuple[Bags, CoordinatesBatch, BagSizes, EncodedTargets]:
     bags = torch.stack([bag for bag, _, _, _ in items])
     coords = torch.stack([coord for _, coord, _, _ in items])
     bag_sizes = torch.tensor([bagsize for _, _, bagsize, _ in items])
-    encoded_targets = torch.stack([encoded_target for _, _, _, encoded_target in items])
+
+    targets = [et for _, _, _, et in items]
+
+    # Normalize target shapes
+    fixed_targets = []
+    for et in targets:
+        et = torch.as_tensor(et)
+        if et.ndim == 0:  # scalar → (1,)
+            et = et.unsqueeze(0)
+        elif et.ndim > 1:  # e.g. (1,2) → (2,)
+            et = et.view(-1)
+        fixed_targets.append(et)
+
+    # Stack into (B, D)
+    encoded_targets = torch.stack(fixed_targets)
 
     return (bags, coords, bag_sizes, encoded_targets)
 
@@ -371,16 +395,6 @@ class BagDataset(Dataset[tuple[_Bag, _Coordinates, BagSize, _EncodedTarget]]):
                 len(feats),
                 self.ground_truths[index],
             )
-
-
-# class BagDatasetClassification(BagDataset):
-#     ground_truths: Bool[Tensor, "index category_is_hot"]
-#     """The ground truth for each bag, one-hot encoded."""
-
-
-# class BagDatasetRegression(BagDataset):
-#     ground_truths: Float[Tensor, "index 1"]
-#     """float tensor of shape [N, 1]."""
 
 
 class PatientFeatureDataset(Dataset):
@@ -616,6 +630,13 @@ def slide_to_patient_from_slide_table_(
         usecols=[patient_label, filename_label],
         dtype=str,
     )
+
+    # Verify the slide table contains a feature path with .h5 extension by
+    # checking the filename_label. Auto-fix if missing.
+    for i, x in enumerate(slide_df[filename_label]):
+        if not str(x).endswith(".h5"):
+            slide_df.at[i, filename_label] = str(x) + ".h5"
+
     # Verify the slide table contains a feature path with .h5 extension by
     # checking the filename_label.
     for x in slide_df[filename_label]:

@@ -497,23 +497,63 @@ class LitTileSurvival(LitTileRegressor):
 
     @staticmethod
     def _compute_loss(y_true: Tensor, y_pred: Tensor) -> Loss:
-        # cox loss
-        time_value = torch.squeeze(y_true[0:, 0])
-        event = torch.squeeze(y_true[0:, 1]).type(torch.bool)
-        score = torch.squeeze(y_pred)
+        # Expect y_true shape (B, 2): (time, event)
+        if y_true.ndim == 1:
+            y_true = y_true.unsqueeze(0)
 
-        ix = torch.where(event)[0]
+        times = y_true[:, 0]
+        events = y_true[:, 1].bool()
+        scores = y_pred.squeeze(-1)  # (B,)
 
-        sel_time = time_value[ix]
-        sel_mat = (
-            sel_time.unsqueeze(1)
-            .expand(1, sel_time.size()[0], time_value.size()[0])
-            .squeeze()
-            <= time_value
-        ).float()
+        # Sort patients by descending time (Cox risk sets)
+        order = torch.argsort(times, descending=True)
+        times = times[order]
+        events = events[order]
+        scores = scores[order]
 
-        p_lik = score[ix] - torch.log(torch.sum(sel_mat * torch.exp(score), dim=-1))
+        # Numerical stabilizer
+        scores = scores - scores.max()
 
-        loss = -torch.mean(p_lik)
+        # Log of cumulative risk set sums
+        log_risk = torch.logcumsumexp(scores, dim=0)
 
+        # Contribution per event
+        per_event = scores - log_risk
+
+        if events.any():
+            loss = -(per_event[events].mean())
+        else:
+            # No events in batch → return 0 (gradient 0)
+            loss = scores.new_tensor(0.0, requires_grad=True)
+
+        return loss
+
+    def _step(
+        self,
+        *,
+        batch: tuple[Bags, CoordinatesBatch, BagSizes, EncodedTargets],
+        step_name: str,
+        use_mask: bool,
+    ) -> Loss:
+        bags, coords, bag_sizes, targets = batch
+
+        mask = (
+            self._mask_from_bags(bags=bags, bag_sizes=bag_sizes) if use_mask else None
+        )
+
+        preds = self.model(bags, coords=coords, mask=mask)  # (B, 1)
+        y = targets.to(device=preds.device, dtype=torch.float32)  # (B, 2)
+
+        assert y.ndim == 2 and y.shape[1] == 2, f"Expected (B,2), got {y.shape}"
+
+        loss = self._compute_loss(y, preds)
+
+        self.log(
+            f"{step_name}_loss",
+            loss,
+            on_step=False,
+            on_epoch=True,
+            prog_bar=True,
+            sync_dist=True,
+        )
         return loss

@@ -255,38 +255,6 @@ def _predict(
     return dict(zip(patient_ids, predictions, strict=True))
 
 
-# def _to_prediction_df(
-#     *,
-#     categories: Sequence[GroundTruth],
-#     patient_to_ground_truth: Mapping[PatientId, GroundTruth | None],
-#     predictions: Mapping[PatientId, torch.Tensor],
-#     patient_label: PandasLabel,
-#     ground_truth_label: PandasLabel,
-# ) -> pd.DataFrame:
-#     """Compiles deployment results into a DataFrame."""
-#     return pd.DataFrame(
-#         [
-#             {
-#                 patient_label: patient_id,
-#                 ground_truth_label: patient_to_ground_truth.get(patient_id),
-#                 "pred": categories[int(prediction.argmax())],
-#                 **{
-#                     f"{ground_truth_label}_{category}": prediction[i_cat].item()
-#                     for i_cat, category in enumerate(categories)
-#                 },
-#                 "loss": (
-#                     torch.nn.functional.cross_entropy(
-#                         prediction.reshape(1, -1),
-#                         torch.tensor(np.where(np.array(categories) == ground_truth)[0]),
-#                     ).item()
-#                     if (ground_truth := patient_to_ground_truth.get(patient_id))
-#                     is not None
-#                     else None
-#                 ),
-#             }
-#             for patient_id, prediction in predictions.items()
-#         ]
-#     ).sort_values(by="loss")
 def _to_prediction_df(
     *,
     categories: Sequence[GroundTruth],
@@ -295,14 +263,44 @@ def _to_prediction_df(
     patient_label: PandasLabel,
     ground_truth_label: PandasLabel,
 ) -> pd.DataFrame:
+    """Compiles deployment results into a DataFrame."""
+    return pd.DataFrame(
+        [
+            {
+                patient_label: patient_id,
+                ground_truth_label: patient_to_ground_truth.get(patient_id),
+                "pred": categories[int(prediction.argmax())],
+                **{
+                    f"{ground_truth_label}_{category}": prediction[i_cat].item()
+                    for i_cat, category in enumerate(categories)
+                },
+                "loss": (
+                    torch.nn.functional.cross_entropy(
+                        prediction.reshape(1, -1),
+                        torch.tensor(np.where(np.array(categories) == ground_truth)[0]),
+                    ).item()
+                    if (ground_truth := patient_to_ground_truth.get(patient_id))
+                    is not None
+                    else None
+                ),
+            }
+            for patient_id, prediction in predictions.items()
+        ]
+    ).sort_values(by="loss")
+
+
+def _to_regression_prediction_df(
+    *,
+    patient_to_ground_truth: Mapping[PatientId, GroundTruth | None],
+    predictions: Mapping[PatientId, torch.Tensor],
+    patient_label: PandasLabel,
+    ground_truth_label: PandasLabel,
+) -> pd.DataFrame:
     """Compiles deployment results into a DataFrame.
     Works for:
-      - classification: prediction has shape [C] (one logit/prob per class)
       - regression:     prediction has shape [1] (single scalar)
     """
     rows: list[dict] = []
-    cats_arr = np.array(list(categories))
-    num_classes = len(cats_arr)
 
     for patient_id, pred in predictions.items():
         pred = pred.detach().flatten()  # [C] or [1]
@@ -313,36 +311,7 @@ def _to_prediction_df(
             ground_truth_label: gt,
         }
 
-        if pred.numel() == num_classes and num_classes > 0:
-            # Classification
-            # Use softmax for readable per-class scores; keep logits for CE.
-            logits = pred
-            probs = torch.softmax(logits, dim=0)
-
-            # predicted category name
-            row["pred"] = categories[int(probs.argmax().item())]
-
-            # per-class probability columns
-            for i_cat, category in enumerate(categories):
-                row[f"{ground_truth_label}_{category}"] = float(probs[i_cat].item())
-
-            # CE loss only if GT is present and inside categories
-            if gt is not None:
-                # find index of ground-truth in categories
-                matches = (cats_arr == gt).nonzero()[0]
-                if matches.size > 0:
-                    target_idx = int(matches[0])
-                    target = torch.tensor(
-                        [target_idx], dtype=torch.long, device=logits.device
-                    )
-                    loss = torch.nn.functional.cross_entropy(logits.view(1, -1), target)
-                    row["loss"] = float(loss.item())
-                else:
-                    row["loss"] = None
-            else:
-                row["loss"] = None
-
-        elif pred.numel() == 1:
+        if pred.numel() == 1:
             # Regression
             row["pred"] = float(pred.item())
             row["loss"] = None  # no CE in regression
@@ -361,3 +330,54 @@ def _to_prediction_df(
         df = df.sort_values(by="loss", na_position="last")
 
     return df
+
+def _to_survival_prediction_df(
+    *,
+    patient_to_ground_truth: Mapping[PatientId, GroundTruth | None],
+    predictions: Mapping[PatientId, torch.Tensor],
+    patient_label: PandasLabel,
+) -> pd.DataFrame:
+    """Compiles deployment results into a DataFrame for survival analysis.
+
+    Ground truth values should be either:
+      - a string "time status" (e.g. "302 dead"), or
+      - a tuple/list (time, event).
+
+    Predictions are assumed to be risk scores (Cox model), shape [1].
+    """
+    rows: list[dict] = []
+
+    for patient_id, pred in predictions.items():
+        pred = pred.detach().flatten()
+
+        gt = patient_to_ground_truth.get(patient_id)
+
+        row: dict = {patient_label: patient_id}
+
+        # Prediction: risk score
+        if pred.numel() == 1:
+            row["pred_risk"] = float(pred.item())
+        else:
+            row["pred_risk"] = pred.cpu().tolist()
+
+        # Ground truth: time + event
+        if gt is not None:
+            if isinstance(gt, str) and " " in gt:
+                time_str, status_str = gt.split(" ", 1)
+                row["time"] = float(time_str) if time_str.lower() != "nan" else None
+                if status_str.lower() in {"dead", "event", "1"}:
+                    row["event"] = 1
+                elif status_str.lower() in {"alive", "censored", "0"}:
+                    row["event"] = 0
+                else:
+                    row["event"] = None
+            elif isinstance(gt, (tuple, list)) and len(gt) == 2:
+                row["time"], row["event"] = gt
+            else:
+                row["time"], row["event"] = None, None
+        else:
+            row["time"], row["event"] = None, None
+
+        rows.append(row)
+
+    return pd.DataFrame(rows)
