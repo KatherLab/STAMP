@@ -23,13 +23,19 @@ mcp = FastMCP("STAMP MCP Server")
 
 STAMP_LOGGER = logging.getLogger("stamp")
 # TODO: add proper filesystem management
+# The idea would be to send thw safe workspace via HTTP Headers or roots
+# if OpenAI Agents SDK already implemented it.
+# Check docs for more info.
 WORKSPACE_FOLDER = "./"  # Folder where the agent can work on.
 WORKSPACE_PATH = Path(WORKSPACE_FOLDER).resolve()
 # List of additional allowed paths outside workspace
 ALLOWED_EXTERNAL_PATHS = [
     "/mnt/bulk-curie/peter/fmbenchmark/images/tcga_crc",
     "/mnt/bulk-curie/peter/fmbenchmark/20mag_experiments/features/tcga_crc/ctranspath/STAMP_raw_xiyuewang-ctranspath-7c998680",
-    "/mnt/bulk-sirius/juan/pap_screening/datasets/example/wsi_small"
+    "/mnt/copernicus3/PATHOLOGY/others/public/CPTAC/features/features-20x/virchow2/CPTAC-CCRCC/virchow2-stamp-maru-21-12-24",
+    "/mnt/copernicus3/PATHOLOGY/others/public/CPTAC/CPTAC-CCRCC/data",
+    "/mnt/copernicus3/PATHOLOGY/others/public/CPTAC/CPTAC-BRCA/features-STAMP/conch1_5-778e1572",
+    "/mnt/copernicus3/PATHOLOGY/others/public/CPTAC/CPTAC-BRCA/data",
     # Add other specific paths you want to allow
 ]
 MAX_ITEMS = 100  # Max amount of files listed with list_files tool.
@@ -41,7 +47,7 @@ class MCPLogHandler(logging.Handler):
         super().__init__()
         self.ctx = ctx
         self.loop = loop
-        self.captured_logs = [] # FIXME: Implement so the agent can see the logs when finished. Logging is viewed by the user only.
+        self.captured_logs = []  # FIXME: Implement so the agent can see the logs when finished. Logging is viewed by the user only.
 
     def emit(self, record: logging.LogRecord) -> None:
         msg = self.format(record)
@@ -53,7 +59,6 @@ class MCPLogHandler(logging.Handler):
             # self.loop.call_soon_threadsafe(self.loop.create_task, self.ctx.log(msg))
         except Exception:
             self.handleError(record)
-
 
 
 async def _run_stamp(mode, config, ctx):
@@ -726,21 +731,64 @@ async def encode_patients_stamp(
 
 
 def _resolve_path(subpath: str) -> Path:
-    requested = Path(subpath).resolve()
-    
-    # Check if it's within workspace
-    if WORKSPACE_PATH in requested.parents or requested == WORKSPACE_PATH:
-        return requested
-    
-    # Check if it's in allowed external paths
-    for allowed_path in ALLOWED_EXTERNAL_PATHS:
-        allowed_path = Path(allowed_path).resolve()
-        # Check both: exact match OR if allowed_path is a parent of requested
-        if requested == allowed_path or allowed_path in requested.parents:
-            return requested
-    
-    # If not allowed, raise error
-    raise PermissionError(f"Access denied: {subpath}")
+    """
+    Resolve path with security checks:
+    - Paths starting with /mnt/, /tmp/, /home/, etc. are treated as external absolute paths
+    - All other paths (including /tables, /data, etc.) are treated as workspace-relative
+    """
+    requested = Path(subpath)
+
+    # Check if it's a true external absolute path (starting with known system roots)
+    external_roots = [
+        "/mnt/",
+        "/tmp/",
+        "/home/",
+        "/usr/",
+        "/var/",
+        "/opt/",
+        "/etc/",
+        "/root/",
+        "/boot/",
+        "/sys/",
+        "/proc/",
+        "/dev/",
+    ]
+    is_external_absolute = any(subpath.startswith(root) for root in external_roots)
+
+    if is_external_absolute:
+        # This is a true external absolute path - check against allowed external paths
+        requested_resolved = requested.resolve()
+
+        # Check if it's in allowed external paths
+        for allowed_path in ALLOWED_EXTERNAL_PATHS:
+            allowed_path = Path(allowed_path).resolve()
+            # Check both: exact match OR if allowed_path is a parent of requested
+            if (
+                requested_resolved == allowed_path
+                or allowed_path in requested_resolved.parents
+            ):
+                return requested_resolved
+
+        # If not in allowed external paths, raise error
+        raise PermissionError(f"Access denied to external absolute path: {subpath}")
+
+    else:
+        # Treat as workspace-relative (including paths like /tables, /data, etc.)
+        # Remove leading slash if present to make it clearly relative
+        clean_path = subpath.lstrip("/")
+        requested_resolved = (WORKSPACE_PATH / clean_path).resolve()
+
+        # Check if resolved path is within workspace
+        if (
+            WORKSPACE_PATH in requested_resolved.parents
+            or requested_resolved == WORKSPACE_PATH
+        ):
+            return requested_resolved
+
+        # If not within workspace, raise error
+        raise PermissionError(
+            f"Access denied: path {subpath} resolves outside workspace"
+        )
 
 
 @mcp.tool
@@ -754,7 +802,7 @@ async def read_file(ctx: Context, path: str) -> str:
     Returns:
         str: Content of the file.
     """
-    await ctx.info(f"Starting read_file tool...")
+    await ctx.info("Starting read_file tool...")
     safe_path = _resolve_path(path)
     with open(safe_path, "r", encoding="utf-8") as f:
         return f.read()
@@ -773,7 +821,7 @@ async def list_files(ctx: Context, subdir: str = "") -> str:
     Returns:
         str: Formatted list of files/directories or summary information.
     """
-    await ctx.info(f"Starting list_files tool...")
+    await ctx.info("Starting list_files tool...")
     subdir_path = _resolve_path(subdir) if subdir else WORKSPACE_PATH
     if not subdir_path.is_dir():
         raise FileNotFoundError(f"Subdirectory does not exist: {subdir}")
@@ -812,13 +860,17 @@ async def list_files(ctx: Context, subdir: str = "") -> str:
     if len(all_items) <= MAX_ITEMS:
         return "\n".join(sorted(all_items))
 
-    # Try directory summary instead
+    # Try directory summary instead with sample files
     dir_summary = []
+    sample_files_per_dir = 5  # Show up to 5 sample files per directory
+
     for dir_path, info in sorted(directories.items()):
         if not dir_path:  # Root directory
             dir_display = "/ (root)"
+            current_dir = WORKSPACE_PATH
         else:
             dir_display = f"{dir_path}/"
+            current_dir = WORKSPACE_PATH / dir_path
 
         # File type summary
         if info["file_count"] > 0:
@@ -836,6 +888,27 @@ async def list_files(ctx: Context, subdir: str = "") -> str:
             subdir_info = ""
 
         dir_summary.append(f"{dir_display}{file_summary}{subdir_info}")
+
+        # Add sample files from this directory
+        if info["file_count"] > 0:
+            try:
+                # Get sample files from this specific directory (not recursive)
+                sample_files = []
+                if current_dir.exists() and current_dir.is_dir():
+                    for item in sorted(current_dir.iterdir()):
+                        if item.is_file() and len(sample_files) < sample_files_per_dir:
+                            rel_path = str(item.relative_to(WORKSPACE_PATH))
+                            sample_files.append(f"  • {rel_path}")
+
+                    if sample_files:
+                        dir_summary.extend(sample_files)
+                        if info["file_count"] > sample_files_per_dir:
+                            dir_summary.append(
+                                f"  ... and {info['file_count'] - len(sample_files)} more files"
+                            )
+            except Exception:
+                # If we can't read the directory, just skip the sample files
+                pass
 
     # If directory summary is still too long, truncate
     if len(dir_summary) > MAX_ITEMS:
@@ -889,7 +962,7 @@ async def analyze_csv(ctx: Context, path: str) -> str:
     Returns:
         str: Detailed information about the CSV including dimensions, columns, and sample data.
     """
-    await ctx.info(f"Starting analyze_csv tool...")
+    await ctx.info("Starting analyze_csv tool...")
     safe_path = _resolve_path(path)
 
     if not safe_path.exists():
@@ -948,7 +1021,7 @@ async def list_column_values(ctx: Context, path: str, column_name: str) -> str:
     Returns:
         str: Information about the unique values in the specified column.
     """
-    await ctx.info(f"Starting list_column_values tool...")
+    await ctx.info("Starting list_column_values tool...")
     safe_path = _resolve_path(path)
 
     if not safe_path.exists():
@@ -1020,7 +1093,7 @@ async def check_available_devices(ctx: Context) -> str:
     Returns:
         A string describing the available devices.
     """
-    await ctx.info(f"Starting check_available_devices tool...")
+    await ctx.info("Starting check_available_devices tool...")
     devices = []
 
     # Check for CUDA availability
@@ -1039,14 +1112,6 @@ async def check_available_devices(ctx: Context) -> str:
         return f"Available devices: {', '.join(devices)}"
     else:
         return "No computation devices are available."
-    
-
-@mcp.tool
-async def ping_logs(ctx: Context) -> str:
-    await ctx.info("ping_logs: starting")
-    await ctx.warning("ping_logs: still working…")
-    await ctx.info("ping_logs: done")
-    return "pong"
 
 
 if __name__ == "__main__":
