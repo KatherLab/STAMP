@@ -101,28 +101,12 @@ class LinearModelParams(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
 
-class LinearRegressorModelParams(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-
-
-class MLPRegressorModelParams(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-    dim_hidden: int = 512
-    num_layers: int = 2
-    dropout: float = 0.25
-
-
 class ModelParams(BaseModel):
     model_config = ConfigDict(extra="forbid")
-    # Tile level models
     vit: VitModelParams
     trans_mil: TransMILModelParams | None = None
-    # Patient level models
     mlp: MlpModelParams
     linear: LinearModelParams | None = None
-    # Regression
-    linear_regressor: LinearRegressorModelParams | None = None
-    mlp_regressor: MLPRegressorModelParams | None = None
 
 
 class AdvancedConfig(BaseModel):
