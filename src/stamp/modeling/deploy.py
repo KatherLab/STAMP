@@ -242,15 +242,23 @@ def _predict(
         devices=1,  # Needs to be 1, otherwise half the predictions are missing for some reason
         logger=False,
     )
-    predictions = torch.softmax(
-        torch.concat(
-            cast(
-                list[torch.Tensor],
-                trainer.predict(model, test_dl),
-            )
-        ),
-        dim=1,
-    )
+    # predictions = torch.softmax(
+    #     torch.concat(
+    #         cast(
+    #             list[torch.Tensor],
+    #             trainer.predict(model, test_dl),
+    #         )
+    #     ),
+    #     dim=1,
+    # )
+    raw_preds = torch.concat(cast(list[torch.Tensor], trainer.predict(model, test_dl)))
+
+    if getattr(model.hparams, "task", None) == "classification":
+        predictions = torch.softmax(raw_preds, dim=1)
+    elif getattr(model.hparams, "task", None) == "survival":
+        predictions = raw_preds.squeeze(-1)  # (N,) risk scores
+    else:
+        predictions = raw_preds
 
     return dict(zip(patient_ids, predictions, strict=True))
 
@@ -296,9 +304,13 @@ def _to_regression_prediction_df(
     patient_label: PandasLabel,
     ground_truth_label: PandasLabel,
 ) -> pd.DataFrame:
-    """Compiles deployment results into a DataFrame.
-    Works for:
-      - regression:     prediction has shape [1] (single scalar)
+    """Compiles deployment results into a DataFrame for regression.
+
+    Columns:
+      - patient_label
+      - ground_truth_label
+      - pred (float)
+      - loss (MSE if GT numeric, else None)
     """
     rows: list[dict] = []
 
@@ -312,12 +324,20 @@ def _to_regression_prediction_df(
         }
 
         if pred.numel() == 1:
-            # Regression
-            row["pred"] = float(pred.item())
-            row["loss"] = None  # no CE in regression
-            # Optional: you could also add a column like f"{ground_truth_label}_pred" if you prefer.
+            pred_val = float(pred.item())
+            row["pred"] = pred_val
+
+            # Try to compute error if ground truth is numeric
+            try:
+                if gt is not None and str(gt).lower() != "nan":
+                    gt_val = float(gt)
+                    row["loss"] = (pred_val - gt_val) ** 2  # MSE per sample
+                else:
+                    row["loss"] = None
+            except (ValueError, TypeError):
+                row["loss"] = None
         else:
-            # Unexpected shape; record raw values and skip loss
+            # Unexpected multi-d output → just record raw tensor
             row["pred"] = pred.cpu().tolist()
             row["loss"] = None
 
@@ -325,11 +345,12 @@ def _to_regression_prediction_df(
 
     df = pd.DataFrame(rows)
 
-    # Sort with NAs last if loss exists; otherwise just return as-is
+    # Sort with NAs last if loss exists
     if "loss" in df.columns:
         df = df.sort_values(by="loss", na_position="last")
 
     return df
+
 
 def _to_survival_prediction_df(
     *,
