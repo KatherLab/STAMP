@@ -308,48 +308,42 @@ def _to_regression_prediction_df(
 
     Columns:
       - patient_label
-      - ground_truth_label
+      - ground_truth_label (numeric if available)
       - pred (float)
-      - loss (MSE if GT numeric, else None)
+      - loss (per-sample L1 loss if GT available, else None)
     """
-    rows: list[dict] = []
+    import torch.nn.functional as F
 
-    for patient_id, pred in predictions.items():
-        pred = pred.detach().flatten()  # [C] or [1]
-        gt = patient_to_ground_truth.get(patient_id)
-
-        row: dict = {
-            patient_label: patient_id,
-            ground_truth_label: gt,
-        }
-
-        if pred.numel() == 1:
-            pred_val = float(pred.item())
-            row["pred"] = pred_val
-
-            # Try to compute error if ground truth is numeric
-            try:
-                if gt is not None and str(gt).lower() != "nan":
-                    gt_val = float(gt)
-                    row["loss"] = (pred_val - gt_val) ** 2  # MSE per sample
-                else:
-                    row["loss"] = None
-            except (ValueError, TypeError):
-                row["loss"] = None
-        else:
-            # Unexpected multi-d output → just record raw tensor
-            row["pred"] = pred.cpu().tolist()
-            row["loss"] = None
-
-        rows.append(row)
-
-    df = pd.DataFrame(rows)
-
-    # Sort with NAs last if loss exists
-    if "loss" in df.columns:
-        df = df.sort_values(by="loss", na_position="last")
-
-    return df
+    return pd.DataFrame(
+        [
+            {
+                patient_label: patient_id,
+                ground_truth_label: patient_to_ground_truth.get(patient_id),
+                "pred": float(prediction.flatten().item())
+                if prediction.numel() == 1
+                else prediction.cpu().tolist(),
+                "loss": (
+                    F.l1_loss(
+                        prediction.flatten(),
+                        torch.tensor(
+                            [float(ground_truth)],
+                            dtype=prediction.dtype,
+                            device=prediction.device,
+                        ),
+                        reduction="mean",
+                    ).item()
+                    if (
+                        (ground_truth := patient_to_ground_truth.get(patient_id))
+                        is not None
+                        and str(ground_truth).lower() != "nan"
+                        and prediction.numel() == 1
+                    )
+                    else None
+                ),
+            }
+            for patient_id, prediction in predictions.items()
+        ]
+    ).sort_values(by="loss", na_position="last")
 
 
 def _to_survival_prediction_df(

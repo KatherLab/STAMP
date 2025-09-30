@@ -378,13 +378,16 @@ class LitBaseRegressor(Base):
 
         self.hparams["task"] = "regression"
 
-    @staticmethod
-    def _compute_loss(y_true: Tensor, y_pred: Tensor) -> Loss:
-        # l1 loss
-        # expects shapes [..., 1] or [...]
-        pred = y_pred.squeeze(-1)
-        target = y_true.squeeze(-1)
-        return torch.mean(torch.abs(pred - target))
+    # @staticmethod
+    # def _compute_loss(y_true: Tensor, y_pred: Tensor) -> Loss:
+    #     # pred = y_pred.squeeze(-1)
+    #     # target = y_true.squeeze(-1)
+    #     return nn.functional.mse_loss(y_true, y_pred)
+
+    # @staticmethod
+    # def _compute_loss(y_true: Tensor, y_pred: Tensor) -> Loss:
+    #     criterion_mse = torch.nn.MSELoss()
+    #     return nn.functional.mse_loss(y_true, y_pred)
 
 
 class LitTileRegressor(LitBaseRegressor):
@@ -421,11 +424,11 @@ class LitTileRegressor(LitBaseRegressor):
         preds = self.model(bags, coords=coords, mask=mask)  # (B, 1) preferred
         # Ensure numeric/dtype/shape compatibility
         y = targets.to(preds).float()
-        if y.ndim == preds.ndim - 1:
-            y = y.unsqueeze(-1)
+        # if y.ndim == preds.ndim - 1:
+        #     y = y.unsqueeze(-1)
 
-        loss = self._compute_loss(preds, y)
-
+        # loss = self._compute_loss(preds, y)
+        loss = nn.functional.l1_loss(preds, y)
         self.log(
             f"{step_name}_loss",
             loss,
@@ -489,71 +492,129 @@ class LitTileRegressor(LitBaseRegressor):
 
 
 class LitTileSurvival(LitTileRegressor):
-    supported_features = ["tile"]
-    def __init__(self, **kwargs):
+    """
+    PyTorch Lightning module for survival analysis with Cox proportional hazards loss.
+    Expects dataloader batches like:
+      (bags, coords, bag_sizes, targets)
+    where targets is shape (B,2): [:,0]=time, [:,1]=event (1=event, 0=censored).
+    """
+
+    def __init__(self, lr: float = 1e-4, weight_decay: float = 1e-5, **kwargs):
         super().__init__(**kwargs)
+        self.save_hyperparameters(ignore=["model"])
+        self.lr = lr
+        self.weight_decay = weight_decay
+        self.task = "survival"
+        # storage for validation accumulation
+        self._val_scores, self._val_times, self._val_events = [], [], []
 
-        self.hparams["task"] = "survival"
-
+    # -------- Cox loss --------
     @staticmethod
-    def _compute_loss(y_true: Tensor, y_pred: Tensor) -> Loss:
-        # Expect y_true shape (B, 2): (time, event)
-        if y_true.ndim == 1:
-            y_true = y_true.unsqueeze(0)
-
-        times = y_true[:, 0]
-        events = y_true[:, 1].bool()
-        scores = y_pred.squeeze(-1)  # (B,)
-
-        # Sort patients by descending time (Cox risk sets)
+    def cox_loss(
+        scores: torch.Tensor, times: torch.Tensor, events: torch.Tensor
+    ) -> torch.Tensor:
+        """
+        scores: (N,) risk scores (higher = riskier)
+        times:  (N,) survival/censoring times
+        events: (N,) event indicator (1=event, 0=censored)
+        """
+        scores = scores.view(-1)
         order = torch.argsort(times, descending=True)
-        times = times[order]
-        events = events[order]
-        scores = scores[order]
+        scores, events = scores[order], events[order]
 
-        # Numerical stabilizer
+        # stabilize scores
         scores = scores - scores.max()
-
-        # Log of cumulative risk set sums
         log_risk = torch.logcumsumexp(scores, dim=0)
-
-        # Contribution per event
         per_event = scores - log_risk
 
         if events.any():
-            loss = -(per_event[events].mean())
+            return -(per_event[events.bool()].mean())
         else:
-            # No events in batch → return 0 (gradient 0)
-            loss = scores.new_tensor(0.0, requires_grad=True)
+            # no events → return dummy 0 with grad path
+            return scores.sum() * 0.0
 
-        return loss
+    # -------- C-index --------
+    @staticmethod
+    def c_index(
+        scores: torch.Tensor, times: torch.Tensor, events: torch.Tensor
+    ) -> torch.Tensor:
+        """
+        Concordance index: proportion of correctly ordered comparable pairs.
+        """
+        N = len(times)
+        if N <= 1:
+            return torch.tensor(float("nan"), device=scores.device)
 
-    def _step(
-        self,
-        *,
-        batch: tuple[Bags, CoordinatesBatch, BagSizes, EncodedTargets],
-        step_name: str,
-        use_mask: bool,
-    ) -> Loss:
+        t_i = times.view(-1, 1).expand(N, N)
+        t_j = times.view(1, -1).expand(N, N)
+        e_i = events.view(-1, 1).expand(N, N)
+
+        mask = (t_i < t_j) & e_i.bool()
+        if mask.sum() == 0:
+            return torch.tensor(float("nan"), device=scores.device)
+
+        s_i = scores.view(-1, 1).expand(N, N)[mask]
+        s_j = scores.view(1, -1).expand(N, N)[mask]
+
+        conc = (s_i > s_j).float()
+        ties = (s_i == s_j).float() * 0.5
+        return (conc + ties).sum() / mask.sum()
+
+    # -------- Training --------
+    def training_step(self, batch, batch_idx):
         bags, coords, bag_sizes, targets = batch
+        preds = self.model(bags, coords=coords, mask=None).squeeze(-1)  # (B,)
+        y = targets.to(preds.device, dtype=torch.float32)
+        times, events = y[:, 0], y[:, 1]
 
-        mask = (
-            self._mask_from_bags(bags=bags, bag_sizes=bag_sizes) if use_mask else None
-        )
-
-        preds = self.model(bags, coords=coords, mask=mask)  # (B, 1)
-        y = targets.to(device=preds.device, dtype=torch.float32)  # (B, 2)
-
-        assert y.ndim == 2 and y.shape[1] == 2, f"Expected (B,2), got {y.shape}"
-
-        loss = self._compute_loss(y, preds)
-
+        loss = self.cox_loss(preds, times, events)
         self.log(
-            f"{step_name}_loss",
+            "train_cox_loss",
             loss,
+            prog_bar=True,
             on_step=False,
             on_epoch=True,
-            prog_bar=True,
             sync_dist=True,
         )
         return loss
+
+    # -------- Validation --------
+    def validation_step(
+        self,
+        batch: tuple[Bags, CoordinatesBatch, BagSizes, EncodedTargets],
+        batch_idx: int,
+    ):
+        bags, coords, bag_sizes, targets = batch
+        preds = self.model(bags, coords=coords, mask=None).squeeze(-1)
+
+        y = targets.to(preds.device, dtype=torch.float32)
+        times, events = y[:, 0], y[:, 1]
+
+        # accumulate on CPU to save GPU memory
+        self._val_scores.append(preds.detach().cpu())
+        self._val_times.append(times.detach().cpu())
+        self._val_events.append(events.detach().cpu())
+
+    def on_validation_epoch_end(self):
+        if len(self._val_scores) == 0:
+            return
+
+        scores = torch.cat(self._val_scores).to(self.device)
+        times = torch.cat(self._val_times).to(self.device)
+        events = torch.cat(self._val_events).to(self.device)
+
+        val_loss = self.cox_loss(scores, times, events)
+        val_ci = self.c_index(scores, times, events)
+
+        self.log("validation_loss", val_loss, prog_bar=True, sync_dist=True)
+        self.log("val_cindex", val_ci, prog_bar=True, sync_dist=True)
+
+        self._val_scores.clear()
+        self._val_times.clear()
+        self._val_events.clear()
+
+    # -------- Optimizer --------
+    def configure_optimizers(self):
+        return torch.optim.Adam(
+            self.parameters(), lr=self.lr, weight_decay=self.weight_decay
+        )

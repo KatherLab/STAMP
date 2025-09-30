@@ -281,7 +281,14 @@ def setup_dataloaders_for_training(
         )
 
     stratify = (
-        None if task == "survival" else ground_truths
+        [
+            pd.ground_truth.split(" ", 1)[1].lower()
+            if pd.ground_truth is not None
+            else "missing"
+            for pd in patient_to_data.values()
+        ]
+        if task == "survival"
+        else ground_truths
     )  # survival does not need stratified split
 
     train_patients, valid_patients = cast(
@@ -374,16 +381,23 @@ def train_model_(
     """
     torch.set_float32_matmul_precision("high")
 
+    # Decide monitor metric based on task
+    task = getattr(model.hparams, "task", None)
+    if task == "survival":
+        monitor_metric, mode = "val_cindex", "max"
+    else:  # regression or classification
+        monitor_metric, mode = "validation_loss", "min"
+
     model_checkpoint = ModelCheckpoint(
-        monitor="validation_loss",
-        mode="min",
+        monitor=monitor_metric,
+        mode=mode,
         filename="checkpoint-{epoch:02d}-{validation_loss:0.3f}",
     )
     trainer = lightning.Trainer(
         default_root_dir=output_dir,
         # check_val_every_n_epoch=5,
         callbacks=[
-            EarlyStopping(monitor="validation_loss", mode="min", patience=patience),
+            EarlyStopping(monitor=monitor_metric, mode=mode, patience=patience),
             model_checkpoint,
         ],
         max_epochs=max_epochs,
@@ -394,7 +408,7 @@ def train_model_(
         #  2. `barspoon.model.SafeMulticlassAUROC` breaks on multiple GPUs
         accelerator=accelerator,
         devices=1,
-        gradient_clip_val=0.5,
+        # gradient_clip_val=0.5,
         logger=CSVLogger(save_dir=output_dir),
         log_every_n_steps=len(train_dl),
     )

@@ -582,34 +582,46 @@ def patient_to_survival_from_clini_table_(
     Returns
     -------
     dict[PatientId, GroundTruth]
-        Mapping patient_id -> "time status" (e.g. "13 alive", "42 dead").
+        Mapping patient_id -> "time status" (e.g. "302 dead", "476 alive").
     """
     clini_df = read_table(
         clini_table_path,
         usecols=[patient_label, time_label, status_label],
         dtype=str,
-    ).dropna()
+    )
 
-    try:
-        patient_to_ground_truth: dict[PatientId, GroundTruth] = (
-            clini_df.set_index(patient_label, verify_integrity=True)[
-                [time_label, status_label]
-            ]
-            .apply(lambda row: f"{row[time_label]} {row[status_label]}", axis=1)
-            .to_dict()
-        )
-    except KeyError as e:
-        missing = [
-            col
-            for col in [patient_label, time_label, status_label]
-            if col not in clini_df
-        ]
-        raise ValueError(
-            f"Missing columns in clini table: {missing}. "
-            f"Available: {list(clini_df.columns)}"
-        ) from e
+    # normalize values
+    clini_df[time_label] = clini_df[time_label].replace(
+        ["NA", "NaN", "nan", ""], np.nan
+    )
+    clini_df[status_label] = clini_df[status_label].str.strip().str.lower()
+
+    # Only drop rows where BOTH time and status are missing
+    clini_df = clini_df.dropna(subset=[time_label, status_label], how="all")
+
+    patient_to_ground_truth: dict[PatientId, GroundTruth] = {}
+    for _, row in clini_df.iterrows():
+        pid = row[patient_label]
+        time_str = row[time_label]
+        status_str = row[status_label]
+
+        # Skip patients missing survival time
+        if pd.isna(time_str):
+            continue
+
+        # Encode status: keep both dead (event=1) and alive (event=0)
+        if status_str in {"dead", "event", "1"}:
+            status = "dead"
+        elif status_str in {"alive", "censored", "0"}:
+            status = "alive"
+        else:
+            # skip unknown status
+            continue
+
+        patient_to_ground_truth[pid] = f"{time_str} {status}"
 
     return patient_to_ground_truth
+
 
 
 def slide_to_patient_from_slide_table_(
