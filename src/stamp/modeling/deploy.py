@@ -239,7 +239,7 @@ def _predict(
     test_dl: torch.utils.data.DataLoader,
     patient_ids: Sequence[PatientId],
     accelerator: str | Accelerator,
-) -> Mapping[PatientId, Float[torch.Tensor, "..."]]:  # noqa: F821
+) -> Mapping[PatientId, Float[torch.Tensor, "..."]]:
     model = model.eval()
     torch.set_float32_matmul_precision("medium")
 

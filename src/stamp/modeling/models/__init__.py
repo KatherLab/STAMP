@@ -57,7 +57,7 @@ class Base(lightning.LightningModule, ABC):
         max_lr: float,
         div_factor: float,
         # Metadata used by other parts of stamp, but not by the model itself
-        ground_truth_label: PandasLabel,
+        ground_truth_label: PandasLabel | None,
         train_patients: Iterable[PatientId],
         valid_patients: Iterable[PatientId],
         stamp_version: Version = Version(stamp.__version__),
