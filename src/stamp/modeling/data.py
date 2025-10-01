@@ -572,9 +572,9 @@ def patient_to_ground_truth_from_clini_table_(
 def patient_to_survival_from_clini_table_(
     *,
     clini_table_path: Path | TextIO,
-    patient_label: str,
-    time_label: str,
-    status_label: str,
+    patient_label: PandasLabel,
+    time_label: PandasLabel,
+    status_label: PandasLabel,
 ) -> dict[PatientId, GroundTruth]:
     """
     Loads patients and their survival ground truths (time + event) from a clini table.

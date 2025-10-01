@@ -495,12 +495,23 @@ class LitTileSurvival(LitTileRegressor):
     where targets is shape (B,2): [:,0]=time, [:,1]=event (1=event, 0=censored).
     """
 
-    def __init__(self, lr: float = 1e-4, weight_decay: float = 1e-5, **kwargs):
+    def __init__(
+        self,
+        time_label: PandasLabel,
+        status_label: PandasLabel,
+        lr: float = 1e-4,
+        weight_decay: float = 1e-5,
+        **kwargs,
+    ):
         super().__init__(**kwargs)
-        self.save_hyperparameters(ignore=["model"])
         self.lr = lr
         self.weight_decay = weight_decay
-        self.task = "survival"
+        self.hparams["task"] = "survival"
+        self.time_label = time_label
+        self.status_label = status_label
+        self.save_hyperparameters(
+            ignore=["ground_truth_label"]
+        )  # survival does not require gt column
         # storage for validation accumulation
         self._val_scores, self._val_times, self._val_events = [], [], []
 

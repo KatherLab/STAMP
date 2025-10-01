@@ -172,11 +172,13 @@ def _run_cli(args: argparse.Namespace) -> None:
                 clini_table=config.deployment.clini_table,
                 slide_table=config.deployment.slide_table,
                 feature_dir=config.deployment.feature_dir,
-                ground_truth_label=config.deployment.ground_truth_label,
                 patient_label=config.deployment.patient_label,
                 filename_label=config.deployment.filename_label,
                 num_workers=config.deployment.num_workers,
                 accelerator=config.deployment.accelerator,
+                ground_truth_label=config.deployment.ground_truth_label,
+                time_label=config.deployment.time_label,
+                status_label=config.deployment.status_label,
             )
 
         case "crossval":

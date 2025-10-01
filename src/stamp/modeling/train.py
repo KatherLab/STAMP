@@ -136,7 +136,9 @@ def setup_model_for_training(
     feature_type: str,
     advanced: AdvancedConfig,
     # Metadata, has no effect on model training
-    ground_truth_label: PandasLabel,
+    ground_truth_label: PandasLabel | None,
+    time_label: PandasLabel | None,
+    status_label: PandasLabel | None,
     clini_table: Path,
     slide_table: Path | None,
     feature_dir: Path,
@@ -215,6 +217,8 @@ def setup_model_for_training(
         # Metadata, has no effect on model training
         "model_name": advanced.model_name.value,
         "ground_truth_label": ground_truth_label,
+        "time_label": time_label,
+        "status_label": status_label,
         "train_patients": train_patients,
         "valid_patients": valid_patients,
         "clini_table": clini_table,

@@ -26,7 +26,6 @@ from stamp.modeling.deploy import (
     _to_survival_prediction_df,
     load_model_from_ckpt,
 )
-from stamp.modeling.models import LitPatientClassifier, LitTileClassifier
 from stamp.modeling.train import setup_model_for_training, train_model_
 from stamp.modeling.transforms import VaryPrecisionTransform
 from stamp.types import (
@@ -325,11 +324,15 @@ def categorical_crossval_(
         if config.slide_table is None:
             raise ValueError("A slide table is required for tile-level modeling")
         if advanced.task == "survival":
+            if config.time_label is None or config.status_label is None:
+                raise ValueError(
+                    "Time label and status label are is required for survival analysis"
+                )
             patient_to_ground_truth: dict[PatientId, GroundTruth] = (
                 patient_to_survival_from_clini_table_(
                     clini_table_path=config.clini_table,
-                    time_label=config.time_label,  # type: ignore
-                    status_label=config.status_label,  # type: ignore
+                    time_label=config.time_label,
+                    status_label=config.status_label,
                     patient_label=config.patient_label,
                 )
             )
@@ -417,7 +420,7 @@ def categorical_crossval_(
             }
         )
     else:
-        categories = None
+        categories = []
 
     for split_i, split in enumerate(splits.splits):
         split_dir = config.output_dir / f"split-{split_i}"
@@ -435,7 +438,9 @@ def categorical_crossval_(
                 clini_table=config.clini_table,
                 slide_table=config.slide_table,
                 feature_dir=config.feature_dir,
-                ground_truth_label=config.ground_truth_label,  # type: ignore
+                ground_truth_label=config.ground_truth_label,
+                time_label=config.time_label,
+                status_label=config.status_label,
                 advanced=advanced,
                 task=advanced.task,
                 patient_to_data={
@@ -519,19 +524,25 @@ def categorical_crossval_(
                     patient_label=config.patient_label,
                 ).to_csv(split_dir / "patient-preds.csv", index=False)
             elif advanced.task == "regression":
+                if config.ground_truth_label is None:
+                    raise RuntimeError("Grounf truth label is required for regression")
                 _to_regression_prediction_df(
                     patient_to_ground_truth=patient_to_ground_truth,
                     predictions=predictions,
                     patient_label=config.patient_label,
-                    ground_truth_label=config.ground_truth_label,  # type: ignore
+                    ground_truth_label=config.ground_truth_label,
                 ).to_csv(split_dir / "patient-preds.csv", index=False)
             else:
+                if config.ground_truth_label is None:
+                    raise RuntimeError(
+                        "Grounf truth label is required for classification"
+                    )
                 _to_prediction_df(
-                    categories=categories,  # type: ignore
+                    categories=categories,
                     patient_to_ground_truth=patient_to_ground_truth,
                     predictions=predictions,
                     patient_label=config.patient_label,
-                    ground_truth_label=config.ground_truth_label,  # type: ignore
+                    ground_truth_label=config.ground_truth_label,
                 ).to_csv(split_dir / "patient-preds.csv", index=False)
 
 

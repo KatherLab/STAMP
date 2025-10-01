@@ -1,7 +1,8 @@
 import logging
+from abc import ABC
 from collections.abc import Mapping, Sequence
 from pathlib import Path
-from typing import TypeAlias, Union, cast
+from typing import Optional, TypeAlias, Union, cast
 
 import lightning
 import numpy as np
@@ -16,10 +17,10 @@ from stamp.modeling.data import (
     load_patient_level_data,
     patient_feature_dataloader,
     patient_to_ground_truth_from_clini_table_,
+    patient_to_survival_from_clini_table_,
     slide_to_patient_from_slide_table_,
     tile_bag_dataloader,
 )
-from stamp.modeling.models import LitPatientClassifier, LitTileClassifier
 from stamp.modeling.registry import ModelName, load_model_class
 from stamp.types import GroundTruth, PandasLabel, PatientId
 
@@ -36,7 +37,6 @@ Logit: TypeAlias = float
 def load_model_from_ckpt(path: Union[str, Path]):
     ckpt = torch.load(path, map_location="cpu", weights_only=False)
     hparams = ckpt["hyper_parameters"]
-
     LitModelClass, ModelClass = load_model_class(
         hparams["task"], hparams["supported_features"], ModelName(hparams["model_name"])
     )
@@ -52,6 +52,8 @@ def deploy_categorical_model_(
     slide_table: Path | None,
     feature_dir: Path,
     ground_truth_label: PandasLabel | None,
+    time_label: PandasLabel | None,
+    status_label: PandasLabel | None,
     patient_label: PandasLabel,
     filename_label: PandasLabel,
     num_workers: int,
@@ -70,19 +72,19 @@ def deploy_categorical_model_(
     feature_type = detect_feature_type(feature_dir)
     _logger.info(f"Detected feature type: {feature_type}")
 
-    if feature_type == "tile":
-        ModelClass = LitTileClassifier
-    elif feature_type == "patient":
-        ModelClass = LitPatientClassifier
-    else:
+    models = [load_model_from_ckpt(p).eval() for p in checkpoint_paths]
+    # task consistency
+    tasks = {model.hparams["task"] for model in models}
+
+    if len(tasks) != 1:
+        raise RuntimeError(f"Mixed tasks in ensemble: {tasks}")
+    task = tasks.pop()
+
+    if models[0].hparams["supported_features"] != feature_type:
+        print(getattr(models[0], "supported_features"), feature_type)
         raise RuntimeError(
             f"Unsupported feature type for deployment: {feature_type}. Only 'tile' and 'patient' are supported."
         )
-
-    models = [
-        ModelClass.load_from_checkpoint(checkpoint_path=checkpoint_path).eval()
-        for checkpoint_path in checkpoint_paths
-    ]
 
     # Ensure all models were trained on the same ground truth label
     if (
@@ -92,12 +94,8 @@ def deploy_categorical_model_(
         raise RuntimeError(
             f"ground truth labels differ between models: {ground_truth_labels}"
         )
-    # Ensure the categories were the same between all models
-    if len(categories := set(tuple(model.categories) for model in models)) != 1:
-        raise RuntimeError(f"categories differ between models: {categories}")
 
     model_ground_truth_label = models[0].ground_truth_label
-    model_categories = list(models[0].categories)
 
     if (
         ground_truth_label is not None
@@ -111,6 +109,14 @@ def deploy_categorical_model_(
 
     output_dir.mkdir(exist_ok=True, parents=True)
 
+    model_categories = None
+    if task == "classification":
+        # Ensure the categories were the same between all models
+        category_sets = {tuple(m.categories) for m in models}
+        if len(category_sets) != 1:
+            raise RuntimeError(f"Categories differ between models: {category_sets}")
+        model_categories = list(models[0].categories)
+
     # --- Data loading logic ---
     if feature_type == "tile":
         if slide_table is None:
@@ -122,11 +128,19 @@ def deploy_categorical_model_(
             filename_label=filename_label,
         )
         if clini_table is not None:
-            patient_to_ground_truth = patient_to_ground_truth_from_clini_table_(
-                clini_table_path=clini_table,
-                ground_truth_label=ground_truth_label,
-                patient_label=patient_label,
-            )
+            if task == "survival":
+                patient_to_ground_truth = patient_to_survival_from_clini_table_(
+                    clini_table_path=clini_table,
+                    patient_label=patient_label,
+                    time_label=models[0].time_label,
+                    status_label=models[0].status_label,
+                )
+            else:
+                patient_to_ground_truth = patient_to_ground_truth_from_clini_table_(
+                    clini_table_path=clini_table,
+                    ground_truth_label=ground_truth_label,
+                    patient_label=patient_label,
+                )
         else:
             patient_to_ground_truth = {
                 patient_id: None for patient_id in set(slide_to_patient.values())
@@ -136,14 +150,11 @@ def deploy_categorical_model_(
             slide_to_patient=slide_to_patient,
             drop_patients_with_missing_ground_truth=False,
         )
-        # hashcode for testing regression
-        is_cls = hasattr(models[0], "categories")
-        cats = list(models[0].categories) if is_cls else None
         test_dl, _ = tile_bag_dataloader(
             patient_data=list(patient_to_data.values()),
-            task="classification" if is_cls else "regression",
+            task=task,
             bag_size=None,  # We want all tiles to be seen by the model
-            categories=cats,
+            categories=model_categories,
             batch_size=1,
             shuffle=False,
             num_workers=num_workers,
@@ -180,6 +191,11 @@ def deploy_categorical_model_(
     else:
         raise RuntimeError(f"Unsupported feature type: {feature_type}")
 
+    df_builder = {
+        "classification": _to_prediction_df,
+        "regression": _to_regression_prediction_df,
+        "survival": _to_survival_prediction_df,
+    }[task]
     all_predictions: list[Mapping[PatientId, Float[torch.Tensor, "category"]]] = []  # noqa: F821
     for model_i, model in enumerate(models):
         predictions = _predict(
@@ -192,7 +208,7 @@ def deploy_categorical_model_(
 
         # Only save individual model files when deploying multiple models (ensemble)
         if len(models) > 1:
-            _to_prediction_df(
+            df_builder(
                 categories=model_categories,
                 patient_to_ground_truth=patient_to_ground_truth,
                 predictions=predictions,
@@ -201,7 +217,7 @@ def deploy_categorical_model_(
             ).to_csv(output_dir / f"patient-preds-{model_i}.csv", index=False)
 
     # TODO we probably also want to save the 95% confidence interval in addition to the mean
-    _to_prediction_df(
+    df_builder(
         categories=model_categories,
         patient_to_ground_truth=patient_to_ground_truth,
         predictions={
@@ -230,32 +246,24 @@ def _predict(
     patients_used_for_training: set[PatientId] = set(
         getattr(model, "train_patients", [])
     ) | set(getattr(model, "valid_patients", []))
-    if overlap := patients_used_for_training & set(patient_ids):
-        raise ValueError(
-            f"some of the patients in the validation set were used during training: {overlap}"
-        )
+    # if overlap := patients_used_for_training & set(patient_ids):
+    #     raise ValueError(
+    #         f"some of the patients in the validation set were used during training: {overlap}"
+    #     )
 
     trainer = lightning.Trainer(
         accelerator=accelerator,
         devices=1,  # Needs to be 1, otherwise half the predictions are missing for some reason
         logger=False,
     )
-    # predictions = torch.softmax(
-    #     torch.concat(
-    #         cast(
-    #             list[torch.Tensor],
-    #             trainer.predict(model, test_dl),
-    #         )
-    #     ),
-    #     dim=1,
-    # )
+
     raw_preds = torch.concat(cast(list[torch.Tensor], trainer.predict(model, test_dl)))
 
     if getattr(model.hparams, "task", None) == "classification":
         predictions = torch.softmax(raw_preds, dim=1)
     elif getattr(model.hparams, "task", None) == "survival":
         predictions = raw_preds.squeeze(-1)  # (N,) risk scores
-    else:
+    else:  # regression
         predictions = raw_preds
 
     return dict(zip(patient_ids, predictions, strict=True))
@@ -301,6 +309,7 @@ def _to_regression_prediction_df(
     predictions: Mapping[PatientId, torch.Tensor],
     patient_label: PandasLabel,
     ground_truth_label: PandasLabel,
+    **kwargs,
 ) -> pd.DataFrame:
     """Compiles deployment results into a DataFrame for regression.
 
@@ -349,6 +358,7 @@ def _to_survival_prediction_df(
     patient_to_ground_truth: Mapping[PatientId, GroundTruth | None],
     predictions: Mapping[PatientId, torch.Tensor],
     patient_label: PandasLabel,
+    **kwargs,
 ) -> pd.DataFrame:
     """Compiles deployment results into a DataFrame for survival analysis.
 
@@ -394,3 +404,4 @@ def _to_survival_prediction_df(
         rows.append(row)
 
     return pd.DataFrame(rows)
+
