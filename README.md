@@ -55,19 +55,6 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 uv self update
 ```
 
-### Install STAMP in a Virtual Environment:
-
-```bash
-uv venv --python=3.12
-source .venv/bin/activate
-
-# For a GPU (CUDA) installation:
-uv pip install "git+https://github.com/KatherLab/STAMP.git[gpu]"
-
-# For a CPU-only installation:
-uv pip install "git+https://github.com/KatherLab/STAMP.git[cpu]" --torch-backend=cpu
-```
-
 ### Install STAMP from the Repository:
 
 ```bash
@@ -210,11 +197,13 @@ uv cache clean causal_conv1d
 
 # Now it should re-build the packages with the correct torch version
 
-# With uv pip install
-uv pip install "git+https://github.com/KatherLab/STAMP.git[build]"
-uv pip install "git+https://github.com/KatherLab/STAMP.git[build,gpu] --no-build-isolation"
-
 # With uv sync in the cloned repository
 uv sync --extra build
 uv sync --extra build --extra gpu
 ```
+
+## Reproducibility
+
+We use a central `Seed` utility to set seeds for PyTorch, NumPy, and Python’s `random`. This makes data loading and model initialization reproducible. Always call `Seed.set(seed)` once at startup.
+
+We do not enable [`torch.use_deterministic_algorithms()`](https://pytorch.org/docs/stable/notes/randomness.html#reproducibility) because it can cause large performance drops. Expect runs with the same seed to follow the same training trajectory, but not bit-for-bit identical low-level kernels.

@@ -13,6 +13,7 @@ from stamp.modeling.data import (
 from stamp.modeling.deploy import _predict, _to_prediction_df
 from stamp.modeling.lightning_model import LitVisionTransformer
 from stamp.modeling.mlp_classifier import LitMLPClassifier
+from stamp.seed import Seed
 from stamp.types import GroundTruth, PatientId
 
 
@@ -25,6 +26,7 @@ def test_predict(
     n_heads: int = 7,
     dim_input: int = 12,
 ) -> None:
+    Seed.set(42)
     model = LitVisionTransformer(
         categories=list(categories),
         category_weights=torch.rand(len(categories)),

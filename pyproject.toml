@@ -56,7 +56,7 @@ build = [
     "ninja"
 ]
 flash-attention = [
-    "flash-attn>=2.8.2",
+    "flash-attn>=2.8.3",
     ]
 conch = [
     "huggingface-hub>=0.26.2",
@@ -99,12 +99,13 @@ virchow2 = [
 ]
 cobra = [
     "stamp[flash-attention]",
-    "causal-conv1d @ git+https://github.com/KatherLab/causal-conv1d.git@b73d1ca0e0726ba6520c38d342bd411bb5850064",
-    "mamba-ssm @ git+https://github.com/KatherLab/mamba.git@d0d4192621889b26f9669ea4a8e6fe79cc84e8d9",
-    "cobra @ git+http://github.com/KatherLab/COBRA.git@c8aa71ce691e1279f2bb797f536355d6be47b6ac",
+    "causal-conv1d",
+    "mamba-ssm",
+    # "causal-conv1d @ git+https://github.com/KatherLab/causal-conv1d.git@dededae18d0258ccec833ab950d45279f1616fd1",
+    # "mamba-ssm @ git+https://github.com/KatherLab/mamba.git@3dad301098b721ee5c93d9ad16aafbbc1dc42cfd",
+    "cobra @ git+http://github.com/KatherLab/COBRA.git@73712e9ffa4d1bdecf9be9826d66094bd2b17534",
     "jinja2>=3.1.4", 
     "triton"
-    # "triton==3.2.0", # Fix triton to 3.2.0 (also makes torch==2.6.0) until this is solved: https://github.com/pytorch/pytorch/issues/153737
 ]
 prism_cpu = [
     "sacremoses==0.1.1",
@@ -179,6 +180,16 @@ conflicts = [
     ]
 ]
 
+[tool.uv.sources]
+torch = { index = "pytorch-cu128" }
+torchvision = { index = "pytorch-cu128" }
+
+[[tool.uv.index]]
+name = "pytorch-cu128"
+url = "https://download.pytorch.org/whl/cu128"
+explicit = true
+
+
 [[tool.uv.dependency-metadata]]
 name = "uni"
 version = "v0.1.0"
@@ -197,7 +208,6 @@ requires-dist = [
 
 [[tool.uv.dependency-metadata]]
 name = "flash-attn"
-version = "2.8.2"
 requires-dist = [
     "torch",
     "einops",
@@ -206,14 +216,12 @@ requires-dist = [
 
 [[tool.uv.dependency-metadata]]
 name = "mamba-ssm"
-version = "v2.2.4"
 requires-dist = [
     "setuptools",
 ]
 
 [[tool.uv.dependency-metadata]]
 name = "causal-conv1d"
-version = "v1.5.0.post8"
 requires-dist = [
     "setuptools",
 ]
