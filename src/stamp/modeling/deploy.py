@@ -20,15 +20,13 @@ from stamp.modeling.data import (
     tile_bag_dataloader,
 )
 from stamp.modeling.models import LitPatientClassifier, LitTileClassifier
-from stamp.modeling.models.mlp import MLP
-from stamp.modeling.models.vision_tranformer import VisionTransformer
 from stamp.modeling.registry import ModelName, load_model_class
 from stamp.types import GroundTruth, PandasLabel, PatientId
 
 __all__ = ["deploy_categorical_model_"]
 
-__author__ = "Marko van Treeck"
-__copyright__ = "Copyright (C) 2024-2025 Marko van Treeck"
+__author__ = "Marko van Treeck, Minh Duc Nguyen"
+__copyright__ = "Copyright (C) 2024-2025 Marko van Treeck, Minh Duc Nguyen"
 __license__ = "MIT"
 
 _logger = logging.getLogger("stamp")

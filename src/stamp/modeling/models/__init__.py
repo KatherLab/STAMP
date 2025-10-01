@@ -3,7 +3,7 @@
 import inspect
 from abc import ABC
 from collections.abc import Iterable, Sequence
-from typing import TypeAlias
+from typing import Any, TypeAlias
 
 import lightning
 import numpy as np
@@ -384,10 +384,9 @@ class LitBaseRegressor(Base):
     #     # target = y_true.squeeze(-1)
     #     return nn.functional.mse_loss(y_true, y_pred)
 
-    # @staticmethod
-    # def _compute_loss(y_true: Tensor, y_pred: Tensor) -> Loss:
-    #     criterion_mse = torch.nn.MSELoss()
-    #     return nn.functional.mse_loss(y_true, y_pred)
+    @staticmethod
+    def _compute_loss(y_true: Tensor, y_pred: Tensor) -> Loss:
+        return nn.functional.l1_loss(y_true, y_pred)
 
 
 class LitTileRegressor(LitBaseRegressor):
@@ -424,11 +423,8 @@ class LitTileRegressor(LitBaseRegressor):
         preds = self.model(bags, coords=coords, mask=mask)  # (B, 1) preferred
         # Ensure numeric/dtype/shape compatibility
         y = targets.to(preds).float()
-        # if y.ndim == preds.ndim - 1:
-        #     y = y.unsqueeze(-1)
 
-        # loss = self._compute_loss(preds, y)
-        loss = nn.functional.l1_loss(preds, y)
+        loss = self._compute_loss(preds, y)
         self.log(
             f"{step_name}_loss",
             loss,
@@ -583,7 +579,7 @@ class LitTileSurvival(LitTileRegressor):
         self,
         batch: tuple[Bags, CoordinatesBatch, BagSizes, EncodedTargets],
         batch_idx: int,
-    ):
+    ) -> Any:
         bags, coords, bag_sizes, targets = batch
         preds = self.model(bags, coords=coords, mask=None).squeeze(-1)
 
@@ -614,7 +610,7 @@ class LitTileSurvival(LitTileRegressor):
         self._val_events.clear()
 
     # -------- Optimizer --------
-    def configure_optimizers(self):
+    def configure_optimizers(self) -> Any:
         return torch.optim.Adam(
             self.parameters(), lr=self.lr, weight_decay=self.weight_decay
         )
