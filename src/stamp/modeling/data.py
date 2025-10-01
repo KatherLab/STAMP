@@ -623,7 +623,6 @@ def patient_to_survival_from_clini_table_(
     return patient_to_ground_truth
 
 
-
 def slide_to_patient_from_slide_table_(
     *,
     slide_table_path: Path,

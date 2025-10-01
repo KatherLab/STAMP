@@ -34,6 +34,7 @@ _logger = logging.getLogger("stamp")
 
 Logit: TypeAlias = float
 
+
 def load_model_from_ckpt(path: Union[str, Path]):
     ckpt = torch.load(path, map_location="cpu", weights_only=False)
     hparams = ckpt["hyper_parameters"]
@@ -238,7 +239,7 @@ def _predict(
     test_dl: torch.utils.data.DataLoader,
     patient_ids: Sequence[PatientId],
     accelerator: str | Accelerator,
-) -> Mapping[PatientId, Float[torch.Tensor, "category"]]:  # noqa: F821
+) -> Mapping[PatientId, Float[torch.Tensor, "..."]]:  # noqa: F821
     model = model.eval()
     torch.set_float32_matmul_precision("medium")
 
@@ -404,4 +405,3 @@ def _to_survival_prediction_df(
         rows.append(row)
 
     return pd.DataFrame(rows)
-

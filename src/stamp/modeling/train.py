@@ -106,6 +106,8 @@ def train_categorical_model_(
         task=advanced.task,
         advanced=advanced,
         ground_truth_label=config.ground_truth_label,
+        time_label=config.time_label,
+        status_label=config.status_label,
         clini_table=config.clini_table,
         slide_table=config.slide_table,
         feature_dir=config.feature_dir,

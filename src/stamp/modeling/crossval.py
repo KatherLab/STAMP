@@ -49,6 +49,7 @@ class _Split(BaseModel):
 class _Splits(BaseModel):
     splits: Sequence[_Split]
 
+
 # class BaseCrossval(ABC):
 #     def __init__(
 #         self,
@@ -312,6 +313,7 @@ class _Splits(BaseModel):
 #             )
 #         )
 #         return patient_to_data, patient_to_ground_truth
+
 
 def categorical_crossval_(
     config: CrossvalConfig,
