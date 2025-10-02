@@ -122,7 +122,7 @@ def tile_bag_dataloader(
         )
         cats_out = []
 
-    elif task == "survival":
+    elif task == "survival":  # Not yet support logistic-harzard
         times: list[float] = []
         events: list[float] = []
 
@@ -765,3 +765,4 @@ def get_stride(coords: Float[Tensor, "tile 2"]) -> float:
         ),
     )
     return stride
+

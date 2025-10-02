@@ -372,17 +372,7 @@ class LitBaseRegressor(Base):
 
         self.model: nn.Module = self._build_backbone(model_class, dim_input, 1, kwargs)
 
-        self.valid_mae = MeanAbsoluteError()
-        self.valid_mse = MeanSquaredError()
-        self.valid_pearson = PearsonCorrCoef()
-
         self.hparams["task"] = "regression"
-
-    # @staticmethod
-    # def _compute_loss(y_true: Tensor, y_pred: Tensor) -> Loss:
-    #     # pred = y_pred.squeeze(-1)
-    #     # target = y_true.squeeze(-1)
-    #     return nn.functional.mse_loss(y_true, y_pred)
 
     @staticmethod
     def _compute_loss(y_true: Tensor, y_pred: Tensor) -> Loss:
@@ -438,9 +428,13 @@ class LitTileRegressor(LitBaseRegressor):
             # Optional regression metrics from base (MAE/MSE/Pearson)
             p = preds.squeeze(-1)
             t = y.squeeze(-1)
-            self.valid_mae.update(p, t)
-            self.valid_mse.update(p, t)
-            self.valid_pearson.update(p, t)
+            self.log(
+                "validation_loss",
+                torch.nn.functional.l1_loss(p, t),
+                prog_bar=True,
+                on_epoch=True,
+                sync_dist=True,
+            )
 
         return loss
 
@@ -499,14 +493,12 @@ class LitTileSurvival(LitTileRegressor):
         self,
         time_label: PandasLabel,
         status_label: PandasLabel,
-        lr: float = 1e-4,
-        weight_decay: float = 1e-5,
+        method: str = "cox",
         **kwargs,
     ):
         super().__init__(**kwargs)
-        self.lr = lr
-        self.weight_decay = weight_decay
         self.hparams["task"] = "survival"
+        self.method = method
         self.time_label = time_label
         self.status_label = status_label
         self.save_hyperparameters(
@@ -515,32 +507,64 @@ class LitTileSurvival(LitTileRegressor):
         # storage for validation accumulation
         self._val_scores, self._val_times, self._val_events = [], [], []
 
-    # -------- Cox loss --------
     @staticmethod
     def cox_loss(
         scores: torch.Tensor, times: torch.Tensor, events: torch.Tensor
     ) -> torch.Tensor:
         """
+        Breslow negative partial log-likelihood.
         scores: (N,) risk scores (higher = riskier)
         times:  (N,) survival/censoring times
-        events: (N,) event indicator (1=event, 0=censored)
+        events: (N,) 1=event, 0=censored
         """
-        scores = scores.view(-1)
-        order = torch.argsort(times, descending=True)
-        scores, events = scores[order], events[order]
+        scores = scores.flatten()
+        events = events.bool().flatten()
+        times = times.flatten()
 
-        # stabilize scores
-        scores = scores - scores.max()
-        log_risk = torch.logcumsumexp(scores, dim=0)
-        per_event = scores - log_risk
+        # event times and indices
+        if not events.any():
+            return scores.sum() * 0.0  # keep graph
 
-        if events.any():
-            return -(per_event[events.bool()].mean())
-        else:
-            # no events → return dummy 0 with grad path
-            return scores.sum() * 0.0
+        t_event = times[events]  # (R,)
+        # risk set mask: j is at risk for event i if T_j >= T_i
+        # (use >= per standard Cox; vectorized broadcast)
+        risk_mask = t_event[:, None] <= times[None, :]  # (R, N)
 
-    # -------- C-index --------
+        # log-sum-exp over risk sets for numerical stability
+        # log sum_j exp(score_j) for each event i
+        max_scores = scores.max()  # stability
+        lse = (
+            torch.log((risk_mask * torch.exp(scores - max_scores)).sum(dim=1))
+            + max_scores
+        )  # (R,)
+
+        # sum over events: s_i - log sum_{j in R_i} exp(s_j)
+        loglik = scores[events] - lse
+        npll = -loglik.mean()  # mean reduction
+        return npll
+
+    @staticmethod
+    def logistic_hazard_loss(
+        logits: torch.Tensor, times: torch.Tensor, events: torch.Tensor
+    ) -> torch.Tensor:
+        """
+        logits: (B, L) raw predictions for each interval
+        times: (B,) discrete event/censoring time (int)
+        events: (B,) 1=event, 0=censored
+        """
+        B, L = logits.shape
+        hazard = torch.sigmoid(logits)
+        log_survival = torch.cumsum(
+            torch.log(1 - nn.functional.pad(hazard, (1, 0))), dim=-1
+        )
+
+        likelihood = -(
+            events * torch.log(hazard[torch.arange(B), times])
+            + (1 - events) * torch.log(1 - hazard[torch.arange(B), times])
+            + log_survival[torch.arange(B), times]
+        )
+        return likelihood.mean()
+
     @staticmethod
     def c_index(
         scores: torch.Tensor, times: torch.Tensor, events: torch.Tensor
@@ -567,14 +591,21 @@ class LitTileSurvival(LitTileRegressor):
         ties = (s_i == s_j).float() * 0.5
         return (conc + ties).sum() / mask.sum()
 
-    # -------- Training --------
     def training_step(self, batch, batch_idx):
         bags, coords, bag_sizes, targets = batch
-        preds = self.model(bags, coords=coords, mask=None).squeeze(-1)  # (B,)
+        preds = self.model(bags, coords=coords, mask=None)
         y = targets.to(preds.device, dtype=torch.float32)
         times, events = y[:, 0], y[:, 1]
 
-        loss = self.cox_loss(preds, times, events)
+        if self.method == "cox":
+            preds = preds.squeeze(-1)  # (B,)
+            loss = self.cox_loss(preds, times, events)
+        elif self.method == "logistic-hazard":
+            # preds expected shape (B, L)
+            loss = self.logistic_hazard_loss(preds, times, events)
+        else:
+            raise ValueError(f"Unknown method: {self.method}")
+
         self.log(
             "train_cox_loss",
             loss,
@@ -585,7 +616,6 @@ class LitTileSurvival(LitTileRegressor):
         )
         return loss
 
-    # -------- Validation --------
     def validation_step(
         self,
         batch: tuple[Bags, CoordinatesBatch, BagSizes, EncodedTargets],
@@ -613,15 +643,9 @@ class LitTileSurvival(LitTileRegressor):
         val_loss = self.cox_loss(scores, times, events)
         val_ci = self.c_index(scores, times, events)
 
-        self.log("validation_loss", val_loss, prog_bar=True, sync_dist=True)
+        self.log("cox_loss", val_loss, prog_bar=True, sync_dist=True)
         self.log("val_cindex", val_ci, prog_bar=True, sync_dist=True)
 
         self._val_scores.clear()
         self._val_times.clear()
         self._val_events.clear()
-
-    # -------- Optimizer --------
-    def configure_optimizers(self) -> Any:
-        return torch.optim.Adam(
-            self.parameters(), lr=self.lr, weight_decay=self.weight_decay
-        )
