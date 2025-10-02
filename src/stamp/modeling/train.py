@@ -23,6 +23,7 @@ from stamp.modeling.data import (
     load_patient_level_data,
     patient_feature_dataloader,
     patient_to_ground_truth_from_clini_table_,
+    patient_to_survival_from_clini_table_,
     slide_to_patient_from_slide_table_,
     tile_bag_dataloader,
 )
@@ -59,13 +60,27 @@ def train_categorical_model_(
     if feature_type == "tile":
         if config.slide_table is None:
             raise ValueError("A slide table is required for tile-level modeling")
-        if config.ground_truth_label is None:
-            raise ValueError("Ground truth label is required for tile-level modeling")
-        patient_to_ground_truth = patient_to_ground_truth_from_clini_table_(
-            clini_table_path=config.clini_table,
-            ground_truth_label=config.ground_truth_label,
-            patient_label=config.patient_label,
-        )
+        if advanced.task == "survival":
+            if config.time_label is None or config.status_label is None:
+                raise ValueError(
+                    "Both time_label and status_label is required for tile-level survival modeling"
+                )
+            patient_to_ground_truth = patient_to_survival_from_clini_table_(
+                clini_table_path=config.clini_table,
+                time_label=config.time_label,
+                status_label=config.status_label,
+                patient_label=config.patient_label,
+            )
+        else:
+            if config.ground_truth_label is None:
+                raise ValueError(
+                    "Ground truth label is required for tile-level modeling"
+                )
+            patient_to_ground_truth = patient_to_ground_truth_from_clini_table_(
+                clini_table_path=config.clini_table,
+                ground_truth_label=config.ground_truth_label,
+                patient_label=config.patient_label,
+            )
         slide_to_patient = slide_to_patient_from_slide_table_(
             slide_table_path=config.slide_table,
             feature_dir=config.feature_dir,

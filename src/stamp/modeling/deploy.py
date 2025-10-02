@@ -247,10 +247,10 @@ def _predict(
     patients_used_for_training: set[PatientId] = set(
         getattr(model, "train_patients", [])
     ) | set(getattr(model, "valid_patients", []))
-    # if overlap := patients_used_for_training & set(patient_ids):
-    #     raise ValueError(
-    #         f"some of the patients in the validation set were used during training: {overlap}"
-    #     )
+    if overlap := patients_used_for_training & set(patient_ids):
+        raise ValueError(
+            f"some of the patients in the validation set were used during training: {overlap}"
+        )
 
     trainer = lightning.Trainer(
         accelerator=accelerator,

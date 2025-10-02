@@ -187,16 +187,6 @@ def tile_bag_dataloader(
     )
 
 
-# def _collate_to_tuple(
-#     items: list[tuple[_Bag, _Coordinates, BagSize, _EncodedTarget]],
-# ) -> tuple[Bags, CoordinatesBatch, BagSizes, EncodedTargets]:
-#     bags = torch.stack([bag for bag, _, _, _ in items])
-#     coords = torch.stack([coord for _, coord, _, _ in items])
-#     bag_sizes = torch.tensor([bagsize for _, _, bagsize, _ in items])
-#     encoded_targets = torch.stack([encoded_target for _, _, _, encoded_target in items])
-
-
-#     return (bags, coords, bag_sizes, encoded_targets)
 def _collate_to_tuple(
     items: list[tuple[_Bag, _Coordinates, BagSize, _EncodedTarget]],
 ) -> tuple[Bags, CoordinatesBatch, BagSizes, EncodedTargets]:
