@@ -369,12 +369,18 @@ class LitBaseRegressor(Base):
         *,
         dim_input: int,
         model_class: type[nn.Module],
+        ground_truth_label: PandasLabel | None,
         **kwargs,
     ) -> None:
-        super().__init__(dim_input=dim_input, model_class=model_class, **kwargs)
+        super().__init__(
+            dim_input=dim_input,
+            model_class=model_class,
+            ground_truth_label=ground_truth_label,
+            **kwargs,
+        )
 
         self.model: nn.Module = self._build_backbone(model_class, dim_input, 1, kwargs)
-
+        self.ground_truth_label = ground_truth_label
         self.hparams["task"] = "regression"
 
     @staticmethod
