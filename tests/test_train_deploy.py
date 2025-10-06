@@ -5,7 +5,12 @@ from pathlib import Path
 import numpy as np
 import pytest
 import torch
-from random_data import create_random_dataset, create_random_patient_level_dataset
+from random_data import (
+    create_random_dataset,
+    create_random_patient_level_dataset,
+    create_random_regression_dataset,
+    create_random_survival_dataset,
+)
 
 from stamp.modeling.config import (
     AdvancedConfig,
@@ -124,9 +129,7 @@ def test_train_deploy_patient_level_integration(
     use_alibi: bool,
     use_vary_precision_transform: bool,
 ) -> None:
-    random.seed(0)
-    torch.manual_seed(0)
-    np.random.seed(0)
+
 
     (tmp_path / "train").mkdir()
     (tmp_path / "deploy").mkdir()
@@ -191,6 +194,164 @@ def test_train_deploy_patient_level_integration(
         time_label=None,
         status_label=None,
         filename_label="slide_path",  # Not used for patient-level
+        accelerator="gpu" if torch.cuda.is_available() else "cpu",
+        num_workers=min(os.cpu_count() or 1, 16),
+    )
+
+
+@pytest.mark.slow
+def test_train_deploy_regression_integration(
+    *,
+    tmp_path: Path,
+    feat_dim: int = 25,
+) -> None:
+    """Integration test: train + deploy a tile-level regression model."""
+    Seed.set(42)
+
+    (tmp_path / "train").mkdir()
+    (tmp_path / "deploy").mkdir()
+
+    # --- Create random tile-level regression dataset ---
+    train_clini_path, train_slide_path, train_feature_dir, _ = (
+        create_random_regression_dataset(
+            dir=tmp_path / "train",
+            n_patients=400,
+            max_slides_per_patient=3,
+            min_tiles_per_slide=20,
+            max_tiles_per_slide=600,
+            feat_dim=feat_dim,
+        )
+    )
+    deploy_clini_path, deploy_slide_path, deploy_feature_dir, _ = (
+        create_random_regression_dataset(
+            dir=tmp_path / "deploy",
+            n_patients=50,
+            max_slides_per_patient=3,
+            min_tiles_per_slide=20,
+            max_tiles_per_slide=600,
+            feat_dim=feat_dim,
+        )
+    )
+
+    # --- Build config objects ---
+    config = TrainConfig(
+        clini_table=train_clini_path,
+        slide_table=train_slide_path,
+        feature_dir=train_feature_dir,
+        output_dir=tmp_path / "train_output",
+        patient_label="patient",
+        ground_truth_label="target",  # numeric regression target
+        filename_label="slide_path",
+        categories=None,
+    )
+
+    advanced = AdvancedConfig(
+        task="regression",
+        bag_size=500,
+        num_workers=min(os.cpu_count() or 1, 16),
+        batch_size=1,
+        max_epochs=2,
+        patience=1,
+        accelerator="gpu" if torch.cuda.is_available() else "cpu",
+        model_params=ModelParams(
+            vit=VitModelParams(),
+            mlp=MlpModelParams(),
+        ),
+    )
+
+    # --- Train + deploy regression model ---
+    train_categorical_model_(config=config, advanced=advanced)
+
+    deploy_categorical_model_(
+        output_dir=tmp_path / "deploy_output",
+        checkpoint_paths=[tmp_path / "train_output" / "model.ckpt"],
+        clini_table=deploy_clini_path,
+        slide_table=deploy_slide_path,
+        feature_dir=deploy_feature_dir,
+        patient_label="patient",
+        ground_truth_label="target",
+        time_label=None,
+        status_label=None,
+        filename_label="slide_path",
+        accelerator="gpu" if torch.cuda.is_available() else "cpu",
+        num_workers=min(os.cpu_count() or 1, 16),
+    )
+
+
+@pytest.mark.slow
+def test_train_deploy_survival_integration(
+    *,
+    tmp_path: Path,
+    feat_dim: int = 25,
+) -> None:
+    """Integration test: train + deploy a tile-level survival model."""
+    Seed.set(42)
+
+    (tmp_path / "train").mkdir()
+    (tmp_path / "deploy").mkdir()
+
+    # --- Create random tile-level survival dataset ---
+    train_clini_path, train_slide_path, train_feature_dir, _ = (
+        create_random_survival_dataset(
+            dir=tmp_path / "train",
+            n_patients=400,
+            max_slides_per_patient=3,
+            min_tiles_per_slide=20,
+            max_tiles_per_slide=600,
+            feat_dim=feat_dim,
+        )
+    )
+    deploy_clini_path, deploy_slide_path, deploy_feature_dir, _ = (
+        create_random_survival_dataset(
+            dir=tmp_path / "deploy",
+            n_patients=50,
+            max_slides_per_patient=3,
+            min_tiles_per_slide=20,
+            max_tiles_per_slide=600,
+            feat_dim=feat_dim,
+        )
+    )
+
+    # --- Build config objects ---
+    config = TrainConfig(
+        clini_table=train_clini_path,
+        slide_table=train_slide_path,
+        feature_dir=train_feature_dir,
+        output_dir=tmp_path / "train_output",
+        patient_label="patient",
+        time_label="day",  # raw ground-truth columns
+        status_label="status",
+        filename_label="slide_path",
+    )
+
+    advanced = AdvancedConfig(
+        task="survival",
+        bag_size=500,
+        num_workers=min(os.cpu_count() or 1, 16),
+        batch_size=8,
+        max_epochs=2,
+        patience=1,
+        accelerator="gpu" if torch.cuda.is_available() else "cpu",
+        model_params=ModelParams(
+            vit=VitModelParams(),
+            mlp=MlpModelParams(),
+        ),
+    )
+
+    # --- Train + deploy survival model ---
+    train_categorical_model_(config=config, advanced=advanced)
+
+    deploy_categorical_model_(
+        output_dir=tmp_path / "deploy_output",
+        checkpoint_paths=[tmp_path / "train_output" / "model.ckpt"],
+        clini_table=deploy_clini_path,
+        slide_table=deploy_slide_path,
+        feature_dir=deploy_feature_dir,
+        patient_label="patient",
+        ground_truth_label=None,
+        time_label="day",
+        status_label="status",
+        filename_label="slide_path",
         accelerator="gpu" if torch.cuda.is_available() else "cpu",
         num_workers=min(os.cpu_count() or 1, 16),
     )

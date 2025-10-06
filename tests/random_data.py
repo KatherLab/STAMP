@@ -86,6 +86,122 @@ def create_random_dataset(
 
     return clini_path, slide_path, feat_dir, categories
 
+def create_random_regression_dataset(
+    *,
+    dir: Path,
+    n_patients: int,
+    max_slides_per_patient: int,
+    min_tiles_per_slide: int,
+    max_tiles_per_slide: int,
+    feat_dim: int,
+    extractor_name: str = "random-test-generator",
+    min_slides_per_patient: int = 1,
+) -> tuple[Path, Path, Path, None]:
+    """
+    Create a random tile-level regression dataset with numeric targets.
+    CSV columns:
+        patient,target
+    """
+    slide_path_to_patient: dict[Path, str] = {}
+    patient_to_target: list[tuple[str, float]] = []
+
+    clini_path = dir / "clini.csv"
+    slide_path = dir / "slide.csv"
+    feat_dir = dir / "feats"
+    feat_dir.mkdir(exist_ok=True)
+
+    for _ in range(n_patients):
+        patient_id = random_string(16)
+        # Generate a random continuous target
+        target_value = float(np.random.uniform(0.0, 100.0))
+        patient_to_target.append((patient_id, target_value))
+
+        for _ in range(random.randint(min_slides_per_patient, max_slides_per_patient)):
+            slide_path_to_patient[
+                create_random_feature_file(
+                    tmp_path=feat_dir,
+                    min_tiles=min_tiles_per_slide,
+                    max_tiles=max_tiles_per_slide,
+                    feat_dim=feat_dim,
+                    extractor_name=extractor_name,
+                ).relative_to(feat_dir)
+            ] = patient_id
+
+    # --- Write clini + slide tables ---
+    clini_df = pd.DataFrame(patient_to_target, columns=["patient", "target"])
+    clini_df["target"] = clini_df["target"].astype(float)  # ✅ ensure numeric dtype
+    clini_df.to_csv(clini_path, index=False)
+
+    slide_df = pd.DataFrame(
+        slide_path_to_patient.items(),
+        columns=["slide_path", "patient"],
+    )
+    slide_df.to_csv(slide_path, index=False)
+
+    return clini_path, slide_path, feat_dir, None
+
+
+def create_random_survival_dataset(
+    *,
+    dir: Path,
+    n_patients: int,
+    max_slides_per_patient: int,
+    min_tiles_per_slide: int,
+    max_tiles_per_slide: int,
+    feat_dim: int,
+    extractor_name: str = "random-test-generator",
+    min_slides_per_patient: int = 1,
+) -> tuple[Path, Path, Path, None]:
+    """
+    Create a random tile-level survival dataset with three columns:
+        patient, day, status
+    where 'day' is survival time and 'status' is the event indicator (1=event, 0=censored).
+    """
+
+    slide_path_to_patient: dict[Path, str] = {}
+    patient_rows: list[tuple[str, float, int]] = []
+
+    clini_path = dir / "clini.csv"
+    slide_path = dir / "slide.csv"
+    feat_dir = dir / "feats"
+    feat_dir.mkdir(exist_ok=True)
+
+    for _ in range(n_patients):
+        patient_id = random_string(16)
+
+        # Random survival time (days) and event status
+        time_days = float(np.random.uniform(30, 2000))
+        status = int(np.random.choice([0, 1], p=[0.3, 0.7]))
+
+        # Store row
+        patient_rows.append((patient_id, time_days, status))
+
+        # Generate slides for this patient
+        for _ in range(random.randint(min_slides_per_patient, max_slides_per_patient)):
+            slide_path_to_patient[
+                create_random_feature_file(
+                    tmp_path=feat_dir,
+                    min_tiles=min_tiles_per_slide,
+                    max_tiles=max_tiles_per_slide,
+                    feat_dim=feat_dim,
+                    extractor_name=extractor_name,
+                ).relative_to(feat_dir)
+            ] = patient_id
+
+    # --- Write clinical table (3 columns) ---
+    pd.DataFrame(
+        patient_rows,
+        columns=["patient", "day", "status"],
+    ).to_csv(clini_path, index=False)
+
+    # --- Write slide table ---
+    pd.DataFrame(
+        slide_path_to_patient.items(),
+        columns=["slide_path", "patient"],
+    ).to_csv(slide_path, index=False)
+
+    return clini_path, slide_path, feat_dir, None
+
 
 def create_random_patient_level_dataset(
     *,

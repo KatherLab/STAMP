@@ -505,7 +505,7 @@ class LitTileSurvival(LitTileRegressor):
         method: str = "cox",
         **kwargs,
     ):
-        super().__init__(**kwargs)
+        super().__init__(time_label=time_label, status_label=status_label, **kwargs)
         self.hparams["task"] = "survival"
         self.method = method
         self.time_label = time_label

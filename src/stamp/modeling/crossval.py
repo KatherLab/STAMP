@@ -1,11 +1,10 @@
 import logging
-from abc import ABC, abstractmethod
 from collections.abc import Mapping, Sequence
 from typing import Any, Final
 
 import numpy as np
 from pydantic import BaseModel
-from sklearn.model_selection import StratifiedKFold
+from sklearn.model_selection import KFold, StratifiedKFold
 
 from stamp.modeling.config import AdvancedConfig, CrossvalConfig
 from stamp.modeling.data import (
@@ -122,7 +121,17 @@ def categorical_crossval_(
 
     # Generate the splits, or load them from the splits file if they already exist
     if not splits_file.exists():
-        splits = _get_splits(patient_to_data=patient_to_data, n_splits=config.n_splits)
+        splits = (
+            _get_splits(
+                patient_to_data=patient_to_data,
+                n_splits=config.n_splits,
+                spliter=StratifiedKFold,
+            )
+            if advanced.task == "classification"
+            else _get_splits(
+                patient_to_data=patient_to_data, n_splits=config.n_splits, spliter=KFold
+            )
+        )
         with open(splits_file, "w") as fp:
             fp.write(splits.model_dump_json(indent=4))
     else:
@@ -284,10 +293,10 @@ def categorical_crossval_(
 
 
 def _get_splits(
-    *, patient_to_data: Mapping[PatientId, PatientData[Any]], n_splits: int
+    *, patient_to_data: Mapping[PatientId, PatientData[Any]], n_splits: int, spliter
 ) -> _Splits:
     patients = np.array(list(patient_to_data.keys()))
-    skf = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=0)
+    skf = spliter(n_splits=n_splits, shuffle=True, random_state=0)
     splits = _Splits(
         splits=[
             _Split(
