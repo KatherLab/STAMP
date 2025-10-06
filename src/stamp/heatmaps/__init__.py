@@ -19,10 +19,6 @@ from torch.func import jacrev  # pyright: ignore[reportPrivateImportUsage]
 
 from stamp.modeling.data import get_coords, get_stride
 from stamp.modeling.deploy import load_model_from_ckpt
-from stamp.modeling.models import LitTileClassifier
-from stamp.modeling.models.vision_tranformer import (
-    VisionTransformer,
-)
 from stamp.preprocessing import supported_extensions
 from stamp.preprocessing.tiling import get_slide_mpp_
 from stamp.types import DeviceLikeType, Microns, SlideMPP, TilePixels
@@ -31,7 +27,7 @@ _logger = logging.getLogger("stamp")
 
 
 def _gradcam_per_category(
-    model: VisionTransformer,
+    model: torch.nn.Module,
     feats: Float[Tensor, "tile feat"],
     coords: Float[Tensor, "tile 2"],
 ) -> Float[Tensor, "tile category"]:
@@ -238,10 +234,7 @@ def heatmaps_(
         # coordinates as used by OpenSlide
         coords_tile_slide_px = torch.round(coords_um / slide_mpp).long()
 
-        model = (
-            LitTileClassifier.load_from_checkpoint(checkpoint_path).to(device).eval()
-        )
-
+        # Load model from cpkt
         model = load_model_from_ckpt(checkpoint_path)
 
         # TODO: Update version when a newer model logic breaks heatmaps.
@@ -266,7 +259,7 @@ def heatmaps_(
         highest_prob_class_idx = slide_score.argmax().item()
 
         gradcam = _gradcam_per_category(
-            model=model.model,  # type: ignore
+            model=model.model,
             feats=feats,
             coords=coords_um,
         )  # shape: [tile, category]

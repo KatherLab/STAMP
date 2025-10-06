@@ -129,8 +129,6 @@ def test_train_deploy_patient_level_integration(
     use_alibi: bool,
     use_vary_precision_transform: bool,
 ) -> None:
-
-
     (tmp_path / "train").mkdir()
     (tmp_path / "deploy").mkdir()
 
