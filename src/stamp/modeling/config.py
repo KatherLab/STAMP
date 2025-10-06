@@ -103,10 +103,10 @@ class LinearModelParams(BaseModel):
 
 class ModelParams(BaseModel):
     model_config = ConfigDict(extra="forbid")
-    vit: VitModelParams
-    trans_mil: TransMILModelParams | None = None
-    mlp: MlpModelParams
-    linear: LinearModelParams | None = None
+    vit: VitModelParams = Field(default_factory=VitModelParams)
+    trans_mil: TransMILModelParams = Field(default_factory=TransMILModelParams)
+    mlp: MlpModelParams = Field(default_factory=MlpModelParams)
+    linear: LinearModelParams = Field(default_factory=LinearModelParams)
 
 
 class AdvancedConfig(BaseModel):

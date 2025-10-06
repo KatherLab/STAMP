@@ -42,7 +42,6 @@ class Base(lightning.LightningModule, ABC):
         total_steps: Number of steps done in the LR Scheduler cycle.
         max_lr: max learning rate.
         div_factor: Determines the initial learning rate via initial_lr = max_lr/div_factor
-        ground_truth_label: Column name for accessing ground-truth labels from metadata.
         train_patients: List of patient IDs used for training.
         valid_patients: List of patient IDs used for validation.
         stamp_version: Version of the `stamp` framework used during training.
@@ -57,7 +56,6 @@ class Base(lightning.LightningModule, ABC):
         max_lr: float,
         div_factor: float,
         # Metadata used by other parts of stamp, but not by the model itself
-        ground_truth_label: PandasLabel | None,
         train_patients: Iterable[PatientId],
         valid_patients: Iterable[PatientId],
         stamp_version: Version = Version(stamp.__version__),
@@ -72,7 +70,6 @@ class Base(lightning.LightningModule, ABC):
         self.div_factor = div_factor
 
         # Deployment
-        self.ground_truth_label = ground_truth_label
         self.train_patients = train_patients
         self.valid_patients = valid_patients
         self.stamp_version = str(stamp_version)
@@ -158,7 +155,9 @@ class LitBaseClassifier(Base):
     The attention mask is currently deactivated to reduce memory usage.
 
     Args:
+        model_class: model backbone
         categories: List of class labels.
+        ground_truth_label: Column name for accessing ground-truth labels from metadata.
         category_weights: Class weights for cross-entropy loss to handle imbalance.
         dim_input: Input feature dimensionality per tile.
     """
@@ -167,6 +166,7 @@ class LitBaseClassifier(Base):
         self,
         *,
         model_class: type[nn.Module],
+        ground_truth_label: PandasLabel,
         categories: Sequence[Category],
         category_weights: Float[Tensor, "category_weight"],  # noqa: F821
         dim_input: int,
@@ -174,11 +174,13 @@ class LitBaseClassifier(Base):
     ) -> None:
         super().__init__(
             model_class=model_class,
+            ground_truth_label=ground_truth_label,
             categories=categories,
             category_weights=category_weights,
             dim_input=dim_input,
             **kwargs,
         )
+        self.ground_truth_label = ground_truth_label
 
         if len(categories) != len(category_weights):
             raise ValueError(
@@ -358,6 +360,7 @@ class LitBaseRegressor(Base):
 
     Args:
         dim_input: Input feature dimensionality per tile.
+        model_clas: Model backbone
         loss_type: 'l1'.
     """
 
@@ -501,9 +504,6 @@ class LitTileSurvival(LitTileRegressor):
         self.method = method
         self.time_label = time_label
         self.status_label = status_label
-        self.save_hyperparameters(
-            ignore=["ground_truth_label"]
-        )  # survival does not require gt column
         # storage for validation accumulation
         self._val_scores, self._val_times, self._val_events = [], [], []
 

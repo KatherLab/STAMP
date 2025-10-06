@@ -99,6 +99,8 @@ def test_train_deploy_integration(
         feature_dir=deploy_feature_dir,
         patient_label="patient",
         ground_truth_label="ground-truth",
+        time_label=None,
+        status_label=None,
         filename_label="slide_path",
         accelerator="gpu" if torch.cuda.is_available() else "cpu",
         num_workers=min(os.cpu_count() or 1, 16),
@@ -186,6 +188,8 @@ def test_train_deploy_patient_level_integration(
         feature_dir=deploy_feature_dir,
         patient_label="patient",
         ground_truth_label="ground-truth",
+        time_label=None,
+        status_label=None,
         filename_label="slide_path",  # Not used for patient-level
         accelerator="gpu" if torch.cuda.is_available() else "cpu",
         num_workers=min(os.cpu_count() or 1, 16),

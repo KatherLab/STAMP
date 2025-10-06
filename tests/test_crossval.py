@@ -63,6 +63,8 @@ def test_crossval_integration(
         output_dir=output_dir,
         patient_label="patient",
         ground_truth_label="ground-truth",
+        time_label="time_label",
+        status_label="status_label",
         filename_label="slide_path",
         categories=categories,
         feature_dir=feature_dir,
@@ -71,6 +73,7 @@ def test_crossval_integration(
     )
 
     advanced = AdvancedConfig(
+        seed=42,
         task="classification",
         # Dataset and -loader parameters
         bag_size=max_tiles_per_slide // 2,

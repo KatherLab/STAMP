@@ -633,12 +633,6 @@ def slide_to_patient_from_slide_table_(
     )
 
     # Verify the slide table contains a feature path with .h5 extension by
-    # checking the filename_label. Auto-fix if missing.
-    for i, x in enumerate(slide_df[filename_label]):
-        if not str(x).endswith(".h5"):
-            slide_df.at[i, filename_label] = str(x) + ".h5"
-
-    # Verify the slide table contains a feature path with .h5 extension by
     # checking the filename_label.
     for x in slide_df[filename_label]:
         if not str(x).endswith(".h5"):
@@ -765,4 +759,3 @@ def get_stride(coords: Float[Tensor, "tile 2"]) -> float:
         ),
     )
     return stride
-

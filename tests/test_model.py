@@ -1,6 +1,7 @@
 import torch
 
-from stamp.modeling.models.mlp import MLPClassifier
+from stamp.modeling.models.mlp import MLP
+from stamp.modeling.models.trans_mil import TransMIL
 from stamp.modeling.models.vision_tranformer import VisionTransformer
 
 
@@ -79,20 +80,12 @@ def test_mlp_classifier_dims(
     dim_hidden: int = 64,
     num_layers: int = 2,
 ) -> None:
-    model = MLPClassifier(
-        categories=[str(i) for i in range(num_classes)],
-        category_weights=torch.ones(num_classes),
+    model = MLP(
+        dim_output=num_classes,
         dim_input=input_dim,
         dim_hidden=dim_hidden,
         num_layers=num_layers,
         dropout=0.1,
-        ground_truth_label="test",
-        train_patients=["pat1", "pat2"],
-        valid_patients=["pat3", "pat4"],
-        # these values do not affect at inference time
-        total_steps=320,
-        max_lr=1e-4,
-        div_factor=25.0,
     )
     feats = torch.rand((batch_size, input_dim))
     logits = model.forward(feats)
@@ -106,20 +99,12 @@ def test_mlp_inference_reproducibility(
     dim_hidden: int = 64,
     num_layers: int = 3,
 ) -> None:
-    model = MLPClassifier(
-        categories=[str(i) for i in range(num_classes)],
-        category_weights=torch.ones(num_classes),
+    model = MLP(
+        dim_output=num_classes,
         dim_input=input_dim,
         dim_hidden=dim_hidden,
         num_layers=num_layers,
         dropout=0.1,
-        ground_truth_label="test",
-        train_patients=["pat1", "pat2"],
-        valid_patients=["pat3", "pat4"],
-        # these values do not affect at inference time
-        total_steps=320,
-        max_lr=1e-4,
-        div_factor=25.0,
     )
     model = model.eval()
     feats = torch.rand((batch_size, input_dim))
@@ -127,3 +112,53 @@ def test_mlp_inference_reproducibility(
         logits1 = model.forward(feats)
         logits2 = model.forward(feats)
     assert torch.allclose(logits1, logits2)
+
+
+def test_trans_mil_dims(
+    # arbitrarily chosen constants
+    num_classes: int = 3,
+    batch_size: int = 6,
+    n_tiles: int = 75,
+    input_dim: int = 456,
+    dim_hidden: int = 512,
+) -> None:
+    model = TransMIL(dim_output=num_classes, dim_input=input_dim, dim_hidden=dim_hidden)
+
+    bags = torch.rand((batch_size, n_tiles, input_dim))
+    coords = torch.rand((batch_size, n_tiles, 2))
+    mask = torch.rand((batch_size, n_tiles)) > 0.5
+    logits = model.forward(bags, coords=coords, mask=mask)
+    assert logits.shape == (batch_size, num_classes)
+
+
+def test_trans_mil_inference_reproducibility(
+    # arbitrarily chosen constants
+    num_classes: int = 4,
+    batch_size: int = 7,
+    n_tiles: int = 76,
+    input_dim: int = 457,
+    dim_hidden: int = 512,
+) -> None:
+    model = TransMIL(dim_output=num_classes, dim_input=input_dim, dim_hidden=dim_hidden)
+
+    model = model.eval()
+
+    bags = torch.rand((batch_size, n_tiles, input_dim))
+    coords = torch.rand((batch_size, n_tiles, 2))
+    mask = (
+        torch.arange(n_tiles).to(device=bags.device).unsqueeze(0).repeat(batch_size, 1)
+    ) >= torch.randint(1, n_tiles, (batch_size, 1))
+
+    with torch.inference_mode():
+        logits1 = model.forward(
+            bags,
+            coords=coords,
+            mask=mask,
+        )
+        logits2 = model.forward(
+            bags,
+            coords=coords,
+            mask=mask,
+        )
+
+    assert logits1.allclose(logits2)
