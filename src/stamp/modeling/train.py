@@ -423,6 +423,7 @@ def train_model_(
         # gradient_clip_val=0.5,
         logger=CSVLogger(save_dir=output_dir),
         log_every_n_steps=len(train_dl),
+        num_sanity_val_steps=0,
     )
     trainer.fit(
         model=model,

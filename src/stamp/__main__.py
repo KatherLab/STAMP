@@ -209,12 +209,15 @@ def _run_cli(args: argparse.Namespace) -> None:
                 "using the following configuration:\n"
                 f"{yaml.dump(config.statistics.model_dump(mode='json'))}"
             )
+
             compute_stats_(
+                task=config.advanced_config.task,
                 output_dir=config.statistics.output_dir,
                 pred_csvs=config.statistics.pred_csvs,
                 ground_truth_label=config.statistics.ground_truth_label,
                 true_class=config.statistics.true_class,
-                pred_label=config.statistics.pred_label,
+                time_label=config.statistics.time_label,
+                status_label=config.statistics.status_label,
             )
 
         case "heatmaps":

@@ -9,10 +9,10 @@ import lightning
 import numpy as np
 import torch
 from jaxtyping import Bool, Float
+from lifelines.utils import concordance_index
 from packaging.version import Version
 from torch import Tensor, nn, optim
 from torchmetrics.classification import MulticlassAUROC
-from torchmetrics.regression import MeanAbsoluteError, MeanSquaredError, PearsonCorrCoef
 
 import stamp
 from stamp.types import (
@@ -575,9 +575,9 @@ class LitTileSurvival(LitTileRegressor):
     def c_index(
         scores: torch.Tensor, times: torch.Tensor, events: torch.Tensor
     ) -> torch.Tensor:
-        """
-        Concordance index: proportion of correctly ordered comparable pairs.
-        """
+        # """
+        # Concordance index: proportion of correctly ordered comparable pairs.
+        # """
         N = len(times)
         if N <= 1:
             return torch.tensor(float("nan"), device=scores.device)
@@ -639,7 +639,10 @@ class LitTileSurvival(LitTileRegressor):
         self._val_events.append(events.detach().cpu())
 
     def on_validation_epoch_end(self):
-        if len(self._val_scores) == 0:
+        if (
+            len(self._val_scores) == 0
+            or sum(e.sum().item() for e in self._val_events) == 0
+        ):
             return
 
         scores = torch.cat(self._val_scores).to(self.device)
@@ -649,7 +652,7 @@ class LitTileSurvival(LitTileRegressor):
         val_loss = self.cox_loss(scores, times, events)
         val_ci = self.c_index(scores, times, events)
 
-        self.log("cox_loss", val_loss, prog_bar=True, sync_dist=True)
+        self.log("val_cox_loss", val_loss, prog_bar=True, sync_dist=True)
         self.log("val_cindex", val_ci, prog_bar=True, sync_dist=True)
 
         self._val_scores.clear()
