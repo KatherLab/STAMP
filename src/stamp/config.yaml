@@ -277,8 +277,7 @@ patient_encoding:
 
 
 advanced_config:
-  # Optional random seed
-  # seed: 42
+  seed: 42
   task: "classification"
   max_epochs: 32
   patience: 16
@@ -307,13 +306,11 @@ advanced_config:
       # Experimental feature: Use ALiBi positional embedding
       use_alibi: false
 
-    # trans_mil:
-    #   dim_hidden: 512
+    trans_mil:
+      dim_hidden: 512
 
     # Patient-level training models:
     mlp: # Multilayer Perceptron
       dim_hidden: 512
       num_layers: 2
       dropout: 0.25
-
-    linear_regressor:

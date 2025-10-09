@@ -10,7 +10,12 @@ from stamp.modeling.data import (
     patient_feature_dataloader,
     tile_bag_dataloader,
 )
-from stamp.modeling.deploy import _predict, _to_prediction_df
+from stamp.modeling.deploy import (
+    _predict,
+    _to_prediction_df,
+    _to_regression_prediction_df,
+    _to_survival_prediction_df,
+)
 from stamp.modeling.models import (
     LitPatientClassifier,
     LitTileClassifier,

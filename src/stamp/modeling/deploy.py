@@ -1,8 +1,7 @@
 import logging
-from abc import ABC
 from collections.abc import Mapping, Sequence
 from pathlib import Path
-from typing import Optional, TypeAlias, Union, cast
+from typing import TypeAlias, Union, cast
 
 import lightning
 import numpy as np

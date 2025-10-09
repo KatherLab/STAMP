@@ -195,7 +195,7 @@ class LitBaseClassifier(Base):
         # Number classes
         self.categories = np.array(categories)
 
-        self.save_hyperparameters({"task": "classification"})
+        self.hparams.update({"task": "classification"})
 
 
 class LitTileClassifier(LitBaseClassifier):
@@ -368,7 +368,7 @@ class LitBaseRegressor(Base):
         *,
         dim_input: int,
         model_class: type[nn.Module],
-        ground_truth_label: PandasLabel | None,
+        ground_truth_label: PandasLabel | None = None,
         **kwargs,
     ) -> None:
         super().__init__(
@@ -380,7 +380,7 @@ class LitBaseRegressor(Base):
 
         self.model: nn.Module = self._build_backbone(model_class, dim_input, 1, kwargs)
         self.ground_truth_label = ground_truth_label
-        self.save_hyperparameters({"task": "regression"})
+        self.hparams.update({"task": "regression"})
 
     @staticmethod
     def _compute_loss(y_true: Tensor, y_pred: Tensor) -> Loss:
@@ -505,7 +505,7 @@ class LitTileSurvival(LitTileRegressor):
         **kwargs,
     ):
         super().__init__(time_label=time_label, status_label=status_label, **kwargs)
-        self.save_hyperparameters({"task": "survival"})
+        self.hparams.update({"task": "survival"})
         self.method = method
         self.time_label = time_label
         self.status_label = status_label
