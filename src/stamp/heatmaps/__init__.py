@@ -1,3 +1,7 @@
+import os
+
+os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"
+
 import logging
 from collections.abc import Collection, Iterable
 from pathlib import Path
@@ -38,7 +42,7 @@ def _gradcam_per_category(
             feats
             * jacrev(
                 lambda bags: model.forward(
-                    bags=bags.unsqueeze(0),
+                    bags.unsqueeze(0),
                     coords=coords.unsqueeze(0),
                     mask=None,
                 ).squeeze(0)
@@ -67,7 +71,7 @@ def _gradcam_single(
 
     # Forward pass (single scalar output)
     output = model.forward(
-        bags=feats.unsqueeze(0),
+        feats.unsqueeze(0),
         coords=coords.unsqueeze(0),
         mask=None,
     ).squeeze()
@@ -284,7 +288,7 @@ def heatmaps_(
         # coordinates as used by OpenSlide
         coords_tile_slide_px = torch.round(coords_um / slide_mpp).long()
 
-        model = load_model_from_ckpt(checkpoint_path)
+        model = load_model_from_ckpt(checkpoint_path).eval()
 
         # TODO: Update version when a newer model logic breaks heatmaps.
         if Version(model.stamp_version) < Version("2.3.0"):
@@ -296,7 +300,7 @@ def heatmaps_(
         # Score for the entire slide
         slide_score = (
             model.model(
-                bags=feats.unsqueeze(0),
+                feats.unsqueeze(0),
                 coords=coords_um.unsqueeze(0),
                 mask=None,
             ).squeeze(0)
@@ -383,14 +387,17 @@ def heatmaps_(
                 coords_norm,
             ).detach()  # shape: [width, height, category]
 
-            scores = torch.softmax(
-                model.model.forward(
-                    bags=feats.unsqueeze(-2),
-                    coords=coords_um.unsqueeze(-2),
-                    mask=torch.zeros(len(feats), 1, dtype=torch.bool, device=device),
-                ),
-                dim=1,
-            )  # shape: [tile, category]
+            with torch.no_grad():
+                scores = torch.softmax(
+                    model.model.forward(
+                        feats.unsqueeze(-2),
+                        coords=coords_um.unsqueeze(-2),
+                        mask=torch.zeros(
+                            len(feats), 1, dtype=torch.bool, device=device
+                        ),
+                    ),
+                    dim=1,
+                )  # shape: [tile, category]
             scores_2d = _vals_to_im(
                 scores, coords_norm
             ).detach()  # shape: [width, height, category]
