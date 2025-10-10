@@ -307,7 +307,7 @@ advanced_config:
   # Determines the initial learning rate via initial_lr = max_lr/div_factor
   max_lr: 1e-4
   div_factor: 25. 
-  # Select a model regadlness of task
+  # Select a model regardless of task
   model_name: "vit" # or mlp, trans_mil
 
   model_params:
