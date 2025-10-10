@@ -291,12 +291,10 @@ advanced_config:
   # Determines the initial learning rate via initial_lr = max_lr/div_factor
   max_lr: 1e-4
   div_factor: 25. 
-  # Select a model. Not working yet, added for future support.
-  # Now it uses a ViT for tile features and a MLP for patient features.
+  # Select a model regadlness of task
   model_name: "vit"
 
   model_params:
-    # Tile-level training models:
     vit: # Vision Transformer
       dim_model: 512
       dim_feedforward: 512
@@ -309,7 +307,6 @@ advanced_config:
     trans_mil:
       dim_hidden: 512
 
-    # Patient-level training models:
     mlp: # Multilayer Perceptron
       dim_hidden: 512
       num_layers: 2
