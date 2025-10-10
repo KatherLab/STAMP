@@ -131,6 +131,7 @@ def test_predict_patient_level(
         predictions[patient_ids[0]], more_predictions[patient_ids[0]]
     ), "the same inputs should repeatedly yield the same results"
 
+
 @pytest.mark.parametrize("task", ["classification", "regression", "survival"])
 def test_to_prediction_df(task: str) -> None:
     if task == "classification":
@@ -234,6 +235,7 @@ def test_to_prediction_df(task: str) -> None:
         assert "patient" in preds_df.columns
         assert "pred_risk" in preds_df.columns
         assert len(preds_df) > 0
+
 
 @pytest.mark.filterwarnings("ignore:GPU available but not used")
 @pytest.mark.filterwarnings(
