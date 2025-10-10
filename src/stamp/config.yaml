@@ -71,7 +71,7 @@ crossval:
   # Name of the column from the clini table to train on.
   ground_truth_label: "KRAS"
 
-  # For survival (should be status and foloow-up days column in clini table)
+  # For survival (should be status and follow-up days columns in clini table)
   # status_label: "event"
   # time_label: "time"
 
@@ -125,7 +125,7 @@ training:
   # Name of the column from the clini table to train on.
   ground_truth_label: "KRAS"
 
-  # For survival (should be status and foloow-up days column in clini table)
+  # For survival (should be status and follow-up days columns in clini table)
   # status_label: "event"
   # time_label: "time"
 
@@ -167,7 +167,7 @@ deployment:
   # Name of the column from the clini to compare predictions to.
   ground_truth_label: "KRAS"
 
-  # For survival (should be status and foloow-up days column in clini table)
+  # For survival (should be status and follow-up days columns in clini table)
   # status_label: "event"
   # time_label: "time"
 
@@ -193,7 +193,7 @@ statistics:
   # a positive class to calculate the statistics for.
   true_class: "mutated"
 
-  # For survival (should be status and foloow-up days column in clini table)
+  # For survival (should be status and follow-up days columns in clini table)
   # status_label: "event"
   # time_label: "time"
 
