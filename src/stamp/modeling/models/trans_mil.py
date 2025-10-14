@@ -242,7 +242,7 @@ class Nystromformer(nn.Module):
         return x
 
 
-class TransLayer(nn.Module):
+class Transformer(nn.Module):
     def __init__(self, norm_layer=nn.LayerNorm, dim=512):
         super().__init__()
         self.norm = norm_layer(dim)
@@ -290,8 +290,8 @@ class TransMIL(nn.Module):
         self._fc1 = nn.Sequential(nn.Linear(dim_input, dim_hidden), nn.ReLU())
         self.cls_token = nn.Parameter(torch.randn(1, 1, dim_hidden))
         self.n_classes = dim_output
-        self.layer1 = TransLayer(dim=dim_hidden)
-        self.layer2 = TransLayer(dim=dim_hidden)
+        self.layer1 = Transformer(dim=dim_hidden)
+        self.layer2 = Transformer(dim=dim_hidden)
         self.norm = nn.LayerNorm(dim_hidden)
         self._fc2 = nn.Linear(dim_hidden, self.n_classes)
 

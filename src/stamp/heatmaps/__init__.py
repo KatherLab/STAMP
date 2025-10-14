@@ -61,40 +61,22 @@ def _gradcam_single(
     model: torch.nn.Module,
     feats: Float[Tensor, "tile feat"],
     coords: Float[Tensor, "tile 2"],
-) -> Float[Tensor, "tile"]:  # noqa: F821
+) -> Float[Tensor, "tile"]:
     """
-    Compute Grad-CAM-like relevance for regression/survival (single-output) models.
-
-    Computes d(output_scalar)/d(feats) and uses grad * feat as relevance score.
+    Grad-CAM-like relevance for regression/survival models using Jacobian-based
+    mechanism (same math as classification but single-output case).
     """
-    feats = feats.clone().detach().requires_grad_(True)
+    feat_dim = -1
 
-    # Forward pass (single scalar output)
-    output = model.forward(
-        feats.unsqueeze(0),
-        coords=coords.unsqueeze(0),
-        mask=None,
-    ).squeeze()
+    jac = jacrev(
+        lambda bags: model.forward(
+            bags.unsqueeze(0),
+            coords=coords.unsqueeze(0),
+            mask=None,
+        ).squeeze()
+    )(feats)
 
-    # If model accidentally returns a vector, average to scalar
-    if output.ndim > 0:
-        output = output.mean()
-
-    # Compute gradient of scalar output w.r.t features
-    grads = torch.autograd.grad(
-        outputs=output,
-        inputs=feats,
-        grad_outputs=torch.ones_like(output),
-        create_graph=False,
-        retain_graph=False,
-        only_inputs=True,
-    )[0]
-
-    # Grad-CAM weighting
-    cam = (feats * grads).mean(dim=-1).abs()
-
-    # Normalize to [0, 1]
-    cam = (cam - cam.min()) / (cam.max() - cam.min() + 1e-8)
+    cam = (feats * jac).mean(feat_dim).abs()  # type: ignore # [tile]
 
     return cam
 
