@@ -61,7 +61,7 @@ def _gradcam_single(
     model: torch.nn.Module,
     feats: Float[Tensor, "tile feat"],
     coords: Float[Tensor, "tile 2"],
-) -> Float[Tensor, "tile"]:
+) -> Float[Tensor, "tile"]:  # noqa: F821
     """
     Grad-CAM-like relevance for regression/survival models using Jacobian-based
     mechanism (same math as classification but single-output case).
