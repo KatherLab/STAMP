@@ -40,7 +40,7 @@ dependencies = [
     "pyyaml>=6.0.2",
     "scikit-learn>=1.6.1",
     "scipy>=1.16.1",
-    "torch>=2.7.1",
+    "torch>=2.7.1,<2.8.0",
     "torchmetrics>=1.6.0",
     "torchvision>=0.22.1",
     "tqdm>=4.67.1",
@@ -99,11 +99,9 @@ virchow2 = [
 ]
 cobra = [
     "stamp[flash-attention]",
-    "causal-conv1d",
-    "mamba-ssm",
-    # "causal-conv1d @ git+https://github.com/KatherLab/causal-conv1d.git@dededae18d0258ccec833ab950d45279f1616fd1",
-    # "mamba-ssm @ git+https://github.com/KatherLab/mamba.git@3dad301098b721ee5c93d9ad16aafbbc1dc42cfd",
-    "cobra @ git+http://github.com/KatherLab/COBRA.git@73712e9ffa4d1bdecf9be9826d66094bd2b17534",
+    "causal-conv1d>=1.5.3.post1",
+    "mamba-ssm>=2.2.6.post3",
+    "cobra @ git+http://github.com/KatherLab/COBRA.git@49d231191db5a9c2ea37a2398dd922c8c9ee9cdb",
     "jinja2>=3.1.4", 
     "triton"
 ]
@@ -179,10 +177,19 @@ conflicts = [
         { extra = "gpu" }
     ]
 ]
+build-constraint-dependencies = [
+  "torch<2.8",
+  "torchvision<0.23",
+]
+
 
 [tool.uv.sources]
-torch = { index = "pytorch-cu128" }
-torchvision = { index = "pytorch-cu128" }
+torch = [
+  { index = "pytorch-cu128", marker = "sys_platform != 'darwin'" }
+]
+torchvision = [
+  { index = "pytorch-cu128", marker = "sys_platform != 'darwin'" }
+]
 
 [[tool.uv.index]]
 name = "pytorch-cu128"
@@ -224,6 +231,7 @@ requires-dist = [
 name = "causal-conv1d"
 requires-dist = [
     "setuptools",
+    "torch"
 ]
 
 [tool.uv.extra-build-dependencies]
