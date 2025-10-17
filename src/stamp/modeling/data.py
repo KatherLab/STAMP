@@ -143,9 +143,9 @@ def tile_bag_dataloader(
 
                 if status_str.lower() == "nan":
                     events.append(np.nan)
-                elif status_str.lower() in {"dead", "event", "1"}:
+                elif status_str.lower() in {"dead", "event", "1", "Yes", "yes"}:
                     events.append(1.0)
-                elif status_str.lower() in {"alive", "censored", "0"}:
+                elif status_str.lower() in {"alive", "censored", "0", "No", "no"}:
                     events.append(0.0)
                 else:
                     events.append(np.nan)  # unknown status → mark missing
