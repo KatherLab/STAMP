@@ -56,6 +56,12 @@ def _survival_stats_for_csv(
     if risk_label is None:
         risk_label = "pred_risk"
 
+    # --- Clean NaNs and invalid events before computing stats ---
+    df = df.dropna(subset=[time_label, status_label, risk_label]).copy()
+    df = df[df[status_label].isin([0, 1])]
+    if len(df) == 0:
+        raise ValueError("No valid rows after dropping NaN or invalid survival data.")
+
     time = np.asarray(df[time_label], dtype=float)
     event = np.asarray(df[status_label], dtype=int)
     risk = np.asarray(df[risk_label], dtype=float)
@@ -106,6 +112,14 @@ def _plot_km(
     """Kaplan–Meier curve (median split) with log-rank p and C-index annotation."""
     if risk_label is None:
         risk_label = "pred_risk"
+
+    # --- Clean NaNs and invalid entries ---
+    df = df.replace(["NaN", "nan", "None", "Inf", "inf"], np.nan)
+    df = df.dropna(subset=[time_label, status_label, risk_label]).copy()
+    df = df[df[status_label].isin([0, 1])]
+
+    if len(df) == 0:
+        raise ValueError(f"No valid rows to plot for {fold_name}.")
 
     time = np.asarray(df[time_label], dtype=float)
     event = np.asarray(df[status_label], dtype=int)

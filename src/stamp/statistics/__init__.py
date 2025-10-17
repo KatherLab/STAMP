@@ -178,23 +178,28 @@ def compute_stats_(
             for p in pred_csvs:
                 df = pd.read_csv(p)
                 fold_name = Path(p).parent.name
+                pred_name = Path(p).stem
+                key = f"{fold_name}_{pred_name}"
 
                 stats = _survival_stats_for_csv(
                     df, time_label=time_label, status_label=status_label
                 )
-                per_fold[fold_name] = stats
+                per_fold[key] = stats
 
                 _plot_km(
                     df,
-                    fold_name=fold_name,
+                    fold_name=key,  # use same naming for plots
                     time_label=time_label,
                     status_label=status_label,
                     outdir=output_dir,
                 )
 
-            # Save individual + aggregated CSVs
+            # ------------------------------------------------------------------ #
+            # Save individual and aggregated CSVs
+            # ------------------------------------------------------------------ #
             stats_df = pd.DataFrame(per_fold).transpose()
+            stats_df.index.name = "fold_name"  # label the index column
             stats_df.to_csv(output_dir / "survival-stats_individual.csv", index=True)
 
-            agg_df = _aggregate_with_ci(stats_df)
-            agg_df.to_csv(output_dir / "survival-stats_aggregated.csv", index=True)
+            # agg_df = _aggregate_with_ci(stats_df)
+            # agg_df.to_csv(output_dir / "survival-stats_aggregated.csv", index=True)

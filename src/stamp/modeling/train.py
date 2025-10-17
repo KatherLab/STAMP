@@ -403,7 +403,7 @@ def train_model_(
     model_checkpoint = ModelCheckpoint(
         monitor=monitor_metric,
         mode=mode,
-        filename="checkpoint-{epoch:02d}-{validation_loss:0.3f}",
+        filename=f"checkpoint-{{epoch:02d}}-{{{monitor_metric}:0.3f}}",
     )
     trainer = lightning.Trainer(
         default_root_dir=output_dir,

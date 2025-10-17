@@ -582,7 +582,7 @@ def patient_to_survival_from_clini_table_(
 
     # normalize values
     clini_df[time_label] = clini_df[time_label].replace(
-        ["NA", "NaN", "nan", ""], np.nan
+        ["NA", "NaN", "nan", "", "=#VALUE!"], np.nan
     )
     clini_df[status_label] = clini_df[status_label].str.strip().str.lower()
 
@@ -712,6 +712,10 @@ def filter_complete_patient_data_(
         )
     }
 
+    _logger.info(
+        f"Kept {len(patient_to_ground_truth)}/{len(patient_to_ground_truth)} \
+        patients with complete data ({len(patient_to_ground_truth) / len(patient_to_ground_truth):.1%})."
+    )
     return patients
 
 
