@@ -10,11 +10,6 @@ import pandas as pd
 import scipy.stats as st
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 
-__author__ = "Marko van Treeck"
-__copyright__ = "Copyright (C) 2022-2025 Marko van Treeck"
-__license__ = "MIT"
-
-
 _score_labels = [
     "r2_score",
     "pearson_r",

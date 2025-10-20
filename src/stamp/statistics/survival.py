@@ -14,10 +14,6 @@ from lifelines.plotting import add_at_risk_counts
 from lifelines.statistics import logrank_test
 from lifelines.utils import concordance_index
 
-__author__ = "Minh Duc Nguyen"
-__copyright__ = "Copyright (C) 2022-2025 Minh Duc Nguyen"
-__license__ = "MIT"
-
 _Inches = NewType("_Inches", float)
 
 
