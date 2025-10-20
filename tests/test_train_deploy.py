@@ -1,8 +1,6 @@
 import os
-import random
 from pathlib import Path
 
-import numpy as np
 import pytest
 import torch
 from random_data import (

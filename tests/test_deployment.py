@@ -203,7 +203,6 @@ def test_to_prediction_df(task: str) -> None:
     elif task == "regression":
         patient_to_ground_truth = {}
         predictions = {PatientId(f"pat{i}"): torch.randn(1) for i in range(5)}
-        categories = []
         preds_df = _to_regression_prediction_df(
             patient_to_ground_truth=patient_to_ground_truth,
             patient_label="patient",
@@ -225,7 +224,7 @@ def test_to_prediction_df(task: str) -> None:
             PatientId("p1"): torch.tensor([0.8]),
             PatientId("p2"): torch.tensor([0.2]),
         }
-        categories = []
+
         preds_df = _to_survival_prediction_df(
             patient_to_ground_truth=patient_to_ground_truth,
             patient_label="patient",

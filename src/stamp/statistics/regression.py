@@ -10,15 +10,6 @@ import pandas as pd
 import scipy.stats as st
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 
-_score_labels = [
-    "r2_score",
-    "pearson_r",
-    "pearson_p",
-    "mae",
-    "rmse",
-    "count",
-]
-
 
 def _regression(preds_df: pd.DataFrame, target_label: str) -> pd.Series:
     """Compute regression metrics for one prediction table."""

@@ -18,7 +18,6 @@ from stamp.statistics.roc import (
     plot_single_decorated_roc_curve,
 )
 from stamp.statistics.survival import (
-    _aggregate_with_ci,
     _plot_km,
     _survival_stats_for_csv,
 )
