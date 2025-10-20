@@ -57,6 +57,55 @@ def _gradcam_per_category(
     return cam.permute(-1, -2)
 
 
+def _attention_rollout_single(
+    model: torch.nn.Module,
+    feats: Float[Tensor, "tile feat"],
+    coords: Float[Tensor, "tile 2"],
+) -> Float[Tensor, "..."]:
+    """
+    Attention rollout for regression/survival models.
+    Aggregates CLS→tile attention across all transformer layers.
+    Returns a 1D relevance map [tile], same shape as _gradcam_single.
+    """
+
+    device = feats.device
+
+    # --- 1. Forward pass to fill attn_weights in each SelfAttention layer ---
+    _ = model(
+        bags=feats.unsqueeze(0),
+        coords=coords.unsqueeze(0),
+        mask=torch.zeros(1, len(feats), dtype=torch.bool, device=device),
+    )
+
+    # --- 2. Rollout computation ---
+    attn_rollout: torch.Tensor | None = None
+    for layer in model.transformer.layers:  # type: ignore
+        attn = getattr(layer[0], "attn_weights", None)  # SelfAttention.attn_weights
+        if attn is None:
+            raise RuntimeError(
+                "SelfAttention.attn_weights not found. "
+                "Make sure SelfAttention stores them."
+            )
+
+        # attn: [heads, seq, seq]
+        attn = attn.mean(0)  # → [seq, seq]
+        attn = attn / (attn.sum(dim=-1, keepdim=True) + 1e-8)  # normalize rows
+
+        attn_rollout = attn if attn_rollout is None else attn_rollout @ attn
+
+    if attn_rollout is None:
+        raise RuntimeError("No attention maps collected from transformer layers.")
+
+    # --- 3. Extract CLS → tiles attention ---
+    cls_attn = attn_rollout[0, 1:]  # [tile]
+
+    # --- 4. Normalize for visualization consistency ---
+    cls_attn = cls_attn - cls_attn.min()
+    cls_attn = cls_attn / (cls_attn.max().clamp(min=1e-8))
+
+    return cls_attn
+
+
 def _gradcam_single(
     model: torch.nn.Module,
     feats: Float[Tensor, "tile feat"],
@@ -186,14 +235,14 @@ def _create_plotted_overlay(
     ax.set_title(f"{category} - Slide Score: {slide_score:.3f}", fontsize=16, pad=20)
     ax.axis("off")
 
-    # Create legend
-    from matplotlib.patches import Patch
-
-    legend_elements = [
-        Patch(facecolor="red", alpha=0.7, label="Positive"),
-        Patch(facecolor="blue", alpha=0.7, label="Negative"),
-    ]
-    ax.legend(handles=legend_elements, loc="upper right", bbox_to_anchor=(0.98, 0.98))
+    if category not in {"regression", "survival"}:
+        legend_elements = [
+            Patch(facecolor="red", alpha=0.7, label="Positive"),
+            Patch(facecolor="blue", alpha=0.7, label="Negative"),
+        ]
+        ax.legend(
+            handles=legend_elements, loc="upper right", bbox_to_anchor=(0.98, 0.98)
+        )
 
     plt.tight_layout()
     return fig, ax
@@ -300,7 +349,7 @@ def heatmaps_(
             )
 
             # --- Colormap + alpha identical to classification ---
-            score_im = plt.get_cmap("RdBu_r")(gradcam_2d.cpu().numpy())  # RGBA colormap
+            score_im = plt.get_cmap("magma")(gradcam_2d.cpu().numpy())  # RGBA colormap
             alpha_mask = _vals_to_im(gradcam, coords_norm).squeeze(-1)
             score_im[..., -1] = (alpha_mask > 0).cpu().numpy().astype(np.float32)
 
