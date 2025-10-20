@@ -322,7 +322,7 @@ def heatmaps_(
         model = load_model_from_ckpt(checkpoint_path).eval()
 
         # TODO: Update version when a newer model logic breaks heatmaps.
-        if Version(model.stamp_version) < Version("2.3.0"):
+        if Version(model.stamp_version) < Version("2.4.0"):
             raise ValueError(
                 f"model has been built with stamp version {model.stamp_version} "
                 f"which is incompatible with the current version."

@@ -79,7 +79,7 @@ class Base(lightning.LightningModule, ABC):
         # This should only happen when the model is loaded,
         # otherwise the default value will make these checks pass.
         # TODO: Change this on version change
-        if stamp_version < Version("2.3.0"):
+        if stamp_version < Version("2.4.0"):
             # Update this as we change our model in incompatible ways!
             raise ValueError(
                 f"model has been built with stamp version {stamp_version} "
