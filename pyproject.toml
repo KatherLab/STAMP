@@ -9,7 +9,8 @@ authors = [
     { name = "Laura Žigutytė", email = "laura.zigutyte@tu-dresden.de" },
     { name = "Cornelius Kummer", email = "cornelius.kummer@tu-dresden.de" },
     { name = "Juan Pablo Ricapito", email = "juan_pablo.ricapito@tu-dresden.de" },
-    { name = "Fabian Wolf", email = "fabian.wolf2@tu-dresden.de" }
+    { name = "Fabian Wolf", email = "fabian.wolf2@tu-dresden.de" },
+    { name = "Minh Duc Nguyen", email = "minh_duc.nguyen1@tu-dresden.de" }
 ]
 description = "A protocol for Solid Tumor Associative Modeling in Pathology"
 readme = "README.md"
@@ -45,7 +46,8 @@ dependencies = [
     "torchvision>=0.22.1",
     "tqdm>=4.67.1",
     "timm>=1.0.19",
-    "transformers>=4.55.0"
+    "transformers>=4.55.0",
+    "lifelines>=0.28.0",
 ]
 
 [project.optional-dependencies]
