@@ -471,3 +471,44 @@ heatmaps:
   ```
 
 
+## Advanced configuration
+
+Advanced experiment settings can be specified under the `advanced_config` section in your configuration file.
+This section lets you control global training parameters, model type, and the target task (classification, regression, or survival).
+
+```yaml
+# stamp-test-experiment/config.yaml
+
+advanced_config:
+  seed: 42
+  task: "classification" # or regression/survial
+  max_epochs: 32
+  patience: 16
+  batch_size: 64
+  # Only for tile-level training. Reducing its amount could affect
+  # model performance. Reduces memory consumption. Default value works
+  # fine for most cases.
+  bag_size: 512
+  #num_workers: 16 # Default chosen by cpu cores
+  # One Cycle Learning Rate Scheduler parameters. Check docs for more info.
+  # Determines the initial learning rate via initial_lr = max_lr/div_factor
+  max_lr: 1e-4
+  div_factor: 25. 
+  # Select a model regardless of task
+  model_name: "vit"
+
+  model_params:
+    vit: # Vision Transformer
+      dim_model: 512
+      dim_feedforward: 512
+      n_heads: 8
+      n_layers: 2
+      dropout: 0.25
+      use_alibi: false
+```
+
+STAMP automatically adapts its **model architecture**, **loss function**, and **evaluation metrics** based on the task specified in the configuration file.
+ 
+**Regression** tasks only require `ground_truth_label`.  
+**Survival analysis** tasks require `time_label` (follow-up time) and `status_label` (event indicator).  
+These requirements apply consistently across cross-validation, training, deployment, and statistics.
