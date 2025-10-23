@@ -425,6 +425,6 @@ def _to_survival_prediction_df(
 
     df = pd.DataFrame(rows)
     if cut_off is not None:
-        df[f"cut_off={cut_off}"] = None
+        df[f"cut_off={-cut_off}"] = None
 
     return df
