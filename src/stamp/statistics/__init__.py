@@ -177,12 +177,22 @@ def compute_stats_(
 
             for p in pred_csvs:
                 df = pd.read_csv(p)
+
+                cut_off = (
+                    float(df.columns[-1].split("=")[1])
+                    if "cut_off" in df.columns[-1]
+                    else None
+                )
+
                 fold_name = Path(p).parent.name
                 pred_name = Path(p).stem
                 key = f"{fold_name}_{pred_name}"
 
                 stats = _survival_stats_for_csv(
-                    df, time_label=time_label, status_label=status_label
+                    df,
+                    time_label=time_label,
+                    status_label=status_label,
+                    cut_off=cut_off,
                 )
                 per_fold[key] = stats
 
@@ -192,6 +202,7 @@ def compute_stats_(
                     time_label=time_label,
                     status_label=status_label,
                     outdir=output_dir,
+                    cut_off=cut_off,
                 )
 
             # ------------------------------------------------------------------ #

@@ -511,7 +511,13 @@ class LitTileSurvival(LitTileRegressor):
         self.time_label = time_label
         self.status_label = status_label
         # storage for validation accumulation
-        self._val_scores, self._val_times, self._val_events = [], [], []
+        self._val_scores, self._val_times, self._val_events, self._train_scores = (
+            [],
+            [],
+            [],
+            [],
+        )
+        self.train_pred_mean = None
 
     @staticmethod
     def cox_loss(
@@ -583,6 +589,9 @@ class LitTileSurvival(LitTileRegressor):
 
         preds = preds.squeeze(-1)  # (B,)
 
+        # save predictions (detach to avoid GPU buildup)
+        self._train_scores.append(preds.detach().cpu())
+
         loss = neg_partial_log_likelihood(preds, times, events)
 
         self.log(
@@ -594,6 +603,16 @@ class LitTileSurvival(LitTileRegressor):
             sync_dist=True,
         )
         return loss
+
+    def on_train_epoch_end(self):
+        if len(self._train_scores) > 0:
+            all_preds = torch.cat(self._train_scores)
+            self.train_pred_mean = all_preds.mean().item()
+            self.log(
+                "train_pred_mean", self.train_pred_mean, prog_bar=True, sync_dist=True
+            )
+            self._train_scores.clear()
+            self.hparams.update({"train_pred_mean": self.train_pred_mean})
 
     def validation_step(
         self,

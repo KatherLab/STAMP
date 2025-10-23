@@ -206,6 +206,13 @@ def deploy_categorical_model_(
         )
         all_predictions.append(predictions)
 
+        # cut-off values from survival ckpt
+        cut_off = (
+            model.hparams["train_pred_mean"]
+            if model.hparams["train_pred_mean"] is not None
+            else None
+        )
+
         # Only save individual model files when deploying multiple models (ensemble)
         if len(models) > 1:
             df_builder(
@@ -214,7 +221,17 @@ def deploy_categorical_model_(
                 predictions=predictions,
                 patient_label=patient_label,
                 ground_truth_label=ground_truth_label,
+                cut_off=cut_off,
             ).to_csv(output_dir / f"patient-preds-{model_i}.csv", index=False)
+        else:
+            df_builder(
+                categories=model_categories,
+                patient_to_ground_truth=patient_to_ground_truth,
+                predictions=predictions,
+                patient_label=patient_label,
+                ground_truth_label=ground_truth_label,
+                cut_off=cut_off,
+            ).to_csv(output_dir / "patient-preds.csv", index=False)
 
     if task == "classification":
         # TODO we probably also want to save the 95% confidence interval in addition to the mean
@@ -230,7 +247,7 @@ def deploy_categorical_model_(
             },
             patient_label=patient_label,
             ground_truth_label=ground_truth_label,
-        ).to_csv(output_dir / "patient-preds.csv", index=False)
+        ).to_csv(output_dir / "patient-preds_95_confidence_interval.csv", index=False)
 
 
 def _predict(
@@ -277,6 +294,7 @@ def _to_prediction_df(
     predictions: Mapping[PatientId, torch.Tensor],
     patient_label: PandasLabel,
     ground_truth_label: PandasLabel,
+    **kwargs,
 ) -> pd.DataFrame:
     """Compiles deployment results into a DataFrame."""
     return pd.DataFrame(
@@ -359,6 +377,7 @@ def _to_survival_prediction_df(
     patient_to_ground_truth: Mapping[PatientId, GroundTruth | None],
     predictions: Mapping[PatientId, torch.Tensor],
     patient_label: PandasLabel,
+    cut_off: float | None = None,
     **kwargs,
 ) -> pd.DataFrame:
     """Compiles deployment results into a DataFrame for survival analysis.
@@ -372,7 +391,7 @@ def _to_survival_prediction_df(
     rows: list[dict] = []
 
     for patient_id, pred in predictions.items():
-        pred = pred.detach().flatten()
+        pred = -pred.detach().flatten()
 
         gt = patient_to_ground_truth.get(patient_id)
 
@@ -380,9 +399,9 @@ def _to_survival_prediction_df(
 
         # Prediction: risk score
         if pred.numel() == 1:
-            row["pred_risk"] = float(pred.item())
+            row["pred_score"] = float(pred.item())
         else:
-            row["pred_risk"] = pred.cpu().tolist()
+            row["pred_score"] = pred.cpu().tolist()
 
         # Ground truth: time + event
         if gt is not None:
@@ -404,4 +423,8 @@ def _to_survival_prediction_df(
 
         rows.append(row)
 
-    return pd.DataFrame(rows)
+    df = pd.DataFrame(rows)
+    if cut_off is not None:
+        df[f"cut_off={cut_off}"] = None
+
+    return df

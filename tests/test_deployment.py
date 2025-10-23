@@ -232,7 +232,7 @@ def test_to_prediction_df(task: str) -> None:
             predictions=predictions,
         )
         assert "patient" in preds_df.columns
-        assert "pred_risk" in preds_df.columns
+        assert "pred_score" in preds_df.columns
         assert len(preds_df) > 0
 
 

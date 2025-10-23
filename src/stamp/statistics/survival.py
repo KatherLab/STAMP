@@ -47,10 +47,11 @@ def _survival_stats_for_csv(
     time_label: str,
     status_label: str,
     risk_label: str | None = None,
+    cut_off: float | None = None,
 ) -> pd.Series:
     """Compute C-index and log-rank p for one CSV."""
     if risk_label is None:
-        risk_label = "pred_risk"
+        risk_label = "pred_score"
 
     # --- Clean NaNs and invalid events before computing stats ---
     df = df.dropna(subset=[time_label, status_label, risk_label]).copy()
@@ -66,7 +67,7 @@ def _survival_stats_for_csv(
     c_used, used, c_risk, c_neg_risk, n_pairs = _cindex_auto(time, event, risk)
 
     # --- Log-rank test (median split) ---
-    median_risk = float(np.nanmedian(risk))
+    median_risk = float(cut_off) if cut_off is not None else float(np.nanmedian(risk))
     low_mask = risk < median_risk
     high_mask = risk >= median_risk
     if low_mask.sum() > 0 and high_mask.sum() > 0:
@@ -103,11 +104,12 @@ def _plot_km(
     time_label: str,
     status_label: str,
     risk_label: str | None = None,
+    cut_off: float | None = None,
     outdir: Path,
 ) -> None:
     """Kaplan–Meier curve (median split) with log-rank p and C-index annotation."""
     if risk_label is None:
-        risk_label = "pred_risk"
+        risk_label = "pred_score"
 
     # --- Clean NaNs and invalid entries ---
     df = df.replace(["NaN", "nan", "None", "Inf", "inf"], np.nan)
@@ -122,7 +124,7 @@ def _plot_km(
     risk = np.asarray(df[risk_label], dtype=float)
 
     # --- split groups ---
-    median_risk = np.nanmedian(risk)
+    median_risk = float(cut_off) if cut_off is not None else np.nanmedian(risk)
     low_mask = risk < median_risk
     high_mask = risk >= median_risk
 
@@ -159,7 +161,7 @@ def _plot_km(
     ax.text(
         0.6,
         0.08,
-        f"Log-rank p = {logrank_p:.4e}\nC-index = {c_used:.3f} ({used})",
+        f"Log-rank p = {logrank_p:.4e}\nC-index = {c_used:.3f} ({used})\nMedian = {median_risk:.3f}",
         transform=ax.transAxes,
         fontsize=11,
         bbox=dict(facecolor="white", edgecolor="black", boxstyle="round,pad=0.3"),
