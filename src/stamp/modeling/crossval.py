@@ -59,7 +59,7 @@ def categorical_crossval_(
     if feature_type == "tile":
         if config.slide_table is None:
             raise ValueError("A slide table is required for tile-level modeling")
-        if advanced.task == "survival":
+        if config.task == "survival":
             if config.time_label is None or config.status_label is None:
                 raise ValueError(
                     "Both time_label and status_label are is required for tile-level survival modeling"
@@ -125,11 +125,13 @@ def categorical_crossval_(
             _get_splits(
                 patient_to_data=patient_to_data,
                 n_splits=config.n_splits,
-                spliter=StratifiedKFold,
+                spliter=KFold,
             )
-            if advanced.task == "classification"
+            if config.task == "regression"
             else _get_splits(
-                patient_to_data=patient_to_data, n_splits=config.n_splits, spliter=KFold
+                patient_to_data=patient_to_data,
+                n_splits=config.n_splits,
+                spliter=StratifiedKFold,
             )
         )
         with open(splits_file, "w") as fp:
@@ -157,7 +159,7 @@ def categorical_crossval_(
             f"{ground_truths_not_in_split}"
         )
 
-    if advanced.task == "classification":
+    if config.task == "classification":
         categories = config.categories or sorted(
             {
                 patient_data.ground_truth
@@ -178,6 +180,11 @@ def categorical_crossval_(
             )
             continue
 
+        if config.task is None:
+            raise ValueError(
+                "config.task must be set to 'classification' | 'regression' | 'survival'"
+            )
+
         # Train the model
         if not (split_dir / "model.ckpt").exists():
             model, train_dl, valid_dl = setup_model_for_training(
@@ -188,7 +195,7 @@ def categorical_crossval_(
                 time_label=config.time_label,
                 status_label=config.status_label,
                 advanced=advanced,
-                task=advanced.task,
+                task=config.task,
                 patient_to_data={
                     patient_id: patient_data
                     for patient_id, patient_data in patient_to_data.items()
@@ -237,7 +244,7 @@ def categorical_crossval_(
                 test_dl, _ = tile_bag_dataloader(
                     patient_data=test_patient_data,
                     bag_size=None,
-                    task=advanced.task,
+                    task=config.task,
                     categories=categories,
                     batch_size=1,
                     shuffle=False,
@@ -263,13 +270,13 @@ def categorical_crossval_(
                 accelerator=advanced.accelerator,
             )
 
-            if advanced.task == "survival":
+            if config.task == "survival":
                 _to_survival_prediction_df(
                     patient_to_ground_truth=patient_to_ground_truth,
                     predictions=predictions,
                     patient_label=config.patient_label,
                 ).to_csv(split_dir / "patient-preds.csv", index=False)
-            elif advanced.task == "regression":
+            elif config.task == "regression":
                 if config.ground_truth_label is None:
                     raise RuntimeError("Grounf truth label is required for regression")
                 _to_regression_prediction_df(

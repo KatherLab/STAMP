@@ -14,6 +14,7 @@ from torch import Tensor, nn, optim
 from torchmetrics.classification import MulticlassAUROC
 
 import stamp
+from stamp.modeling.models.cox import neg_partial_log_likelihood
 from stamp.types import (
     Bags,
     BagSizes,
@@ -548,80 +549,6 @@ class LitTileSurvival(LitTileRegressor):
         npll = -loglik.mean()  # mean reduction
         return npll
 
-    # @staticmethod
-    # def cox_loss(
-    #     scores: torch.Tensor, times: torch.Tensor, events: torch.Tensor
-    # ) -> torch.Tensor:
-    #     """
-    #     Negative partial log-likelihood for Cox PH model (Efron tie handling).
-    #     scores: (N,) predicted log-risk (higher = riskier)
-    #     times:  (N,) survival/censoring times
-    #     events: (N,) 1=event, 0=censored
-    #     """
-    #     # Sort by time ascending
-    #     order = torch.argsort(times)
-    #     times = times[order]
-    #     scores = scores[order]
-    #     events = events[order].bool()
-
-    #     # Unique event times
-    #     uniq_times, inverse_idx = torch.unique(times, return_inverse=True)
-    #     log_hz = scores
-    #     n = len(times)
-
-    #     # Compute denominators for risk sets
-    #     exp_hz = torch.exp(log_hz)
-    #     cum_sum = torch.flip(
-    #         torch.cumsum(torch.flip(exp_hz, dims=[0]), dim=0), dims=[0]
-    #     )
-
-    #     pll = torch.zeros_like(times, dtype=torch.float32, device=scores.device)
-
-    #     # loop over unique times with events
-    #     for ut in uniq_times:
-    #         idx_h = (times == ut) & events  # subjects that failed at ut
-    #         if idx_h.sum() == 0:
-    #             continue
-
-    #         idx_r = times >= ut  # risk set at ut
-    #         d = idx_h.sum().float()
-
-    #         log_num = log_hz[idx_h].sum()
-    #         denom = exp_hz[idx_r].sum()
-    #         denom_ties = exp_hz[idx_h].sum()
-
-    #         # Efron correction across tied events
-    #         tmp = 0.0
-    #         for l in range(int(d)):
-    #             tmp += torch.log(denom - l / d * denom_ties)
-    #         pll[idx_h] = log_num - tmp
-
-    #     # Negative mean partial log-likelihood
-    #     npll = -pll[events].mean()
-    #     return npll
-
-    @staticmethod
-    def logistic_hazard_loss(
-        logits: torch.Tensor, times: torch.Tensor, events: torch.Tensor
-    ) -> torch.Tensor:
-        """
-        logits: (B, L) raw predictions for each interval
-        times: (B,) discrete event/censoring time (int)
-        events: (B,) 1=event, 0=censored
-        """
-        B, L = logits.shape
-        hazard = torch.sigmoid(logits)
-        log_survival = torch.cumsum(
-            torch.log(1 - nn.functional.pad(hazard, (1, 0))), dim=-1
-        )
-
-        likelihood = -(
-            events * torch.log(hazard[torch.arange(B), times])
-            + (1 - events) * torch.log(1 - hazard[torch.arange(B), times])
-            + log_survival[torch.arange(B), times]
-        )
-        return likelihood.mean()
-
     @staticmethod
     def c_index(
         scores: torch.Tensor, times: torch.Tensor, events: torch.Tensor
@@ -654,14 +581,9 @@ class LitTileSurvival(LitTileRegressor):
         y = targets.to(preds.device, dtype=torch.float32)
         times, events = y[:, 0], y[:, 1]
 
-        if self.method == "cox":
-            preds = preds.squeeze(-1)  # (B,)
-            loss = self.cox_loss(preds, times, events)
-        elif self.method == "logistic-hazard":
-            # preds expected shape (B, L)
-            loss = self.logistic_hazard_loss(preds, times, events)
-        else:
-            raise ValueError(f"Unknown method: {self.method}")
+        preds = preds.squeeze(-1)  # (B,)
+
+        loss = neg_partial_log_likelihood(preds, times, events)
 
         self.log(
             "train_cox_loss",

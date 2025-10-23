@@ -28,6 +28,7 @@ def test_config_parsing() -> None:
     config = StampConfig.model_validate(
         {
             "crossval": {
+                "task": "classification",
                 "categories": None,
                 "clini_table": "clini.xlsx",
                 "feature_dir": "CRC",
@@ -42,6 +43,7 @@ def test_config_parsing() -> None:
                 "n_splits": 5,
             },
             "deployment": {
+                "task": "classification",
                 "checkpoint_paths": [
                     "test-crossval/split-0/model.ckpt",
                     "test-crossval/split-1/model.ckpt",
@@ -84,6 +86,7 @@ def test_config_parsing() -> None:
                 "default_slide_mpp": 1.0,
             },
             "statistics": {
+                "task": "classification",
                 "ground_truth_label": "isMSIH",
                 "output_dir": "test-stats",
                 "pred_csvs": [
@@ -96,6 +99,7 @@ def test_config_parsing() -> None:
                 "true_class": "MSIH",
             },
             "training": {
+                "task": "classification",
                 "categories": None,
                 "clini_table": "clini.xlsx",
                 "feature_dir": "CRC",
@@ -151,6 +155,7 @@ def test_config_parsing() -> None:
             default_slide_mpp=SlideMPP(1.0),
         ),
         training=TrainConfig(
+            task="classification",
             output_dir=Path("test-alibi"),
             clini_table=Path("clini.xlsx"),
             slide_table=Path("slide.csv"),
@@ -165,6 +170,7 @@ def test_config_parsing() -> None:
             use_vary_precision_transform=False,
         ),
         crossval=CrossvalConfig(
+            task="classification",
             output_dir=Path("test-crossval"),
             clini_table=Path("clini.xlsx"),
             slide_table=Path("slide.csv"),
@@ -180,6 +186,7 @@ def test_config_parsing() -> None:
             n_splits=5,
         ),
         deployment=DeploymentConfig(
+            task="classification",
             output_dir=Path("test-deploy"),
             checkpoint_paths=[
                 Path("test-crossval/split-0/model.ckpt"),
@@ -198,6 +205,7 @@ def test_config_parsing() -> None:
             filename_label="FILENAME",
         ),
         statistics=StatsConfig(
+            task="classification",
             output_dir=Path("test-stats"),
             pred_csvs=[
                 Path(

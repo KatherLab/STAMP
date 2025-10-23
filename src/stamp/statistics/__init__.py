@@ -38,6 +38,7 @@ def _read_table(file: Path, **kwargs) -> pd.DataFrame:
 
 class StatsConfig(BaseModel):
     model_config = ConfigDict(extra="ignore")
+    task: Task
     output_dir: Path
     pred_csvs: list[Path]
     ground_truth_label: PandasLabel | None = None

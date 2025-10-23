@@ -216,20 +216,21 @@ def deploy_categorical_model_(
                 ground_truth_label=ground_truth_label,
             ).to_csv(output_dir / f"patient-preds-{model_i}.csv", index=False)
 
-    # TODO we probably also want to save the 95% confidence interval in addition to the mean
-    df_builder(
-        categories=model_categories,
-        patient_to_ground_truth=patient_to_ground_truth,
-        predictions={
-            # Mean prediction
-            patient_id: torch.stack(
-                [predictions[patient_id] for predictions in all_predictions]
-            ).mean(dim=0)
-            for patient_id in patient_ids
-        },
-        patient_label=patient_label,
-        ground_truth_label=ground_truth_label,
-    ).to_csv(output_dir / "patient-preds.csv", index=False)
+    if task == "classification":
+        # TODO we probably also want to save the 95% confidence interval in addition to the mean
+        df_builder(
+            categories=model_categories,
+            patient_to_ground_truth=patient_to_ground_truth,
+            predictions={
+                # Mean prediction
+                patient_id: torch.stack(
+                    [predictions[patient_id] for predictions in all_predictions]
+                ).mean(dim=0)
+                for patient_id in patient_ids
+            },
+            patient_label=patient_label,
+            ground_truth_label=ground_truth_label,
+        ).to_csv(output_dir / "patient-preds.csv", index=False)
 
 
 def _predict(

@@ -495,6 +495,7 @@ advanced_config:
   max_lr: 1e-4
   div_factor: 25. 
   # Select a model regardless of task
+  # Available models are: vit, trans_mil, mlp
   model_name: "vit"
 
   model_params:

@@ -60,7 +60,7 @@ def train_categorical_model_(
     if feature_type == "tile":
         if config.slide_table is None:
             raise ValueError("A slide table is required for tile-level modeling")
-        if advanced.task == "survival":
+        if config.task == "survival":
             if config.time_label is None or config.status_label is None:
                 raise ValueError(
                     "Both time_label and status_label is required for tile-level survival modeling"
@@ -114,11 +114,16 @@ def train_categorical_model_(
     else:
         raise RuntimeError(f"Unknown feature type: {feature_type}")
 
+    if config.task is None:
+        raise ValueError(
+            "task must be set to 'classification' | 'regression' | 'survival'"
+        )
+
     # Train the model (the rest of the logic is unchanged)
     model, train_dl, valid_dl = setup_model_for_training(
         patient_to_data=patient_to_data,
         categories=config.categories,
-        task=advanced.task,
+        task=config.task,
         advanced=advanced,
         ground_truth_label=config.ground_truth_label,
         time_label=config.time_label,

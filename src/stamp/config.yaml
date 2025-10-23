@@ -68,6 +68,9 @@ crossval:
   # are ignored. NOTE: Don't forget to add the .h5 file extension.
   slide_table: "/path/of/slide.csv"
 
+  # Task to infer (classification, regression, survival)
+  task: "classification"
+
   # Name of the column from the clini table to train on.
   ground_truth_label: "KRAS"
 
@@ -122,6 +125,9 @@ training:
   # are ignored. NOTE: Don't forget to add the .h5 file extension.
   slide_table: "/path/of/slide.csv"
 
+  # Task to infer (classification, regression, survival)
+  task: "classification"
+
   # Name of the column from the clini table to train on.
   ground_truth_label: "KRAS"
 
@@ -164,6 +170,9 @@ deployment:
   # paths are ignored. NOTE: Don't forget to add the .h5 file extension.
   slide_table: "/path/of/slide.csv"
 
+  # Task to infer (classification, regression, survival)
+  task: "classification"
+
   # Name of the column from the clini to compare predictions to.
   ground_truth_label: "KRAS"
 
@@ -185,6 +194,9 @@ deployment:
 
 statistics:
   output_dir: "/path/to/save/files/to"
+
+  # Task to infer (classification, regression, survival)
+  task: "classification"
 
   # Name of the target label.
   ground_truth_label: "KRAS"

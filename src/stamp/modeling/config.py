@@ -11,6 +11,7 @@ from stamp.types import Category, PandasLabel, Task
 
 class TrainConfig(BaseModel):
     model_config = ConfigDict(extra="forbid")
+    task: Task | None = Field(default="classification")
 
     output_dir: Path = Field(description="The directory to save the results to")
 
@@ -50,6 +51,7 @@ class TrainConfig(BaseModel):
 
 class CrossvalConfig(TrainConfig):
     n_splits: int = Field(5, ge=2)
+    task: Task | None = Field(default="classification")
 
 
 class DeploymentConfig(BaseModel):
@@ -72,6 +74,7 @@ class DeploymentConfig(BaseModel):
 
     num_workers: int = min(os.cpu_count() or 1, 16)
     accelerator: str = "gpu" if torch.cuda.is_available() else "cpu"
+    task: Task | None = Field(default="classification")
 
 
 class VitModelParams(BaseModel):

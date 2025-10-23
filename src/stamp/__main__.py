@@ -211,7 +211,7 @@ def _run_cli(args: argparse.Namespace) -> None:
             )
 
             compute_stats_(
-                task=config.advanced_config.task,
+                task=config.statistics.task,
                 output_dir=config.statistics.output_dir,
                 pred_csvs=config.statistics.pred_csvs,
                 ground_truth_label=config.statistics.ground_truth_label,

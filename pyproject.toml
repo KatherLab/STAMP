@@ -86,7 +86,6 @@ gigapath = [
     "monai",
     "scikit-image",
     "webdataset",
-    "lifelines",
     "scikit-survival>=0.24.1",
     "fairscale",
     "wandb",

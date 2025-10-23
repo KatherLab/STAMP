@@ -171,6 +171,7 @@ def _plot_km(
     ax.set_xlabel("Time")
     ax.set_ylabel("Survival probability")
     ax.grid(True, linestyle="--", alpha=0.6)
+    ax.set_ylim(0, 1)
     plt.tight_layout()
 
     (outdir / "plots").mkdir(parents=True, exist_ok=True)
