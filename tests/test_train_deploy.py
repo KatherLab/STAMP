@@ -231,6 +231,7 @@ def test_train_deploy_regression_integration(
 
     # --- Build config objects ---
     config = TrainConfig(
+        task="regression",
         clini_table=train_clini_path,
         slide_table=train_slide_path,
         feature_dir=train_feature_dir,
@@ -310,6 +311,7 @@ def test_train_deploy_survival_integration(
 
     # --- Build config objects ---
     config = TrainConfig(
+        task="survival",
         clini_table=train_clini_path,
         slide_table=train_slide_path,
         feature_dir=train_feature_dir,
