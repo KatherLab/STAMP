@@ -19,7 +19,8 @@ STAMP is an **end‑to‑end, weakly‑supervised deep‑learning pipeline** tha
 * 🎓 **Beginner‑friendly & expert‑ready**: Zero‑code CLI and YAML config for routine use; optional code‑level customization for advanced research.  
 * 🧩 **Model‑rich**: Out‑of‑the‑box support for **+20 foundation models** at [tile level](getting-started.md#feature-extraction) (e.g., *Virchow‑v2*, *UNI‑v2*) and [slide level](getting-started.md#slide-level-encoding) (e.g., *TITAN*, *COBRA*).  
 * 🔬 **Weakly‑supervised**: End‑to‑end MIL with Transformer aggregation for training, cross‑validation and external deployment; no pixel‑level labels required.  
-* 📊 **Stats & results**: Built‑in metrics (AUROC/AUPRC \+ 95% CI) and patient‑level predictions, ready for analysis and reporting.  
+* 🧮 **Multi-task learning**: Unified framework for **classification**, **regression**, and **cox-based survival analysis**.
+* 📊 **Stats & results**: Built‑in metrics and patient‑level predictions, ready for analysis and reporting.  
 * 🖼️ **Explainable**: Generates heatmaps and top‑tile exports out‑of‑the‑box for transparent model auditing and publication‑ready figures.  
 * 🤝 **Collaborative by design**: Clinicians drive hypothesis & interpretation while engineers handle compute; STAMP’s modular CLI mirrors real‑world workflows and tracks every step for full reproducibility.  
 * 📑 **Peer‑reviewed**: Protocol published in [*Nature Protocols*](https://www.nature.com/articles/s41596-024-01047-2) and validated across multiple tumor types and centers.  

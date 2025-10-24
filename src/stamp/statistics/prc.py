@@ -173,9 +173,16 @@ def plot_multiple_decorated_precision_recall_curves(
 
     # calculate confidence intervals and print title
     aucs = [x.auc for x in tpas]
-    lower, upper = st.t.interval(
-        0.95, len(aucs) - 1, loc=np.mean(aucs), scale=st.sem(aucs)
-    )
+    aucs = [x.auc for x in tpas]
+    mean_auc = float(np.mean(aucs))
+
+    if len(aucs) < 2 or np.isnan(st.sem(aucs)):
+        # Not enough samples for CI → collapse to mean
+        lower, upper = mean_auc, mean_auc
+    else:
+        lower, upper = st.t.interval(
+            0.95, len(aucs) - 1, loc=np.mean(aucs), scale=st.sem(aucs)
+        )
 
     # limit conf bounds to [0,1] in case of low sample numbers
     lower = max(0, lower)

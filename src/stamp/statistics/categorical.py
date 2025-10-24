@@ -47,7 +47,7 @@ def _categorical(preds_df: pd.DataFrame, target_label: str) -> pd.DataFrame:
     for i, cat in enumerate(categories):
         pos_scores = y_pred[:, i][y_true == cat]  # pyright: ignore[reportCallIssue,reportArgumentType]
         neg_scores = y_pred[:, i][y_true != cat]  # pyright: ignore[reportCallIssue,reportArgumentType]
-        p_values.append(st.ttest_ind(pos_scores, neg_scores).pvalue)  # pyright: ignore[reportAttributeAccessIssue]
+        p_values.append(st.ttest_ind(pos_scores, neg_scores).pvalue)  # pyright: ignore[reportGeneralTypeIssues, reportAttributeAccessIssue]
     stats_df["p_value"] = p_values
 
     assert set(_score_labels) & set(stats_df.columns) == set(_score_labels)

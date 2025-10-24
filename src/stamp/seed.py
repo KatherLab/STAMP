@@ -1,8 +1,9 @@
 import random
-from typing import Callable, ClassVar
+from typing import ClassVar
 
 import numpy as np
 import torch
+from beartype.typing import Callable
 from torch import Generator
 
 

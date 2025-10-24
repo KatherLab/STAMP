@@ -28,6 +28,7 @@ def test_statistics_integration(
 
     true_class = categories[1]
     compute_stats_(
+        task="classification",
         output_dir=tmp_path / "output",
         pred_csvs=[tmp_path / f"patient-preds-{i}.csv" for i in range(n_patient_preds)],
         ground_truth_label="ground-truth",

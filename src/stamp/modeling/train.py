@@ -6,9 +6,6 @@ from pathlib import Path
 from typing import cast
 
 import lightning
-import lightning.pytorch
-import lightning.pytorch.accelerators
-import lightning.pytorch.accelerators.accelerator
 import torch
 from lightning.pytorch.accelerators.accelerator import Accelerator
 from lightning.pytorch.callbacks import EarlyStopping, ModelCheckpoint
@@ -26,17 +23,23 @@ from stamp.modeling.data import (
     load_patient_level_data,
     patient_feature_dataloader,
     patient_to_ground_truth_from_clini_table_,
+    patient_to_survival_from_clini_table_,
     slide_to_patient_from_slide_table_,
     tile_bag_dataloader,
 )
-from stamp.modeling.lightning_model import (
+from stamp.modeling.registry import ModelName, load_model_class
+from stamp.modeling.transforms import VaryPrecisionTransform
+from stamp.types import (
     Bags,
     BagSizes,
+    Category,
+    CoordinatesBatch,
     EncodedTargets,
+    GroundTruth,
+    PandasLabel,
+    PatientId,
+    Task,
 )
-from stamp.modeling.registry import MODEL_REGISTRY, ModelName
-from stamp.modeling.transforms import VaryPrecisionTransform
-from stamp.types import Category, CoordinatesBatch, GroundTruth, PandasLabel, PatientId
 
 __author__ = "Marko van Treeck"
 __copyright__ = "Copyright (C) 2024 Marko van Treeck"
@@ -57,11 +60,27 @@ def train_categorical_model_(
     if feature_type == "tile":
         if config.slide_table is None:
             raise ValueError("A slide table is required for tile-level modeling")
-        patient_to_ground_truth = patient_to_ground_truth_from_clini_table_(
-            clini_table_path=config.clini_table,
-            ground_truth_label=config.ground_truth_label,
-            patient_label=config.patient_label,
-        )
+        if config.task == "survival":
+            if config.time_label is None or config.status_label is None:
+                raise ValueError(
+                    "Both time_label and status_label is required for tile-level survival modeling"
+                )
+            patient_to_ground_truth = patient_to_survival_from_clini_table_(
+                clini_table_path=config.clini_table,
+                time_label=config.time_label,
+                status_label=config.status_label,
+                patient_label=config.patient_label,
+            )
+        else:
+            if config.ground_truth_label is None:
+                raise ValueError(
+                    "Ground truth label is required for tile-level modeling"
+                )
+            patient_to_ground_truth = patient_to_ground_truth_from_clini_table_(
+                clini_table_path=config.clini_table,
+                ground_truth_label=config.ground_truth_label,
+                patient_label=config.patient_label,
+            )
         slide_to_patient = slide_to_patient_from_slide_table_(
             slide_table_path=config.slide_table,
             feature_dir=config.feature_dir,
@@ -77,6 +96,10 @@ def train_categorical_model_(
         # Patient-level: ignore slide_table
         if config.slide_table is not None:
             _logger.warning("slide_table is ignored for patient-level features.")
+        if config.ground_truth_label is None:
+            raise ValueError(
+                "Ground truth label is required for patient-level modeling"
+            )
         patient_to_data = load_patient_level_data(
             clini_table=config.clini_table,
             feature_dir=config.feature_dir,
@@ -91,12 +114,20 @@ def train_categorical_model_(
     else:
         raise RuntimeError(f"Unknown feature type: {feature_type}")
 
+    if config.task is None:
+        raise ValueError(
+            "task must be set to 'classification' | 'regression' | 'survival'"
+        )
+
     # Train the model (the rest of the logic is unchanged)
     model, train_dl, valid_dl = setup_model_for_training(
         patient_to_data=patient_to_data,
         categories=config.categories,
+        task=config.task,
         advanced=advanced,
         ground_truth_label=config.ground_truth_label,
+        time_label=config.time_label,
+        status_label=config.status_label,
         clini_table=config.clini_table,
         slide_table=config.slide_table,
         feature_dir=config.feature_dir,
@@ -121,12 +152,15 @@ def train_categorical_model_(
 def setup_model_for_training(
     *,
     patient_to_data: Mapping[PatientId, PatientData[GroundTruth]],
+    task: Task,
     categories: Sequence[Category] | None,
     train_transform: Callable[[torch.Tensor], torch.Tensor] | None,
     feature_type: str,
     advanced: AdvancedConfig,
     # Metadata, has no effect on model training
-    ground_truth_label: PandasLabel,
+    ground_truth_label: PandasLabel | None,
+    time_label: PandasLabel | None,
+    status_label: PandasLabel | None,
     clini_table: Path,
     slide_table: Path | None,
     feature_dir: Path,
@@ -140,6 +174,7 @@ def setup_model_for_training(
     train_dl, valid_dl, train_categories, dim_feats, train_patients, valid_patients = (
         setup_dataloaders_for_training(
             patient_to_data=patient_to_data,
+            task=task,
             categories=categories,
             bag_size=advanced.bag_size,
             batch_size=advanced.batch_size,
@@ -150,17 +185,20 @@ def setup_model_for_training(
     )
 
     _logger.info(
-        "Training dataloaders: bag_size=%s, batch_size=%s, num_workers=%s",
+        "Training dataloaders: bag_size=%s, batch_size=%s, num_workers=%s, task=%s",
         advanced.bag_size,
         advanced.batch_size,
         advanced.num_workers,
+        advanced.task,
     )
-
-    category_weights = _compute_class_weights_and_check_categories(
-        train_dl=train_dl,
-        feature_type=feature_type,
-        train_categories=train_categories,
-    )
+    ##temopary for test regression
+    category_weights = []
+    if task == "classification":
+        category_weights = _compute_class_weights_and_check_categories(
+            train_dl=train_dl,
+            feature_type=feature_type,
+            train_categories=train_categories,
+        )
 
     # 1. Default to a model if none is specified
     if advanced.model_name is None:
@@ -169,24 +207,28 @@ def setup_model_for_training(
             f"No model specified, defaulting to '{advanced.model_name.value}' for feature type '{feature_type}'"
         )
 
-    # 2. Validate that the chosen model supports the feature type
-    model_info = MODEL_REGISTRY[advanced.model_name]
-    if feature_type not in model_info["supported_features"]:
+    # 2. Instantiate the lightning wrapper (based on provided task, feature type) and model backbone dynamically
+    LitModelClass, ModelClass = load_model_class(
+        advanced.task, feature_type, advanced.model_name
+    )
+
+    # 3. Validate that the chosen model supports the feature type
+    if feature_type not in LitModelClass.supported_features:
         raise ValueError(
             f"Model '{advanced.model_name.value}' does not support feature type '{feature_type}'. "
-            f"Supported types are: {model_info['supported_features']}"
+            f"Supported types are: {LitModelClass.supported_features}"
         )
 
-    # 3. Get model-specific hyperparameters
-    model_specific_params = advanced.model_params.model_dump()[
-        advanced.model_name.value
-    ]
+    # 4. Get model-specific hyperparameters
+    model_specific_params = (
+        advanced.model_params.model_dump().get(advanced.model_name.value) or {}
+    )
 
-    # 4. Calculate total steps for scheduler
+    # 5. Calculate total steps for scheduler
     steps_per_epoch = len(train_dl)
     total_steps = steps_per_epoch * advanced.max_epochs
 
-    # 5. Prepare common parameters
+    # 6. Prepare common parameters
     common_params = {
         "categories": train_categories,
         "category_weights": category_weights,
@@ -197,6 +239,8 @@ def setup_model_for_training(
         # Metadata, has no effect on model training
         "model_name": advanced.model_name.value,
         "ground_truth_label": ground_truth_label,
+        "time_label": time_label,
+        "status_label": status_label,
         "train_patients": train_patients,
         "valid_patients": valid_patients,
         "clini_table": clini_table,
@@ -204,9 +248,8 @@ def setup_model_for_training(
         "feature_dir": feature_dir,
     }
 
-    # 6. Instantiate the model dynamically
-    ModelClass = model_info["model_class"]
     all_params = {**common_params, **model_specific_params}
+
     _logger.info(
         f"Instantiating model '{advanced.model_name.value}' with parameters: {model_specific_params}"
     )
@@ -215,7 +258,8 @@ def setup_model_for_training(
         advanced.max_epochs,
         advanced.patience,
     )
-    model = ModelClass(**all_params)
+
+    model = LitModelClass(model_class=ModelClass, **all_params)
 
     return model, train_dl, valid_dl
 
@@ -223,6 +267,7 @@ def setup_model_for_training(
 def setup_dataloaders_for_training(
     *,
     patient_to_data: Mapping[PatientId, PatientData[GroundTruth]],
+    task: Task,
     categories: Sequence[Category] | None,
     bag_size: int,
     batch_size: int,
@@ -243,8 +288,6 @@ def setup_dataloaders_for_training(
     Returns:
         train_dl, valid_dl, categories, feature_dim, train_patients, valid_patients
     """
-    # Sample count for training
-    log_total_class_summary(patient_to_data, categories)
 
     # Stratified split
     ground_truths = [
@@ -252,15 +295,23 @@ def setup_dataloaders_for_training(
         for patient_data in patient_to_data.values()
         if patient_data.ground_truth is not None
     ]
+
+    if task == "classification":
+        _logger.info(f"Task: {feature_type} {task}")
+        # Sample count for training
+        log_total_class_summary(ground_truths, categories)
+
     if len(ground_truths) != len(patient_to_data):
         raise ValueError(
             "patient_to_data must have a ground truth defined for all targets!"
         )
 
+    stratify = ground_truths if task == "classification" else None
+
     train_patients, valid_patients = cast(
         tuple[Sequence[PatientId], Sequence[PatientId]],
         train_test_split(
-            list(patient_to_data), stratify=ground_truths, shuffle=True, random_state=0
+            list(patient_to_data), stratify=stratify, shuffle=True, random_state=0
         ),
     )
 
@@ -268,6 +319,7 @@ def setup_dataloaders_for_training(
         # Use existing BagDataset logic
         train_dl, train_categories = tile_bag_dataloader(
             patient_data=[patient_to_data[pid] for pid in train_patients],
+            task=task,
             categories=categories,
             bag_size=bag_size,
             batch_size=batch_size,
@@ -277,6 +329,7 @@ def setup_dataloaders_for_training(
         )
         valid_dl, _ = tile_bag_dataloader(
             patient_data=[patient_to_data[pid] for pid in valid_patients],
+            task=task,
             bag_size=None,
             categories=train_categories,
             batch_size=1,
@@ -345,15 +398,23 @@ def train_model_(
     """
     torch.set_float32_matmul_precision("high")
 
+    # Decide monitor metric based on task
+    task = getattr(model.hparams, "task", None)
+    if task == "survival":
+        monitor_metric, mode = "val_cindex", "max"
+    else:  # regression or classification
+        monitor_metric, mode = "validation_loss", "min"
+
     model_checkpoint = ModelCheckpoint(
-        monitor="validation_loss",
-        mode="min",
-        filename="checkpoint-{epoch:02d}-{validation_loss:0.3f}",
+        monitor=monitor_metric,
+        mode=mode,
+        filename=f"checkpoint-{{epoch:02d}}-{{{monitor_metric}:0.3f}}",
     )
     trainer = lightning.Trainer(
         default_root_dir=output_dir,
+        # check_val_every_n_epoch=5,
         callbacks=[
-            EarlyStopping(monitor="validation_loss", mode="min", patience=patience),
+            EarlyStopping(monitor=monitor_metric, mode=mode, patience=patience),
             model_checkpoint,
         ],
         max_epochs=max_epochs,
@@ -364,9 +425,10 @@ def train_model_(
         #  2. `barspoon.model.SafeMulticlassAUROC` breaks on multiple GPUs
         accelerator=accelerator,
         devices=1,
-        gradient_clip_val=0.5,
+        # gradient_clip_val=0.5,
         logger=CSVLogger(save_dir=output_dir),
         log_every_n_steps=len(train_dl),
+        num_sanity_val_steps=0,
     )
     trainer.fit(
         model=model,
@@ -416,14 +478,9 @@ def _compute_class_weights_and_check_categories(
 
 
 def log_total_class_summary(
-    patient_to_data: Mapping[PatientId, PatientData],
+    ground_truths: list,
     categories: Sequence[Category] | None,
 ) -> None:
-    ground_truths = [
-        patient_data.ground_truth
-        for patient_data in patient_to_data.values()
-        if patient_data.ground_truth is not None
-    ]
     cats = categories or sorted(set(ground_truths))
     counter = Counter(ground_truths)
     _logger.info(

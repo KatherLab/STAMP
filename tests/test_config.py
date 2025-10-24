@@ -7,9 +7,11 @@ from stamp.modeling.config import (
     AdvancedConfig,
     CrossvalConfig,
     DeploymentConfig,
+    LinearModelParams,
     MlpModelParams,
     ModelParams,
     TrainConfig,
+    TransMILModelParams,
     VitModelParams,
 )
 from stamp.preprocessing.config import (
@@ -26,11 +28,14 @@ def test_config_parsing() -> None:
     config = StampConfig.model_validate(
         {
             "crossval": {
+                "task": "classification",
                 "categories": None,
                 "clini_table": "clini.xlsx",
                 "feature_dir": "CRC",
                 "filename_label": "FILENAME",
                 "ground_truth_label": "isMSIH",
+                "time_label": "time_label",
+                "status_label": "status_label",
                 "output_dir": "test-crossval",
                 "patient_label": "PATIENT",
                 "slide_table": "slide.csv",
@@ -38,6 +43,7 @@ def test_config_parsing() -> None:
                 "n_splits": 5,
             },
             "deployment": {
+                "task": "classification",
                 "checkpoint_paths": [
                     "test-crossval/split-0/model.ckpt",
                     "test-crossval/split-1/model.ckpt",
@@ -49,6 +55,8 @@ def test_config_parsing() -> None:
                 "feature_dir": "CRC",
                 "filename_label": "FILENAME",
                 "ground_truth_label": "isMSIH",
+                "time_label": "time_label",
+                "status_label": "status_label",
                 "output_dir": "test-deploy",
                 "patient_label": "PATIENT",
                 "slide_table": "slide.csv",
@@ -78,6 +86,7 @@ def test_config_parsing() -> None:
                 "default_slide_mpp": 1.0,
             },
             "statistics": {
+                "task": "classification",
                 "ground_truth_label": "isMSIH",
                 "output_dir": "test-stats",
                 "pred_csvs": [
@@ -90,17 +99,22 @@ def test_config_parsing() -> None:
                 "true_class": "MSIH",
             },
             "training": {
+                "task": "classification",
                 "categories": None,
                 "clini_table": "clini.xlsx",
                 "feature_dir": "CRC",
                 "filename_label": "FILENAME",
                 "ground_truth_label": "isMSIH",
+                "time_label": "time_label",
+                "status_label": "status_label",
                 "output_dir": "test-alibi",
                 "patient_label": "PATIENT",
                 "slide_table": "slide.csv",
                 "use_vary_precision_transform": False,
             },
             "advanced_config": {
+                "task": "classification",
+                "seed": 42,
                 "bag_size": 512,
                 "num_workers": 16,
                 "batch_size": 64,
@@ -141,11 +155,14 @@ def test_config_parsing() -> None:
             default_slide_mpp=SlideMPP(1.0),
         ),
         training=TrainConfig(
+            task="classification",
             output_dir=Path("test-alibi"),
             clini_table=Path("clini.xlsx"),
             slide_table=Path("slide.csv"),
             feature_dir=Path("CRC"),
             ground_truth_label="isMSIH",
+            time_label="time_label",
+            status_label="status_label",
             categories=None,
             patient_label="PATIENT",
             filename_label="FILENAME",
@@ -153,11 +170,14 @@ def test_config_parsing() -> None:
             use_vary_precision_transform=False,
         ),
         crossval=CrossvalConfig(
+            task="classification",
             output_dir=Path("test-crossval"),
             clini_table=Path("clini.xlsx"),
             slide_table=Path("slide.csv"),
             feature_dir=Path("CRC"),
             ground_truth_label="isMSIH",
+            time_label="time_label",
+            status_label="status_label",
             categories=None,
             patient_label="PATIENT",
             filename_label="FILENAME",
@@ -166,6 +186,7 @@ def test_config_parsing() -> None:
             n_splits=5,
         ),
         deployment=DeploymentConfig(
+            task="classification",
             output_dir=Path("test-deploy"),
             checkpoint_paths=[
                 Path("test-crossval/split-0/model.ckpt"),
@@ -178,10 +199,13 @@ def test_config_parsing() -> None:
             slide_table=Path("slide.csv"),
             feature_dir=Path("CRC"),
             ground_truth_label="isMSIH",
+            time_label="time_label",
+            status_label="status_label",
             patient_label="PATIENT",
             filename_label="FILENAME",
         ),
         statistics=StatsConfig(
+            task="classification",
             output_dir=Path("test-stats"),
             pred_csvs=[
                 Path(
@@ -215,6 +239,8 @@ def test_config_parsing() -> None:
             default_slide_mpp=SlideMPP(1.0),
         ),
         advanced_config=AdvancedConfig(
+            task="classification",
+            seed=42,
             bag_size=512,
             num_workers=16,
             batch_size=64,
@@ -235,6 +261,8 @@ def test_config_parsing() -> None:
                     num_layers=2,
                     dropout=0.25,
                 ),
+                trans_mil=TransMILModelParams(dim_hidden=512),
+                linear=LinearModelParams(),
             ),
         ),
     )

@@ -11,7 +11,7 @@ import h5py
 import numpy as np
 import pandas as pd
 import torch
-from jaxtyping import Bool, Float
+from jaxtyping import Float
 from packaging.version import Version
 from torch import Tensor
 from torch.utils.data import DataLoader, Dataset
@@ -32,6 +32,7 @@ from stamp.types import (
     PandasLabel,
     PatientId,
     SlideMPP,
+    Task,
     TilePixels,
 )
 
@@ -44,9 +45,12 @@ __copyright__ = "Copyright (C) 2022-2025 Marko van Treeck"
 __license__ = "MIT"
 
 _Bag: TypeAlias = Float[Tensor, "tile feature"]
-_EncodedTarget: TypeAlias = Bool[Tensor, "category_is_hot"]  # noqa: F821
+_EncodedTarget: TypeAlias = Float[Tensor, "category_is_hot"] | Float[Tensor, "1"]  # noqa: F821
 _BinaryIOLike: TypeAlias = Union[BinaryIO, IO[bytes]]
-"""The ground truth, encoded numerically (currently: one-hot)"""
+"""The ground truth, encoded numerically
+- classification: one-hot float [C]
+- regression: float [1]
+"""
 _Coordinates: TypeAlias = Float[Tensor, "tile 2"]
 
 
@@ -63,6 +67,7 @@ def tile_bag_dataloader(
     *,
     patient_data: Sequence[PatientData[GroundTruth | None]],
     bag_size: int | None,
+    task: Task,
     categories: Sequence[Category] | None = None,
     batch_size: int,
     shuffle: bool,
@@ -75,22 +80,93 @@ def tile_bag_dataloader(
     """Creates a dataloader from patient data for tile-level (bagged) features.
 
     Args:
-        categories:
-            Order of classes for one-hot encoding.
-            If `None`, classes are inferred from patient data.
+        task='classification':
+            categories:
+                Order of classes for one-hot encoding.
+                If `None`, classes are inferred from patient data.
+        task='regression':
+            returns float targets
     """
+    if task == "classification":
+        raw_ground_truths = np.array([patient.ground_truth for patient in patient_data])
+        categories = (
+            categories if categories is not None else list(np.unique(raw_ground_truths))
+        )
+        # one_hot = torch.tensor(raw_ground_truths.reshape(-1, 1) == categories)
+        one_hot = torch.tensor(
+            raw_ground_truths.reshape(-1, 1) == categories, dtype=torch.float32
+        )
+        ds = BagDataset(
+            bags=[patient.feature_files for patient in patient_data],
+            bag_size=bag_size,
+            ground_truths=one_hot,
+            transform=transform,
+        )
+        cats_out: Sequence[Category] = list(categories)
 
-    raw_ground_truths = np.array([patient.ground_truth for patient in patient_data])
-    categories = (
-        categories if categories is not None else list(np.unique(raw_ground_truths))
-    )
-    one_hot = torch.tensor(raw_ground_truths.reshape(-1, 1) == categories)
-    ds = BagDataset(
-        bags=[patient.feature_files for patient in patient_data],
-        bag_size=bag_size,
-        ground_truths=one_hot,
-        transform=transform,
-    )
+    elif task == "regression":
+        raw_targets = np.array(
+            [
+                np.nan if p.ground_truth is None else float(p.ground_truth)  # type: ignore
+                for p in patient_data
+            ],
+            dtype=np.float32,
+        )
+        y = torch.from_numpy(raw_targets).reshape(-1, 1)
+
+        ds = BagDataset(
+            bags=[patient.feature_files for patient in patient_data],
+            bag_size=bag_size,
+            ground_truths=y,
+            transform=transform,
+        )
+        cats_out = []
+
+    elif task == "survival":  # Not yet support logistic-harzard
+        times: list[float] = []
+        events: list[float] = []
+
+        for p in patient_data:
+            if p.ground_truth is None:
+                times.append(np.nan)
+                events.append(np.nan)
+                continue
+
+            try:
+                time_str, status_str = p.ground_truth.split(" ", 1)
+
+                # Handle missing values encoded as "nan"
+                if time_str.lower() == "nan":
+                    times.append(np.nan)
+                else:
+                    times.append(float(time_str))
+
+                if status_str.lower() == "nan":
+                    events.append(np.nan)
+                elif status_str.lower() in {"dead", "event", "1", "Yes", "yes"}:
+                    events.append(1.0)
+                elif status_str.lower() in {"alive", "censored", "0", "No", "no"}:
+                    events.append(0.0)
+                else:
+                    events.append(np.nan)  # unknown status → mark missing
+
+            except Exception:
+                times.append(np.nan)
+                events.append(np.nan)
+
+        # Final tensor shape: (N, 2)
+        y = torch.tensor(np.column_stack([times, events]), dtype=torch.float32)
+
+        ds = BagDataset(
+            bags=[patient.feature_files for patient in patient_data],
+            bag_size=bag_size,
+            ground_truths=y,
+            transform=transform,
+        )
+        cats_out: Sequence[Category] = []  # survival has no categories
+
+    else:
+        raise ValueError(f"Unknown task: {task}")
 
     return (
         cast(
@@ -107,7 +183,7 @@ def tile_bag_dataloader(
                 generator=Seed.get_torch_generator() if Seed._is_set() else None,
             ),
         ),
-        list(categories),
+        cats_out,
     )
 
 
@@ -117,7 +193,21 @@ def _collate_to_tuple(
     bags = torch.stack([bag for bag, _, _, _ in items])
     coords = torch.stack([coord for _, coord, _, _ in items])
     bag_sizes = torch.tensor([bagsize for _, _, bagsize, _ in items])
-    encoded_targets = torch.stack([encoded_target for _, _, _, encoded_target in items])
+
+    targets = [et for _, _, _, et in items]
+
+    # Normalize target shapes
+    fixed_targets = []
+    for et in targets:
+        et = torch.as_tensor(et)
+        if et.ndim == 0:  # scalar → (1,)
+            et = et.unsqueeze(0)
+        elif et.ndim > 1:  # e.g. (1,2) → (2,)
+            et = et.view(-1)
+        fixed_targets.append(et)
+
+    # Stack into (B, D)
+    encoded_targets = torch.stack(fixed_targets)
 
     return (bags, coords, bag_sizes, encoded_targets)
 
@@ -247,8 +337,10 @@ class BagDataset(Dataset[tuple[_Bag, _Coordinates, BagSize, _EncodedTarget]]):
     If `bag_size` is None, all the samples will be used.
     """
 
-    ground_truths: Bool[Tensor, "index category_is_hot"]
-    """The ground truth for each bag, one-hot encoded."""
+    ground_truths: Float[Tensor, "index category_is_hot"] | Float[Tensor, "index 1"]
+
+    # ground_truths: Bool[Tensor, "index category_is_hot"]
+    # """The ground truth for each bag, one-hot encoded."""
 
     transform: Callable[[Tensor], Tensor] | None
 
@@ -467,6 +559,60 @@ def patient_to_ground_truth_from_clini_table_(
     return patient_to_ground_truth
 
 
+def patient_to_survival_from_clini_table_(
+    *,
+    clini_table_path: Path | TextIO,
+    patient_label: PandasLabel,
+    time_label: PandasLabel,
+    status_label: PandasLabel,
+) -> dict[PatientId, GroundTruth]:
+    """
+    Loads patients and their survival ground truths (time + event) from a clini table.
+
+    Returns
+    -------
+    dict[PatientId, GroundTruth]
+        Mapping patient_id -> "time status" (e.g. "302 dead", "476 alive").
+    """
+    clini_df = read_table(
+        clini_table_path,
+        usecols=[patient_label, time_label, status_label],
+        dtype=str,
+    )
+
+    # normalize values
+    clini_df[time_label] = clini_df[time_label].replace(
+        ["NA", "NaN", "nan", "", "=#VALUE!"], np.nan
+    )
+    clini_df[status_label] = clini_df[status_label].str.strip().str.lower()
+
+    # Only drop rows where BOTH time and status are missing
+    clini_df = clini_df.dropna(subset=[time_label, status_label], how="all")
+
+    patient_to_ground_truth: dict[PatientId, GroundTruth] = {}
+    for _, row in clini_df.iterrows():
+        pid = row[patient_label]
+        time_str = row[time_label]
+        status_str = row[status_label]
+
+        # Skip patients missing survival time
+        if pd.isna(time_str):
+            continue
+
+        # Encode status: keep both dead (event=1) and alive (event=0)
+        if status_str in {"dead", "event", "1"}:
+            status = "dead"
+        elif status_str in {"alive", "censored", "0"}:
+            status = "alive"
+        else:
+            # skip unknown status
+            continue
+
+        patient_to_ground_truth[pid] = f"{time_str} {status}"
+
+    return patient_to_ground_truth
+
+
 def slide_to_patient_from_slide_table_(
     *,
     slide_table_path: Path,
@@ -485,6 +631,7 @@ def slide_to_patient_from_slide_table_(
         usecols=[patient_label, filename_label],
         dtype=str,
     )
+
     # Verify the slide table contains a feature path with .h5 extension by
     # checking the filename_label.
     for x in slide_df[filename_label]:
@@ -565,6 +712,10 @@ def filter_complete_patient_data_(
         )
     }
 
+    _logger.info(
+        f"Kept {len(patient_to_ground_truth)}/{len(patient_to_ground_truth)} \
+        patients with complete data ({len(patient_to_ground_truth) / len(patient_to_ground_truth):.1%})."
+    )
     return patients
 
 

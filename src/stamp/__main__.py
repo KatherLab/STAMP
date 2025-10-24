@@ -53,7 +53,8 @@ def _run_cli(args: argparse.Namespace) -> None:
     # use default advanced config in case none is provided
     if config.advanced_config is None:
         config.advanced_config = AdvancedConfig(
-            model_params=ModelParams(vit=VitModelParams(), mlp=MlpModelParams())
+            task="classification",
+            model_params=ModelParams(vit=VitModelParams(), mlp=MlpModelParams()),
         )
 
     # Set global random seed
@@ -171,11 +172,13 @@ def _run_cli(args: argparse.Namespace) -> None:
                 clini_table=config.deployment.clini_table,
                 slide_table=config.deployment.slide_table,
                 feature_dir=config.deployment.feature_dir,
-                ground_truth_label=config.deployment.ground_truth_label,
                 patient_label=config.deployment.patient_label,
                 filename_label=config.deployment.filename_label,
                 num_workers=config.deployment.num_workers,
                 accelerator=config.deployment.accelerator,
+                ground_truth_label=config.deployment.ground_truth_label,
+                time_label=config.deployment.time_label,
+                status_label=config.deployment.status_label,
             )
 
         case "crossval":
@@ -206,11 +209,15 @@ def _run_cli(args: argparse.Namespace) -> None:
                 "using the following configuration:\n"
                 f"{yaml.dump(config.statistics.model_dump(mode='json'))}"
             )
+
             compute_stats_(
+                task=config.statistics.task,
                 output_dir=config.statistics.output_dir,
                 pred_csvs=config.statistics.pred_csvs,
                 ground_truth_label=config.statistics.ground_truth_label,
                 true_class=config.statistics.true_class,
+                time_label=config.statistics.time_label,
+                status_label=config.statistics.status_label,
             )
 
         case "heatmaps":
