@@ -3,18 +3,14 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import NewType
 
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import scipy.stats as st
 from lifelines import KaplanMeierFitter
 from lifelines.plotting import add_at_risk_counts
 from lifelines.statistics import logrank_test
 from lifelines.utils import concordance_index
-
-_Inches = NewType("_Inches", float)
 
 
 def _comparable_pairs_count(times: np.ndarray, events: np.ndarray) -> int:
@@ -161,7 +157,7 @@ def _plot_km(
     ax.text(
         0.6,
         0.08,
-        f"Log-rank p = {logrank_p:.4e}\nC-index = {c_used:.3f} ({used})\nMedian = {median_risk:.3f}",
+        f"Log-rank p = {logrank_p:.4e}\nC-index = {c_used:.3f} ({used})\nCut-off = {median_risk:.3f}",
         transform=ax.transAxes,
         fontsize=11,
         bbox=dict(facecolor="white", edgecolor="black", boxstyle="round,pad=0.3"),
@@ -180,11 +176,3 @@ def _plot_km(
     outpath = outdir / "plots" / f"fold_{fold_name}_km_curve.svg"
     plt.savefig(outpath, dpi=300, bbox_inches="tight")
     plt.close(fig)
-
-
-def _aggregate_with_ci(stats_df: pd.DataFrame) -> pd.DataFrame:
-    mean = stats_df.mean(numeric_only=True)
-    sem = stats_df.sem(numeric_only=True)
-    dfree = max(len(stats_df) - 1, 1)
-    lower, upper = st.t.interval(0.95, df=dfree, loc=mean, scale=sem.fillna(0.0))
-    return pd.DataFrame({"mean": mean, "95%_low": lower, "95%_high": upper})
