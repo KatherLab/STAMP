@@ -208,8 +208,8 @@ def deploy_categorical_model_(
 
         # cut-off values from survival ckpt
         cut_off = (
-            getattr(model.hparams, "train_pred_mean", None)
-            if getattr(model.hparams, "train_pred_mean", None) is not None
+            getattr(model.hparams, "train_pred_median", None)
+            if getattr(model.hparams, "train_pred_median", None) is not None
             else None
         )
 

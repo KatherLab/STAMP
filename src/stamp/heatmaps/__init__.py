@@ -625,14 +625,14 @@ def heatmaps_(
                     gradcam_2d.max() - gradcam_2d.min() + 1e-8
                 )
 
-                if getattr(model.hparams, "train_pred_mean", None) is not None:
+                if getattr(model.hparams, "train_pred_median", None) is not None:
                     # --- Apply diverging colormap (same style as classification) ---
                     score_im = plt.get_cmap("RdBu_r")(
                         (
-                            (gradcam_2d - model.hparams["train_pred_mean"])
+                            (gradcam_2d - model.hparams["train_pred_median"])
                             / (
                                 2
-                                * (gradcam_2d - model.hparams["train_pred_mean"])
+                                * (gradcam_2d - model.hparams["train_pred_median"])
                                 .abs()
                                 .amax()
                                 + 1e-8

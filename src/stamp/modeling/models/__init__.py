@@ -517,7 +517,7 @@ class LitTileSurvival(LitTileRegressor):
             [],
             [],
         )
-        self.train_pred_mean = None
+        self.train_pred_median = None
 
     @staticmethod
     def cox_loss(
@@ -607,12 +607,15 @@ class LitTileSurvival(LitTileRegressor):
     def on_train_epoch_end(self):
         if len(self._train_scores) > 0:
             all_preds = torch.cat(self._train_scores)
-            self.train_pred_mean = all_preds.mean().item()
+            self.train_pred_median = all_preds.median().item()
             self.log(
-                "train_pred_mean", self.train_pred_mean, prog_bar=True, sync_dist=True
+                "train_pred_median",
+                self.train_pred_median,
+                prog_bar=True,
+                sync_dist=True,
             )
             self._train_scores.clear()
-            self.hparams.update({"train_pred_mean": self.train_pred_mean})
+            self.hparams.update({"train_pred_median": self.train_pred_median})
 
     def validation_step(
         self,
