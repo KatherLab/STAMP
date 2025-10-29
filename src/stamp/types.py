@@ -9,7 +9,7 @@ from typing import (
 
 import torch
 from beartype.typing import Mapping
-from jaxtyping import Bool, Float, Integer
+from jaxtyping import Float, Integer
 from torch import Tensor
 
 # tiling
@@ -46,10 +46,14 @@ BagSize: TypeAlias = int
 # A batch of the above
 Bags: TypeAlias = Float[Tensor, "batch tile feature"]
 BagSizes: TypeAlias = Integer[Tensor, "batch"]  # noqa: F821
-EncodedTargets: TypeAlias = Bool[Tensor, "batch category_is_hot"]
-"""The ground truth, encoded numerically (currently: one-hot)"""
+EncodedTargets: TypeAlias = (
+    Float[Tensor, "index category_is_hot"] | Float[Tensor, "index 1"]
+)
+"""Ground truth tensor for supervision."""
 CoordinatesBatch: TypeAlias = Float[Tensor, "batch tile 2"]
 
 PandasLabel: TypeAlias = str
 
 GroundTruthType = TypeVar("GroundTruthType", covariant=True)
+
+Task: TypeAlias = Literal["classification", "regression", "survival"]

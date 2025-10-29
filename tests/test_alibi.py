@@ -1,6 +1,6 @@
 import torch
 
-from stamp.modeling.alibi import MultiHeadALiBi
+from stamp.modeling.models.vision_tranformer import MultiHeadALiBi
 
 
 def test_alibi_shapes(embed_dim: int = 32, num_heads: int = 8) -> None:
