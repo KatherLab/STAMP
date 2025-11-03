@@ -134,7 +134,16 @@ class Titan(Encoder):
                 slide_filename = row[filename_label]
                 h5_path = os.path.join(feat_dir, slide_filename)
 
-                feats, coords = self._validate_and_read_features(h5_path=h5_path)
+                # Skip if not an .h5 file
+                if not h5_path.endswith(".h5"):
+                    tqdm.write(f"Skipping {slide_filename} (not an .h5 file)")
+                    continue
+
+                try:
+                    feats, coords = self._validate_and_read_features(h5_path=h5_path)
+                except (FileNotFoundError, ValueError, OSError) as e:
+                    tqdm.write(f"Skipping {slide_filename}: {e}")
+                    continue
 
                 # Get the mpp of one slide and check that the rest have the same
                 if slides_mpp < 0:
