@@ -41,7 +41,7 @@ class MLP(nn.Module):
             x = x.mean(dim=1)  # → (B, F)
         elif x.ndim != 2:
             raise ValueError(f"Expected 2D or 3D input, got {x.shape}")
-        return self.mlp(x)
+        return self.mlp(x.float())
 
 
 class Linear(nn.Module):

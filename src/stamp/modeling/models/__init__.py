@@ -311,7 +311,7 @@ class LitPatientClassifier(LitBaseClassifier):
 
     def _step(self, batch, step_name: str):
         feats, targets = batch
-        logits = self.model(feats)
+        logits = self.model(feats.float())
         loss = nn.functional.cross_entropy(
             logits,
             targets.type_as(logits),

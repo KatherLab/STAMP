@@ -5,7 +5,7 @@ from typing import NewType
 import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 from stamp.statistics.categorical import categorical_aggregated_
 from stamp.statistics.prc import (
@@ -38,7 +38,7 @@ def _read_table(file: Path, **kwargs) -> pd.DataFrame:
 
 class StatsConfig(BaseModel):
     model_config = ConfigDict(extra="ignore")
-    task: Task
+    task: Task | None = Field(default="classification")
     output_dir: Path
     pred_csvs: list[Path]
     ground_truth_label: PandasLabel | None = None
