@@ -240,15 +240,16 @@ def extract_(
 
     extractor_id = extractor.identifier
 
-    if generate_hash:
-        extractor_id += f"-{code_hash}"
-
     _logger.info(f"Using extractor {extractor.identifier}")
 
     if cache_dir:
         cache_dir.mkdir(parents=True, exist_ok=True)
 
-    feat_output_dir = output_dir / extractor_id
+    feat_output_dir = (
+        output_dir / f"{extractor_id}-{code_hash}"
+        if generate_hash
+        else output_dir / extractor_id
+    )
 
     # Collect slides for preprocessing
     if wsi_list is not None:

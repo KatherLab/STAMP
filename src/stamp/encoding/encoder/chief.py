@@ -113,7 +113,7 @@ class CHIEF(Encoder):
         model.load_state_dict(chief, strict=True)
         super().__init__(
             model=model,
-            identifier=EncoderName.CHIEF,
+            identifier=EncoderName.CHIEF_CTRANSPATH,
             precision=torch.float32,
             required_extractors=[
                 ExtractorName.CHIEF_CTRANSPATH,
@@ -178,7 +178,16 @@ class CHIEF(Encoder):
             for _, row in group.iterrows():
                 slide_filename = row[filename_label]
                 h5_path = os.path.join(feat_dir, slide_filename)
-                feats, _ = self._validate_and_read_features(h5_path=h5_path)
+                # Skip if not an .h5 file
+                if not h5_path.endswith(".h5"):
+                    tqdm.write(f"Skipping {slide_filename} (not an .h5 file)")
+                    continue
+
+                try:
+                    feats, coords = self._validate_and_read_features(h5_path=h5_path)
+                except (FileNotFoundError, ValueError, OSError) as e:
+                    tqdm.write(f"Skipping {slide_filename}: {e}")
+                    continue
                 feats_list.append(feats)
 
             if not feats_list:

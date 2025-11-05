@@ -189,7 +189,8 @@ class Encoder(ABC):
                 raise ValueError(
                     f"Feature file does not have extractor's name in the metadata: {os.path.basename(h5_path)}"
                 )
-            return feats, coords, extractor
+
+            return feats, coords, _resolve_extractor_name(extractor)
 
     def _save_features_(
         self, output_path: Path, feats: np.ndarray, feat_type: str
@@ -215,3 +216,35 @@ class Encoder(ABC):
 
             Path(tmp_h5_file.name).rename(output_path)
             _logger.debug(f"saved features to {output_path}")
+
+
+def _resolve_extractor_name(raw: str) -> ExtractorName:
+    """
+    Resolve an extractor string to a valid ExtractorName.
+
+    Handles:
+      - exact matches ('gigapath', 'virchow-full')
+      - versioned strings like 'gigapath-ae23d', 'virchow-full-2025abc'
+    Raises ValueError if the base name is not recognized.
+    """
+    if not raw:
+        raise ValueError("Empty extractor string")
+
+    name = str(raw).strip().lower()
+
+    # Exact match
+    for e in ExtractorName:
+        if name == e.value.lower():
+            return e
+
+    # Versioned form: '<enum-value>-something'
+    for e in ExtractorName:
+        if name.startswith(e.value.lower() + "-"):
+            return e
+
+    # Otherwise fail
+    raise ValueError(
+        f"Unknown extractor '{raw}'. "
+        f"Expected one of {[e.value for e in ExtractorName]} "
+        f"or a versioned variant like '<name>-<hash>'."
+    )

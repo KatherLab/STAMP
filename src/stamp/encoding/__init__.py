@@ -54,7 +54,7 @@ def init_slide_encoder_(
 
             selected_encoder: Encoder = Gigapath()
 
-        case EncoderName.CHIEF:
+        case EncoderName.CHIEF_CTRANSPATH:
             from stamp.encoding.encoder.chief import CHIEF
 
             selected_encoder: Encoder = CHIEF()
@@ -140,7 +140,7 @@ def init_patient_encoder_(
 
             selected_encoder: Encoder = Gigapath()
 
-        case EncoderName.CHIEF:
+        case EncoderName.CHIEF_CTRANSPATH:
             from stamp.encoding.encoder.chief import CHIEF
 
             selected_encoder: Encoder = CHIEF()

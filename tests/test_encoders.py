@@ -33,7 +33,7 @@ input_dims = {
 
 # They are not all, just one case that is accepted for each encoder
 used_extractor = {
-    EncoderName.CHIEF: ExtractorName.CHIEF_CTRANSPATH,
+    EncoderName.CHIEF_CTRANSPATH: ExtractorName.CHIEF_CTRANSPATH,
     EncoderName.COBRA: ExtractorName.CONCH,
     EncoderName.EAGLE: ExtractorName.CTRANSPATH,
     EncoderName.GIGAPATH: ExtractorName.GIGAPATH,
@@ -73,7 +73,7 @@ def test_if_encoding_crashes(*, tmp_path: Path, encoder: EncoderName):
     )
 
     cuda_required = [
-        EncoderName.CHIEF,
+        EncoderName.CHIEF_CTRANSPATH,
         EncoderName.COBRA,
         EncoderName.GIGAPATH,
         EncoderName.MADELEINE,
@@ -103,6 +103,28 @@ def test_if_encoding_crashes(*, tmp_path: Path, encoder: EncoderName):
                 max_tiles=32,
                 feat_dim=input_dims[ExtractorName.VIRCHOW2],
                 extractor_name=ExtractorName.VIRCHOW2,
+                feat_filename=feat_filename,
+                coords=coords,
+            )
+    elif encoder == EncoderName.PRISM:
+        # Eagle requires the aggregated features, so we generate new ones
+        # with same name and coordinates as the other ctranspath feats.
+        agg_feat_dir = tmp_path / "agg_output"
+        agg_feat_dir.mkdir()
+        slide_df = pd.read_csv(slide_path)
+        feature_filenames = [Path(path).stem for path in slide_df["slide_path"]]
+
+        for feat_filename in feature_filenames:
+            # Read the coordinates from the ctranspath feature file
+            ctranspath_file = feature_dir / f"{feat_filename}.h5"
+            with h5py.File(ctranspath_file, "r") as h5_file:
+                coords: np.ndarray = h5_file["coords"][:]  # type: ignore
+            create_random_feature_file(
+                tmp_path=agg_feat_dir,
+                min_tiles=32,
+                max_tiles=32,
+                feat_dim=input_dims[ExtractorName.VIRCHOW_FULL],
+                extractor_name="virchow-full",
                 feat_filename=feat_filename,
                 coords=coords,
             )
