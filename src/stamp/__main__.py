@@ -66,7 +66,7 @@ def _run_cli(args: argparse.Namespace) -> None:
             raise RuntimeError("this case should be handled above")
 
         case "config":
-            print(yaml.dump(config.model_dump(mode="json")))
+            print(yaml.dump(config.model_dump(mode="json", exclude_none=True)))
 
         case "preprocess":
             from stamp.preprocessing import extract_
@@ -77,7 +77,7 @@ def _run_cli(args: argparse.Namespace) -> None:
             _add_file_handle_(_logger, output_dir=config.preprocessing.output_dir)
             _logger.info(
                 "using the following configuration:\n"
-                f"{yaml.dump(config.preprocessing.model_dump(mode='json'))}"
+                f"{yaml.dump(config.preprocessing.model_dump(mode='json', exclude_none=True))}"
             )
             extract_(
                 output_dir=config.preprocessing.output_dir,
@@ -105,7 +105,7 @@ def _run_cli(args: argparse.Namespace) -> None:
             _add_file_handle_(_logger, output_dir=config.slide_encoding.output_dir)
             _logger.info(
                 "using the following configuration:\n"
-                f"{yaml.dump(config.slide_encoding.model_dump(mode='json'))}"
+                f"{yaml.dump(config.slide_encoding.model_dump(mode='json', exclude_none=True))}"
             )
             init_slide_encoder_(
                 encoder=config.slide_encoding.encoder,
@@ -125,7 +125,7 @@ def _run_cli(args: argparse.Namespace) -> None:
             _add_file_handle_(_logger, output_dir=config.patient_encoding.output_dir)
             _logger.info(
                 "using the following configuration:\n"
-                f"{yaml.dump(config.patient_encoding.model_dump(mode='json'))}"
+                f"{yaml.dump(config.patient_encoding.model_dump(mode='json', exclude_none=True))}"
             )
             init_patient_encoder_(
                 encoder=config.patient_encoding.encoder,
@@ -148,7 +148,7 @@ def _run_cli(args: argparse.Namespace) -> None:
             _add_file_handle_(_logger, output_dir=config.training.output_dir)
             _logger.info(
                 "using the following configuration:\n"
-                f"{yaml.dump(config.training.model_dump(mode='json'))}"
+                f"{yaml.dump(config.training.model_dump(mode='json', exclude_none=True))}"
             )
 
             train_categorical_model_(
@@ -164,7 +164,7 @@ def _run_cli(args: argparse.Namespace) -> None:
             _add_file_handle_(_logger, output_dir=config.deployment.output_dir)
             _logger.info(
                 "using the following configuration:\n"
-                f"{yaml.dump(config.deployment.model_dump(mode='json'))}"
+                f"{yaml.dump(config.deployment.model_dump(mode='json', exclude_none=True))}"
             )
             deploy_categorical_model_(
                 output_dir=config.deployment.output_dir,
@@ -190,7 +190,7 @@ def _run_cli(args: argparse.Namespace) -> None:
             _add_file_handle_(_logger, output_dir=config.crossval.output_dir)
             _logger.info(
                 "using the following configuration:\n"
-                f"{yaml.dump(config.crossval.model_dump(mode='json'))}"
+                f"{yaml.dump(config.crossval.model_dump(mode='json', exclude_none=True))}"
             )
 
             categorical_crossval_(
@@ -207,7 +207,7 @@ def _run_cli(args: argparse.Namespace) -> None:
             _add_file_handle_(_logger, output_dir=config.statistics.output_dir)
             _logger.info(
                 "using the following configuration:\n"
-                f"{yaml.dump(config.statistics.model_dump(mode='json'))}"
+                f"{yaml.dump(config.statistics.model_dump(mode='json', exclude_none=True))}"
             )
 
             compute_stats_(

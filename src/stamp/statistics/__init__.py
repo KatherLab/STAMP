@@ -38,14 +38,13 @@ def _read_table(file: Path, **kwargs) -> pd.DataFrame:
 
 class StatsConfig(BaseModel):
     model_config = ConfigDict(extra="ignore")
-    task: Task | None = Field(default="classification")
+    task: Task = Field(default="classification")
     output_dir: Path
     pred_csvs: list[Path]
     ground_truth_label: PandasLabel | None = None
     true_class: str | None = None
     time_label: str | None = None
     status_label: str | None = None
-    risk_label: str | None = None
 
 
 _Inches = NewType("_Inches", float)
@@ -60,7 +59,6 @@ def compute_stats_(
     true_class: str | None = None,
     time_label: str | None = None,
     status_label: str | None = None,
-    risk_label: str | None = None,
 ) -> None:
     match task:
         case "classification":
