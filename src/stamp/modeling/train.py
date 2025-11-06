@@ -18,14 +18,13 @@ from stamp.modeling.data import (
     BagDataset,
     PatientData,
     PatientFeatureDataset,
+    create_dataloader,
     detect_feature_type,
     filter_complete_patient_data_,
     load_patient_level_data,
-    patient_feature_dataloader,
     patient_to_ground_truth_from_clini_table_,
     patient_to_survival_from_clini_table_,
     slide_to_patient_from_slide_table_,
-    tile_bag_dataloader,
 )
 from stamp.modeling.registry import ModelName, load_model_class
 from stamp.modeling.transforms import VaryPrecisionTransform
@@ -218,6 +217,14 @@ def setup_model_for_training(
             f"Model '{advanced.model_name.value}' does not support feature type '{feature_type}'. "
             f"Supported types are: {LitModelClass.supported_features}"
         )
+    elif (
+        feature_type in ("slide", "patient")
+        and advanced.model_name.value.lower() != "mlp"
+    ):
+        raise ValueError(
+            f"Feature type '{feature_type}' only supports MLP backbones. "
+            f"Got '{advanced.model_name.value}'. Please set model_name='mlp'."
+        )
 
     # 4. Get model-specific hyperparameters
     model_specific_params = (
@@ -315,30 +322,41 @@ def setup_dataloaders_for_training(
         ),
     )
 
-    if feature_type == "tile":
-        # Use existing BagDataset logic
-        train_dl, train_categories = tile_bag_dataloader(
-            patient_data=[patient_to_data[pid] for pid in train_patients],
+    if feature_type in ("tile", "slide", "patient"):
+        # Build train/valid dataloaders
+        train_dl, train_categories = create_dataloader(
+            feature_type=feature_type,
             task=task,
-            categories=categories,
+            patient_data=[patient_to_data[pid] for pid in train_patients],
             bag_size=bag_size,
             batch_size=batch_size,
             shuffle=True,
             num_workers=num_workers,
             transform=train_transform,
+            categories=categories,
         )
-        valid_dl, _ = tile_bag_dataloader(
-            patient_data=[patient_to_data[pid] for pid in valid_patients],
+
+        valid_dl, _ = create_dataloader(
+            feature_type=feature_type,
             task=task,
+            patient_data=[patient_to_data[pid] for pid in valid_patients],
             bag_size=None,
-            categories=train_categories,
             batch_size=1,
             shuffle=False,
             num_workers=num_workers,
             transform=None,
+            categories=train_categories,
         )
-        bags, _, _, _ = next(iter(train_dl))
-        dim_feats = bags.shape[-1]
+
+        # Infer feature dimension automatically
+        batch = next(iter(train_dl))
+        if feature_type == "tile":
+            bags, _, _, _ = batch
+            dim_feats = bags.shape[-1]
+        else:
+            feats, _ = batch
+            dim_feats = feats.shape[-1]
+
         return (
             train_dl,
             valid_dl,
@@ -348,36 +366,10 @@ def setup_dataloaders_for_training(
             valid_patients,
         )
 
-    elif feature_type == "patient":
-        train_dl, train_categories = patient_feature_dataloader(
-            patient_data=[patient_to_data[pid] for pid in train_patients],
-            categories=categories,
-            batch_size=batch_size,
-            shuffle=True,
-            num_workers=num_workers,
-            transform=train_transform,
-        )
-        valid_dl, _ = patient_feature_dataloader(
-            patient_data=[patient_to_data[pid] for pid in valid_patients],
-            categories=train_categories,
-            batch_size=1,
-            shuffle=False,
-            num_workers=num_workers,
-            transform=None,
-        )
-        feats, _ = next(iter(train_dl))
-        dim_feats = feats.shape[-1]
-        return (
-            train_dl,
-            valid_dl,
-            train_categories,
-            dim_feats,
-            train_patients,
-            valid_patients,
-        )
     else:
         raise RuntimeError(
-            f"Unsupported feature type: {feature_type}. Only 'tile' and 'patient' are supported."
+            f"Unsupported feature type: {feature_type}. "
+            "Only 'tile', 'slide', and 'patient' are supported."
         )
 
 

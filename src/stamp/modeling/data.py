@@ -235,6 +235,68 @@ def patient_feature_dataloader(
     return dl, categories
 
 
+def create_dataloader(
+    *,
+    feature_type: str,
+    task: Task,
+    patient_data: Sequence[PatientData[GroundTruth | None]],
+    bag_size: int | None = None,
+    batch_size: int,
+    shuffle: bool,
+    num_workers: int,
+    transform: Callable[[Tensor], Tensor] | None,
+    categories: Sequence[Category] | None = None,
+) -> tuple[DataLoader, Sequence[Category]]:
+    """Unified dataloader for all feature types and tasks."""
+    if feature_type == "tile":
+        return tile_bag_dataloader(
+            patient_data=patient_data,
+            bag_size=bag_size,
+            task=task,
+            categories=categories,
+            batch_size=batch_size,
+            shuffle=shuffle,
+            num_workers=num_workers,
+            transform=transform,
+        )
+    elif feature_type in {"slide", "patient"}:
+        # For slide/patient-level: single feature vector per entry
+        feature_files = [next(iter(p.feature_files)) for p in patient_data]
+
+        if task == "classification":
+            raw = np.array([p.ground_truth for p in patient_data])
+            categories = categories or list(np.unique(raw))
+            labels = torch.tensor(raw.reshape(-1, 1) == categories, dtype=torch.float32)
+        elif task == "regression":
+            labels = torch.tensor(
+                [p.ground_truth for p in patient_data], dtype=torch.float32
+            ).reshape(-1, 1)
+        elif task == "survival":
+            times, events = [], []
+            for p in patient_data:
+                t, e = (p.ground_truth or "nan nan").split(" ", 1)
+                times.append(float(t) if t.lower() != "nan" else np.nan)
+                events.append(
+                    1.0 if e.lower() in {"dead", "event", "1", "Yes", "yes"} else 0.0
+                )
+            labels = torch.tensor(np.column_stack([times, events]), dtype=torch.float32)
+        else:
+            raise ValueError(f"Unsupported task: {task}")
+
+        ds = PatientFeatureDataset(feature_files, labels, transform)
+        dl = DataLoader(
+            ds,
+            batch_size=batch_size,
+            shuffle=shuffle,
+            num_workers=num_workers,
+            worker_init_fn=Seed.get_loader_worker_init() if Seed._is_set() else None,
+            generator=Seed.get_torch_generator() if Seed._is_set() else None,
+        )
+        return dl, categories or []
+    else:
+        raise ValueError(f"Unknown feature type: {feature_type}")
+
+
 def detect_feature_type(feature_dir: Path) -> str:
     """
     Detects feature type by inspecting all .h5 files in feature_dir.

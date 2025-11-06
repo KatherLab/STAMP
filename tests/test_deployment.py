@@ -17,7 +17,7 @@ from stamp.modeling.deploy import (
     _to_survival_prediction_df,
 )
 from stamp.modeling.models import (
-    LitPatientClassifier,
+    LitSlideClassifier,
     LitTileClassifier,
     LitTileRegressor,
     LitTileSurvival,
@@ -31,7 +31,7 @@ from stamp.types import GroundTruth, PatientId, Task
 def test_predict_patient_level(
     tmp_path: Path, categories: list[str] = ["foo", "bar", "baz"], dim_feats: int = 12
 ):
-    model = LitPatientClassifier(
+    model = LitSlideClassifier(
         model_class=MLP,
         categories=categories,
         category_weights=torch.rand(len(categories)),

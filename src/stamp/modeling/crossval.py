@@ -9,14 +9,13 @@ from sklearn.model_selection import KFold, StratifiedKFold
 from stamp.modeling.config import AdvancedConfig, CrossvalConfig
 from stamp.modeling.data import (
     PatientData,
+    create_dataloader,
     detect_feature_type,
     filter_complete_patient_data_,
     load_patient_level_data,
-    patient_feature_dataloader,
     patient_to_ground_truth_from_clini_table_,
     patient_to_survival_from_clini_table_,
     slide_to_patient_from_slide_table_,
-    tile_bag_dataloader,
 )
 from stamp.modeling.deploy import (
     _predict,
@@ -56,13 +55,13 @@ def categorical_crossval_(
     feature_type = detect_feature_type(config.feature_dir)
     _logger.info(f"Detected feature type: {feature_type}")
 
-    if feature_type == "tile":
+    if feature_type in ("tile", "slide"):
         if config.slide_table is None:
-            raise ValueError("A slide table is required for tile-level modeling")
+            raise ValueError("A slide table is required for modeling")
         if config.task == "survival":
             if config.time_label is None or config.status_label is None:
                 raise ValueError(
-                    "Both time_label and status_label are is required for tile-level survival modeling"
+                    "Both time_label and status_label are is required for survival modeling"
                 )
             patient_to_ground_truth: dict[PatientId, GroundTruth] = (
                 patient_to_survival_from_clini_table_(
@@ -75,7 +74,7 @@ def categorical_crossval_(
         else:
             if config.ground_truth_label is None:
                 raise ValueError(
-                    "Ground truth label is required for tile-level modeling"
+                    "Ground truth label is required for classification or regression modeling"
                 )
             patient_to_ground_truth: dict[PatientId, GroundTruth] = (
                 patient_to_ground_truth_from_clini_table_(
@@ -240,28 +239,17 @@ def categorical_crossval_(
                 pid for pid in split.test_patients if pid in patient_to_data
             ]
             test_patient_data = [patient_to_data[pid] for pid in test_patients]
-            if feature_type == "tile":
-                test_dl, _ = tile_bag_dataloader(
-                    patient_data=test_patient_data,
-                    bag_size=None,
-                    task=config.task,
-                    categories=categories,
-                    batch_size=1,
-                    shuffle=False,
-                    num_workers=advanced.num_workers,
-                    transform=None,
-                )
-            elif feature_type == "patient":
-                test_dl, _ = patient_feature_dataloader(
-                    patient_data=test_patient_data,
-                    categories=categories,
-                    batch_size=1,
-                    shuffle=False,
-                    num_workers=advanced.num_workers,
-                    transform=None,
-                )
-            else:
-                raise RuntimeError(f"Unsupported feature type: {feature_type}")
+            test_dl, _ = create_dataloader(
+                feature_type=feature_type,
+                task=config.task,
+                patient_data=test_patient_data,
+                bag_size=None,
+                batch_size=1,
+                shuffle=False,
+                num_workers=advanced.num_workers,
+                transform=None,
+                categories=categories,
+            )
 
             predictions = _predict(
                 model=model,

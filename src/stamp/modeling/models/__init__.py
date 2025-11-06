@@ -299,12 +299,12 @@ class LitTileClassifier(LitBaseClassifier):
         return mask
 
 
-class LitPatientClassifier(LitBaseClassifier):
+class LitSlideClassifier(LitBaseClassifier):
     """
     PyTorch Lightning wrapper for MLPClassifier.
     """
 
-    supported_features = ["patient"]
+    supported_features = ["slide"]
 
     def forward(self, x: Tensor) -> Tensor:
         return self.model(x)
@@ -490,6 +490,68 @@ class LitTileRegressor(LitBaseRegressor):
         return mask
 
 
+class LitSlideRegressor(LitBaseRegressor):
+    """
+    PyTorch Lightning wrapper for slide-level or patient-level regression.
+    Produces a single continuous output per slide (dim_output = 1).
+    """
+
+    supported_features = ["slide", "patient"]
+
+    def forward(self, feats: Tensor) -> Tensor:
+        """Forward pass for slide-level features."""
+        return self.model(feats.float())
+
+    def _step(
+        self,
+        *,
+        batch: tuple[Tensor, Tensor],
+        step_name: str,
+    ) -> Loss:
+        feats, targets = batch
+
+        preds = self.model(feats.float(), mask=None)  # (B, 1)
+        y = targets.to(preds).float()
+
+        loss = self._compute_loss(preds, y)
+
+        self.log(
+            f"{step_name}_loss",
+            loss,
+            on_step=False,
+            on_epoch=True,
+            prog_bar=True,
+            sync_dist=True,
+        )
+
+        if step_name == "validation":
+            # same metrics as LitTileRegressor
+            p = preds.squeeze(-1)
+            t = y.squeeze(-1)
+            self.log(
+                "validation_mae",
+                torch.nn.functional.l1_loss(p, t),
+                prog_bar=True,
+                on_epoch=True,
+                sync_dist=True,
+            )
+
+        return loss
+
+    def training_step(self, batch, batch_idx):
+        return self._step(batch=batch, step_name="training")
+
+    def validation_step(self, batch, batch_idx):
+        return self._step(batch=batch, step_name="validation")
+
+    def test_step(self, batch, batch_idx):
+        return self._step(batch=batch, step_name="test")
+
+    def predict_step(self, batch, batch_idx):
+        feats, _ = batch
+        return self.model(feats.float())
+
+
 class LitTileSurvival(LitTileRegressor):
     """
     PyTorch Lightning module for survival analysis with Cox proportional hazards loss.
@@ -653,3 +715,48 @@ class LitTileSurvival(LitTileRegressor):
         self._val_scores.clear()
         self._val_times.clear()
         self._val_events.clear()
+
+
+class LitSlideSurvival(LitTileSurvival):
+    """
+    Slide-level or patient-level survival analysis.
+    Inherits Cox loss, C-index, and validation logic from LitTileSurvival,
+    but overrides data unpacking to handle (feats, targets) batches.
+    """
+
+    supported_features = ["slide", "patient"]
+
+    def training_step(self, batch, batch_idx):
+        feats, targets = batch
+        preds = self.model(feats.float(), mask=None).squeeze(-1)
+
+        y = targets.to(preds.device, dtype=torch.float32)
+        times, events = y[:, 0], y[:, 1]
+
+        self._train_scores.append(preds.detach().cpu())
+        loss = self.cox_loss(preds, times, events)
+
+        self.log(
+            "train_cox_loss",
+            loss,
+            prog_bar=True,
+            on_step=False,
+            on_epoch=True,
+            sync_dist=True,
+        )
+        return loss
+
+    def validation_step(self, batch, batch_idx):
+        feats, targets = batch  # pyright: ignore[reportAssignmentType]
+        preds = self.model(feats.float()).squeeze(-1)
+
+        y = targets.to(preds.device, dtype=torch.float32)
+        times, events = y[:, 0], y[:, 1]
+
+        self._val_scores.append(preds.detach().cpu())
+        self._val_times.append(times.detach().cpu())
+        self._val_events.append(events.detach().cpu())
+
+    def predict_step(self, batch, batch_idx):
+        feats, _ = batch  # pyright: ignore[reportAssignmentType]
+        return self.model(feats.float())
