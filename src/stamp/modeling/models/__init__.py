@@ -97,7 +97,7 @@ class Base(lightning.LightningModule, ABC):
 
         supported_features = getattr(self, "supported_features", None)
         if supported_features is not None:
-            self.hparams["supported_features"] = supported_features[0]
+            self.hparams["supported_features"] = supported_features
         self.save_hyperparameters()
 
     @staticmethod
@@ -304,7 +304,7 @@ class LitSlideClassifier(LitBaseClassifier):
     PyTorch Lightning wrapper for MLPClassifier.
     """
 
-    supported_features = ["slide"]
+    supported_features = ["slide", "patient"]
 
     def forward(self, x: Tensor) -> Tensor:
         return self.model(x)
