@@ -99,15 +99,14 @@ def categorical_crossval_(
             )
         )
     elif feature_type == "patient":
-        if config.ground_truth_label is None:
-            raise ValueError(
-                "Ground truth label is required for patient-level modeling"
-            )
         patient_to_data: Mapping[PatientId, PatientData] = load_patient_level_data(
+            task=config.task,
             clini_table=config.clini_table,
             feature_dir=config.feature_dir,
             patient_label=config.patient_label,
             ground_truth_label=config.ground_truth_label,
+            time_label=config.time_label,
+            status_label=config.status_label,
         )
         patient_to_ground_truth: dict[PatientId, GroundTruth] = {
             pid: pd.ground_truth for pid, pd in patient_to_data.items()

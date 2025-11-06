@@ -335,39 +335,61 @@ def detect_feature_type(feature_dir: Path) -> str:
 
 def load_patient_level_data(
     *,
+    task: Task | None,
     clini_table: Path,
     feature_dir: Path,
     patient_label: PandasLabel,
-    ground_truth_label: PandasLabel,
+    ground_truth_label: PandasLabel | None = None,  # <- now optional
+    time_label: PandasLabel | None = None,  # <- for survival
+    status_label: PandasLabel | None = None,  # <- for survival
     feature_ext: str = ".h5",
 ) -> dict[PatientId, PatientData]:
     """
     Loads PatientData for patient-level features, matching patients in the clinical table
     to feature files in feature_dir named {patient_id}.h5.
+
+    Supports:
+        - classification / regression via `ground_truth_label`
+        - survival via `time_label` + `status_label` (stored as "time status")
     """
     # TODO: I'm not proud at all of this. Any other alternative for mapping
     # clinical data to the patient-level feature paths that avoids
     # creating another slide table for encoded featuress is welcome :P.
 
-    clini_df = read_table(
-        clini_table,
-        usecols=[patient_label, ground_truth_label],
-        dtype=str,
-    ).dropna()
+    # Load ground truth mapping
+    if task == "survival" and time_label is not None and status_label is not None:
+        # Survival: use the existing helper
+        patient_to_ground_truth = patient_to_survival_from_clini_table_(
+            clini_table_path=clini_table,
+            patient_label=patient_label,
+            time_label=time_label,
+            status_label=status_label,
+        )
+    elif task in ["classification", "regression"] and ground_truth_label is not None:
+        # Classification or regression
+        patient_to_ground_truth = patient_to_ground_truth_from_clini_table_(
+            clini_table_path=clini_table,
+            patient_label=patient_label,
+            ground_truth_label=ground_truth_label,
+        )
+    else:
+        raise ValueError(
+            "You must provide either `ground_truth_label` "
+            "(for classification/regression) or (`time_label`, `status_label`) for survival."
+        )
 
+    # Build PatientData entries
     patient_to_data: dict[PatientId, PatientData] = {}
     missing_features = []
-    for _, row in clini_df.iterrows():
-        patient_id = PatientId(str(row[patient_label]))
-        ground_truth = row[ground_truth_label]
-        feature_file = feature_dir / f"{patient_id}{feature_ext}"
+    for pid, gt in patient_to_ground_truth.items():
+        feature_file = feature_dir / f"{pid}{feature_ext}"
         if feature_file.exists():
-            patient_to_data[patient_id] = PatientData(
-                ground_truth=ground_truth,
+            patient_to_data[pid] = PatientData(
+                ground_truth=gt,
                 feature_files=[FeaturePath(feature_file)],
             )
         else:
-            missing_features.append(patient_id)
+            missing_features.append(pid)
 
     if missing_features:
         _logger.warning(
