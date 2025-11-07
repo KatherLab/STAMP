@@ -97,7 +97,7 @@ class Base(lightning.LightningModule, ABC):
 
         supported_features = getattr(self, "supported_features", None)
         if supported_features is not None:
-            self.hparams["supported_features"] = supported_features
+            self.hparams["supported_features"] = supported_features[0]
         self.save_hyperparameters()
 
     @staticmethod
@@ -304,7 +304,7 @@ class LitSlideClassifier(LitBaseClassifier):
     PyTorch Lightning wrapper for MLPClassifier.
     """
 
-    supported_features = ["slide", "patient"]
+    supported_features = ["slide"]
 
     def forward(self, x: Tensor) -> Tensor:
         return self.model(x)
@@ -348,6 +348,15 @@ class LitSlideClassifier(LitBaseClassifier):
     def predict_step(self, batch, batch_idx):
         feats, _ = batch
         return self.model(feats)
+
+
+class LitPatientClassifier(LitSlideClassifier):
+    """
+    PyTorch Lightning wrapper for patient-level classification.
+    Specialization of LitSlideClassifier for patient-level features.
+    """
+
+    supported_features = ["patient"]
 
 
 class LitBaseRegressor(Base):
@@ -496,7 +505,7 @@ class LitSlideRegressor(LitBaseRegressor):
     Produces a single continuous output per slide (dim_output = 1).
     """
 
-    supported_features = ["slide", "patient"]
+    supported_features = ["slide"]
 
     def forward(self, feats: Tensor) -> Tensor:
         """Forward pass for slide-level features."""
@@ -552,22 +561,37 @@ class LitSlideRegressor(LitBaseRegressor):
         return self.model(feats.float())
 
 
-class LitTileSurvival(LitTileRegressor):
+class LitPatientRegressor(LitSlideRegressor):
+    """
+    PyTorch Lightning wrapper for patient-level regression.
+    Specialization of LitSlideRegressor for patient-level features.
+    """
+
+    supported_features = ["patient"]
+
+
+class LitSurvivalBase(Base):
     """
     PyTorch Lightning module for survival analysis with Cox proportional hazards loss.
-    Expects dataloader batches like:
-      (bags, coords, bag_sizes, targets)
-    where targets is shape (B,2): [:,0]=time, [:,1]=event (1=event, 0=censored).
     """
 
     def __init__(
         self,
+        dim_input: int,
+        model_class: type[nn.Module],
         time_label: PandasLabel,
         status_label: PandasLabel,
         method: str = "cox",
         **kwargs,
     ):
-        super().__init__(time_label=time_label, status_label=status_label, **kwargs)
+        super().__init__(
+            dim_input=dim_input,
+            model_class=model_class,
+            time_label=time_label,
+            status_label=status_label,
+            **kwargs,
+        )
+        self.model: nn.Module = self._build_backbone(model_class, dim_input, 1, kwargs)
         self.hparams.update({"task": "survival"})
         self.method = method
         self.time_label = time_label
@@ -643,6 +667,61 @@ class LitTileSurvival(LitTileRegressor):
         ties = (s_i == s_j).float() * 0.5
         return (conc + ties).sum() / mask.sum()
 
+    def on_validation_epoch_end(self):
+        if (
+            len(self._val_scores) == 0
+            or sum(e.sum().item() for e in self._val_events) == 0
+        ):
+            return
+
+        scores = torch.cat(self._val_scores).to(self.device)
+        times = torch.cat(self._val_times).to(self.device)
+        events = torch.cat(self._val_events).to(self.device)
+
+        val_loss = self.cox_loss(scores, times, events)
+        val_ci = self.c_index(scores, times, events)
+
+        self.log("val_cox_loss", val_loss, prog_bar=True, sync_dist=True)
+        self.log("val_cindex", val_ci, prog_bar=True, sync_dist=True)
+
+        self._val_scores.clear()
+        self._val_times.clear()
+        self._val_events.clear()
+
+    def on_train_epoch_end(self):
+        if len(self._train_scores) > 0:
+            all_preds = torch.cat(self._train_scores)
+            self.train_pred_median = all_preds.median().item()
+            self.log(
+                "train_pred_median",
+                self.train_pred_median,
+                prog_bar=True,
+                sync_dist=True,
+            )
+            self._train_scores.clear()
+            self.hparams.update({"train_pred_median": self.train_pred_median})
+
+
+class LitTileSurvival(LitSurvivalBase):
+    """
+    Tile-level or patch-level survival analysis.
+    Expects dataloader batches like:
+      (bags, coords, bag_sizes, targets)
+    where targets is shape (B,2): [:,0]=time, [:,1]=event (1=event, 0=censored).
+    """
+
+    supported_features = ["tile"]
+
+    def forward(
+        self,
+        bags: Bags,
+        coords: CoordinatesBatch | None = None,
+        mask: Bool[Tensor, "batch tile"] | None = None,
+    ) -> Float[Tensor, "batch 1"]:
+        # Mirror the classifier’s call signature to the backbone
+        # (most ViT backbones accept coords/mask even if unused)
+        return self.model(bags, coords=coords, mask=mask)
+
     def training_step(self, batch, batch_idx):
         bags, coords, bag_sizes, targets = batch
         preds = self.model(bags, coords=coords, mask=None)
@@ -666,19 +745,6 @@ class LitTileSurvival(LitTileRegressor):
         )
         return loss
 
-    def on_train_epoch_end(self):
-        if len(self._train_scores) > 0:
-            all_preds = torch.cat(self._train_scores)
-            self.train_pred_median = all_preds.median().item()
-            self.log(
-                "train_pred_median",
-                self.train_pred_median,
-                prog_bar=True,
-                sync_dist=True,
-            )
-            self._train_scores.clear()
-            self.hparams.update({"train_pred_median": self.train_pred_median})
-
     def validation_step(
         self,
         batch: tuple[Bags, CoordinatesBatch, BagSizes, EncodedTargets],
@@ -695,36 +761,19 @@ class LitTileSurvival(LitTileRegressor):
         self._val_times.append(times.detach().cpu())
         self._val_events.append(events.detach().cpu())
 
-    def on_validation_epoch_end(self):
-        if (
-            len(self._val_scores) == 0
-            or sum(e.sum().item() for e in self._val_events) == 0
-        ):
-            return
-
-        scores = torch.cat(self._val_scores).to(self.device)
-        times = torch.cat(self._val_times).to(self.device)
-        events = torch.cat(self._val_events).to(self.device)
-
-        val_loss = self.cox_loss(scores, times, events)
-        val_ci = self.c_index(scores, times, events)
-
-        self.log("val_cox_loss", val_loss, prog_bar=True, sync_dist=True)
-        self.log("val_cindex", val_ci, prog_bar=True, sync_dist=True)
-
-        self._val_scores.clear()
-        self._val_times.clear()
-        self._val_events.clear()
+    def predict_step(self, batch, batch_idx):
+        feats, coords, n_tiles, survival_target = batch
+        return self.model(feats.float(), coords=coords, mask=None)
 
 
-class LitSlideSurvival(LitTileSurvival):
+class LitSlideSurvival(LitSurvivalBase):
     """
     Slide-level or patient-level survival analysis.
     Inherits Cox loss, C-index, and validation logic from LitTileSurvival,
     but overrides data unpacking to handle (feats, targets) batches.
     """
 
-    supported_features = ["slide", "patient"]
+    supported_features = ["slide"]
 
     def training_step(self, batch, batch_idx):
         feats, targets = batch
@@ -747,7 +796,7 @@ class LitSlideSurvival(LitTileSurvival):
         return loss
 
     def validation_step(self, batch, batch_idx):
-        feats, targets = batch  # pyright: ignore[reportAssignmentType]
+        feats, targets = batch
         preds = self.model(feats.float()).squeeze(-1)
 
         y = targets.to(preds.device, dtype=torch.float32)
@@ -758,5 +807,14 @@ class LitSlideSurvival(LitTileSurvival):
         self._val_events.append(events.detach().cpu())
 
     def predict_step(self, batch, batch_idx):
-        feats, _ = batch  # pyright: ignore[reportAssignmentType]
+        feats, _ = batch
         return self.model(feats.float())
+
+
+class LitPatientSurvival(LitSlideSurvival):
+    """
+    PyTorch Lightning wrapper for patient-level classification.
+    Specialization of LitSlideClassifier for patient-level features.
+    """
+
+    supported_features = ["patient"]

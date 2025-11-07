@@ -56,13 +56,13 @@ def train_categorical_model_(
     feature_type = detect_feature_type(config.feature_dir)
     _logger.info(f"Detected feature type: {feature_type}")
 
-    if feature_type == "tile":
+    if feature_type in ("tile", "slide"):
         if config.slide_table is None:
-            raise ValueError("A slide table is required for tile-level modeling")
+            raise ValueError("A slide table is required for modeling")
         if config.task == "survival":
             if config.time_label is None or config.status_label is None:
                 raise ValueError(
-                    "Both time_label and status_label is required for tile-level survival modeling"
+                    "Both time_label and status_label is required for survival modeling"
                 )
             patient_to_ground_truth = patient_to_survival_from_clini_table_(
                 clini_table_path=config.clini_table,
@@ -95,20 +95,15 @@ def train_categorical_model_(
         # Patient-level: ignore slide_table
         if config.slide_table is not None:
             _logger.warning("slide_table is ignored for patient-level features.")
-        if config.ground_truth_label is None:
-            raise ValueError(
-                "Ground truth label is required for patient-level modeling"
-            )
+
         patient_to_data = load_patient_level_data(
+            task=config.task,
             clini_table=config.clini_table,
             feature_dir=config.feature_dir,
             patient_label=config.patient_label,
             ground_truth_label=config.ground_truth_label,
-        )
-    elif feature_type == "slide":
-        raise RuntimeError(
-            "Slide-level features are not supported for training."
-            "Please rerun the encoding step with patient-level encoding."
+            time_label=config.time_label,
+            status_label=config.status_label,
         )
     else:
         raise RuntimeError(f"Unknown feature type: {feature_type}")
@@ -188,7 +183,7 @@ def setup_model_for_training(
         advanced.bag_size,
         advanced.batch_size,
         advanced.num_workers,
-        advanced.task,
+        task,
     )
     ##temopary for test regression
     category_weights = []
@@ -208,7 +203,7 @@ def setup_model_for_training(
 
     # 2. Instantiate the lightning wrapper (based on provided task, feature type) and model backbone dynamically
     LitModelClass, ModelClass = load_model_class(
-        advanced.task, feature_type, advanced.model_name
+        task, feature_type, advanced.model_name
     )
 
     # 3. Validate that the chosen model supports the feature type

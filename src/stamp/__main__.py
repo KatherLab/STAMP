@@ -53,7 +53,6 @@ def _run_cli(args: argparse.Namespace) -> None:
     # use default advanced config in case none is provided
     if config.advanced_config is None:
         config.advanced_config = AdvancedConfig(
-            task="classification",
             model_params=ModelParams(vit=VitModelParams(), mlp=MlpModelParams()),
         )
 
@@ -151,6 +150,9 @@ def _run_cli(args: argparse.Namespace) -> None:
                 f"{yaml.dump(config.training.model_dump(mode='json', exclude_none=True))}"
             )
 
+            if config.training.task is None:
+                raise ValueError("task must be set in training configuration")
+
             train_categorical_model_(
                 config=config.training, advanced=config.advanced_config
             )
@@ -186,6 +188,9 @@ def _run_cli(args: argparse.Namespace) -> None:
 
             if config.crossval is None:
                 raise ValueError("no crossval configuration supplied")
+
+            if config.crossval.task is None:
+                raise ValueError("task must be set in crossval configuration")
 
             _add_file_handle_(_logger, output_dir=config.crossval.output_dir)
             _logger.info(

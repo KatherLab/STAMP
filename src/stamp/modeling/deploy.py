@@ -11,14 +11,13 @@ from jaxtyping import Float
 from lightning.pytorch.accelerators.accelerator import Accelerator
 
 from stamp.modeling.data import (
+    create_dataloader,
     detect_feature_type,
     filter_complete_patient_data_,
     load_patient_level_data,
-    patient_feature_dataloader,
     patient_to_ground_truth_from_clini_table_,
     patient_to_survival_from_clini_table_,
     slide_to_patient_from_slide_table_,
-    tile_bag_dataloader,
 )
 from stamp.modeling.registry import ModelName, load_model_class
 from stamp.types import GroundTruth, PandasLabel, PatientId
@@ -68,44 +67,85 @@ def deploy_categorical_model_(
     - patient-preds-{i}.csv (individual model predictions)
     - patient-preds.csv (mean predictions across models)
     """
-    # --- Detect feature type and load correct model ---
+    # Detect feature type and load correct model
     feature_type = detect_feature_type(feature_dir)
     _logger.info(f"Detected feature type: {feature_type}")
 
     models = [load_model_from_ckpt(p).eval() for p in checkpoint_paths]
-    # task consistency
+    # Task consistency
     tasks = {model.hparams["task"] for model in models}
 
     if len(tasks) != 1:
         raise RuntimeError(f"Mixed tasks in ensemble: {tasks}")
     task = tasks.pop()
 
-    if models[0].hparams["supported_features"] != feature_type:
-        print(getattr(models[0], "supported_features"), feature_type)
-        raise RuntimeError(
-            f"Unsupported feature type for deployment: {feature_type}. Only 'tile' and 'patient' are supported."
-        )
+    # Feature type consistency
+    model_supported = models[0].hparams["supported_features"]
 
-    # Ensure all models were trained on the same ground truth label
-    if (
-        len(ground_truth_labels := set(model.ground_truth_label for model in models))
-        != 1
-    ):
-        raise RuntimeError(
-            f"ground truth labels differ between models: {ground_truth_labels}"
-        )
+    # tile-based models are strict; patient/slide models are interchangeable
+    if model_supported == "tile":
+        if feature_type != "tile":
+            raise RuntimeError(
+                f"Model trained on tile-level features cannot be deployed on {feature_type}-level features."
+            )
+    elif model_supported in ("slide", "patient"):
+        if feature_type not in ("slide", "patient"):
+            raise RuntimeError(
+                f"Model trained on {model_supported}-level features cannot be deployed on tile-level features."
+            )
+    else:
+        raise RuntimeError(f"Unknown supported_features value: {model_supported}")
 
-    model_ground_truth_label = models[0].ground_truth_label
+    # Task-specific label consistency
+    if task == "survival":
+        # survival models use time_label + status_label
+        time_labels = {getattr(model, "time_label", None) for model in models}
+        status_labels = {getattr(model, "status_label", None) for model in models}
 
-    if (
-        ground_truth_label is not None
-        and ground_truth_label != model_ground_truth_label
-    ):
-        _logger.warning(
-            "deployment ground truth label differs from training: "
-            f"{ground_truth_label} vs {model_ground_truth_label}"
-        )
-    ground_truth_label = ground_truth_label or model_ground_truth_label
+        if len(time_labels) != 1 or len(status_labels) != 1:
+            raise RuntimeError(
+                f"Survival label mismatch between models: "
+                f"time_labels={time_labels}, status_labels={status_labels}"
+            )
+
+        model_time_label = next(iter(time_labels))
+        model_status_label = next(iter(status_labels))
+
+        if (time_label and time_label != model_time_label) or (
+            status_label and status_label != model_status_label
+        ):
+            _logger.warning(
+                "deployment time/status labels differ from training: "
+                f"{(time_label, status_label)} vs {(model_time_label, model_status_label)}"
+            )
+
+        time_label = time_label or model_time_label
+        status_label = status_label or model_status_label
+
+    else:
+        # classification/regression: still use ground_truth_label
+        if (
+            len(
+                ground_truth_labels := set(model.ground_truth_label for model in models)
+            )
+            != 1
+        ):
+            raise RuntimeError(
+                f"ground truth labels differ between models: {ground_truth_labels}"
+            )
+
+        model_ground_truth_label = models[0].ground_truth_label
+
+        if (
+            ground_truth_label is not None
+            and ground_truth_label != model_ground_truth_label
+        ):
+            _logger.warning(
+                "deployment ground truth label differs from training: "
+                f"{ground_truth_label} vs {model_ground_truth_label}"
+            )
+
+        ground_truth_label = ground_truth_label or model_ground_truth_label
 
     output_dir.mkdir(exist_ok=True, parents=True)
 
@@ -117,10 +157,12 @@ def deploy_categorical_model_(
             raise RuntimeError(f"Categories differ between models: {category_sets}")
         model_categories = list(models[0].categories)
 
-    # --- Data loading logic ---
-    if feature_type == "tile":
+    # Data loading logic
+    if feature_type in ("tile", "slide"):
         if slide_table is None:
-            raise ValueError("A slide table is required for tile-level modeling")
+            raise ValueError(
+                "A slide table is required for deployment of slide-level or tile-level features."
+            )
         slide_to_patient = slide_to_patient_from_slide_table_(
             slide_table_path=slide_table,
             feature_dir=feature_dir,
@@ -136,6 +178,10 @@ def deploy_categorical_model_(
                     status_label=models[0].status_label,
                 )
             else:
+                if ground_truth_label is None:
+                    raise ValueError(
+                        "Ground truth label is required for deployment of classification/regression models."
+                    )
                 patient_to_ground_truth = patient_to_ground_truth_from_clini_table_(
                     clini_table_path=clini_table,
                     ground_truth_label=ground_truth_label,
@@ -150,16 +196,7 @@ def deploy_categorical_model_(
             slide_to_patient=slide_to_patient,
             drop_patients_with_missing_ground_truth=False,
         )
-        test_dl, _ = tile_bag_dataloader(
-            patient_data=list(patient_to_data.values()),
-            task=task,
-            bag_size=None,  # We want all tiles to be seen by the model
-            categories=model_categories,
-            batch_size=1,
-            shuffle=False,
-            num_workers=num_workers,
-            transform=None,
-        )
+
         patient_ids = list(patient_to_data.keys())
     elif feature_type == "patient":
         if slide_table is not None:
@@ -171,25 +208,33 @@ def deploy_categorical_model_(
                 "clini_table is required for patient-level feature deployment."
             )
         patient_to_data = load_patient_level_data(
+            task=task,
             clini_table=clini_table,
             feature_dir=feature_dir,
             patient_label=patient_label,
             ground_truth_label=ground_truth_label,
+            time_label=time_label,
+            status_label=status_label,
         )
-        test_dl, _ = patient_feature_dataloader(
-            patient_data=list(patient_to_data.values()),
-            categories=list(models[0].categories),
-            batch_size=1,
-            shuffle=False,
-            num_workers=num_workers,
-            transform=None,
-        )
+
         patient_ids = list(patient_to_data.keys())
         patient_to_ground_truth = {
             pid: pd.ground_truth for pid, pd in patient_to_data.items()
         }
     else:
         raise RuntimeError(f"Unsupported feature type: {feature_type}")
+
+    test_dl, _ = create_dataloader(
+        feature_type=feature_type,
+        task=task,
+        patient_data=list(patient_to_data.values()),
+        bag_size=None,
+        batch_size=1,
+        shuffle=False,
+        num_workers=num_workers,
+        transform=None,
+        categories=model_categories,
+    )
 
     df_builder = {
         "classification": _to_prediction_df,
@@ -200,7 +245,7 @@ def deploy_categorical_model_(
     for model_i, model in enumerate(models):
         predictions = _predict(
             model=model,
-            test_dl=test_dl,
+            test_dl=test_dl,  # pyright: ignore[reportPossiblyUnboundVariable]
             patient_ids=patient_ids,
             accelerator=accelerator,
         )

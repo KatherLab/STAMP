@@ -40,8 +40,8 @@ _logger = logging.getLogger("stamp")
 _logged_stamp_v1_warning = False
 
 
-__author__ = "Marko van Treeck"
-__copyright__ = "Copyright (C) 2022-2025 Marko van Treeck"
+__author__ = "Marko van Treeck, Minh Duc Nguyen"
+__copyright__ = "Copyright (C) 2022-2025 Marko van Treeck, Minh Duc Nguyen"
 __license__ = "MIT"
 
 _Bag: TypeAlias = Float[Tensor, "tile feature"]
@@ -107,7 +107,7 @@ def tile_bag_dataloader(
     elif task == "regression":
         raw_targets = np.array(
             [
-                np.nan if p.ground_truth is None else float(p.ground_truth)  # type: ignore
+                np.nan if p.ground_truth is None else float(p.ground_truth)
                 for p in patient_data
             ],
             dtype=np.float32,
@@ -269,7 +269,12 @@ def create_dataloader(
             labels = torch.tensor(raw.reshape(-1, 1) == categories, dtype=torch.float32)
         elif task == "regression":
             labels = torch.tensor(
-                [p.ground_truth for p in patient_data], dtype=torch.float32
+                [
+                    float(gt)
+                    for gt in (p.ground_truth for p in patient_data)
+                    if gt is not None
+                ],
+                dtype=torch.float32,
             ).reshape(-1, 1)
         elif task == "survival":
             times, events = [], []
@@ -352,9 +357,6 @@ def load_patient_level_data(
         - classification / regression via `ground_truth_label`
         - survival via `time_label` + `status_label` (stored as "time status")
     """
-    # TODO: I'm not proud at all of this. Any other alternative for mapping
-    # clinical data to the patient-level feature paths that avoids
-    # creating another slide table for encoded featuress is welcome :P.
 
     # Load ground truth mapping
     if task == "survival" and time_label is not None and status_label is not None:
@@ -375,7 +377,7 @@ def load_patient_level_data(
     else:
         raise ValueError(
             "You must provide either `ground_truth_label` "
-            "(for classification/regression) or (`time_label`, `status_label`) for survival."
+            "for classification/regression or (`time_label`, `status_label`) for survival when using tile-level or slide-level features."
         )
 
     # Build PatientData entries

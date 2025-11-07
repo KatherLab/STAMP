@@ -1,6 +1,9 @@
 from enum import StrEnum
 
 from stamp.modeling.models import (
+    LitPatientClassifier,
+    LitPatientRegressor,
+    LitPatientSurvival,
     LitSlideClassifier,
     LitSlideRegressor,
     LitSlideSurvival,
@@ -28,9 +31,9 @@ MODEL_REGISTRY = {
     ("slide", "classification"): LitSlideClassifier,
     ("slide", "regression"): LitSlideRegressor,
     ("slide", "survival"): LitSlideSurvival,
-    ("patient", "classification"): LitSlideClassifier,
-    ("patient", "regression"): LitSlideRegressor,
-    ("patient", "survival"): LitSlideSurvival,
+    ("patient", "classification"): LitPatientClassifier,
+    ("patient", "regression"): LitPatientRegressor,
+    ("patient", "survival"): LitPatientSurvival,
 }
 
 

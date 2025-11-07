@@ -306,7 +306,6 @@ patient_encoding:
 
 advanced_config:
   seed: 42
-  task: "classification" # or regression/survial
   max_epochs: 32
   patience: 16
   batch_size: 64

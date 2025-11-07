@@ -7,7 +7,6 @@ from stamp.modeling.config import (
     AdvancedConfig,
     CrossvalConfig,
     DeploymentConfig,
-    LinearModelParams,
     MlpModelParams,
     ModelParams,
     TrainConfig,
@@ -43,7 +42,6 @@ def test_config_parsing() -> None:
                 "n_splits": 5,
             },
             "deployment": {
-                "task": "classification",
                 "checkpoint_paths": [
                     "test-crossval/split-0/model.ckpt",
                     "test-crossval/split-1/model.ckpt",
@@ -113,7 +111,6 @@ def test_config_parsing() -> None:
                 "use_vary_precision_transform": False,
             },
             "advanced_config": {
-                "task": "classification",
                 "seed": 42,
                 "bag_size": 512,
                 "num_workers": 16,
@@ -186,7 +183,6 @@ def test_config_parsing() -> None:
             n_splits=5,
         ),
         deployment=DeploymentConfig(
-            task="classification",
             output_dir=Path("test-deploy"),
             checkpoint_paths=[
                 Path("test-crossval/split-0/model.ckpt"),
@@ -239,7 +235,6 @@ def test_config_parsing() -> None:
             default_slide_mpp=SlideMPP(1.0),
         ),
         advanced_config=AdvancedConfig(
-            task="classification",
             seed=42,
             bag_size=512,
             num_workers=16,
@@ -262,7 +257,6 @@ def test_config_parsing() -> None:
                     dropout=0.25,
                 ),
                 trans_mil=TransMILModelParams(dim_hidden=512),
-                linear=LinearModelParams(),
             ),
         ),
     )

@@ -74,7 +74,6 @@ class DeploymentConfig(BaseModel):
 
     num_workers: int = min(os.cpu_count() or 1, 16)
     accelerator: str = "gpu" if torch.cuda.is_available() else "cpu"
-    task: Task | None = Field(default="classification")
 
 
 class VitModelParams(BaseModel):
@@ -128,4 +127,3 @@ class AdvancedConfig(BaseModel):
     )
     model_params: ModelParams
     seed: int | None = None
-    task: Task

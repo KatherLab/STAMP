@@ -262,6 +262,7 @@ def categorical_crossval_(
                     patient_to_ground_truth=patient_to_ground_truth,
                     predictions=predictions,
                     patient_label=config.patient_label,
+                    cut_off=getattr(model.hparams, "train_pred_median", None),
                 ).to_csv(split_dir / "patient-preds.csv", index=False)
             elif config.task == "regression":
                 if config.ground_truth_label is None:
