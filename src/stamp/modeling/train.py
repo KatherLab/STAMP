@@ -308,7 +308,14 @@ def setup_dataloaders_for_training(
             "patient_to_data must have a ground truth defined for all targets!"
         )
 
-    stratify = ground_truths if task == "classification" else None
+    if task == "classification":
+        stratify = ground_truths
+    elif task == "survival":
+        # Extract event indicator (status)
+        statuses = [int(gt.split()[1]) for gt in ground_truths]
+        stratify = statuses
+    elif task == "regression":
+        stratify = None
 
     train_patients, valid_patients = cast(
         tuple[Sequence[PatientId], Sequence[PatientId]],
