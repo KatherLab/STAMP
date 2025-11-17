@@ -298,10 +298,7 @@ def setup_dataloaders_for_training(
         if patient_data.ground_truth is not None
     ]
 
-    if task == "classification":
-        _logger.info(f"Task: {feature_type} {task}")
-        # Sample count for training
-        log_total_class_summary(ground_truths, categories)
+    _logger.info(f"Task: {feature_type} {task}")
 
     if len(ground_truths) != len(patient_to_data):
         raise ValueError(
@@ -310,6 +307,7 @@ def setup_dataloaders_for_training(
 
     if task == "classification":
         stratify = ground_truths
+        log_total_class_summary(ground_truths, categories)
     elif task == "survival":
         # Extract event indicator (status)
         statuses = [int(gt.split()[1]) for gt in ground_truths]
