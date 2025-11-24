@@ -21,20 +21,16 @@ def _comparable_pairs_count(times: np.ndarray, events: np.ndarray) -> int:
     return int(((t_i < t_j) & (e_i == 1)).sum())
 
 
-def _cindex_auto(
+def _cindex(
     time: np.ndarray,
     event: np.ndarray,
     risk: np.ndarray,
 ) -> tuple[float, str, float, float, int]:
-    """Compute C-index and choose orientation (risk or -risk)."""
-    c_pos = concordance_index(time, risk, event)
-    c_neg = concordance_index(time, -risk, event)
-    vals = [("risk", c_pos), ("-risk", c_neg)]
-    used, c_used = max(
-        vals, key=lambda kv: (float("-inf") if np.isnan(kv[1]) else kv[1])
-    )
+    """Compute C-index in Lifelines convention, report both orientations for reference."""
+    c_pos = float(concordance_index(time, risk, event))
+    c_neg = float(concordance_index(time, -risk, event))
     n_pairs = _comparable_pairs_count(time, event)
-    return float(c_used), used, float(c_pos), float(c_neg), n_pairs
+    return c_pos, "risk", c_pos, c_neg, n_pairs
 
 
 def _survival_stats_for_csv(
@@ -60,7 +56,7 @@ def _survival_stats_for_csv(
     risk = np.asarray(df[risk_label], dtype=float)
 
     # --- Concordance index ---
-    c_used, used, c_risk, c_neg_risk, n_pairs = _cindex_auto(time, event, risk)
+    c_used, used, c_risk, c_neg_risk, n_pairs = _cindex(time, event, risk)
 
     # --- Log-rank test (median split) ---
     median_risk = float(cut_off) if cut_off is not None else float(np.nanmedian(risk))
@@ -152,7 +148,7 @@ def _plot_km(
         event_observed_B=high_df[status_label],
     )
     logrank_p = float(res.p_value)
-    c_used, used, *_ = _cindex_auto(time, event, risk)
+    c_used, used, *_ = _cindex(time, event, risk)
 
     ax.text(
         0.6,
