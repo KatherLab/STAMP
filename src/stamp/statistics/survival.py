@@ -24,13 +24,14 @@ def _comparable_pairs_count(times: np.ndarray, events: np.ndarray) -> int:
 def _cindex(
     time: np.ndarray,
     event: np.ndarray,
-    risk: np.ndarray,
-) -> tuple[float, str, float, float, int]:
-    """Compute C-index in Lifelines convention, report both orientations for reference."""
-    c_pos = float(concordance_index(time, risk, event))
-    c_neg = float(concordance_index(time, -risk, event))
+    risk: np.ndarray,  # will be flipped in function
+) -> tuple[float, int]:
+    """Compute C-index using Lifelines convention:
+    higher risk → shorter survival (worse outcome).
+    """
+    c_index = float(concordance_index(time, -risk, event))
     n_pairs = _comparable_pairs_count(time, event)
-    return c_pos, "risk", c_pos, c_neg, n_pairs
+    return c_index, n_pairs
 
 
 def _survival_stats_for_csv(
@@ -39,7 +40,7 @@ def _survival_stats_for_csv(
     time_label: str,
     status_label: str,
     risk_label: str | None = None,
-    cut_off: float | None = None,
+    cut_off: float | None = None,  # will be flipped in function
 ) -> pd.Series:
     """Compute C-index and log-rank p for one CSV."""
     if risk_label is None:
@@ -56,12 +57,12 @@ def _survival_stats_for_csv(
     risk = np.asarray(df[risk_label], dtype=float)
 
     # --- Concordance index ---
-    c_used, used, c_risk, c_neg_risk, n_pairs = _cindex(time, event, risk)
+    c_index, n_pairs = _cindex(time, event, risk)
 
     # --- Log-rank test (median split) ---
-    median_risk = float(cut_off) if cut_off is not None else float(np.nanmedian(risk))
-    low_mask = risk < median_risk
-    high_mask = risk >= median_risk
+    median_risk = float(-cut_off) if cut_off is not None else float(np.nanmedian(risk))
+    low_mask = risk >= median_risk
+    high_mask = risk < median_risk
     if low_mask.sum() > 0 and high_mask.sum() > 0:
         res = logrank_test(
             time[low_mask],
@@ -75,10 +76,7 @@ def _survival_stats_for_csv(
 
     return pd.Series(
         {
-            "c_index": c_used,
-            "used_orientation": used,
-            "c_index_risk": c_risk,
-            "c_index_neg_risk": c_neg_risk,
+            "c_index": c_index,
             "logrank_p": p_logrank,
             "count": int(len(df)),
             "events": int(event.sum()),
@@ -117,8 +115,8 @@ def _plot_km(
 
     # --- split groups ---
     median_risk = float(cut_off) if cut_off is not None else np.nanmedian(risk)
-    low_mask = risk < median_risk
-    high_mask = risk >= median_risk
+    low_mask = risk >= median_risk
+    high_mask = risk < median_risk
 
     low_df = df[low_mask]
     high_df = df[high_mask]
@@ -153,7 +151,7 @@ def _plot_km(
     ax.text(
         0.6,
         0.08,
-        f"Log-rank p = {logrank_p:.4e}\nC-index = {c_used:.3f} ({used})\nCut-off = {median_risk:.3f}",
+        f"Log-rank p = {logrank_p:.4e}\nC-index = {c_used:.3f}\nCut-off = {median_risk:.3f}",
         transform=ax.transAxes,
         fontsize=11,
         bbox=dict(facecolor="white", edgecolor="black", boxstyle="round,pad=0.3"),
