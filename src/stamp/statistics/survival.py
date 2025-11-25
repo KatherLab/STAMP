@@ -60,9 +60,9 @@ def _survival_stats_for_csv(
     c_index, n_pairs = _cindex(time, event, risk)
 
     # --- Log-rank test (median split) ---
-    median_risk = float(-cut_off) if cut_off is not None else float(np.nanmedian(risk))
-    low_mask = risk >= median_risk
-    high_mask = risk < median_risk
+    median_risk = float(cut_off) if cut_off is not None else float(np.nanmedian(risk))
+    low_mask = risk <= median_risk
+    high_mask = risk > median_risk
     if low_mask.sum() > 0 and high_mask.sum() > 0:
         res = logrank_test(
             time[low_mask],
@@ -115,8 +115,8 @@ def _plot_km(
 
     # --- split groups ---
     median_risk = float(cut_off) if cut_off is not None else np.nanmedian(risk)
-    low_mask = risk >= median_risk
-    high_mask = risk < median_risk
+    low_mask = risk <= median_risk
+    high_mask = risk > median_risk
 
     low_df = df[low_mask]
     high_df = df[high_mask]
