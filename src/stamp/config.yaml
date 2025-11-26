@@ -170,9 +170,6 @@ deployment:
   # paths are ignored. NOTE: Don't forget to add the .h5 file extension.
   slide_table: "/path/of/slide.csv"
 
-  # Task to infer (classification, regression, survival)
-  task: "classification"
-
   # Name of the column from the clini to compare predictions to.
   ground_truth_label: "KRAS"
 
