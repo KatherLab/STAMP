@@ -4,22 +4,26 @@ from typing import Any, Final
 
 import numpy as np
 from pydantic import BaseModel
-from sklearn.model_selection import StratifiedKFold
+from sklearn.model_selection import KFold, StratifiedKFold
 
 from stamp.modeling.config import AdvancedConfig, CrossvalConfig
 from stamp.modeling.data import (
     PatientData,
+    create_dataloader,
     detect_feature_type,
     filter_complete_patient_data_,
     load_patient_level_data,
-    patient_feature_dataloader,
     patient_to_ground_truth_from_clini_table_,
+    patient_to_survival_from_clini_table_,
     slide_to_patient_from_slide_table_,
-    tile_bag_dataloader,
 )
-from stamp.modeling.deploy import _predict, _to_prediction_df
-from stamp.modeling.lightning_model import LitVisionTransformer
-from stamp.modeling.mlp_classifier import LitMLPClassifier
+from stamp.modeling.deploy import (
+    _predict,
+    _to_prediction_df,
+    _to_regression_prediction_df,
+    _to_survival_prediction_df,
+    load_model_from_ckpt,
+)
 from stamp.modeling.train import setup_model_for_training, train_model_
 from stamp.modeling.transforms import VaryPrecisionTransform
 from stamp.types import (
@@ -51,16 +55,34 @@ def categorical_crossval_(
     feature_type = detect_feature_type(config.feature_dir)
     _logger.info(f"Detected feature type: {feature_type}")
 
-    if feature_type == "tile":
+    if feature_type in ("tile", "slide"):
         if config.slide_table is None:
-            raise ValueError("A slide table is required for tile-level modeling")
-        patient_to_ground_truth: dict[PatientId, GroundTruth] = (
-            patient_to_ground_truth_from_clini_table_(
-                clini_table_path=config.clini_table,
-                ground_truth_label=config.ground_truth_label,
-                patient_label=config.patient_label,
+            raise ValueError("A slide table is required for modeling")
+        if config.task == "survival":
+            if config.time_label is None or config.status_label is None:
+                raise ValueError(
+                    "Both time_label and status_label are is required for survival modeling"
+                )
+            patient_to_ground_truth: dict[PatientId, GroundTruth] = (
+                patient_to_survival_from_clini_table_(
+                    clini_table_path=config.clini_table,
+                    time_label=config.time_label,
+                    status_label=config.status_label,
+                    patient_label=config.patient_label,
+                )
             )
-        )
+        else:
+            if config.ground_truth_label is None:
+                raise ValueError(
+                    "Ground truth label is required for classification or regression modeling"
+                )
+            patient_to_ground_truth: dict[PatientId, GroundTruth] = (
+                patient_to_ground_truth_from_clini_table_(
+                    clini_table_path=config.clini_table,
+                    ground_truth_label=config.ground_truth_label,
+                    patient_label=config.patient_label,
+                )
+            )
         slide_to_patient: Final[dict[FeaturePath, PatientId]] = (
             slide_to_patient_from_slide_table_(
                 slide_table_path=config.slide_table,
@@ -78,10 +100,13 @@ def categorical_crossval_(
         )
     elif feature_type == "patient":
         patient_to_data: Mapping[PatientId, PatientData] = load_patient_level_data(
+            task=config.task,
             clini_table=config.clini_table,
             feature_dir=config.feature_dir,
             patient_label=config.patient_label,
             ground_truth_label=config.ground_truth_label,
+            time_label=config.time_label,
+            status_label=config.status_label,
         )
         patient_to_ground_truth: dict[PatientId, GroundTruth] = {
             pid: pd.ground_truth for pid, pd in patient_to_data.items()
@@ -94,7 +119,19 @@ def categorical_crossval_(
 
     # Generate the splits, or load them from the splits file if they already exist
     if not splits_file.exists():
-        splits = _get_splits(patient_to_data=patient_to_data, n_splits=config.n_splits)
+        splits = (
+            _get_splits(
+                patient_to_data=patient_to_data,
+                n_splits=config.n_splits,
+                spliter=KFold,
+            )
+            if config.task == "regression"
+            else _get_splits(
+                patient_to_data=patient_to_data,
+                n_splits=config.n_splits,
+                spliter=StratifiedKFold,
+            )
+        )
         with open(splits_file, "w") as fp:
             fp.write(splits.model_dump_json(indent=4))
     else:
@@ -120,13 +157,16 @@ def categorical_crossval_(
             f"{ground_truths_not_in_split}"
         )
 
-    categories = config.categories or sorted(
-        {
-            patient_data.ground_truth
-            for patient_data in patient_to_data.values()
-            if patient_data.ground_truth is not None
-        }
-    )
+    if config.task == "classification":
+        categories = config.categories or sorted(
+            {
+                patient_data.ground_truth
+                for patient_data in patient_to_data.values()
+                if patient_data.ground_truth is not None
+            }
+        )
+    else:
+        categories = []
 
     for split_i, split in enumerate(splits.splits):
         split_dir = config.output_dir / f"split-{split_i}"
@@ -138,6 +178,11 @@ def categorical_crossval_(
             )
             continue
 
+        if config.task is None:
+            raise ValueError(
+                "config.task must be set to 'classification' | 'regression' | 'survival'"
+            )
+
         # Train the model
         if not (split_dir / "model.ckpt").exists():
             model, train_dl, valid_dl = setup_model_for_training(
@@ -145,7 +190,10 @@ def categorical_crossval_(
                 slide_table=config.slide_table,
                 feature_dir=config.feature_dir,
                 ground_truth_label=config.ground_truth_label,
+                time_label=config.time_label,
+                status_label=config.status_label,
                 advanced=advanced,
+                task=config.task,
                 patient_to_data={
                     patient_id: patient_data
                     for patient_id, patient_data in patient_to_data.items()
@@ -179,11 +227,9 @@ def categorical_crossval_(
             )
         else:
             if feature_type == "tile":
-                model = LitVisionTransformer.load_from_checkpoint(
-                    split_dir / "model.ckpt"
-                )
+                model = load_model_from_ckpt(split_dir / "model.ckpt")
             else:
-                model = LitMLPClassifier.load_from_checkpoint(split_dir / "model.ckpt")
+                model = load_model_from_ckpt(split_dir / "model.ckpt")
 
         # Deploy on test set
         if not (split_dir / "patient-preds.csv").exists():
@@ -192,27 +238,17 @@ def categorical_crossval_(
                 pid for pid in split.test_patients if pid in patient_to_data
             ]
             test_patient_data = [patient_to_data[pid] for pid in test_patients]
-            if feature_type == "tile":
-                test_dl, _ = tile_bag_dataloader(
-                    patient_data=test_patient_data,
-                    bag_size=None,
-                    categories=categories,
-                    batch_size=1,
-                    shuffle=False,
-                    num_workers=advanced.num_workers,
-                    transform=None,
-                )
-            elif feature_type == "patient":
-                test_dl, _ = patient_feature_dataloader(
-                    patient_data=test_patient_data,
-                    categories=categories,
-                    batch_size=1,
-                    shuffle=False,
-                    num_workers=advanced.num_workers,
-                    transform=None,
-                )
-            else:
-                raise RuntimeError(f"Unsupported feature type: {feature_type}")
+            test_dl, _ = create_dataloader(
+                feature_type=feature_type,
+                task=config.task,
+                patient_data=test_patient_data,
+                bag_size=None,
+                batch_size=1,
+                shuffle=False,
+                num_workers=advanced.num_workers,
+                transform=None,
+                categories=categories,
+            )
 
             predictions = _predict(
                 model=model,
@@ -221,20 +257,41 @@ def categorical_crossval_(
                 accelerator=advanced.accelerator,
             )
 
-            _to_prediction_df(
-                categories=categories,
-                patient_to_ground_truth=patient_to_ground_truth,
-                predictions=predictions,
-                patient_label=config.patient_label,
-                ground_truth_label=config.ground_truth_label,
-            ).to_csv(split_dir / "patient-preds.csv", index=False)
+            if config.task == "survival":
+                _to_survival_prediction_df(
+                    patient_to_ground_truth=patient_to_ground_truth,
+                    predictions=predictions,
+                    patient_label=config.patient_label,
+                    cut_off=getattr(model.hparams, "train_pred_median", None),
+                ).to_csv(split_dir / "patient-preds.csv", index=False)
+            elif config.task == "regression":
+                if config.ground_truth_label is None:
+                    raise RuntimeError("Grounf truth label is required for regression")
+                _to_regression_prediction_df(
+                    patient_to_ground_truth=patient_to_ground_truth,
+                    predictions=predictions,
+                    patient_label=config.patient_label,
+                    ground_truth_label=config.ground_truth_label,
+                ).to_csv(split_dir / "patient-preds.csv", index=False)
+            else:
+                if config.ground_truth_label is None:
+                    raise RuntimeError(
+                        "Grounf truth label is required for classification"
+                    )
+                _to_prediction_df(
+                    categories=categories,
+                    patient_to_ground_truth=patient_to_ground_truth,
+                    predictions=predictions,
+                    patient_label=config.patient_label,
+                    ground_truth_label=config.ground_truth_label,
+                ).to_csv(split_dir / "patient-preds.csv", index=False)
 
 
 def _get_splits(
-    *, patient_to_data: Mapping[PatientId, PatientData[Any]], n_splits: int
+    *, patient_to_data: Mapping[PatientId, PatientData[Any]], n_splits: int, spliter
 ) -> _Splits:
     patients = np.array(list(patient_to_data.keys()))
-    skf = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=0)
+    skf = spliter(n_splits=n_splits, shuffle=True, random_state=0)
     splits = _Splits(
         splits=[
             _Split(

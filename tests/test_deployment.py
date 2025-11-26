@@ -10,126 +10,29 @@ from stamp.modeling.data import (
     patient_feature_dataloader,
     tile_bag_dataloader,
 )
-from stamp.modeling.deploy import _predict, _to_prediction_df
-from stamp.modeling.lightning_model import LitVisionTransformer
-from stamp.modeling.mlp_classifier import LitMLPClassifier
-from stamp.seed import Seed
-from stamp.types import GroundTruth, PatientId
-
-
-@pytest.mark.filterwarnings("ignore:GPU available but not used")
-@pytest.mark.filterwarnings(
-    "ignore:The 'predict_dataloader' does not have many workers which may be a bottleneck"
+from stamp.modeling.deploy import (
+    _predict,
+    _to_prediction_df,
+    _to_regression_prediction_df,
+    _to_survival_prediction_df,
 )
-def test_predict(
-    categories: list[str] = ["foo", "bar", "baz"],
-    n_heads: int = 7,
-    dim_input: int = 12,
-) -> None:
-    Seed.set(42)
-    model = LitVisionTransformer(
-        categories=list(categories),
-        category_weights=torch.rand(len(categories)),
-        dim_input=dim_input,
-        dim_model=n_heads * 3,
-        dim_feedforward=56,
-        n_heads=n_heads,
-        n_layers=2,
-        dropout=0.5,
-        ground_truth_label="test",
-        train_patients=np.array(["pat1", "pat2"]),
-        valid_patients=np.array(["pat3", "pat4"]),
-        use_alibi=False,
-        # these values do not affect at inference time
-        total_steps=320,
-        max_lr=1e-4,
-        div_factor=25.0,
-    )
-
-    patient_to_data = {
-        PatientId("pat5"): PatientData(
-            ground_truth=GroundTruth("foo"),
-            feature_files={
-                make_old_feature_file(
-                    feats=torch.rand(23, dim_input), coords=torch.rand(23, 2)
-                )
-            },
-        )
-    }
-
-    test_dl, _ = tile_bag_dataloader(
-        patient_data=list(patient_to_data.values()),
-        bag_size=None,
-        categories=list(model.categories),
-        batch_size=1,
-        shuffle=False,
-        num_workers=2,
-        transform=None,
-    )
-
-    predictions = _predict(
-        model=model,
-        test_dl=test_dl,
-        patient_ids=list(patient_to_data.keys()),
-        accelerator="cpu",
-    )
-
-    assert len(predictions) == len(patient_to_data)
-    assert predictions[PatientId("pat5")].shape == torch.Size([3]), (
-        "expected one score per class"
-    )
-
-    # Check if scores are consistent between runs
-    more_patients_to_data = {
-        PatientId("pat6"): PatientData(
-            ground_truth=GroundTruth("bar"),
-            feature_files={
-                make_old_feature_file(
-                    feats=torch.rand(12, dim_input), coords=torch.rand(12, 2)
-                )
-            },
-        ),
-        **patient_to_data,
-        PatientId("pat7"): PatientData(
-            ground_truth=GroundTruth("baz"),
-            feature_files={
-                make_old_feature_file(
-                    feats=torch.rand(56, dim_input), coords=torch.rand(56, 2)
-                )
-            },
-        ),
-    }
-
-    more_test_dl, _ = tile_bag_dataloader(
-        patient_data=list(more_patients_to_data.values()),
-        bag_size=None,
-        categories=list(model.categories),
-        batch_size=1,
-        shuffle=False,
-        num_workers=2,
-        transform=None,
-    )
-
-    more_predictions = _predict(
-        model=model,
-        test_dl=more_test_dl,
-        patient_ids=list(more_patients_to_data.keys()),
-        accelerator="cpu",
-    )
-
-    assert len(more_predictions) == len(more_patients_to_data)
-    assert not torch.allclose(
-        more_predictions[PatientId("pat5")], more_predictions[PatientId("pat6")]
-    ), "different inputs should give different results"
-    assert torch.allclose(
-        predictions[PatientId("pat5")], more_predictions[PatientId("pat5")]
-    ), "the same inputs should repeatedly yield the same results"
+from stamp.modeling.models import (
+    LitSlideClassifier,
+    LitTileClassifier,
+    LitTileRegressor,
+    LitTileSurvival,
+)
+from stamp.modeling.models.mlp import MLP
+from stamp.modeling.models.vision_tranformer import VisionTransformer
+from stamp.seed import Seed
+from stamp.types import GroundTruth, PatientId, Task
 
 
 def test_predict_patient_level(
     tmp_path: Path, categories: list[str] = ["foo", "bar", "baz"], dim_feats: int = 12
 ):
-    model = LitMLPClassifier(
+    model = LitSlideClassifier(
+        model_class=MLP,
         categories=categories,
         category_weights=torch.rand(len(categories)),
         dim_input=dim_feats,
@@ -229,9 +132,17 @@ def test_predict_patient_level(
     ), "the same inputs should repeatedly yield the same results"
 
 
-def test_to_prediction_df() -> None:
+@pytest.mark.parametrize("task", ["classification", "regression", "survival"])
+def test_to_prediction_df(task: str) -> None:
+    if task == "classification":
+        ModelClass = LitTileClassifier
+    elif task == "regression":
+        ModelClass = LitTileRegressor
+    else:
+        ModelClass = LitTileSurvival
     n_heads = 7
-    model = LitVisionTransformer(
+    model = ModelClass(
+        model_class=VisionTransformer,
         categories=["foo", "bar", "baz"],
         category_weights=torch.tensor([0.1, 0.2, 0.7]),
         dim_input=12,
@@ -241,6 +152,8 @@ def test_to_prediction_df() -> None:
         n_layers=2,
         dropout=0.5,
         ground_truth_label="test",
+        time_label="time",
+        status_label="status",
         train_patients=np.array(["pat1", "pat2"]),
         valid_patients=np.array(["pat3", "pat4"]),
         use_alibi=False,
@@ -248,41 +161,199 @@ def test_to_prediction_df() -> None:
         max_lr=1e-4,
         div_factor=25,
     )
+    if task == "classification":
+        preds_df = _to_prediction_df(
+            categories=list(model.categories),  # type: ignore
+            patient_to_ground_truth={
+                PatientId("pat5"): GroundTruth("foo"),
+                PatientId("pat6"): None,
+                PatientId("pat7"): GroundTruth("baz"),
+            },
+            patient_label="patient",
+            ground_truth_label="target",
+            predictions={
+                PatientId("pat5"): torch.rand((3)),
+                PatientId("pat6"): torch.rand((3)),
+                PatientId("pat7"): torch.rand((3)),
+            },
+        )
 
-    preds_df = _to_prediction_df(
-        categories=list(model.categories),
-        patient_to_ground_truth={
-            PatientId("pat5"): GroundTruth("foo"),
-            PatientId("pat6"): None,
-            PatientId("pat7"): GroundTruth("baz"),
-        },
-        patient_label="patient",
-        ground_truth_label="target",
-        predictions={
-            PatientId("pat5"): torch.rand((3)),
-            PatientId("pat6"): torch.rand((3)),
-            PatientId("pat7"): torch.rand((3)),
-        },
+        # Check if all expected columns are included
+        assert {
+            "patient",
+            "target",
+            "pred",
+            "target_foo",
+            "target_bar",
+            "target_baz",
+            "loss",
+        } <= set(preds_df.columns)
+        assert len(preds_df) == 3
+
+        # Check if no loss / target is given for targets with missing ground truths
+        no_ground_truth = preds_df[preds_df["patient"].isin(["pat6"])]
+        assert no_ground_truth["target"].isna().all()  # pyright: ignore[reportGeneralTypeIssues,reportAttributeAccessIssue]
+        assert no_ground_truth["loss"].isna().all()  # pyright: ignore[reportGeneralTypeIssues,reportAttributeAccessIssue]
+
+        # Check if loss / target is given for targets with ground truths
+        with_ground_truth = preds_df[preds_df["patient"].isin(["pat5", "pat7"])]
+        assert (~with_ground_truth["target"].isna()).all()  # pyright: ignore[reportGeneralTypeIssues,reportAttributeAccessIssue]
+        assert (~with_ground_truth["loss"].isna()).all()  # pyright: ignore[reportGeneralTypeIssues,reportAttributeAccessIssue]
+
+    elif task == "regression":
+        patient_to_ground_truth = {}
+        predictions = {PatientId(f"pat{i}"): torch.randn(1) for i in range(5)}
+        preds_df = _to_regression_prediction_df(
+            patient_to_ground_truth=patient_to_ground_truth,
+            patient_label="patient",
+            ground_truth_label="target",
+            predictions=predictions,
+        )
+        assert "patient" in preds_df.columns
+        assert "pred" in preds_df.columns
+        assert len(preds_df) > 0
+
+        assert "loss" in preds_df.columns
+        assert preds_df["loss"].isna().all()
+    else:
+        patient_to_ground_truth = {
+            PatientId("p1"): "10.0 1",
+            PatientId("p2"): "12.3 0",
+        }
+        predictions = {
+            PatientId("p1"): torch.tensor([0.8]),
+            PatientId("p2"): torch.tensor([0.2]),
+        }
+
+        preds_df = _to_survival_prediction_df(
+            patient_to_ground_truth=patient_to_ground_truth,
+            patient_label="patient",
+            ground_truth_label="target",
+            predictions=predictions,
+        )
+        assert "patient" in preds_df.columns
+        assert "pred_score" in preds_df.columns
+        assert len(preds_df) > 0
+
+
+@pytest.mark.filterwarnings("ignore:GPU available but not used")
+@pytest.mark.filterwarnings(
+    "ignore:The 'predict_dataloader' does not have many workers"
+)
+@pytest.mark.parametrize("task", ["classification", "regression", "survival"])
+def test_mil_predict_generic(tmp_path: Path, task: Task) -> None:
+    Seed.set(42)
+    dim_feats = 12
+    categories = ["foo", "bar", "baz"]
+
+    if task == "classification":
+        model = LitTileClassifier(
+            model_class=VisionTransformer,
+            categories=categories,
+            category_weights=torch.rand(len(categories)),
+            dim_input=dim_feats,
+            dim_model=32,
+            dim_feedforward=64,
+            n_heads=4,
+            n_layers=2,
+            dropout=0.2,
+            ground_truth_label="target",
+            train_patients=np.array(["pat1", "pat2"]),
+            valid_patients=np.array(["pat3"]),
+            use_alibi=False,
+            total_steps=100,
+            max_lr=1e-4,
+            div_factor=25.0,
+        )
+    elif task == "regression":
+        model = LitTileRegressor(
+            model_class=MLP,
+            dim_input=dim_feats,
+            dim_hidden=32,
+            num_layers=2,
+            dropout=0.1,
+            ground_truth_label="target",
+            train_patients=["pat1", "pat2"],
+            valid_patients=["pat3"],
+            total_steps=100,
+            max_lr=1e-4,
+            div_factor=25.0,
+        )
+    else:  # survival
+        model = LitTileSurvival(
+            model_class=MLP,
+            dim_input=dim_feats,
+            dim_hidden=32,
+            num_layers=2,
+            dropout=0.1,
+            time_label="time",
+            status_label="status",
+            train_patients=["pat1", "pat2"],
+            valid_patients=["pat3"],
+            total_steps=100,
+            max_lr=1e-4,
+            div_factor=25.0,
+        )
+
+    # ---- Build tile-level feature file so batch = (bags, coords, bag_sizes, gt)
+    if task == "classification":
+        feature_file = make_old_feature_file(
+            feats=torch.rand(23, dim_feats), coords=torch.rand(23, 2)
+        )
+        gt = GroundTruth("foo")
+    elif task == "regression":
+        feature_file = make_old_feature_file(
+            feats=torch.rand(30, dim_feats), coords=torch.rand(30, 2)
+        )
+        gt = GroundTruth(42.5)  # numeric target wrapped for typing
+    else:  # survival
+        feature_file = make_old_feature_file(
+            feats=torch.rand(40, dim_feats), coords=torch.rand(40, 2)
+        )
+        gt = GroundTruth("12  0")  # (time, status)
+
+    patient_to_data = {
+        PatientId("pat_test"): PatientData(
+            ground_truth=gt,
+            feature_files={feature_file},
+        )
+    }
+
+    # ---- Use tile_bag_dataloader for ALL tasks (so batch has 4 elements)
+    test_dl, _ = tile_bag_dataloader(
+        task=task,  # "classification" | "regression" | "survival"
+        patient_data=list(patient_to_data.values()),
+        bag_size=None,
+        categories=(categories if task == "classification" else None),
+        batch_size=1,
+        shuffle=False,
+        num_workers=1,
+        transform=None,
     )
 
-    # Check if all expected columns are included
-    assert {
-        "patient",
-        "target",
-        "pred",
-        "target_foo",
-        "target_bar",
-        "target_baz",
-        "loss",
-    } <= set(preds_df.columns)
-    assert len(preds_df) == 3
+    predictions = _predict(
+        model=model,
+        test_dl=test_dl,
+        patient_ids=list(patient_to_data.keys()),
+        accelerator="cpu",
+    )
 
-    # Check if no loss / target is given for targets with missing ground truths
-    no_ground_truth = preds_df[preds_df["patient"].isin(["pat6"])]
-    assert no_ground_truth["target"].isna().all()  # pyright: ignore[reportGeneralTypeIssues,reportAttributeAccessIssue]
-    assert no_ground_truth["loss"].isna().all()  # pyright: ignore[reportGeneralTypeIssues,reportAttributeAccessIssue]
+    assert len(predictions) == 1
+    pred = list(predictions.values())[0]
+    if task == "classification":
+        assert pred.shape == torch.Size([len(categories)])
+    elif task == "regression":
+        assert pred.shape == torch.Size([1])
+    else:  # survival
+        # Cox model → scalar log-risk, KM → vector or matrix
+        assert pred.ndim in (0, 1, 2), f"unexpected survival output shape: {pred.shape}"
 
-    # Check if loss / target is given for targets with ground truths
-    with_ground_truth = preds_df[preds_df["patient"].isin(["pat5", "pat7"])]
-    assert (~with_ground_truth["target"].isna()).all()  # pyright: ignore[reportGeneralTypeIssues,reportAttributeAccessIssue]
-    assert (~with_ground_truth["loss"].isna()).all()  # pyright: ignore[reportGeneralTypeIssues,reportAttributeAccessIssue]
+    # Repeatability
+    predictions2 = _predict(
+        model=model,
+        test_dl=test_dl,
+        patient_ids=list(patient_to_data.keys()),
+        accelerator="cpu",
+    )
+    for pid in predictions:
+        assert torch.allclose(predictions[pid], predictions2[pid])

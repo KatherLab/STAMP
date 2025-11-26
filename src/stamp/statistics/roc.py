@@ -132,12 +132,20 @@ def plot_multiple_decorated_roc_curves(
     # calculate confidence intervals and print title
     aucs = [x.auc for x in tpas]
     mean_auc = np.mean(aucs).item()
-    if n_bootstrap_samples is None:
-        lower, upper = cast(
-            tuple[_Auc95CILower, _Auc95CIUpper],
-            st.t.interval(0.95, len(aucs) - 1, loc=np.mean(aucs), scale=st.sem(aucs)),
-        )
 
+    if n_bootstrap_samples is None:
+        sem_val = st.sem(aucs)
+        if len(aucs) < 2 or not np.isfinite(sem_val) or sem_val == 0.0:
+            # Not enough or invalid variance → CI collapses to mean
+            lower, upper = cast(
+                tuple[_Auc95CILower, _Auc95CIUpper],
+                (mean_auc, mean_auc),
+            )
+        else:
+            lower, upper = cast(
+                tuple[_Auc95CILower, _Auc95CIUpper],
+                st.t.interval(0.95, len(aucs) - 1, loc=mean_auc, scale=sem_val),
+            )
     assert lower is not None
     assert upper is not None
 

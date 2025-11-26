@@ -11,7 +11,7 @@ import h5py
 import numpy as np
 import pandas as pd
 import torch
-from jaxtyping import Bool, Float
+from jaxtyping import Float
 from packaging.version import Version
 from torch import Tensor
 from torch.utils.data import DataLoader, Dataset
@@ -32,6 +32,7 @@ from stamp.types import (
     PandasLabel,
     PatientId,
     SlideMPP,
+    Task,
     TilePixels,
 )
 
@@ -39,14 +40,17 @@ _logger = logging.getLogger("stamp")
 _logged_stamp_v1_warning = False
 
 
-__author__ = "Marko van Treeck"
-__copyright__ = "Copyright (C) 2022-2025 Marko van Treeck"
+__author__ = "Marko van Treeck, Minh Duc Nguyen"
+__copyright__ = "Copyright (C) 2022-2025 Marko van Treeck, Minh Duc Nguyen"
 __license__ = "MIT"
 
 _Bag: TypeAlias = Float[Tensor, "tile feature"]
-_EncodedTarget: TypeAlias = Bool[Tensor, "category_is_hot"]  # noqa: F821
+_EncodedTarget: TypeAlias = Float[Tensor, "category_is_hot"] | Float[Tensor, "1"]  # noqa: F821
 _BinaryIOLike: TypeAlias = Union[BinaryIO, IO[bytes]]
-"""The ground truth, encoded numerically (currently: one-hot)"""
+"""The ground truth, encoded numerically
+- classification: one-hot float [C]
+- regression: float [1]
+"""
 _Coordinates: TypeAlias = Float[Tensor, "tile 2"]
 
 
@@ -63,6 +67,7 @@ def tile_bag_dataloader(
     *,
     patient_data: Sequence[PatientData[GroundTruth | None]],
     bag_size: int | None,
+    task: Task,
     categories: Sequence[Category] | None = None,
     batch_size: int,
     shuffle: bool,
@@ -75,22 +80,93 @@ def tile_bag_dataloader(
     """Creates a dataloader from patient data for tile-level (bagged) features.
 
     Args:
-        categories:
-            Order of classes for one-hot encoding.
-            If `None`, classes are inferred from patient data.
+        task='classification':
+            categories:
+                Order of classes for one-hot encoding.
+                If `None`, classes are inferred from patient data.
+        task='regression':
+            returns float targets
     """
+    if task == "classification":
+        raw_ground_truths = np.array([patient.ground_truth for patient in patient_data])
+        categories = (
+            categories if categories is not None else list(np.unique(raw_ground_truths))
+        )
+        # one_hot = torch.tensor(raw_ground_truths.reshape(-1, 1) == categories)
+        one_hot = torch.tensor(
+            raw_ground_truths.reshape(-1, 1) == categories, dtype=torch.float32
+        )
+        ds = BagDataset(
+            bags=[patient.feature_files for patient in patient_data],
+            bag_size=bag_size,
+            ground_truths=one_hot,
+            transform=transform,
+        )
+        cats_out: Sequence[Category] = list(categories)
 
-    raw_ground_truths = np.array([patient.ground_truth for patient in patient_data])
-    categories = (
-        categories if categories is not None else list(np.unique(raw_ground_truths))
-    )
-    one_hot = torch.tensor(raw_ground_truths.reshape(-1, 1) == categories)
-    ds = BagDataset(
-        bags=[patient.feature_files for patient in patient_data],
-        bag_size=bag_size,
-        ground_truths=one_hot,
-        transform=transform,
-    )
+    elif task == "regression":
+        raw_targets = np.array(
+            [
+                np.nan if p.ground_truth is None else float(p.ground_truth)
+                for p in patient_data
+            ],
+            dtype=np.float32,
+        )
+        y = torch.from_numpy(raw_targets).reshape(-1, 1)
+
+        ds = BagDataset(
+            bags=[patient.feature_files for patient in patient_data],
+            bag_size=bag_size,
+            ground_truths=y,
+            transform=transform,
+        )
+        cats_out = []
+
+    elif task == "survival":  # Not yet support logistic-harzard
+        times: list[float] = []
+        events: list[float] = []
+
+        for p in patient_data:
+            if p.ground_truth is None:
+                times.append(np.nan)
+                events.append(np.nan)
+                continue
+
+            try:
+                time_str, status_str = p.ground_truth.split(" ", 1)
+
+                # Handle missing values encoded as "nan"
+                if time_str.lower() == "nan":
+                    times.append(np.nan)
+                else:
+                    times.append(float(time_str))
+
+                if status_str.lower() == "nan":
+                    events.append(np.nan)
+                elif status_str.lower() in {"dead", "event", "1", "Yes", "yes"}:
+                    events.append(1.0)
+                elif status_str.lower() in {"alive", "censored", "0", "No", "no"}:
+                    events.append(0.0)
+                else:
+                    events.append(np.nan)  # unknown status → mark missing
+
+            except Exception:
+                times.append(np.nan)
+                events.append(np.nan)
+
+        # Final tensor shape: (N, 2)
+        y = torch.tensor(np.column_stack([times, events]), dtype=torch.float32)
+
+        ds = BagDataset(
+            bags=[patient.feature_files for patient in patient_data],
+            bag_size=bag_size,
+            ground_truths=y,
+            transform=transform,
+        )
+        cats_out: Sequence[Category] = []  # survival has no categories
+
+    else:
+        raise ValueError(f"Unknown task: {task}")
 
     return (
         cast(
@@ -107,7 +183,7 @@ def tile_bag_dataloader(
                 generator=Seed.get_torch_generator() if Seed._is_set() else None,
             ),
         ),
-        list(categories),
+        cats_out,
     )
 
 
@@ -117,7 +193,21 @@ def _collate_to_tuple(
     bags = torch.stack([bag for bag, _, _, _ in items])
     coords = torch.stack([coord for _, coord, _, _ in items])
     bag_sizes = torch.tensor([bagsize for _, _, bagsize, _ in items])
-    encoded_targets = torch.stack([encoded_target for _, _, _, encoded_target in items])
+
+    targets = [et for _, _, _, et in items]
+
+    # Normalize target shapes
+    fixed_targets = []
+    for et in targets:
+        et = torch.as_tensor(et)
+        if et.ndim == 0:  # scalar → (1,)
+            et = et.unsqueeze(0)
+        elif et.ndim > 1:  # e.g. (1,2) → (2,)
+            et = et.view(-1)
+        fixed_targets.append(et)
+
+    # Stack into (B, D)
+    encoded_targets = torch.stack(fixed_targets)
 
     return (bags, coords, bag_sizes, encoded_targets)
 
@@ -143,6 +233,72 @@ def patient_feature_dataloader(
     ds = PatientFeatureDataset(feature_files, one_hot, transform=transform)
     dl = DataLoader(ds, batch_size=batch_size, shuffle=shuffle, num_workers=num_workers)
     return dl, categories
+
+
+def create_dataloader(
+    *,
+    feature_type: str,
+    task: Task,
+    patient_data: Sequence[PatientData[GroundTruth | None]],
+    bag_size: int | None = None,
+    batch_size: int,
+    shuffle: bool,
+    num_workers: int,
+    transform: Callable[[Tensor], Tensor] | None,
+    categories: Sequence[Category] | None = None,
+) -> tuple[DataLoader, Sequence[Category]]:
+    """Unified dataloader for all feature types and tasks."""
+    if feature_type == "tile":
+        return tile_bag_dataloader(
+            patient_data=patient_data,
+            bag_size=bag_size,
+            task=task,
+            categories=categories,
+            batch_size=batch_size,
+            shuffle=shuffle,
+            num_workers=num_workers,
+            transform=transform,
+        )
+    elif feature_type in {"slide", "patient"}:
+        # For slide/patient-level: single feature vector per entry
+        feature_files = [next(iter(p.feature_files)) for p in patient_data]
+
+        if task == "classification":
+            raw = np.array([p.ground_truth for p in patient_data])
+            categories = categories or list(np.unique(raw))
+            labels = torch.tensor(raw.reshape(-1, 1) == categories, dtype=torch.float32)
+        elif task == "regression":
+            labels = torch.tensor(
+                [
+                    float(gt)
+                    for gt in (p.ground_truth for p in patient_data)
+                    if gt is not None
+                ],
+                dtype=torch.float32,
+            ).reshape(-1, 1)
+        elif task == "survival":
+            times, events = [], []
+            for p in patient_data:
+                t, e = (p.ground_truth or "nan nan").split(" ", 1)
+                times.append(float(t) if t.lower() != "nan" else np.nan)
+                events.append(_parse_survival_status(e))
+
+            labels = torch.tensor(np.column_stack([times, events]), dtype=torch.float32)
+        else:
+            raise ValueError(f"Unsupported task: {task}")
+
+        ds = PatientFeatureDataset(feature_files, labels, transform)
+        dl = DataLoader(
+            ds,
+            batch_size=batch_size,
+            shuffle=shuffle,
+            num_workers=num_workers,
+            worker_init_fn=Seed.get_loader_worker_init() if Seed._is_set() else None,
+            generator=Seed.get_torch_generator() if Seed._is_set() else None,
+        )
+        return dl, categories or []
+    else:
+        raise ValueError(f"Unknown feature type: {feature_type}")
 
 
 def detect_feature_type(feature_dir: Path) -> str:
@@ -183,39 +339,58 @@ def detect_feature_type(feature_dir: Path) -> str:
 
 def load_patient_level_data(
     *,
+    task: Task | None,
     clini_table: Path,
     feature_dir: Path,
     patient_label: PandasLabel,
-    ground_truth_label: PandasLabel,
+    ground_truth_label: PandasLabel | None = None,  # <- now optional
+    time_label: PandasLabel | None = None,  # <- for survival
+    status_label: PandasLabel | None = None,  # <- for survival
     feature_ext: str = ".h5",
 ) -> dict[PatientId, PatientData]:
     """
     Loads PatientData for patient-level features, matching patients in the clinical table
     to feature files in feature_dir named {patient_id}.h5.
+
+    Supports:
+        - classification / regression via `ground_truth_label`
+        - survival via `time_label` + `status_label` (stored as "time status")
     """
-    # TODO: I'm not proud at all of this. Any other alternative for mapping
-    # clinical data to the patient-level feature paths that avoids
-    # creating another slide table for encoded featuress is welcome :P.
 
-    clini_df = read_table(
-        clini_table,
-        usecols=[patient_label, ground_truth_label],
-        dtype=str,
-    ).dropna()
+    # Load ground truth mapping
+    if task == "survival" and time_label is not None and status_label is not None:
+        # Survival: use the existing helper
+        patient_to_ground_truth = patient_to_survival_from_clini_table_(
+            clini_table_path=clini_table,
+            patient_label=patient_label,
+            time_label=time_label,
+            status_label=status_label,
+        )
+    elif task in ["classification", "regression"] and ground_truth_label is not None:
+        # Classification or regression
+        patient_to_ground_truth = patient_to_ground_truth_from_clini_table_(
+            clini_table_path=clini_table,
+            patient_label=patient_label,
+            ground_truth_label=ground_truth_label,
+        )
+    else:
+        raise ValueError(
+            "You must provide either `ground_truth_label` "
+            "for classification/regression or (`time_label`, `status_label`) for survival when using tile-level or slide-level features."
+        )
 
+    # Build PatientData entries
     patient_to_data: dict[PatientId, PatientData] = {}
     missing_features = []
-    for _, row in clini_df.iterrows():
-        patient_id = PatientId(str(row[patient_label]))
-        ground_truth = row[ground_truth_label]
-        feature_file = feature_dir / f"{patient_id}{feature_ext}"
+    for pid, gt in patient_to_ground_truth.items():
+        feature_file = feature_dir / f"{pid}{feature_ext}"
         if feature_file.exists():
-            patient_to_data[patient_id] = PatientData(
-                ground_truth=ground_truth,
+            patient_to_data[pid] = PatientData(
+                ground_truth=gt,
                 feature_files=[FeaturePath(feature_file)],
             )
         else:
-            missing_features.append(patient_id)
+            missing_features.append(pid)
 
     if missing_features:
         _logger.warning(
@@ -247,8 +422,10 @@ class BagDataset(Dataset[tuple[_Bag, _Coordinates, BagSize, _EncodedTarget]]):
     If `bag_size` is None, all the samples will be used.
     """
 
-    ground_truths: Bool[Tensor, "index category_is_hot"]
-    """The ground truth for each bag, one-hot encoded."""
+    ground_truths: Float[Tensor, "index category_is_hot"] | Float[Tensor, "index 1"]
+
+    # ground_truths: Bool[Tensor, "index category_is_hot"]
+    # """The ground truth for each bag, one-hot encoded."""
 
     transform: Callable[[Tensor], Tensor] | None
 
@@ -467,6 +644,76 @@ def patient_to_ground_truth_from_clini_table_(
     return patient_to_ground_truth
 
 
+def patient_to_survival_from_clini_table_(
+    *,
+    clini_table_path: Path | TextIO,
+    patient_label: PandasLabel,
+    time_label: PandasLabel,
+    status_label: PandasLabel,
+) -> dict[PatientId, GroundTruth]:
+    """
+    Loads patients and their survival ground truths (time + event) from a clini table.
+
+    Returns
+    -------
+    dict[PatientId, GroundTruth]
+        Mapping patient_id -> "time status" (e.g. "302 dead", "476 alive").
+    """
+    clini_df = read_table(
+        clini_table_path,
+        usecols=[patient_label, time_label, status_label],
+        dtype=str,
+    )
+
+    # normalize values
+    clini_df[time_label] = clini_df[time_label].replace(
+        [
+            "NA",
+            "NaN",
+            "nan",
+            "None",
+            "none",
+            "N/A",
+            "n/a",
+            "NULL",
+            "null",
+            "",
+            " ",
+            "?",
+            "-",
+            "--",
+            "#N/A",
+            "#NA",
+            "=#VALUE!",
+        ],
+        np.nan,
+    )
+    clini_df[status_label] = clini_df[status_label].str.strip().str.lower()
+
+    # Only drop rows where BOTH time and status are missing
+    clini_df = clini_df.dropna(subset=[time_label, status_label], how="all")
+
+    patient_to_ground_truth: dict[PatientId, GroundTruth] = {}
+    for _, row in clini_df.iterrows():
+        pid = row[patient_label]
+        time_str = row[time_label]
+        status_str = row[status_label]
+
+        # Skip patients missing survival time
+        if pd.isna(time_str):
+            continue
+
+        # Encode status: keep both dead (event=1) and alive (event=0)
+        status = _parse_survival_status(status_str)
+
+        # Encode back to "alive"/"dead" like before
+        # status = "dead" if status_val == 1 else "alive"
+
+        patient_to_ground_truth[pid] = f"{time_str} {status}"
+
+    return patient_to_ground_truth
+
+
 def slide_to_patient_from_slide_table_(
     *,
     slide_table_path: Path,
@@ -485,6 +732,7 @@ def slide_to_patient_from_slide_table_(
         usecols=[patient_label, filename_label],
         dtype=str,
     )
+
     # Verify the slide table contains a feature path with .h5 extension by
     # checking the filename_label.
     for x in slide_df[filename_label]:
@@ -565,6 +813,10 @@ def filter_complete_patient_data_(
         )
     }
 
+    _logger.info(
+        f"Kept {len(patient_to_ground_truth)}/{len(patient_to_ground_truth)} \
+        patients with complete data ({len(patient_to_ground_truth) / len(patient_to_ground_truth):.1%})."
+    )
     return patients
 
 
@@ -612,3 +864,51 @@ def get_stride(coords: Float[Tensor, "tile 2"]) -> float:
         ),
     )
     return stride
+
+
+def _parse_survival_status(value) -> int | None:
+    """
+    Parse a survival status value (string, numeric, or None) into a binary indicator.
+    Currently assume no None inputs.
+    Returns:
+        1 -> event/dead
+        0 -> censored/alive
+        None -> missing (None, NaN, '')
+
+    Raises:
+        ValueError if the input is non-missing but unrecognized.
+
+    Examples:
+        'dead', '1', 'event', 'yes'  -> 1
+        'alive', '0', 'censored', 'no' -> 0
+        None, NaN, '' -> None
+    """
+
+    # Handle missing inputs gracefully
+    # if value is None:
+    #     return 0  # treat empty/missing as censored
+    # if isinstance(value, float) and math.isnan(value):
+    #     return 0  # treat empty/missing as censored
+
+    s = str(value).strip().lower()
+    # if s in {"", "nan", "none"}:
+    #     return 0  # treat empty/missing as censored
+
+    # Known mappings
+    positives = {"1", "event", "dead", "deceased", "yes", "y", "True", "true"}
+    negatives = {"0", "alive", "censored", "no", "false"}
+
+    if s in positives:
+        return 1
+    elif s in negatives:
+        return 0
+
+    # Try numeric fallback
+    try:
+        f = float(s)
+        return 1 if f > 0 else 0
+    except ValueError:
+        raise ValueError(
+            f"Unrecognized survival status: '{value}'. "
+            f"Expected one of {sorted(positives | negatives)} or a numeric value."
+        )

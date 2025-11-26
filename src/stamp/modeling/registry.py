@@ -1,10 +1,17 @@
 from enum import StrEnum
-from typing import Sequence, Type, TypedDict
 
-import lightning
-
-from stamp.modeling.lightning_model import LitVisionTransformer
-from stamp.modeling.mlp_classifier import LitMLPClassifier
+from stamp.modeling.models import (
+    LitPatientClassifier,
+    LitPatientRegressor,
+    LitPatientSurvival,
+    LitSlideClassifier,
+    LitSlideRegressor,
+    LitSlideSurvival,
+    LitTileClassifier,
+    LitTileRegressor,
+    LitTileSurvival,
+)
+from stamp.types import Task
 
 
 class ModelName(StrEnum):
@@ -12,23 +19,47 @@ class ModelName(StrEnum):
 
     VIT = "vit"
     MLP = "mlp"
+    TRANS_MIL = "trans_mil"
+    LINEAR = "linear"
 
 
-class ModelInfo(TypedDict):
-    """A dictionary to map a model to supported feature types. For example,
-    a linear classifier is not compatible with tile-evel feats."""
-
-    model_class: Type[lightning.LightningModule]
-    supported_features: Sequence[str]
-
-
-MODEL_REGISTRY: dict[ModelName, ModelInfo] = {
-    ModelName.VIT: {
-        "model_class": LitVisionTransformer,
-        "supported_features": LitVisionTransformer.supported_features,
-    },
-    ModelName.MLP: {
-        "model_class": LitMLPClassifier,
-        "supported_features": LitMLPClassifier.supported_features,
-    },
+# Map (feature_type, task) → correct Lightning wrapper class
+MODEL_REGISTRY = {
+    ("tile", "classification"): LitTileClassifier,
+    ("tile", "regression"): LitTileRegressor,
+    ("tile", "survival"): LitTileSurvival,
+    ("slide", "classification"): LitSlideClassifier,
+    ("slide", "regression"): LitSlideRegressor,
+    ("slide", "survival"): LitSlideSurvival,
+    ("patient", "classification"): LitPatientClassifier,
+    ("patient", "regression"): LitPatientRegressor,
+    ("patient", "survival"): LitPatientSurvival,
 }
+
+
+def load_model_class(task: Task, feature_type: str, model_name: ModelName):
+    LitModelClass = MODEL_REGISTRY[(feature_type, task)]
+
+    match model_name:
+        case ModelName.VIT:
+            from stamp.modeling.models.vision_tranformer import (
+                VisionTransformer as ModelClass,
+            )
+
+        case ModelName.TRANS_MIL:
+            from stamp.modeling.models.trans_mil import (
+                TransMIL as ModelClass,
+            )
+
+        case ModelName.MLP:
+            from stamp.modeling.models.mlp import MLP as ModelClass
+
+        case ModelName.LINEAR:
+            from stamp.modeling.models.mlp import (
+                Linear as ModelClass,
+            )
+
+        case _:
+            raise ValueError(f"Unknown model name: {model_name}")
+
+    return LitModelClass, ModelClass

@@ -53,7 +53,7 @@ def _run_cli(args: argparse.Namespace) -> None:
     # use default advanced config in case none is provided
     if config.advanced_config is None:
         config.advanced_config = AdvancedConfig(
-            model_params=ModelParams(vit=VitModelParams(), mlp=MlpModelParams())
+            model_params=ModelParams(vit=VitModelParams(), mlp=MlpModelParams()),
         )
 
     # Set global random seed
@@ -65,7 +65,7 @@ def _run_cli(args: argparse.Namespace) -> None:
             raise RuntimeError("this case should be handled above")
 
         case "config":
-            print(yaml.dump(config.model_dump(mode="json")))
+            print(yaml.dump(config.model_dump(mode="json", exclude_none=True)))
 
         case "preprocess":
             from stamp.preprocessing import extract_
@@ -76,7 +76,7 @@ def _run_cli(args: argparse.Namespace) -> None:
             _add_file_handle_(_logger, output_dir=config.preprocessing.output_dir)
             _logger.info(
                 "using the following configuration:\n"
-                f"{yaml.dump(config.preprocessing.model_dump(mode='json'))}"
+                f"{yaml.dump(config.preprocessing.model_dump(mode='json', exclude_none=True))}"
             )
             extract_(
                 output_dir=config.preprocessing.output_dir,
@@ -104,7 +104,7 @@ def _run_cli(args: argparse.Namespace) -> None:
             _add_file_handle_(_logger, output_dir=config.slide_encoding.output_dir)
             _logger.info(
                 "using the following configuration:\n"
-                f"{yaml.dump(config.slide_encoding.model_dump(mode='json'))}"
+                f"{yaml.dump(config.slide_encoding.model_dump(mode='json', exclude_none=True))}"
             )
             init_slide_encoder_(
                 encoder=config.slide_encoding.encoder,
@@ -124,7 +124,7 @@ def _run_cli(args: argparse.Namespace) -> None:
             _add_file_handle_(_logger, output_dir=config.patient_encoding.output_dir)
             _logger.info(
                 "using the following configuration:\n"
-                f"{yaml.dump(config.patient_encoding.model_dump(mode='json'))}"
+                f"{yaml.dump(config.patient_encoding.model_dump(mode='json', exclude_none=True))}"
             )
             init_patient_encoder_(
                 encoder=config.patient_encoding.encoder,
@@ -147,8 +147,11 @@ def _run_cli(args: argparse.Namespace) -> None:
             _add_file_handle_(_logger, output_dir=config.training.output_dir)
             _logger.info(
                 "using the following configuration:\n"
-                f"{yaml.dump(config.training.model_dump(mode='json'))}"
+                f"{yaml.dump(config.training.model_dump(mode='json', exclude_none=True))}"
             )
+
+            if config.training.task is None:
+                raise ValueError("task must be set in training configuration")
 
             train_categorical_model_(
                 config=config.training, advanced=config.advanced_config
@@ -163,7 +166,7 @@ def _run_cli(args: argparse.Namespace) -> None:
             _add_file_handle_(_logger, output_dir=config.deployment.output_dir)
             _logger.info(
                 "using the following configuration:\n"
-                f"{yaml.dump(config.deployment.model_dump(mode='json'))}"
+                f"{yaml.dump(config.deployment.model_dump(mode='json', exclude_none=True))}"
             )
             deploy_categorical_model_(
                 output_dir=config.deployment.output_dir,
@@ -171,11 +174,13 @@ def _run_cli(args: argparse.Namespace) -> None:
                 clini_table=config.deployment.clini_table,
                 slide_table=config.deployment.slide_table,
                 feature_dir=config.deployment.feature_dir,
-                ground_truth_label=config.deployment.ground_truth_label,
                 patient_label=config.deployment.patient_label,
                 filename_label=config.deployment.filename_label,
                 num_workers=config.deployment.num_workers,
                 accelerator=config.deployment.accelerator,
+                ground_truth_label=config.deployment.ground_truth_label,
+                time_label=config.deployment.time_label,
+                status_label=config.deployment.status_label,
             )
 
         case "crossval":
@@ -184,10 +189,13 @@ def _run_cli(args: argparse.Namespace) -> None:
             if config.crossval is None:
                 raise ValueError("no crossval configuration supplied")
 
+            if config.crossval.task is None:
+                raise ValueError("task must be set in crossval configuration")
+
             _add_file_handle_(_logger, output_dir=config.crossval.output_dir)
             _logger.info(
                 "using the following configuration:\n"
-                f"{yaml.dump(config.crossval.model_dump(mode='json'))}"
+                f"{yaml.dump(config.crossval.model_dump(mode='json', exclude_none=True))}"
             )
 
             categorical_crossval_(
@@ -204,13 +212,17 @@ def _run_cli(args: argparse.Namespace) -> None:
             _add_file_handle_(_logger, output_dir=config.statistics.output_dir)
             _logger.info(
                 "using the following configuration:\n"
-                f"{yaml.dump(config.statistics.model_dump(mode='json'))}"
+                f"{yaml.dump(config.statistics.model_dump(mode='json', exclude_none=True))}"
             )
+
             compute_stats_(
+                task=config.statistics.task,
                 output_dir=config.statistics.output_dir,
                 pred_csvs=config.statistics.pred_csvs,
                 ground_truth_label=config.statistics.ground_truth_label,
                 true_class=config.statistics.true_class,
+                time_label=config.statistics.time_label,
+                status_label=config.statistics.status_label,
             )
 
         case "heatmaps":

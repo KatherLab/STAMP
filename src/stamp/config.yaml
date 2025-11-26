@@ -68,8 +68,15 @@ crossval:
   # are ignored. NOTE: Don't forget to add the .h5 file extension.
   slide_table: "/path/of/slide.csv"
 
+  # Task to infer (classification, regression, survival)
+  task: "classification"
+
   # Name of the column from the clini table to train on.
   ground_truth_label: "KRAS"
+
+  # For survival (should be status and follow-up days columns in clini table)
+  # status_label: "event"
+  # time_label: "time"
 
   # Optional settings:
   patient_label: "PATIENT"
@@ -118,8 +125,15 @@ training:
   # are ignored. NOTE: Don't forget to add the .h5 file extension.
   slide_table: "/path/of/slide.csv"
 
+  # Task to infer (classification, regression, survival)
+  task: "classification"
+
   # Name of the column from the clini table to train on.
   ground_truth_label: "KRAS"
+
+  # For survival (should be status and follow-up days columns in clini table)
+  # status_label: "event"
+  # time_label: "time"
 
   # Optional settings:
 
@@ -156,8 +170,15 @@ deployment:
   # paths are ignored. NOTE: Don't forget to add the .h5 file extension.
   slide_table: "/path/of/slide.csv"
 
+  # Task to infer (classification, regression, survival)
+  task: "classification"
+
   # Name of the column from the clini to compare predictions to.
   ground_truth_label: "KRAS"
+
+  # For survival (should be status and follow-up days columns in clini table)
+  # status_label: "event"
+  # time_label: "time"
 
   patient_label: "PATIENT"
   filename_label: "FILENAME"
@@ -174,12 +195,19 @@ deployment:
 statistics:
   output_dir: "/path/to/save/files/to"
 
+  # Task to infer (classification, regression, survival)
+  task: "classification"
+
   # Name of the target label.
   ground_truth_label: "KRAS"
 
   # A lot of the statistics are computed "one-vs-all", i.e. there needs to be
   # a positive class to calculate the statistics for.
   true_class: "mutated"
+
+  # For survival (should be status and follow-up days columns in clini table)
+  # status_label: "event"
+  # time_label: "time"
 
   # The patient predictions to generate the statistics from.
   # For a single deployment, it could look like this:
@@ -277,8 +305,7 @@ patient_encoding:
 
 
 advanced_config:
-  # Optional random seed
-  # seed: 42
+  seed: 42
   max_epochs: 32
   patience: 16
   batch_size: 64
@@ -291,12 +318,10 @@ advanced_config:
   # Determines the initial learning rate via initial_lr = max_lr/div_factor
   max_lr: 1e-4
   div_factor: 25. 
-  # Select a model. Not working yet, added for future support.
-  # Now it uses a ViT for tile features and a MLP for patient features.
-  #model_name: "vit"
+  # Select a model regardless of task
+  model_name: "vit" # or mlp, trans_mil
 
   model_params:
-    # Tile-level training models:
     vit: # Vision Transformer
       dim_model: 512
       dim_feedforward: 512
@@ -306,7 +331,9 @@ advanced_config:
       # Experimental feature: Use ALiBi positional embedding
       use_alibi: false
 
-    # Patient-level training models:
+    trans_mil: # https://arxiv.org/abs/2106.00908
+      dim_hidden: 512
+
     mlp: # Multilayer Perceptron
       dim_hidden: 512
       num_layers: 2

@@ -6,11 +6,12 @@ import torch
 from pydantic import BaseModel, ConfigDict, Field
 
 from stamp.modeling.registry import ModelName
-from stamp.types import Category, PandasLabel
+from stamp.types import Category, PandasLabel, Task
 
 
 class TrainConfig(BaseModel):
     model_config = ConfigDict(extra="forbid")
+    task: Task | None = Field(default="classification")
 
     output_dir: Path = Field(description="The directory to save the results to")
 
@@ -20,10 +21,21 @@ class TrainConfig(BaseModel):
     )
     feature_dir: Path = Field(description="Directory containing feature files")
 
-    ground_truth_label: PandasLabel = Field(
-        description="Name of categorical column in clinical table to train on"
+    ground_truth_label: PandasLabel | None = Field(
+        default=None,
+        description="Name of categorical column in clinical table to train on",
     )
     categories: Sequence[Category] | None = None
+
+    status_label: PandasLabel | None = Field(
+        default=None,
+        description="Column in the clinical table indicating patient status (e.g. alive, dead, censored).",
+    )
+
+    time_label: PandasLabel | None = Field(
+        default=None,
+        description="Column in the clinical table indicating follow-up or survival time (e.g. days).",
+    )
 
     patient_label: PandasLabel = "PATIENT"
     filename_label: PandasLabel = "FILENAME"
@@ -39,6 +51,7 @@ class TrainConfig(BaseModel):
 
 class CrossvalConfig(TrainConfig):
     n_splits: int = Field(5, ge=2)
+    task: Task | None = Field(default="classification")
 
 
 class DeploymentConfig(BaseModel):
@@ -54,6 +67,10 @@ class DeploymentConfig(BaseModel):
     ground_truth_label: PandasLabel | None = None
     patient_label: PandasLabel = "PATIENT"
     filename_label: PandasLabel = "FILENAME"
+
+    # For survival prediction
+    status_label: PandasLabel | None = None
+    time_label: PandasLabel | None = None
 
     num_workers: int = min(os.cpu_count() or 1, 16)
     accelerator: str = "gpu" if torch.cuda.is_available() else "cpu"
@@ -77,10 +94,21 @@ class MlpModelParams(BaseModel):
     dropout: float = 0.25
 
 
+class TransMILModelParams(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    dim_hidden: int = 512
+
+
+class LinearModelParams(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+
 class ModelParams(BaseModel):
     model_config = ConfigDict(extra="forbid")
-    vit: VitModelParams
-    mlp: MlpModelParams
+    vit: VitModelParams = Field(default_factory=VitModelParams)
+    trans_mil: TransMILModelParams = Field(default_factory=TransMILModelParams)
+    mlp: MlpModelParams = Field(default_factory=MlpModelParams)
+    linear: LinearModelParams = Field(default_factory=LinearModelParams)
 
 
 class AdvancedConfig(BaseModel):
@@ -95,7 +123,7 @@ class AdvancedConfig(BaseModel):
     div_factor: float = 25.0
     model_name: ModelName | None = Field(
         default=None,
-        description='Optional: "vit" or "mlp". Defaults based on feature type.',
+        description='Optional. "vit" or "mlp" are defaults based on feature type.',
     )
-    model_params: ModelParams | None
+    model_params: ModelParams
     seed: int | None = None

@@ -314,10 +314,7 @@ def _supertiles(
     )
     supertile_size_tile_px = TilePixels(tile_size_px * len_of_supertile_in_tiles)
 
-    if default_slide_mpp is not None:
-        supertile_size_um = Microns(tile_size_um * len_of_supertile_in_tiles)
-    else:
-        supertile_size_um = Microns(supertile_size_slide_px * slide_mpp)
+    supertile_size_um = Microns(supertile_size_slide_px * slide_mpp)
 
     with futures.ThreadPoolExecutor(max_workers) as executor:
         futs = []
