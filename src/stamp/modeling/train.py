@@ -1,5 +1,6 @@
 import logging
 import shutil
+from collections import Counter
 from collections.abc import Callable, Mapping, Sequence
 from pathlib import Path
 from typing import cast
@@ -242,6 +243,9 @@ def setup_dataloaders_for_training(
     Returns:
         train_dl, valid_dl, categories, feature_dim, train_patients, valid_patients
     """
+    # Sample count for training
+    log_total_class_summary(patient_to_data, categories)
+
     # Stratified split
     ground_truths = [
         patient_data.ground_truth
@@ -409,3 +413,20 @@ def _compute_class_weights_and_check_categories(
             "You may want to consider removing these categories; the model will likely overfit on the few samples available."
         )
     return category_weights
+
+
+def log_total_class_summary(
+    patient_to_data: Mapping[PatientId, PatientData],
+    categories: Sequence[Category] | None,
+) -> None:
+    ground_truths = [
+        patient_data.ground_truth
+        for patient_data in patient_to_data.values()
+        if patient_data.ground_truth is not None
+    ]
+    cats = categories or sorted(set(ground_truths))
+    counter = Counter(ground_truths)
+    _logger.info(
+        f"Total samples: {len(ground_truths)} | "
+        + " | ".join([f"Class {cls}: {counter.get(cls, 0)}" for cls in cats])
+    )

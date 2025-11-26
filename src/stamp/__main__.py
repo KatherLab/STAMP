@@ -13,6 +13,7 @@ from stamp.modeling.config import (
     ModelParams,
     VitModelParams,
 )
+from stamp.seed import Seed
 
 STAMP_FACTORY_SETTINGS = Path(__file__).with_name("config.yaml")
 
@@ -49,6 +50,16 @@ def _run_cli(args: argparse.Namespace) -> None:
     with open(args.config_file_path, "r") as config_yaml:
         config = StampConfig.model_validate(yaml.safe_load(config_yaml))
 
+    # use default advanced config in case none is provided
+    if config.advanced_config is None:
+        config.advanced_config = AdvancedConfig(
+            model_params=ModelParams(vit=VitModelParams(), mlp=MlpModelParams())
+        )
+
+    # Set global random seed
+    if config.advanced_config.seed is not None:
+        Seed.set(config.advanced_config.seed)
+
     match args.command:
         case "init":
             raise RuntimeError("this case should be handled above")
@@ -70,6 +81,7 @@ def _run_cli(args: argparse.Namespace) -> None:
             extract_(
                 output_dir=config.preprocessing.output_dir,
                 wsi_dir=config.preprocessing.wsi_dir,
+                wsi_list=config.preprocessing.wsi_list,
                 cache_dir=config.preprocessing.cache_dir,
                 tile_size_um=config.preprocessing.tile_size_um,
                 tile_size_px=config.preprocessing.tile_size_px,
@@ -132,12 +144,6 @@ def _run_cli(args: argparse.Namespace) -> None:
             if config.training is None:
                 raise ValueError("no training configuration supplied")
 
-            # use default advanced config in case none is provided
-            if config.advanced_config is None:
-                config.advanced_config = AdvancedConfig(
-                    model_params=ModelParams(vit=VitModelParams(), mlp=MlpModelParams())
-                )
-
             _add_file_handle_(_logger, output_dir=config.training.output_dir)
             _logger.info(
                 "using the following configuration:\n"
@@ -183,12 +189,6 @@ def _run_cli(args: argparse.Namespace) -> None:
                 "using the following configuration:\n"
                 f"{yaml.dump(config.crossval.model_dump(mode='json'))}"
             )
-
-            # use default advanced config in case none is provided
-            if config.advanced_config is None:
-                config.advanced_config = AdvancedConfig(
-                    model_params=ModelParams(vit=VitModelParams(), mlp=MlpModelParams())
-                )
 
             categorical_crossval_(
                 config=config.crossval,
