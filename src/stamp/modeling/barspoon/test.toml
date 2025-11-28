@@ -1,0 +1,29 @@
+version = "barspoon-targets 2.0"
+
+[targets."BRAF"]
+categories = [
+	["MUT"],	# count = 63
+	["WT"],	# count = 471
+]
+#[targets."BRAF".class_weights]
+#"MUT" = 0.882
+#"WT" = 0.118
+
+[targets."KRAS"]
+categories = [
+	["MUT"],	# count = 218
+	["WT"],	# count = 316
+]
+#[targets."KRAS".class_weights]
+#"MUT" = 0.5918
+#"WT" = 0.4082
+
+[targets."NRAS"]
+categories = [
+	["MUT"],	# count = 33
+	["WT"],	# count = 501
+]
+#[targets."NRAS".class_weights]
+#"MUT" = 0.9382
+#"WT" = 0.0618
+

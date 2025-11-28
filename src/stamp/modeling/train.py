@@ -414,7 +414,7 @@ def train_model_(
         # following reasons:
         #  1. `trainer.predict()` does not return any predictions if used with
         #     the default strategy no multiple GPUs
-        #  2. `barspoon.model.SafeMulticlassAUROC` breaks on multiple GPUs
+        #  2. `stamp.modeling.barspoon.model.SafeMulticlassAUROC` breaks on multiple GPUs
         accelerator=accelerator,
         devices=1,
         # gradient_clip_val=0.5,
