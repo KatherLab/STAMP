@@ -60,7 +60,6 @@ from torch import Tensor
 from tqdm import tqdm
 
 from stamp.modeling.barspoon.model import LitEncDecTransformer, TargetLabel
-from stamp.modeling.barspoon.utils import make_dataset_df
 
 CategoryLabel = str
 
@@ -205,7 +204,7 @@ def main():
                 sanitized_pos_cat_label = re.sub(
                     r"[^()\-.0-9;A-Z\[\]^_a-z]", "_", pos_category_label
                 )
-                filename = f"{h5_path.stem}-{target_label}-{sanitized_pos_cat_label}={overall_scores[target_label][0,cat_idx]:1.2f}"
+                filename = f"{h5_path.stem}-{target_label}-{sanitized_pos_cat_label}={overall_scores[target_label][0, cat_idx]:1.2f}"
                 Image.fromarray(np.uint8(score_im * 255)).resize(
                     np.array(score_im.shape[:2][::-1]) * 8, resample=Image.NEAREST
                 ).save(target_dir / f"scores-{filename}.png")

@@ -1,13 +1,13 @@
 # %%
 import re
-from typing import Any, Dict, Mapping, Optional, Sequence, Tuple, TypeAlias
+from typing import Any, Dict, Mapping, Sequence, TypeAlias
 
 import pytorch_lightning as pl
 import torch
 import torch.nn.functional as F
 import torchmetrics
 from packaging.version import Version
-from torch import Tensor, nn
+from torch import nn
 from torchmetrics.classification import MulticlassAUROC
 from torchmetrics.utilities.data import dim_zero_cat
 

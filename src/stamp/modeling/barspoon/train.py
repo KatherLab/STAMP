@@ -1,8 +1,5 @@
 #!/usr/bin/env python3
-import argparse
-import os
 from pathlib import Path
-from typing import Iterable, Mapping, Sequence, Tuple
 
 import pytorch_lightning as pl
 import tomli
