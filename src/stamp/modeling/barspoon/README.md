@@ -32,20 +32,11 @@ We initially need the following:
 ### Generating the Target File
 
 ```
-python target_file.py \
-    --clini-table path/to/clini.csv \
-    --category msi --category stage \
-    --quantize leucocyte-fraction 3 \
-    --output-file targets.toml
+python target_file.py 
 ```
 
 ### Training a Model
 
 ```
-python train.py \
-    --output-dir path/to/save/results/to \
-    --clini-table path/to/clini.csv \
-    --slide-table path/to/slide.csv \
-    --feature-dir dir/containing/features \
-    --target-file path/to/target.toml
+python train.py
 ```
