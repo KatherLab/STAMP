@@ -40,3 +40,5 @@ python target_file.py
 ```
 python train.py
 ```
+
+You will need to modify each file to manually feed arguments before running it
