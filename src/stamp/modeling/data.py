@@ -814,9 +814,11 @@ def filter_complete_patient_data_(
     }
 
     _logger.info(
-        f"Kept {len(patient_to_ground_truth)}/{len(patient_to_ground_truth)} \
-        patients with complete data ({len(patient_to_ground_truth) / len(patient_to_ground_truth):.1%})."
+        f"Total patients in clinical table: {total_clini}\n"
+        f"Patients appearing in slide table: {total_slides}\n"
+        f"Final usable patients (complete data): {final_patients}\n"
     )
+    
     return patients
 
 
