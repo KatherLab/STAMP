@@ -281,8 +281,9 @@ def create_dataloader(
             for p in patient_data:
                 t, e = (p.ground_truth or "nan nan").split(" ", 1)
                 times.append(float(t) if t.lower() != "nan" else np.nan)
-                events.append(_parse_survival_status(e))
-
+                events.append(
+                    1.0 if e.lower() in {"dead", "event", "1", "Yes", "yes"} else 0.0
+                )
             labels = torch.tensor(np.column_stack([times, events]), dtype=torch.float32)
         else:
             raise ValueError(f"Unsupported task: {task}")
@@ -446,9 +447,12 @@ class BagDataset(Dataset[tuple[_Bag, _Coordinates, BagSize, _EncodedTarget]]):
         coords_um = []
         for bag_file in self.bags[index]:
             with h5py.File(bag_file, "r") as h5:
-                feats.append(
-                    torch.from_numpy(h5["feats"][:])  # pyright: ignore[reportIndexIssue]
-                )
+                if "feats" in h5:
+                    arr = h5["feats"][:]  # pyright: ignore[reportIndexIssue] # original STAMP files
+                else:
+                    arr = h5["patch_embeddings"][:]  # type: ignore # your Kronos files
+
+                feats.append(torch.from_numpy(arr))
                 coords_um.append(torch.from_numpy(get_coords(h5).coords_um))
 
         feats = torch.concat(feats).float()
@@ -667,26 +671,7 @@ def patient_to_survival_from_clini_table_(
 
     # normalize values
     clini_df[time_label] = clini_df[time_label].replace(
-        [
-            "NA",
-            "NaN",
-            "nan",
-            "None",
-            "none",
-            "N/A",
-            "n/a",
-            "NULL",
-            "null",
-            "",
-            " ",
-            "?",
-            "-",
-            "--",
-            "#N/A",
-            "#NA",
-            "=#VALUE!",
-        ],
-        np.nan,
+        ["NA", "NaN", "nan", "", "=#VALUE!"], np.nan
     )
     clini_df[status_label] = clini_df[status_label].str.strip().str.lower()
 
@@ -704,10 +689,13 @@ def patient_to_survival_from_clini_table_(
             continue
 
         # Encode status: keep both dead (event=1) and alive (event=0)
-        status = _parse_survival_status(status_str)
-
-        # Encode back to "alive"/"dead" like before
-        # status = "dead" if status_val == 1 else "alive"
+        if status_str in {"dead", "event", "1"}:
+            status = "dead"
+        elif status_str in {"alive", "censored", "0"}:
+            status = "alive"
+        else:
+            # skip unknown status
+            continue
 
         patient_to_ground_truth[pid] = f"{time_str} {status}"
 
@@ -812,6 +800,9 @@ def filter_complete_patient_data_(
             }
         )
     }
+    total_clini = len(patient_to_ground_truth)
+    total_slides = len(patient_to_slides)
+    final_patients = len(patients)
 
     _logger.info(
         f"Total patients in clinical table: {total_clini}\n"
@@ -865,51 +856,3 @@ def get_stride(coords: Float[Tensor, "tile 2"]) -> float:
         ),
     )
     return stride
-
-
-def _parse_survival_status(value) -> int | None:
-    """
-    Parse a survival status value (string, numeric, or None) into a binary indicator.
-    Currently assume no None inputs.
-    Returns:
-        1 -> event/dead
-        0 -> censored/alive
-        None -> missing (None, NaN, '')
-
-    Raises:
-        ValueError if the input is non-missing but unrecognized.
-
-    Examples:
-        'dead', '1', 'event', 'yes'  -> 1
-        'alive', '0', 'censored', 'no' -> 0
-        None, NaN, '' -> None
-    """
-
-    # Handle missing inputs gracefully
-    # if value is None:
-    #     return 0  # treat empty/missing as censored
-    # if isinstance(value, float) and math.isnan(value):
-    #     return 0  # treat empty/missing as censored
-
-    s = str(value).strip().lower()
-    # if s in {"", "nan", "none"}:
-    #     return 0  # treat empty/missing as censored
-
-    # Known mappings
-    positives = {"1", "event", "dead", "deceased", "yes", "y", "True", "true"}
-    negatives = {"0", "alive", "censored", "no", "false"}
-
-    if s in positives:
-        return 1
-    elif s in negatives:
-        return 0
-
-    # Try numeric fallback
-    try:
-        f = float(s)
-        return 1 if f > 0 else 0
-    except ValueError:
-        raise ValueError(
-            f"Unrecognized survival status: '{value}'. "
-            f"Expected one of {sorted(positives | negatives)} or a numeric value."
-        )
