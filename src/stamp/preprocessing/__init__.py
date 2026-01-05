@@ -24,7 +24,6 @@ from stamp.preprocessing.tiling import (
     get_slide_mpp_,
     tiles_with_cache,
 )
-from stamp.seed import Seed
 from stamp.types import (
     DeviceLikeType,
     ImageExtension,
@@ -262,7 +261,7 @@ def extract_(
 
     # We shuffle so if we run multiple jobs on multiple computers at the same time,
     # They won't interfere with each other too much
-    rng = np.random.default_rng(Seed.seed)
+    rng = np.random.default_rng()  # system entropy
     perm = rng.permutation(len(slide_paths))
     slide_paths = [slide_paths[i] for i in perm]
 
