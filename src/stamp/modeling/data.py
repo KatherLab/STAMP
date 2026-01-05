@@ -180,7 +180,6 @@ def tile_bag_dataloader(
                 worker_init_fn=Seed.get_loader_worker_init()
                 if Seed._is_set()
                 else None,
-                generator=Seed.get_torch_generator() if Seed._is_set() else None,
             ),
         ),
         cats_out,
@@ -294,7 +293,6 @@ def create_dataloader(
             shuffle=shuffle,
             num_workers=num_workers,
             worker_init_fn=Seed.get_loader_worker_init() if Seed._is_set() else None,
-            generator=Seed.get_torch_generator() if Seed._is_set() else None,
         )
         return dl, categories or []
     else:

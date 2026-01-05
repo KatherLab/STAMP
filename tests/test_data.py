@@ -133,8 +133,6 @@ def test_bag_dataset(
         batch_size=batch_size,
         shuffle=False,
         num_workers=1,
-        worker_init_fn=Seed.get_loader_worker_init() if Seed._is_set() else None,
-        generator=Seed.get_torch_generator() if Seed._is_set() else None,
     )
     bag, coords, bag_sizes, _ = next(iter(dl))
     assert bag.shape == (batch_size, bag_size, dim_feats)
@@ -168,8 +166,6 @@ def test_patient_feature_dataset(
         batch_size=batch_size,
         shuffle=False,
         num_workers=1,
-        worker_init_fn=Seed.get_loader_worker_init() if Seed._is_set() else None,
-        generator=Seed.get_torch_generator() if Seed._is_set() else None,
     )
 
     feats_batch, labels_batch = next(iter(dl))
