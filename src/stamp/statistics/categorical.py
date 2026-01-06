@@ -12,7 +12,13 @@ __copyright__ = "Copyright (C) 2022-2025 Marko van Treeck"
 __license__ = "MIT"
 
 
-_score_labels = ["roc_auc_score", "average_precision_score", "p_value", "count"]
+_score_labels = [
+    "roc_auc_score",
+    "average_precision_score",
+    "f1_score",
+    "p_value",
+    "count",
+]
 
 
 def _categorical(preds_df: pd.DataFrame, target_label: str) -> pd.DataFrame:
@@ -42,6 +48,13 @@ def _categorical(preds_df: pd.DataFrame, target_label: str) -> pd.DataFrame:
         for i, cat in enumerate(categories)
     ]
 
+    # f1 score
+    y_pred_labels = categories[y_pred.argmax(axis=1)]
+    stats_df["f1_score"] = [
+        metrics.f1_score(y_true == cat, y_pred_labels == cat)  # pyright: ignore[reportCallIssue,reportArgumentType]
+        for cat in categories
+    ]
+
     # p values
     p_values = []
     for i, cat in enumerate(categories):
@@ -58,7 +71,7 @@ def _categorical(preds_df: pd.DataFrame, target_label: str) -> pd.DataFrame:
 def _aggregate_categorical_stats(df: pd.DataFrame) -> pd.DataFrame:
     stats = {}
     for cat, data in df.groupby("level_1"):
-        scores_df = data[["roc_auc_score", "average_precision_score"]]
+        scores_df = data[["roc_auc_score", "average_precision_score", "f1_score"]]
         means, sems = scores_df.mean(), scores_df.sem()
         lower, upper = st.t.interval(0.95, df=len(scores_df) - 1, loc=means, scale=sems)
         cat_stats_df = (
