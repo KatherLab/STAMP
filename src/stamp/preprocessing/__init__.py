@@ -1,7 +1,6 @@
 import logging
 from collections.abc import Callable, Iterator
 from pathlib import Path
-from random import shuffle
 from tempfile import NamedTemporaryFile
 from typing import assert_never
 
@@ -262,7 +261,9 @@ def extract_(
 
     # We shuffle so if we run multiple jobs on multiple computers at the same time,
     # They won't interfere with each other too much
-    shuffle(slide_paths)
+    rng = np.random.default_rng()  # system entropy
+    perm = rng.permutation(len(slide_paths))
+    slide_paths = [slide_paths[i] for i in perm]
 
     for slide_path in (progress := tqdm(slide_paths)):
         progress.set_description(str(slide_path.relative_to(wsi_dir)))
