@@ -5,7 +5,7 @@ from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import KW_ONLY, dataclass
 from itertools import groupby
 from pathlib import Path
-from typing import IO, BinaryIO, Generic, TextIO, TypeAlias, Union, cast
+from typing import IO, BinaryIO, Counter, Generic, TextIO, TypeAlias, Union, cast
 
 import h5py
 import numpy as np
@@ -444,9 +444,12 @@ class BagDataset(Dataset[tuple[_Bag, _Coordinates, BagSize, _EncodedTarget]]):
         coords_um = []
         for bag_file in self.bags[index]:
             with h5py.File(bag_file, "r") as h5:
-                feats.append(
-                    torch.from_numpy(h5["feats"][:])  # pyright: ignore[reportIndexIssue]
-                )
+                if "feats" in h5:
+                    arr = h5["feats"][:]  # pyright: ignore[reportIndexIssue] # original STAMP files
+                else:
+                    arr = h5["patch_embeddings"][:]  # type: ignore # your Kronos files
+
+                feats.append(torch.from_numpy(arr))
                 coords_um.append(torch.from_numpy(get_coords(h5).coords_um))
 
         feats = torch.concat(feats).float()
@@ -527,6 +530,22 @@ class CoordsInfo:
 
 
 def get_coords(feature_h5: h5py.File) -> CoordsInfo:
+    # --- NEW: handle missing coords ----multiplex data bypass: no coords found; generated fake coords
+    if "coords" not in feature_h5:
+        feats_obj = feature_h5["patch_embeddings"]
+
+        if not isinstance(feats_obj, h5py.Dataset):
+            raise RuntimeError(
+                f"{feature_h5.filename}: expected 'feats' to be an HDF5 dataset but got {type(feats_obj)}"
+            )
+
+        n = feats_obj.shape[0]
+
+        coords_um = np.stack([np.arange(n), np.zeros(n)], axis=1).astype(np.float32)
+        tile_size_um = Microns(0.0)
+        tile_size_px = TilePixels(0)
+
+        return CoordsInfo(coords_um, tile_size_um, tile_size_px)
     coords: np.ndarray = feature_h5["coords"][:]  # type: ignore
     coords_um: np.ndarray | None = None
     tile_size_um: Microns | None = None
@@ -811,14 +830,10 @@ def filter_complete_patient_data_(
         )
     }
 
-    total_clini = len(patient_to_ground_truth)
-    total_slides = len(patient_to_slides)
-    final_patients = len(patients)
-
     _logger.info(
-        f"Total patients in clinical table: {total_clini}\n"
-        f"Patients appearing in slide table: {total_slides}\n"
-        f"Final usable patients (complete data): {final_patients}\n"
+        f"Total patients in clinical table: {len(patient_to_ground_truth)}\n"
+        f"Patients appearing in slide table: {len(patient_to_slides)}\n"
+        f"Final usable patients (complete data): {len(patients)}\n"
     )
     return patients
 
@@ -915,3 +930,28 @@ def _parse_survival_status(value) -> int | None:
             f"Unrecognized survival status: '{value}'. "
             f"Expected one of {sorted(positives | negatives)} or a numeric value."
         )
+
+
+def log_patient_class_summary(
+    *,
+    patient_to_data: Mapping[PatientId, PatientData],
+    categories: Sequence[Category] | None,
+    prefix: str = "",
+) -> None:
+    ground_truths = [
+        pd.ground_truth
+        for pd in patient_to_data.values()
+        if pd.ground_truth is not None
+    ]
+
+    if not ground_truths:
+        _logger.warning(f"{prefix}No ground truths available to summarize.")
+        return
+
+    cats = categories or sorted(set(ground_truths))
+    counter = Counter(ground_truths)
+
+    _logger.info(
+        f"{prefix}Total patients: {len(ground_truths)} | "
+        + " | ".join([f"Class {c}: {counter.get(c, 0)}" for c in cats])
+    )

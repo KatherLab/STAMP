@@ -13,6 +13,7 @@ from stamp.modeling.data import (
     detect_feature_type,
     filter_complete_patient_data_,
     load_patient_level_data,
+    log_patient_class_summary,
     patient_to_ground_truth_from_clini_table_,
     patient_to_survival_from_clini_table_,
     slide_to_patient_from_slide_table_,
@@ -164,6 +165,10 @@ def categorical_crossval_(
                 for patient_data in patient_to_data.values()
                 if patient_data.ground_truth is not None
             }
+        )
+        log_patient_class_summary(
+            patient_to_data={pid: patient_to_data[pid] for pid in patient_to_data},
+            categories=categories,
         )
     else:
         categories = []

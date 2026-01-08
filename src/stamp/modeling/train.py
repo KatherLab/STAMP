@@ -1,6 +1,5 @@
 import logging
 import shutil
-from collections import Counter
 from collections.abc import Callable, Mapping, Sequence
 from pathlib import Path
 from typing import cast
@@ -22,6 +21,7 @@ from stamp.modeling.data import (
     detect_feature_type,
     filter_complete_patient_data_,
     load_patient_level_data,
+    log_patient_class_summary,
     patient_to_ground_truth_from_clini_table_,
     patient_to_survival_from_clini_table_,
     slide_to_patient_from_slide_table_,
@@ -193,6 +193,10 @@ def setup_model_for_training(
             feature_type=feature_type,
             train_categories=train_categories,
         )
+        log_patient_class_summary(
+            patient_to_data={pid: patient_to_data[pid] for pid in patient_to_data},
+            categories=categories,
+        )
 
     # 1. Default to a model if none is specified
     if advanced.model_name is None:
@@ -307,7 +311,6 @@ def setup_dataloaders_for_training(
 
     if task == "classification":
         stratify = ground_truths
-        log_total_class_summary(ground_truths, categories)
     elif task == "survival":
         # Extract event indicator (status)
         statuses = [int(gt.split()[1]) for gt in ground_truths]
@@ -467,15 +470,3 @@ def _compute_class_weights_and_check_categories(
             "You may want to consider removing these categories; the model will likely overfit on the few samples available."
         )
     return category_weights
-
-
-def log_total_class_summary(
-    ground_truths: list,
-    categories: Sequence[Category] | None,
-) -> None:
-    cats = categories or sorted(set(ground_truths))
-    counter = Counter(ground_truths)
-    _logger.info(
-        f"Total samples: {len(ground_truths)} | "
-        + " | ".join([f"Class {cls}: {counter.get(cls, 0)}" for cls in cats])
-    )
