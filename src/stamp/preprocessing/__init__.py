@@ -119,6 +119,7 @@ def extract_(
     wsi_dir: Path,
     output_dir: Path,
     wsi_list: Path | None,
+    mpp_list: Path | None,
     cache_dir: Path | None,
     cache_tiles_ext: ImageExtension,
     extractor: ExtractorName | Extractor,
@@ -265,6 +266,16 @@ def extract_(
     perm = rng.permutation(len(slide_paths))
     slide_paths = [slide_paths[i] for i in perm]
 
+    # If mpp_list is given, load it
+    if mpp_list is not None:
+        mpp_lookup = _load_mpp_overrides_(mpp_list)
+        _logger.info(
+            f"Loaded {len(mpp_lookup)} MPP overrides from {mpp_list}. Don't forget QC."
+        )
+    else:
+        mpp_lookup = {}
+        _logger.info("No MPP override file provided.")
+
     for slide_path in (progress := tqdm(slide_paths)):
         progress.set_description(str(slide_path.relative_to(wsi_dir)))
         _logger.debug(f"processing {slide_path}")
@@ -280,6 +291,18 @@ def extract_(
 
         feature_output_path.parent.mkdir(parents=True, exist_ok=True)
 
+        # Determine per-slide fallback MPP
+        # Default to the global value (or None)
+        current_slide_fallback_mpp = default_slide_mpp
+
+        # If the filename exists in the given file-list, assign the override value as fallback MPP
+        if str(slide_path) in mpp_lookup:
+            current_slide_fallback_mpp = mpp_lookup[str(slide_path)]
+
+            _logger.info(
+                f"MPP-value from mpp_list: {current_slide_fallback_mpp} for slide {slide_path.name}"
+            )
+
         try:
             ds = _TileDataset(
                 slide_path=slide_path,
@@ -292,7 +315,7 @@ def extract_(
                 max_workers=max_workers,
                 brightness_cutoff=brightness_cutoff,
                 canny_cutoff=canny_cutoff,
-                default_slide_mpp=default_slide_mpp,
+                default_slide_mpp=current_slide_fallback_mpp,
             )
             # Parallelism is implemented in the dataset iterator already, so one worker is enough!
             dl = DataLoader(ds, batch_size=64, num_workers=1, drop_last=False)
@@ -354,7 +377,7 @@ def extract_(
             size=(512, 512),
             coords_um=coords,
             tile_size_um=tile_size_um,
-            default_slide_mpp=default_slide_mpp,
+            default_slide_mpp=current_slide_fallback_mpp,
         ).convert("RGB").save(thumbnail_path)
 
 
@@ -411,3 +434,34 @@ def _get_slide_paths(wsi_list: Path) -> set[str]:
     else:
         raise ValueError(f"Unsupported file type: {suf}")
     return slide_paths
+
+# helper-function to load mpp overrides from file
+def _load_mpp_overrides_(path: Path) -> dict[str, SlideMPP]:
+    suf = path.suffix.lower()
+
+    if suf in {".csv"}:
+        sep = ","
+        df = pd.read_csv(path, sep=sep, header=None, comment="#")
+    elif suf in {".xlsx", ".xls"}:
+        df = pd.read_excel(path, header=None)
+    elif suf == ".txt":
+        out: dict[str, SlideMPP] = {}
+        for line in path.read_text(encoding="utf-8").splitlines():
+            line = line.strip()
+            if not line or line.startswith("#"):
+                continue
+            fn, mpp_s = [x.strip() for x in line.split(",", 1)]
+            out[fn] = SlideMPP(float(mpp_s))
+        return out
+    else:
+        raise ValueError(f"Unsupported mpp_list format: {path.suffix}")
+
+    # takes first two columns (no header)
+    df = df.iloc[:, :2].copy()
+    df.columns = ["Filename", "MPP_X"]
+
+    df["Filename"] = df["Filename"].astype(str).str.strip()
+    df["MPP_X"] = pd.to_numeric(df["MPP_X"], errors="coerce")
+    df = df[df["Filename"].ne("") & df["MPP_X"].notna()]
+
+    return {fn: SlideMPP(float(mpp)) for fn, mpp in zip(df["Filename"], df["MPP_X"])}
