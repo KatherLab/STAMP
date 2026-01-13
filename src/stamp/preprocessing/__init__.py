@@ -435,6 +435,7 @@ def _get_slide_paths(wsi_list: Path) -> set[str]:
         raise ValueError(f"Unsupported file type: {suf}")
     return slide_paths
 
+
 # helper-function to load mpp overrides from file
 def _load_mpp_overrides_(path: Path) -> dict[str, SlideMPP]:
     suf = path.suffix.lower()
