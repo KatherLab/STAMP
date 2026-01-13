@@ -1,0 +1,626 @@
+"""
+TICON Model Architecture and Configuration.
+
+Shared between "Isolated" and "Contextualized" modes.
+Contains all model components, configuration, and utility functions.
+
+@misc{belagali2025ticonslideleveltilecontextualizer,
+      title={TICON: A Slide-Level Tile Contextualizer for Histopathology Representation Learning},
+      author={Varun Belagali and Saarthak Kapse and Pierre Marza and Srijan Das and Zilinghan Li and Sofiène Boutaj and Pushpak Pati and Srikar Yellapragada and Tarak Nath Nandi and Ravi K Madduri and Joel Saltz and Prateek Prasanna and Stergios Christodoulidis and Maria Vakalopoulou and Dimitris Samaras},
+      year={2025},
+      eprint={2512.21331},
+      archivePrefix={arXiv},
+      primaryClass={cs.CV},
+      url={https://arxiv.org/abs/2512.21331},
+}
+"""
+
+import math
+from collections.abc import Callable, Mapping
+from functools import partial
+from typing import Any
+
+import torch
+import torch.nn as nn
+from huggingface_hub import hf_hub_download
+from jaxtyping import Float
+from torch import Tensor
+from torch.nn.attention import SDPBackend, sdpa_kernel
+
+from stamp.preprocessing.config import ExtractorName
+from stamp.types import DeviceLikeType
+
+# =============================================================================
+# Configuration
+# =============================================================================
+
+# Mapping:  ExtractorName -> (ticon_key, embedding_dim)
+TILE_EXTRACTOR_TO_TICON: dict[ExtractorName, tuple[ExtractorName, int]] = {
+    ExtractorName.CONCH1_5: (ExtractorName.CONCH1_5, 768),
+    ExtractorName.H_OPTIMUS_1: (ExtractorName.H_OPTIMUS_1, 1536),
+    ExtractorName.UNI2: (ExtractorName.UNI2, 1536),
+    ExtractorName.GIGAPATH: (ExtractorName.GIGAPATH, 1536),
+    ExtractorName.VIRCHOW2: (ExtractorName.VIRCHOW2, 1280),
+}
+
+# TICON model configuration
+TICON_MODEL_CFG: dict[str, Any] = {
+    "transformers_kwargs": {
+        "embed_dim": 1536,
+        "drop_path_rate": 0.0,
+        "block_kwargs": {
+            "attn_kwargs": {"num_heads": 24},
+        },
+    },
+    "encoder_kwargs": {"depth": 6},
+    "decoder_kwargs": {"depth": 1},
+    "in_dims": [768, 1536, 1536, 1536, 1280],
+    "tile_encoder_keys": [
+        ExtractorName.CONCH1_5,
+        ExtractorName.H_OPTIMUS_1,
+        ExtractorName.UNI2,
+        ExtractorName.GIGAPATH,
+        ExtractorName.VIRCHOW2,
+    ],
+    "num_decoders": 1,
+    "decoder_out_dims": [768, 1536, 1536, 1536, 1280],
+}
+
+
+# =============================================================================
+# Utility Functions
+# =============================================================================
+
+
+def get_ticon_key(extractor: ExtractorName) -> tuple[ExtractorName, int]:
+    """
+    Get TICON key and expected embedding dimension for an extractor.
+
+    Args:
+        extractor:  The tile extractor name
+
+    Returns:
+        Tuple of (ticon_key, embedding_dim)
+
+    Raises:
+        ValueError:  If extractor is not supported by TICON
+    """
+    if extractor not in TILE_EXTRACTOR_TO_TICON:
+        raise ValueError(
+            f"No TICON mapping for extractor {extractor}. "
+            f"Supported: {list(TILE_EXTRACTOR_TO_TICON.keys())}"
+        )
+    return TILE_EXTRACTOR_TO_TICON[extractor]
+
+
+def validate_features_for_ticon(extractor: ExtractorName, feat_dim: int) -> str:
+    """
+    Validate feature dimensions and return TICON key.
+
+    Args:
+        extractor: The tile extractor that produced the features
+        feat_dim:  The dimension of the features
+
+    Returns:
+        The TICON tile_encoder_key to use
+
+    Raises:
+        ValueError:  If dimensions don't match expected values
+    """
+    key, expected_dim = get_ticon_key(extractor)
+    if feat_dim != expected_dim:
+        raise ValueError(
+            f"Feature dimension {feat_dim} does not match expected "
+            f"{expected_dim} for extractor '{extractor.value}' (TICON key: '{key}')"
+        )
+    return key
+
+
+def get_supported_extractors() -> list[ExtractorName]:
+    """Get list of extractors supported by TICON."""
+    return list(TILE_EXTRACTOR_TO_TICON.keys())
+
+
+# =============================================================================
+# ALiBi Helper Functions
+# =============================================================================
+
+
+def get_slopes(n: int) -> list[float]:
+    """
+    Calculate ALiBi slopes for attention heads.
+
+    ALiBi (Attention with Linear Biases) uses these slopes to create
+    position-dependent attention biases based on spatial distances.
+    """
+
+    def get_slopes_power_of_2(n: int) -> list[float]:
+        start = 2 ** (-(2 ** -(math.log2(n) - 3)))
+        ratio = start
+        return [start * ratio**i for i in range(n)]
+
+    if math.log2(n).is_integer():
+        return get_slopes_power_of_2(n)
+    else:
+        closest_power_of_2 = 2 ** math.floor(math.log2(n))
+        return (
+            get_slopes_power_of_2(closest_power_of_2)
+            + get_slopes(2 * closest_power_of_2)[0::2][: n - closest_power_of_2]
+        )
+
+
+def scaled_dot_product_attention_alibi(
+    query: Tensor,
+    key: Tensor,
+    value: Tensor,
+    attn_bias: Tensor,
+    dropout_p: float = 0.0,
+    training: bool = False,
+) -> Tensor:
+    """
+    Scaled dot-product attention with ALiBi positional bias.
+
+    Args:
+        query: Query tensor [B, H, N_q, D]
+        key: Key tensor [B, H, N_k, D]
+        value: Value tensor [B, H, N_k, D]
+        attn_bias: ALiBi bias tensor [B, H, N_q, N_k]
+        dropout_p: Dropout probability
+        training: Whether in training mode
+
+    Returns:
+        Attention output [B, H, N_q, D]
+    """
+    # try Flash Attention with ALiBi first
+    try:
+        with sdpa_kernel([SDPBackend.FLASH_ATTENTION, SDPBackend.EFFICIENT_ATTENTION]):
+            return torch.nn.functional.scaled_dot_product_attention(
+                query,
+                key,
+                value,
+                attn_mask=attn_bias,
+                dropout_p=dropout_p if training else 0.0,
+                is_causal=False,
+            )
+    except Exception:
+        pass
+
+    scale_factor = 1 / math.sqrt(query.size(-1))
+
+    attn_weight = query @ key.transpose(-2, -1) * scale_factor
+    attn_weight = attn_weight + attn_bias
+    attn_weight = torch.softmax(attn_weight, dim=-1)
+
+    if dropout_p > 0.0:
+        attn_weight = torch.dropout(attn_weight, dropout_p, train=training)
+
+    return attn_weight @ value
+
+
+# =============================================================================
+# Model Components
+# =============================================================================
+
+
+class Mlp(nn.Module):
+    """MLP with SwiGLU activation (used in TICON transformer blocks)."""
+
+    def __init__(
+        self,
+        in_features: int,
+        hidden_features: int | None = None,
+        mlp_ratio: float = 16 / 3,
+        bias: bool = True,
+    ) -> None:
+        super().__init__()
+        if hidden_features is None:
+            hidden_features = int(in_features * mlp_ratio)
+
+        self.fc1 = nn.Linear(in_features, hidden_features, bias=bias)
+        self.act = nn.SiLU()
+        self.fc2 = nn.Linear(hidden_features // 2, in_features, bias=bias)
+
+    def forward(self, x: Tensor) -> Tensor:
+        x = self.fc1(x)
+        x1, x2 = x.chunk(2, dim=-1)
+        x = self.act(x1) * x2
+        return self.fc2(x)
+
+
+class ProjectionMlp(nn.Module):
+    """Projection MLP for input/output transformations with LayerNorm."""
+
+    def __init__(
+        self,
+        in_features: int,
+        hidden_features: int,
+        out_features: int,
+        bias: bool = True,
+    ) -> None:
+        super().__init__()
+        self.fc1 = nn.Linear(in_features, hidden_features, bias=bias)
+        self.act = nn.SiLU()
+        self.fc2 = nn.Linear(hidden_features, out_features, bias=bias)
+        self.norm = nn.LayerNorm(out_features)
+
+    def forward(self, x: Tensor) -> Tensor:
+        x = self.fc1(x)
+        x = self.act(x)
+        x = self.fc2(x)
+        return self.norm(x)
+
+
+class Attention(nn.Module):
+    """Multi-head attention with ALiBi spatial bias for TICON."""
+
+    def __init__(
+        self,
+        dim: int,
+        num_heads: int,
+        qkv_bias: bool = True,
+        proj_bias: bool = True,
+        context_dim: int | None = None,
+    ) -> None:
+        super().__init__()
+        self.num_heads = num_heads
+        self.head_dim = dim // num_heads
+        context_dim = context_dim or dim
+
+        self.q_proj = nn.Linear(dim, dim, bias=qkv_bias)
+        self.k_proj = nn.Linear(context_dim, dim, bias=qkv_bias)
+        self.v_proj = nn.Linear(context_dim, dim, bias=qkv_bias)
+        self.proj = nn.Linear(dim, dim, bias=proj_bias)
+
+        # ALiBi slopes (registered as buffer for proper device handling)
+        slopes = torch.tensor(get_slopes(num_heads), dtype=torch.float32)
+        self.register_buffer("slopes", slopes[None, :, None, None])
+
+    def forward(
+        self,
+        x: Float[Tensor, "b n_q d"],
+        coords: Float[Tensor, "b n_q 2"],
+        context: Float[Tensor, "b n_k d_k"] | None = None,
+        context_coords: Float[Tensor, "b n_k 2"] | None = None,
+    ) -> Float[Tensor, "b n_q d"]:
+        if context is None:
+            context = x
+            context_coords = coords
+
+        b, n_q, d = x.shape
+        n_k = context.shape[1]
+        h = self.num_heads
+
+        # Project queries, keys, values
+        q = self.q_proj(x).reshape(b, n_q, h, d // h).transpose(1, 2)
+        k = self.k_proj(context).reshape(b, n_k, h, d // h).transpose(1, 2)
+        v = self.v_proj(context).reshape(b, n_k, h, d // h).transpose(1, 2)
+
+        # Validate coordinates are available
+        if coords is None or context_coords is None:
+            raise ValueError(
+                "Coordinates must be provided for spatial attention with ALiBi bias"
+            )
+        # Compute spatial distances for ALiBi
+        coords_exp = coords.unsqueeze(2).expand(-1, -1, n_k, -1)
+        ctx_coords_exp = context_coords.unsqueeze(1).expand(-1, n_q, -1, -1)
+        euclid_dist = torch.sqrt(torch.sum((coords_exp - ctx_coords_exp) ** 2, dim=-1))
+
+        # Apply ALiBi bias
+        attn_bias = -self.slopes * euclid_dist[:, None, :, :]
+
+        # Attention with ALiBi
+        x = scaled_dot_product_attention_alibi(
+            q,
+            k,
+            v,
+            attn_bias=attn_bias,
+            training=self.training,
+        )
+
+        x = x.transpose(1, 2).reshape(b, n_q, d)
+        return self.proj(x)
+
+
+class ResidualBlock(nn.Module):
+    """Residual connection with optional layer scale and stochastic depth."""
+
+    def __init__(
+        self,
+        drop_prob: float,
+        norm: nn.Module,
+        fn: nn.Module,
+        gamma: nn.Parameter | None,
+    ):
+        super().__init__()
+        self.norm = norm
+        self.fn = fn
+        self.keep_prob = 1 - drop_prob
+        self.gamma = gamma
+
+    def forward(self, x: Tensor, **kwargs) -> Tensor:
+        fn_out = self.fn(self.norm(x), **kwargs)
+
+        if self.gamma is not None:
+            fn_out = self.gamma * fn_out
+
+        if self.keep_prob == 1.0 or not self.training:
+            return x + fn_out
+
+        # Stochastic depth
+        mask = fn_out.new_empty(x.shape[0]).bernoulli_(self.keep_prob)[:, None, None]
+        return x + fn_out * mask / self.keep_prob
+
+
+class Block(nn.Module):
+    """Transformer block with attention and MLP."""
+
+    def __init__(
+        self,
+        dim: int,
+        drop_path: float,
+        norm_layer: Callable[[int], nn.Module],
+        context_dim: int | None,
+        layer_scale: bool = True,
+        attn_kwargs: Mapping = {},
+    ) -> None:
+        super().__init__()
+
+        gamma1 = nn.Parameter(torch.ones(dim)) if layer_scale else None
+        gamma2 = nn.Parameter(torch.ones(dim)) if layer_scale else None
+
+        self.residual1 = ResidualBlock(
+            drop_path,
+            norm_layer(dim),
+            Attention(dim, context_dim=context_dim, **attn_kwargs),
+            gamma1,
+        )
+        self.residual2 = ResidualBlock(
+            drop_path,
+            norm_layer(dim),
+            Mlp(in_features=dim),
+            gamma2,
+        )
+
+    def forward(
+        self,
+        x: Tensor,
+        coords: Tensor,
+        context: Tensor | None = None,
+        context_coords: Tensor | None = None,
+    ) -> Tensor:
+        x = self.residual1(
+            x,
+            context=context,
+            coords=coords,
+            context_coords=context_coords,
+        )
+        x = self.residual2(x)
+        return x
+
+
+class Transformer(nn.Module):
+    """Transformer encoder/decoder stack for TICON."""
+
+    def __init__(
+        self,
+        embed_dim: int,
+        norm_layer: Callable[[int], nn.Module],
+        depth: int,
+        drop_path_rate: float,
+        context_dim: int | None = None,
+        block_kwargs: Mapping[str, Any] = {},
+    ):
+        super().__init__()
+        self.embed_dim = embed_dim
+        self.n_blocks = depth
+
+        self.blocks = nn.ModuleList(
+            [
+                Block(
+                    dim=embed_dim,
+                    drop_path=drop_path_rate,
+                    norm_layer=norm_layer,
+                    context_dim=context_dim,
+                    **block_kwargs,
+                )
+                for _ in range(depth)
+            ]
+        )
+
+    def forward(
+        self,
+        x: Tensor,
+        coords: Tensor,
+        return_layers: set[int],
+        contexts: list[Tensor] | None = None,
+        context_coords: Tensor | None = None,
+    ) -> dict[int, Tensor]:
+        outputs = {}
+        if 0 in return_layers:
+            outputs[0] = x
+
+        for blk_idx, blk in enumerate(self.blocks):
+            context = contexts[blk_idx] if contexts is not None else None
+            x = blk(
+                x,
+                coords=coords,
+                context=context,
+                context_coords=context_coords,
+            )
+            if blk_idx + 1 in return_layers:
+                outputs[blk_idx + 1] = x
+
+        return outputs
+
+
+# =============================================================================
+# TICON Backbone
+# =============================================================================
+
+
+class TiconBackbone(nn.Module):
+    """
+    TICON Encoder-Decoder backbone.
+
+    This is the core TICON model that contextualizes tile embeddings
+    using spatial attention with ALiBi positional bias.
+    """
+
+    def __init__(
+        self,
+        in_dims: list[int],
+        tile_encoder_keys: list[str],
+        transformers_kwargs: Mapping[str, Any],
+        encoder_kwargs: Mapping[str, Any],
+        decoder_kwargs: Mapping[str, Any] = {},
+        norm_layer_type: str = "LayerNorm",
+        norm_layer_kwargs: Mapping[str, Any] = {"eps": 1e-5},
+        final_norm_kwargs: Mapping[str, Any] = {"elementwise_affine": True},
+        out_layer: int = -1,
+        num_decoders: int = 0,
+        decoder_out_dims: list[int] = [],
+        **kwargs,  # Ignore extra kwargs like patch_size
+    ):
+        super().__init__()
+
+        norm_layer: Callable[[int], nn.Module] = partial(
+            getattr(nn, norm_layer_type), **norm_layer_kwargs
+        )
+
+        self.encoder = Transformer(
+            **transformers_kwargs,
+            **encoder_kwargs,
+            norm_layer=norm_layer,
+        )
+
+        self.tile_encoder_keys = tile_encoder_keys
+        self.embed_dim = self.encoder.embed_dim
+        self.out_layer = out_layer % (len(self.encoder.blocks) + 1)
+        self.enc_norm = norm_layer(self.embed_dim, **final_norm_kwargs)
+
+        # Input projections for each tile encoder
+        self.input_proj_dict = nn.ModuleDict(
+            {
+                f"input_proj_{key}": ProjectionMlp(
+                    in_features=in_dims[i],
+                    hidden_features=self.embed_dim,
+                    out_features=self.embed_dim,
+                )
+                for i, key in enumerate(tile_encoder_keys)
+            }
+        )
+
+    def init_weights(self) -> "TiconBackbone":
+        """Initialize model weights."""
+        self.apply(_init_weights)
+        return self
+
+    def forward(
+        self,
+        x: Float[Tensor, "b n d"],
+        relative_coords: Float[Tensor, "b n 2"],
+        tile_encoder_key: str,
+    ) -> Float[Tensor, "b n d"]:
+        """
+        Forward pass through TICON encoder.
+
+        Args:
+            x:  Tile embeddings [B, N, D]
+            relative_coords:  Tile coordinates [B, N, 2]
+            tile_encoder_key:  Which input projection to use
+
+        Returns:
+            Contextualized embeddings [B, N, embed_dim]
+        """
+        # Project input to TICON embedding dimension
+        x = self.input_proj_dict[f"input_proj_{tile_encoder_key}"](x)
+
+        # Run through transformer encoder
+        encoder_outputs = self.encoder(
+            x,
+            coords=relative_coords,
+            return_layers={self.out_layer},
+        )
+
+        # Apply final normalization
+        return self.enc_norm(encoder_outputs[self.out_layer])
+
+
+def _init_weights(m: nn.Module) -> None:
+    """Initialize model weights following JAX ViT convention."""
+    if isinstance(m, nn.Linear):
+        nn.init.xavier_uniform_(m.weight)
+        if m.bias is not None:
+            nn.init.constant_(m.bias, 0)
+    elif isinstance(m, nn.LayerNorm) and m.elementwise_affine:
+        nn.init.constant_(m.weight, 1.0)
+        if m.bias is not None:
+            nn.init.constant_(m.bias, 0)
+
+
+# =============================================================================
+# Model Loading
+# =============================================================================
+
+
+def load_ticon_backbone(
+    device: DeviceLikeType = "cuda",
+    model_cfg: dict | None = None,
+) -> TiconBackbone:
+    """
+    Load TICON backbone with pretrained weights from HuggingFace.
+
+    Args:
+        device: Device to load model on
+        model_cfg: Optional custom model configuration
+
+    Returns:
+        TiconBackbone model in eval mode
+    """
+    model_cfg = TICON_MODEL_CFG if model_cfg is None else model_cfg
+
+    # Download checkpoint from HuggingFace
+    ckpt_path = hf_hub_download(
+        repo_id="varunb/TICON",
+        filename="backbone/checkpoint.pth",
+        repo_type="model",
+    )
+
+    # Create model on meta device (no memory allocation)
+    with torch.device("meta"):
+        model = TiconBackbone(**model_cfg)
+
+    # Move to target device and initialize weights
+    model.to_empty(device=device)
+    model.init_weights()
+
+    # Load pretrained weights
+    state_dict = torch.load(ckpt_path, map_location="cpu", weights_only=True)
+    state_dict = {
+        k.removeprefix("backbone."): v
+        for k, v in state_dict.items()
+        if k.startswith("backbone.")
+    }
+
+    model.load_state_dict(state_dict, strict=False)
+    model.eval()
+
+    return model
+
+
+# =============================================================================
+# Public API
+# =============================================================================
+
+__all__ = [
+    # Configuration
+    "TILE_EXTRACTOR_TO_TICON",
+    "TICON_MODEL_CFG",
+    # Utility functions
+    "get_ticon_key",
+    "validate_features_for_ticon",
+    "get_supported_extractors",
+    # Model components
+    "TiconBackbone",
+    "load_ticon_backbone",
+]

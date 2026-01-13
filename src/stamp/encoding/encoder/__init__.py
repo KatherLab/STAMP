@@ -133,7 +133,7 @@ class Encoder(ABC):
             for _, row in group.iterrows():
                 slide_filename = row[filename_label]
                 h5_path = os.path.join(feat_dir, slide_filename)
-                feats, _ = self._validate_and_read_features(h5_path)
+                feats, coords = self._validate_and_read_features(h5_path)
                 feats_list.append(feats)
 
             if not feats_list:
@@ -149,7 +149,7 @@ class Encoder(ABC):
 
     @abstractmethod
     def _generate_slide_embedding(
-        self, feats: torch.Tensor, device, **kwargs
+        self, feats: torch.Tensor, device, coords, **kwargs
     ) -> np.ndarray:
         """Generate slide embedding. Must be implemented by subclasses."""
         pass
@@ -159,6 +159,7 @@ class Encoder(ABC):
         self,
         feats_list: list,
         device,
+        coords_list: list,
         **kwargs,
     ) -> np.ndarray:
         """Generate patient embedding. Must be implemented by subclasses."""

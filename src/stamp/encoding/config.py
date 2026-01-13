@@ -14,6 +14,7 @@ class EncoderName(StrEnum):
     GIGAPATH = "gigapath"
     MADELEINE = "madeleine"
     PRISM = "prism"
+    TICON = "ticon"
 
 
 class SlideEncodingConfig(BaseModel, arbitrary_types_allowed=True):
