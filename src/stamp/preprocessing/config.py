@@ -39,6 +39,13 @@ class PreprocessingConfig(BaseModel, arbitrary_types_allowed=True):
     wsi_list: Path | None = Field(
         default=None, description="Txt, Excel or CSV to read data filename from"
     )
+    mpp_list: Path | None = Field(
+        default=None,
+        description=(
+            "Optional per-slide MPP list. "
+            "Only used if MPP extraction from slide metadata fails, as a last resort."
+        ),
+    )
     cache_dir: Path | None = None
     cache_tiles_ext: ImageExtension = "jpg"
     tile_size_um: Microns = Microns(256.0)

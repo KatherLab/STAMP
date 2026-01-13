@@ -38,9 +38,15 @@ preprocessing:
   # Used to distinguish features extracted with different code versions.
   #generate_hash: True
 
-  # A list (.txt, .xlsx or .csv) specifying filenames to preprocess 
+  # A list (.txt, .xlsx or .csv) specifying filenames (without ending) to preprocess 
   # instead of processing all data in the directory.
-  #slide_list: "list.csv"
+  wsi_list: "path/to/wsi_list.txt"
+
+  # Optional per-slide MPP override list (.txt, .xlsx or .csv).
+  # Each row: path/to/filename.suffix, mpp_x.
+  # If provided, this value is used as the slide's MPP (typically as fallback
+  # if MPP extraction from slide metadata fails).
+  mpp_list: "path/to/mpp_list.txt"
 
 crossval:
   output_dir: "/path/to/save/files/to"
