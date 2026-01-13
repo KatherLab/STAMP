@@ -1,23 +1,24 @@
 # STAMP MCP Server
 
-A FastMCP-based Model Context Protocol server wrapping [STAMP](https://github.com/KatherLab/STAMP)’s CLI, enabling seamless integration of STAMP preprocessing, training, encoding, evaluation, and inference into LLM-based pipelines.
+A FastMCP-based Model Context Protocol server wrapping [STAMP](https://github.com/KatherLab/STAMP)'s tools, enabling seamless integration of STAMP preprocessing, training, encoding, evaluation, and inference into LLM-based pipelines.
 
 ## Overview
 
 This server lets LLM agents invoke STAMP tools via structured calls. It exposes the following tools:
 
-- `preprocess_stamp(...)`: tile & extract WSI features  
-- `train_stamp(...)`: train weakly supervised models  
-- `crossval_stamp(...)`: k-fold cross‑validation  
-- `deploy_stamp(...)`: inference on held‑out data
-- `encode_slides_stamp(...)`: slide-level feature encoding  
-- `encode_patients_stamp(...)`: patient-level feature encoding
-- `heatmaps_stamp(...)`: model-based heatmap visualization  
-- `statistics_stamp(...)`: compute classification metrics  
-- `read_file(...)` & `list_files(...)`: safe disk access  
-- `check_available_devices()`: query Torch/Platform device availability  
+- `preprocess_stamp()`: tile & extract WSI features  
+- `train_stamp()`: train weakly supervised models  
+- `crossval_stamp()`: k-fold cross‑validation  
+- `deploy_stamp()`: inference on held‑out data
+- `encode_slides_stamp()`: slide-level feature encoding  
+- `encode_patients_stamp()`: patient-level feature encoding
+- `heatmaps_stamp()`: model-based heatmap visualization  
+- `statistics_stamp()`: compute classification metrics  
+- `read_file()` & `list_files()`: safe disk access  
+- `check_available_devices()`: query Torch/Platform device availability
+- `analyze_csv()` & `list_column_values`: useful for clinical and slide tables
 
-Each tool serializes config into YAML, launches `stamp <mode>`, streams logs back, and returns stdout/stderr.
+Each tool serializes config into YAML and directly calls STAMP's internal `_run_cli()` function, streaming logs back in real-time and returning execution results.
 
 ## Installation
 To run the MCP server is as simple as intalling STAMP as it is explained in the main README.md file, but adding `--extra mcp` to the command. For a GPU repository installation it would be like this:

@@ -9,15 +9,21 @@ from stamp.types import SlideMPP
 class HeatmapConfig(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    output_dir: Path
+    output_dir: Path = Field(description="Directory to save heatmap outputs")
 
-    feature_dir: Path
-    wsi_dir: Path
-    checkpoint_path: Path
+    feature_dir: Path = Field(description="Directory containing extracted features")
+    wsi_dir: Path = Field(description="Directory containing whole slide images")
+    checkpoint_path: Path = Field(description="Path to model checkpoint file")
 
-    slide_paths: list[Path] | None = None
+    slide_paths: list[Path] | None = Field(
+        default=None,
+        description="Specific slide paths to process. If None, processes all slides in wsi_dir",
+    )
 
-    device: str = "cuda" if torch.cuda.is_available() else "cpu"
+    device: str = Field(
+        default_factory=lambda: "cuda" if torch.cuda.is_available() else "cpu",
+        description="Device to use for computation",
+    )
 
     opacity: float = Field(
         default=0.6,
@@ -26,8 +32,19 @@ class HeatmapConfig(BaseModel):
         le=1,
     )
 
-    topk: int = 0
-    bottomk: int = 0
+    topk: int = Field(
+        default=0,
+        description="Number of top patches to highlight. 0 means no highlighting.",
+        ge=0,
+    )
 
-    default_slide_mpp: SlideMPP | None = None
-    """MPP of the slide to use if none can be inferred from the WSI"""
+    bottomk: int = Field(
+        default=0,
+        description="Number of bottom patches to highlight. 0 means no highlighting.",
+        ge=0,
+    )
+
+    default_slide_mpp: SlideMPP | None = Field(
+        default=None,
+        description="MPP of the slide to use if none can be inferred from the WSI",
+    )
