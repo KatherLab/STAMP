@@ -206,12 +206,10 @@ class Encoder(ABC):
             try:
                 f["feats"] = feats
                 f["coords"] = kwargs.get("coords", np.array([]))
-                # wichtig für get_coords()
                 if "tile_size_um" in kwargs and kwargs["tile_size_um"] is not None:
                     f.attrs["tile_size_um"] = float(kwargs["tile_size_um"])
                 if "tile_size_px" in kwargs and kwargs["tile_size_px"] is not None:
                     f.attrs["tile_size_px"] = int(kwargs["tile_size_px"])
-                f.attrs["unit"] = kwargs.get("unit", "um")
                 f.attrs["version"] = stamp.__version__
                 f.attrs["encoder"] = str(self.identifier)
                 f.attrs["precision"] = str(self.precision)
