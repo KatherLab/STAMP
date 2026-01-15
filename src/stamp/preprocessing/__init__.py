@@ -122,6 +122,7 @@ def extract_(
     cache_dir: Path | None,
     cache_tiles_ext: ImageExtension,
     extractor: ExtractorName | Extractor,
+    tile_extractor: ExtractorName,
     tile_size_px: TilePixels,
     tile_size_um: Microns,
     max_workers: int,
@@ -222,6 +223,11 @@ def extract_(
 
             extractor = plip()
 
+        case ExtractorName.TICON:
+            from stamp.preprocessing.extractor.ticon import ticon
+
+            extractor = ticon(tile_extractor=tile_extractor)
+
         case ExtractorName.EMPTY:
             from stamp.preprocessing.extractor.empty import empty
 
@@ -238,7 +244,8 @@ def extract_(
     code_hash = get_processing_code_hash(Path(__file__))[:8]
 
     extractor_id = extractor.identifier
-
+    if extractor_id == ExtractorName.TICON and tile_extractor is not None:
+        extractor_id = f"{extractor_id}-{tile_extractor}"
     _logger.info(f"Using extractor {extractor.identifier}")
 
     if cache_dir:
@@ -330,6 +337,8 @@ def extract_(
 
                 h5_fp.attrs["stamp_version"] = stamp.__version__
                 h5_fp.attrs["extractor"] = str(extractor.identifier)
+                if tile_extractor is not None:
+                    h5_fp.attrs["tile_extractor"] = str(tile_extractor)
                 h5_fp.attrs["unit"] = "um"
                 h5_fp.attrs["tile_size_um"] = tile_size_um  # changed in v2.1.0
                 h5_fp.attrs["tile_size_px"] = tile_size_px

@@ -146,7 +146,7 @@ class TICON(nn.Module):
 
     def __init__(
         self,
-        tile_extractor: ExtractorName = ExtractorName.H_OPTIMUS_1,
+        tile_extractor: ExtractorName,
         device: str = "cuda",
     ):
         super().__init__()
@@ -221,13 +221,9 @@ class TICON(nn.Module):
         return out.squeeze(1)
 
 
-def ticon_iso(
-    tile_extractor: ExtractorName = ExtractorName.H_OPTIMUS_1,
-    device: str = "cuda",
-) -> Extractor[TICON]:
+def ticon(tile_extractor: ExtractorName) -> Extractor[TICON]:
     """Create TICON Isolated Mode extractor."""
-    model = TICON(tile_extractor=tile_extractor, device=device)
-
+    model = TICON(tile_extractor=tile_extractor)
     return Extractor(
         model=model,
         transform=model.get_transform(),
