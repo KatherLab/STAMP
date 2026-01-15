@@ -144,7 +144,7 @@ class Eagle(Encoder):
         for tile_feats_filename in (progress := tqdm(os.listdir(feat_dir))):
             h5_ctp = os.path.join(feat_dir, tile_feats_filename)
             h5_vir2 = os.path.join(agg_feat_dir, tile_feats_filename)
-            slide_name: str = Path(tile_feats_filename).stem
+            slide_name: str = Path(tile_feats_filename).name
             progress.set_description(slide_name)
 
             # skip patient in case feature file already exists
