@@ -255,6 +255,7 @@ class Eagle(Encoder):
                 output_path=output_path, feats=patient_embedding, feat_type="patient"
             )
 
+
 def _align_vir2_to_ctp_by_coords(
     ref_coords_um: np.ndarray,
     other_coords_um: np.ndarray,
