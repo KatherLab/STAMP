@@ -4,7 +4,7 @@ preprocessing:
   # Extractor to use for feature extractor.  Possible options are "ctranspath",
   # "uni", "conch", "chief-ctranspath", "conch1_5", "uni2", "dino-bloom",
   # "gigapath", "h-optimus-0", "h-optimus-1", "virchow2", "virchow", 
-  # "virchow-full", "musk", "mstar", "plip"
+  # "virchow-full", "musk", "mstar", "plip", "ticon"
   # Some of them require requesting access to the respective authors beforehand.
   extractor: "chief-ctranspath"
 
@@ -12,6 +12,9 @@ preprocessing:
   device: "cuda"
 
   # Optional settings:
+  # if "ticon" is selected, specify model to enhance
+  # e.g. "h-optimus-1, "virchow2","conch1_5", "uni2", "gigapath" 
+  tile_extractor: "h-optimus-1"
 
   # Having a cache dir will speed up extracting features multiple times,
   # e.g. with different feature extractors.  Optional.
@@ -249,7 +252,7 @@ heatmaps:
 
 slide_encoding:
   # Encoder to use for slide encoding. Possible options are "cobra",
-  # "eagle", "titan", "gigapath", "chief", "prism", "madeleine".
+  # "eagle", "titan", "gigapath", "chief", "prism", "madeleine", "ticon".
   encoder: "chief"
   
   # Directory to save the output files.
