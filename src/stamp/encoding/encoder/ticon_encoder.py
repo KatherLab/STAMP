@@ -15,6 +15,7 @@ Adapted from:
       url={https://arxiv.org/abs/2512.21331},
 }
 """
+
 import logging
 import math
 import os
@@ -755,4 +756,3 @@ class TiconEncoder(Encoder):
                 else None,
                 unit="um",
             )
-

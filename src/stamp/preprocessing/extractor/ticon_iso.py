@@ -139,9 +139,11 @@ def _create_tile_encoder(
             f"Supported:  {list(TILE_EXTRACTOR_TO_TICON.keys())}"
         )
 
+
 ### TICON Isolated Mode Extractor ###
 class TICON(nn.Module):
     """TICON in Isolated Mode - processes each tile independently."""
+
     def __init__(
         self,
         tile_extractor: ExtractorName = ExtractorName.H_OPTIMUS_1,
