@@ -72,7 +72,7 @@ class Eagle(Encoder):
                     ref_coords_um=coords.coords_um,
                     other_coords_um=agg_coords.coords_um,
                     other_feats=agg_feats,
-                    decimals=4,  # tune if needed
+                    decimals=5,
                 )
                 agg_coords.coords_um = aligned_agg_coords  # optional, for debugging
             except ValueError as e:
@@ -160,7 +160,7 @@ class Eagle(Encoder):
         for tile_feats_filename in (progress := tqdm(os.listdir(feat_dir))):
             h5_ctp = os.path.join(feat_dir, tile_feats_filename)
             h5_vir2 = os.path.join(agg_feat_dir, tile_feats_filename)
-            slide_name: str = Path(tile_feats_filename).stem
+            slide_name: str = Path(tile_feats_filename).name
             progress.set_description(slide_name)
 
             # skip patient in case feature file already exists
@@ -259,7 +259,7 @@ def _align_vir2_to_ctp_by_coords(
     ref_coords_um: np.ndarray,
     other_coords_um: np.ndarray,
     other_feats: torch.Tensor,
-    decimals: int = 4,
+    decimals: int = 5,
 ) -> tuple[torch.Tensor, np.ndarray]:
     """Align vir2 features to ctp features based on coordinates."""
     ref = np.round(np.asarray(ref_coords_um, dtype=np.float64), decimals)
@@ -282,6 +282,7 @@ def _align_vir2_to_ctp_by_coords(
         raise ValueError(f"virchow2 features contain {unused} extra coords not in ref.")
 
     perm_t = torch.as_tensor(perm, dtype=torch.long, device=other_feats.device)
+    # Align features according to the permutation as well !
     aligned_feats = other_feats.index_select(0, perm_t)
     aligned_coords = other_coords_um[perm]
     print("")
