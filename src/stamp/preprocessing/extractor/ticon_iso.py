@@ -1,14 +1,3 @@
-"""
-TICON Isolated Mode - Single tile processing compatible with Extractor pipeline.
-
-This module provides TICON in "isolated inference" mode, where each tile is
-processed independently through a tile encoder and then through TICON.
-
-While this mode doesn't provide slide-level context, TICON still enhances
-individual tile representations.  For full slide-level contextualization,
-use TiconEncoder after feature extraction.
-"""
-
 from typing import Callable, cast
 
 try:
@@ -26,7 +15,7 @@ except ModuleNotFoundError as e:
         "Please reinstall stamp using `pip install 'stamp[ticon]'`"
     ) from e
 
-from stamp.modeling.models.ticon_architecture import (
+from stamp.encoding.encoder.ticon_encoder import (
     TILE_EXTRACTOR_TO_TICON,
     get_ticon_key,
     load_ticon_backbone,
@@ -49,19 +38,7 @@ class _Virchow2ClsOnly(nn.Module):
 def _create_tile_encoder(
     extractor: ExtractorName,
 ) -> tuple[nn.Module, Callable[[Image.Image], torch.Tensor]]:
-    """
-    Create tile encoder and transform for a given extractor.
-
-    Args:
-        extractor: The tile extractor to create
-
-    Returns:
-        Tuple of (model, transform)
-
-    Raises:
-        ValueError: If extractor is not supported
-        ModuleNotFoundError: If required dependencies are missing
-    """
+    """Create tile encoder model and transform for given extractor."""
     if extractor == ExtractorName.H_OPTIMUS_1:
         model = timm.create_model(
             "hf-hub:bioptimus/H-optimus-1",
@@ -162,34 +139,9 @@ def _create_tile_encoder(
             f"Supported:  {list(TILE_EXTRACTOR_TO_TICON.keys())}"
         )
 
-
+### TICON Isolated Mode Extractor ###
 class TICON(nn.Module):
-    """
-    TICON in Isolated Inference Mode.
-
-    Processes tiles independently:  TileEncoder -> TICON (single tile).
-    Compatible with standard Extractor pipeline.
-
-    Supports all tile encoders that TICON was trained on:
-    - H-Optimus-1 (1536-dim)
-    - GigaPath (1536-dim)
-    - UNI2 (1536-dim)
-    - Virchow2 (1280-dim)
-    - CONCH v1.5 (768-dim)
-
-    Note:
-        This mode doesn't use slide-level context.  For full contextualization,
-        use TiconEncoder after feature extraction.
-
-    Args:
-        tile_extractor: Which tile encoder to use
-        device: Device to run on (default: "cuda")
-
-    Example:
-        >>> model = TICON(tile_extractor=ExtractorName.GIGAPATH)
-        >>> embedding = model(tile_batch)  # [B, 1536]
-    """
-
+    """TICON in Isolated Mode - processes each tile independently."""
     def __init__(
         self,
         tile_extractor: ExtractorName = ExtractorName.H_OPTIMUS_1,
@@ -224,24 +176,17 @@ class TICON(nn.Module):
 
     @torch.inference_mode()
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """
-        Process tiles: TileEncoder -> TICON (isolated mode).
-
-        Args:
-            x: [B, 3, 224, 224] batch of tile images
-
-        Returns:
-            [B, embed_dim] contextualized embeddings
-        """
+        """Forward pass through TICON Isolated Mode."""
         x = x.to(self._device, non_blocking=True)
 
         # Stage 1: Extract tile features
-        with torch.amp.autocast(
-            device_type="cuda",
-            dtype=torch.bfloat16,
-            enabled=(self._device.type == "cuda"),
-        ):
-            emb = self.tile_encoder(x)
+
+        # with torch.amp.autocast(
+        #     device_type="cuda",
+        #     dtype=torch.bfloat16,
+        #     enabled=(self._device.type == "cuda"),
+        # ):
+        emb = self.tile_encoder(x)
 
         # Handle different output shapes (some models return [B, N, D])
         if emb.dim() == 3:
@@ -259,16 +204,16 @@ class TICON(nn.Module):
             dtype=torch.float32,
         )
 
-        with torch.amp.autocast(
-            device_type="cuda",
-            dtype=torch.bfloat16,
-            enabled=(self._device.type == "cuda"),
-        ):
-            out = self.ticon(
-                x=emb.float(),  # TICON expects float32 input
-                relative_coords=coords,
-                tile_encoder_key=self.tile_encoder_key,
-            )
+        # with torch.amp.autocast(
+        #     device_type="cuda",
+        #     dtype=torch.bfloat16,
+        #    enabled=(self._device.type == "cuda"),
+        # ):
+        out = self.ticon(
+            x=emb.float(),  # TICON expects float32 input
+            relative_coords=coords,
+            tile_encoder_key=self.tile_encoder_key,
+        )
 
         # Remove sequence dimension: [B, 1, D] -> [B, D]
         return out.squeeze(1)
@@ -278,25 +223,7 @@ def ticon_iso(
     tile_extractor: ExtractorName = ExtractorName.H_OPTIMUS_1,
     device: str = "cuda",
 ) -> Extractor[TICON]:
-    """
-    Create TICON in Isolated Mode (Extractor-compatible).
-
-    This mode processes each tile independently through both the tile encoder
-    and TICON. While it doesn't provide slide-level context, TICON still
-    enhances individual tile representations.
-
-    Args:
-        tile_extractor:  Which tile encoder to use.  Supported:
-            - ExtractorName.H_OPTIMUS_1 (default)
-            - ExtractorName.GIGAPATH
-            - ExtractorName.UNI2
-            - ExtractorName.VIRCHOW2
-            - ExtractorName.CONCH1_5
-        device: CUDA device
-
-    Returns:
-        Extractor compatible with standard pipeline
-    """
+    """Create TICON Isolated Mode extractor."""
     model = TICON(tile_extractor=tile_extractor, device=device)
 
     return Extractor(

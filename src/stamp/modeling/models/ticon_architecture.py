@@ -31,10 +31,6 @@ from torch.nn.attention import SDPBackend, sdpa_kernel
 from stamp.preprocessing.config import ExtractorName
 from stamp.types import DeviceLikeType
 
-# =============================================================================
-# Configuration
-# =============================================================================
-
 # Mapping:  ExtractorName -> (ticon_key, embedding_dim)
 TILE_EXTRACTOR_TO_TICON: dict[ExtractorName, tuple[ExtractorName, int]] = {
     ExtractorName.CONCH1_5: (ExtractorName.CONCH1_5, 768),
@@ -68,24 +64,8 @@ TICON_MODEL_CFG: dict[str, Any] = {
 }
 
 
-# =============================================================================
-# Utility Functions
-# =============================================================================
-
-
 def get_ticon_key(extractor: ExtractorName) -> tuple[ExtractorName, int]:
-    """
-    Get TICON key and expected embedding dimension for an extractor.
-
-    Args:
-        extractor:  The tile extractor name
-
-    Returns:
-        Tuple of (ticon_key, embedding_dim)
-
-    Raises:
-        ValueError:  If extractor is not supported by TICON
-    """
+    """Get TICON key and embedding dimension for a given tile extractor."""
     if extractor not in TILE_EXTRACTOR_TO_TICON:
         raise ValueError(
             f"No TICON mapping for extractor {extractor}. "
@@ -94,18 +74,8 @@ def get_ticon_key(extractor: ExtractorName) -> tuple[ExtractorName, int]:
     return TILE_EXTRACTOR_TO_TICON[extractor]
 
 
-# =============================================================================
-# ALiBi Helper Functions
-# =============================================================================
-
-
 def get_slopes(n: int) -> list[float]:
-    """
-    Calculate ALiBi slopes for attention heads.
-
-    ALiBi (Attention with Linear Biases) uses these slopes to create
-    position-dependent attention biases based on spatial distances.
-    """
+    """Get ALiBi slopes for n attention heads."""
 
     def get_slopes_power_of_2(n: int) -> list[float]:
         start = 2 ** (-(2 ** -(math.log2(n) - 3)))
@@ -130,20 +100,6 @@ def scaled_dot_product_attention_alibi(
     dropout_p: float = 0.0,
     training: bool = False,
 ) -> Tensor:
-    """
-    Scaled dot-product attention with ALiBi positional bias.
-
-    Args:
-        query: Query tensor [B, H, N_q, D]
-        key: Key tensor [B, H, N_k, D]
-        value: Value tensor [B, H, N_k, D]
-        attn_bias: ALiBi bias tensor [B, H, N_q, N_k]
-        dropout_p: Dropout probability
-        training: Whether in training mode
-
-    Returns:
-        Attention output [B, H, N_q, D]
-    """
     # try Flash Attention with ALiBi first
     try:
         with sdpa_kernel([SDPBackend.FLASH_ATTENTION, SDPBackend.EFFICIENT_ATTENTION]):
@@ -168,11 +124,6 @@ def scaled_dot_product_attention_alibi(
         attn_weight = torch.dropout(attn_weight, dropout_p, train=training)
 
     return attn_weight @ value
-
-
-# =============================================================================
-# Model Components
-# =============================================================================
 
 
 class Mlp(nn.Module):
@@ -426,11 +377,6 @@ class Transformer(nn.Module):
         return outputs
 
 
-# =============================================================================
-# TICON Backbone
-# =============================================================================
-
-
 class TiconBackbone(nn.Module):
     """
     TICON Encoder-Decoder backbone.
@@ -531,25 +477,11 @@ def _init_weights(m: nn.Module) -> None:
             nn.init.constant_(m.bias, 0)
 
 
-# =============================================================================
-# Model Loading
-# =============================================================================
-
-
 def load_ticon_backbone(
     device: DeviceLikeType = "cuda",
     model_cfg: dict | None = None,
 ) -> TiconBackbone:
-    """
-    Load TICON backbone with pretrained weights from HuggingFace.
-
-    Args:
-        device: Device to load model on
-        model_cfg: Optional custom model configuration
-
-    Returns:
-        TiconBackbone model in eval mode
-    """
+    """Load pretrained TICON backbone from HuggingFace."""
     model_cfg = TICON_MODEL_CFG if model_cfg is None else model_cfg
 
     # Download checkpoint from HuggingFace
