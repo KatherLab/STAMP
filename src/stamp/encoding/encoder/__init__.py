@@ -79,11 +79,12 @@ class Encoder(ABC):
                 tqdm.write(s=str(e))
                 continue
 
-            slide_embedding = self._generate_slide_embedding(
-                feats, device, coords=coords
-            )
+            slide_embedding = self._generate_slide_embedding(feats, device, **kwargs)
             self._save_features_(
-                output_path=output_path, feats=slide_embedding, feat_type="slide"
+                output_path=output_path,
+                feats=slide_embedding,
+                feat_type="slide",
+                **kwargs,
             )
 
     def encode_patients_(
@@ -149,7 +150,10 @@ class Encoder(ABC):
 
     @abstractmethod
     def _generate_slide_embedding(
-        self, feats: torch.Tensor, device, coords, **kwargs
+        self,
+        feats: torch.Tensor,
+        device,
+        **kwargs,
     ) -> np.ndarray:
         """Generate slide embedding. Must be implemented by subclasses."""
         pass
@@ -159,7 +163,6 @@ class Encoder(ABC):
         self,
         feats_list: list,
         device,
-        coords_list: list,
         **kwargs,
     ) -> np.ndarray:
         """Generate patient embedding. Must be implemented by subclasses."""
@@ -194,7 +197,7 @@ class Encoder(ABC):
             return feats, coords, _resolve_extractor_name(extractor)
 
     def _save_features_(
-        self, output_path: Path, feats: np.ndarray, feat_type: str
+        self, output_path: Path, feats: np.ndarray, feat_type: str, **kwargs
     ) -> None:
         with (
             NamedTemporaryFile(dir=output_path.parent, delete=False) as tmp_h5_file,
@@ -202,6 +205,13 @@ class Encoder(ABC):
         ):
             try:
                 f["feats"] = feats
+                f["coords"] = kwargs.get("coords", np.array([]))
+                # wichtig für get_coords()
+                if "tile_size_um" in kwargs and kwargs["tile_size_um"] is not None:
+                    f.attrs["tile_size_um"] = float(kwargs["tile_size_um"])
+                if "tile_size_px" in kwargs and kwargs["tile_size_px"] is not None:
+                    f.attrs["tile_size_px"] = int(kwargs["tile_size_px"])
+                f.attrs["unit"] = kwargs.get("unit", "um")
                 f.attrs["version"] = stamp.__version__
                 f.attrs["encoder"] = str(self.identifier)
                 f.attrs["precision"] = str(self.precision)

@@ -3,6 +3,7 @@ TICON Model Architecture and Configuration.
 
 Shared between "Isolated" and "Contextualized" modes.
 Contains all model components, configuration, and utility functions.
+Adapted from:
 
 @misc{belagali2025ticonslideleveltilecontextualizer,
       title={TICON: A Slide-Level Tile Contextualizer for Histopathology Representation Learning},
@@ -91,34 +92,6 @@ def get_ticon_key(extractor: ExtractorName) -> tuple[ExtractorName, int]:
             f"Supported: {list(TILE_EXTRACTOR_TO_TICON.keys())}"
         )
     return TILE_EXTRACTOR_TO_TICON[extractor]
-
-
-def validate_features_for_ticon(extractor: ExtractorName, feat_dim: int) -> str:
-    """
-    Validate feature dimensions and return TICON key.
-
-    Args:
-        extractor: The tile extractor that produced the features
-        feat_dim:  The dimension of the features
-
-    Returns:
-        The TICON tile_encoder_key to use
-
-    Raises:
-        ValueError:  If dimensions don't match expected values
-    """
-    key, expected_dim = get_ticon_key(extractor)
-    if feat_dim != expected_dim:
-        raise ValueError(
-            f"Feature dimension {feat_dim} does not match expected "
-            f"{expected_dim} for extractor '{extractor.value}' (TICON key: '{key}')"
-        )
-    return key
-
-
-def get_supported_extractors() -> list[ExtractorName]:
-    """Get list of extractors supported by TICON."""
-    return list(TILE_EXTRACTOR_TO_TICON.keys())
 
 
 # =============================================================================
@@ -606,21 +579,3 @@ def load_ticon_backbone(
     model.eval()
 
     return model
-
-
-# =============================================================================
-# Public API
-# =============================================================================
-
-__all__ = [
-    # Configuration
-    "TILE_EXTRACTOR_TO_TICON",
-    "TICON_MODEL_CFG",
-    # Utility functions
-    "get_ticon_key",
-    "validate_features_for_ticon",
-    "get_supported_extractors",
-    # Model components
-    "TiconBackbone",
-    "load_ticon_backbone",
-]

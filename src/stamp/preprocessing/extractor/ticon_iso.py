@@ -34,10 +34,6 @@ from stamp.modeling.models.ticon_architecture import (
 from stamp.preprocessing.config import ExtractorName
 from stamp.preprocessing.extractor import Extractor
 
-# =============================================================================
-# Tile Encoder Wrappers
-# =============================================================================
-
 
 class _Virchow2ClsOnly(nn.Module):
     """Wrapper for Virchow2 to return only CLS token."""
@@ -48,11 +44,6 @@ class _Virchow2ClsOnly(nn.Module):
 
     def forward(self, batch: torch.Tensor) -> torch.Tensor:
         return self.model(batch)[:, 0]
-
-
-# =============================================================================
-# Tile Encoder Factory
-# =============================================================================
 
 
 def _create_tile_encoder(
@@ -172,11 +163,6 @@ def _create_tile_encoder(
         )
 
 
-# =============================================================================
-# TICON Isolated Model
-# =============================================================================
-
-
 class TICON(nn.Module):
     """
     TICON in Isolated Inference Mode.
@@ -249,7 +235,7 @@ class TICON(nn.Module):
         """
         x = x.to(self._device, non_blocking=True)
 
-        # Stage 1: Extract tile features with autocast
+        # Stage 1: Extract tile features
         with torch.amp.autocast(
             device_type="cuda",
             dtype=torch.bfloat16,
@@ -288,11 +274,6 @@ class TICON(nn.Module):
         return out.squeeze(1)
 
 
-# =============================================================================
-# Factory Function (für extract_ in __init__.py)
-# =============================================================================
-
-
 def ticon_iso(
     tile_extractor: ExtractorName = ExtractorName.H_OPTIMUS_1,
     device: str = "cuda",
@@ -323,13 +304,3 @@ def ticon_iso(
         transform=model.get_transform(),
         identifier=ExtractorName.TICON,
     )
-
-
-# =============================================================================
-# Public API
-# =============================================================================
-
-__all__ = [
-    "TICON",
-    "ticon_iso",
-]

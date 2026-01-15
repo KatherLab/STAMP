@@ -9,28 +9,21 @@ import torch
 from torch import Tensor
 from tqdm import tqdm
 
-try:
-    from torch.amp.autocast_mode import autocast
-except (ImportError, AttributeError):
-    try:
-        from torch.cuda.amp import autocast
-    except ImportError:
-        from torch.amp import autocast  # type: ignore
-
+# try:
+#     from torch.amp.autocast_mode import autocast
+# except (ImportError, AttributeError):
+#     try:
+#         from torch.cuda.amp import autocast
+#     except ImportError:
+#         from torch.amp import autocast  # type: ignore
 from stamp.cache import get_processing_code_hash
 from stamp.encoding.encoder import Encoder, EncoderName
-
-# , _resolve_extractor_name
 from stamp.modeling.data import CoordsInfo
-
-# , get_coords
 from stamp.modeling.models.ticon_architecture import (
     TILE_EXTRACTOR_TO_TICON,
     get_ticon_key,
     load_ticon_backbone,
 )
-
-#    TiconBackbone,
 from stamp.preprocessing.config import ExtractorName
 from stamp.types import DeviceLikeType
 
@@ -38,12 +31,6 @@ _logger = logging.getLogger("stamp")
 
 
 class TiconEncoder(Encoder):
-    """
-    TICON Encoder for slide-level contextualization.
-
-    Inherits from Encoder ABC to reuse existing infrastructure.
-    """
-
     def __init__(
         self,
         device: DeviceLikeType = "cuda",
@@ -61,53 +48,27 @@ class TiconEncoder(Encoder):
         )
 
         self._device = torch.device(device)
-        self._current_extractor = ExtractorName.H_OPTIMUS_1
-
-    def _validate_and_read_features(
-        self,
-        h5_path: str,
-    ) -> tuple[Tensor, CoordsInfo]:
-        """Extended validation returning extractor info."""
-        feats, coords, extractor = self._read_h5(h5_path)
-
-        if extractor not in self.required_extractors:
-            raise ValueError(
-                f"Features must be extracted with one of {self.required_extractors}.  "
-                f"Got: {extractor}"
-            )
-        self._current_extractor = ExtractorName(extractor)
-        return feats, coords
+        self._current_extractor = None
 
     def _prepare_coords(self, coords: CoordsInfo, num_tiles: int) -> Tensor:
         """Prepare coordinates tensor for TICON."""
         if coords is None:
+            print("No coords provided, using zeros.")
             return torch.zeros(
                 1, num_tiles, 2, device=self._device, dtype=torch.float32
             )
-        # if CoordsInfo
+        # CoordsInfo: get relative positions
         if isinstance(coords, CoordsInfo):
-            # coords_data = coords.coords_um
-
+            coords_data = coords.coords_um
             if coords.tile_size_um and coords.tile_size_um > 0:
-                # Umrechnung in Grid-Indizes (Gleitkomma, um relative Position zu erhalten)
+                # converting to grid-indices to get relative positions (is optional only, can be left out)
                 coords_data = coords.coords_um / coords.tile_size_um
             else:
                 coords_data = coords.coords_um
-
-        # Dictionary
-        elif isinstance(coords, dict):
-            if "coords" not in coords:
-                _logger.warning("coords dict missing 'coords' key, using zeros")
-                return torch.zeros(
-                    1, num_tiles, 2, device=self._device, dtype=torch.float32
-                )
-            coords_data = coords["coords"]
-
-        # already tensor or array
         else:
             coords_data = coords
 
-        # convert to tensor
+        # convert CoordsInfo to tensor
         if not isinstance(coords_data, torch.Tensor):
             coords_data = np.array(coords_data)
             coords_tensor = torch.from_numpy(coords_data)
@@ -116,52 +77,83 @@ class TiconEncoder(Encoder):
 
         # adapt dimensions (add batch dim)
         if coords_tensor.dim() == 2:
-            coords_tensor = coords_tensor.unsqueeze(0)
-
+            coords_tensor = coords_tensor.unsqueeze(0)  # [1, N, 2]
+        assert (
+            coords_tensor.shape[1] == num_tiles
+        )  # number of coords-pairs must match number of tiles
         return coords_tensor.to(self._device, dtype=torch.float32)
 
     def _generate_slide_embedding(
         self,
         feats: torch.Tensor,
         device: DeviceLikeType,
-        coords: CoordsInfo,
         **kwargs,
     ) -> np.ndarray:
         """Generate contextualized slide embedding using TICON."""
 
-        extractor = self._current_extractor
+        # get extractor from kwargs
+        extractor = kwargs.get("extractor")
         if extractor is None:
             raise ValueError("extractor must be provided for TICON encoding")
 
-        # Convert string to ExtractorName to be sure
+        # Convert extractor-string to ExtractorName to be sure
         if isinstance(extractor, str):
             extractor = ExtractorName(extractor)
 
         tile_encoder_key, _ = get_ticon_key(extractor)
+        print(f"Using tile extractor: {tile_encoder_key} for ticon")
         if feats.dim() == 2:
-            feats = feats.unsqueeze(0)
-
+            feats = feats.unsqueeze(0)  # add batch dim
         feats = feats.to(self._device, dtype=torch.float32)
 
-        coords_tensor = self._prepare_coords(coords, feats.shape[1])
+        # get coords from kwargs
+        coords_tensor = kwargs.get("coords", None)
+        print(
+            f"Coords tensor shape: {coords_tensor.shape}"
+            if coords_tensor is not None
+            else "No coords tensor provided"
+        )
+        # # check pytorch version for autocast compatibility
+        # is_legacy_autocast = "torch.cuda.amp" in autocast.__module__
 
-        # check pytorch version for autocast compatibility
-        is_legacy_autocast = "torch.cuda.amp" in autocast.__module__
+        # ac_kwargs = {
+        #     "enabled": (self._device.type == "cuda"),
+        #     "dtype": torch.bfloat16,
+        # }
+        # # if its the new version: add device_type
+        # if not is_legacy_autocast:
+        #     ac_kwargs["device_type"] = "cuda"
 
-        ac_kwargs = {
-            "enabled": (self._device.type == "cuda"),
-            "dtype": torch.bfloat16,
-        }
-        # if its the new version: add device_type
-        if not is_legacy_autocast:
-            ac_kwargs["device_type"] = "cuda"
+        # Inference mode only/ without autocast
         with torch.no_grad():
-            with autocast(**ac_kwargs):
+            try:
                 contextualized = self.model(
                     x=feats,
                     relative_coords=coords_tensor,
                     tile_encoder_key=tile_encoder_key,
                 )
+            except RuntimeError as e:
+                _logger.error(
+                    f"RuntimeError during TICON encoding without autocast: {e}. Retrying with autocast."
+                )
+                raise e
+
+            # try:
+            #     with autocast(**ac_kwargs):
+            #         contextualized = self.model(
+            #             x=feats,
+            #             relative_coords=coords_tensor,
+            #             tile_encoder_key=tile_encoder_key,
+            #         )
+            # except RuntimeError as e:
+            #     _logger.error(
+            #         f"RuntimeError during TICON encoding with autocast {ac_kwargs}: {e}. Retrying without autocast."
+            #     )
+            #     contextualized = self.model(
+            #         x=feats,
+            #         relative_coords=coords_tensor,
+            #         tile_encoder_key=tile_encoder_key,
+            #     )
 
         return contextualized.detach().squeeze(0).cpu().numpy()
 
@@ -170,10 +162,8 @@ class TiconEncoder(Encoder):
         self,
         feats_list: list[torch.Tensor],
         device: DeviceLikeType,
-        coords_list: list[CoordsInfo],
         **kwargs,
     ) -> np.ndarray:
-        """Generate patient embedding by contextualizing each slide."""
         contextualized = [
             self._generate_slide_embedding(feats, device, **kwargs)
             for feats in feats_list
@@ -188,7 +178,6 @@ class TiconEncoder(Encoder):
         generate_hash: bool = True,
         **kwargs,
     ) -> None:
-        """Override to pass extractor info to _generate_slide_embedding."""
         if generate_hash:
             encode_dir = f"{self.identifier}-slide-{get_processing_code_hash(Path(__file__))[:8]}"
         else:
@@ -210,30 +199,56 @@ class TiconEncoder(Encoder):
             if output_path.exists():
                 _logger.info(f"Skipping {slide_name}: output exists")
                 continue
-
+            #
+            try:
+                feats, coords = self._validate_and_read_features(h5_path)
+            except ValueError as e:
+                tqdm.write(s=str(e))
+                continue
             try:
                 feats, coords, extractor = self._read_h5(h5_path)
             except ValueError as e:
                 tqdm.write(str(e))
                 continue
+            try:
+                target_extractor = ExtractorName(extractor)  # str → Enum
+            except ValueError:
+                target_extractor = extractor  # Schon Enum
 
-            target_extractor = ExtractorName(extractor)
+            # option to save coords because it is not a classical slide, also set feat_type to tile
+            coords_um_np = coords.coords_um
+            print(
+                f"Coords um shape: {coords_um_np.shape}"
+                if coords is not None
+                else "No coords found"
+            )
+
+            # CoordsInfo -> absolute coords in µm
+            if isinstance(coords_um_np, torch.Tensor):
+                coords_um_np = coords_um_np.detach().cpu().numpy()
+                print(f"Converted coords to numpy array, shape: {coords_um_np.shape}")
+            else:
+                coords_um_np = np.asarray(coords_um_np)
+                print(f"Coords as numpy array, shape: {coords_um_np.shape}")
 
             slide_embedding = self._generate_slide_embedding(
-                feats, device, coords=coords, extractor=target_extractor
+                feats,
+                device,
+                coords=self._prepare_coords(coords, feats.shape[0]),
+                extractor=target_extractor,
             )
 
             self._save_features_(
-                output_path=output_path, feats=slide_embedding, feat_type="slide"
+                output_path=output_path,
+                feats=slide_embedding,
+                feat_type="tile",
+                coords=coords_um_np,
+                tile_size_um=float(coords.tile_size_um)
+                if coords.tile_size_um is not None
+                else None,
+                tile_size_px=int(coords.tile_size_px)
+                if coords.tile_size_px is not None
+                else None,
+                unit="um",
             )
 
-
-def ticon_encoder(
-    device: DeviceLikeType = "cuda",
-    precision: torch.dtype = torch.float32,
-) -> TiconEncoder:
-    """Create a TICON encoder for slide-level contextualization."""
-    return TiconEncoder(device=device, precision=precision)
-
-
-__all__ = ["TiconEncoder", "ticon_encoder"]
