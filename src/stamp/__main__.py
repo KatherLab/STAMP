@@ -86,6 +86,7 @@ def _run_cli(args: argparse.Namespace) -> None:
                 tile_size_um=config.preprocessing.tile_size_um,
                 tile_size_px=config.preprocessing.tile_size_px,
                 extractor=config.preprocessing.extractor,
+                tile_extractor=config.preprocessing.tile_extractor,
                 max_workers=config.preprocessing.max_workers,
                 device=config.preprocessing.device,
                 default_slide_mpp=config.preprocessing.default_slide_mpp,
