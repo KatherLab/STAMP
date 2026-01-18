@@ -218,12 +218,12 @@ class Encoder(ABC):
             _logger.debug(f"saved features to {output_path}")
 
 
-def _resolve_extractorname(raw: str) -> ExtractorName:
+def _resolve_extractor_name(raw: str) -> ExtractorName:
     if not raw:
         raise ValueError("Empty extractor string")
 
     name = str(raw).strip().lower()
-    name = name.replace("", "-")
+    name = name.replace("_", "-")
 
     for e in ExtractorName:
         if name == e.value.lower():
