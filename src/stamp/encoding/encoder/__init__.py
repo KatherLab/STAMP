@@ -218,31 +218,21 @@ class Encoder(ABC):
             _logger.debug(f"saved features to {output_path}")
 
 
-def _resolve_extractor_name(raw: str) -> ExtractorName:
-    """
-    Resolve an extractor string to a valid ExtractorName.
-
-    Handles:
-      - exact matches ('gigapath', 'virchow-full')
-      - versioned strings like 'gigapath-ae23d', 'virchow-full-2025abc'
-    Raises ValueError if the base name is not recognized.
-    """
+def _resolve_extractorname(raw: str) -> ExtractorName:
     if not raw:
         raise ValueError("Empty extractor string")
 
     name = str(raw).strip().lower()
+    name = name.replace("", "-")
 
-    # Exact match
     for e in ExtractorName:
         if name == e.value.lower():
             return e
 
-    # Versioned form: '<enum-value>-something'
     for e in ExtractorName:
         if name.startswith(e.value.lower() + "-"):
             return e
 
-    # Otherwise fail
     raise ValueError(
         f"Unknown extractor '{raw}'. "
         f"Expected one of {[e.value for e in ExtractorName]} "
