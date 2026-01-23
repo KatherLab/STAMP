@@ -1,0 +1,337 @@
+preprocessing:
+  output_dir: "/path/to/save/files/to"
+  wsi_dir: "/path/containing/whole/slide/images/to/extract/features/from"
+  # Extractor to use for feature extractor.  Possible options are "ctranspath",
+  # "uni", "conch", "chief-ctranspath", "conch1_5", "uni2", "dino-bloom",
+  # "gigapath", "h-optimus-0", "h-optimus-1", "virchow2", "virchow", 
+  # "virchow-full", "musk", "mstar", "plip"
+  # Some of them require requesting access to the respective authors beforehand.
+  extractor: "chief-ctranspath"
+
+  # Device to run feature extraction on ("cpu", "cuda", "cuda:0", etc.)
+  device: "cuda"
+
+  # Optional settings:
+
+  # Having a cache dir will speed up extracting features multiple times,
+  # e.g. with different feature extractors.  Optional.
+  #cache_dir: "/path/to/save/cache/files/to"
+
+  # The extension of the tiles to cache. Use "png" for lossless compression,
+  # or "jpg" for lossy compression (requires around x100 less memory, 
+  # but you may encounter reproducibility issues in subsequent runs).
+  #cache_tiles_ext: "jpg"
+
+  # Tiler parameters.  The defaults work well for most domains and feature extractors.
+  #tile_size_um: 256.0
+  #tile_size_px: 224
+
+  # How many workers to use for tile extraction.  Should be less or equal to
+  # the number of cores of your system.
+  #max_workers: 8
+
+  # Tiles with an average brightness of more than this value will be excluded
+  # from feature extraction.
+  #brightness_cutoff: 240
+
+  # Add a hash of the entire preprocessing codebase in the feature folder name.
+  # Used to distinguish features extracted with different code versions.
+  #generate_hash: True
+
+  # A list (.txt, .xlsx or .csv) specifying filenames to preprocess 
+  # instead of processing all data in the directory.
+  #slide_list: "list.csv"
+
+crossval:
+  output_dir: "/path/to/save/files/to"
+
+  # An excel (.xlsx) or CSV (.csv) table containing the clinical information of
+  # patients.  Patients not present in this file will be ignored during training.
+  # Has to contain at least two columns,
+  # one titled with the value of `patient_label` (as defined below)
+  # containing a unique ID for each patient,
+  # and one with the value of `ground_truth_label` (also defined below),
+  # containing the ground truth corresponding to that patient.
+  clini_table: "/path/of/clini.csv"
+
+  # Directory the extracted features are saved in.
+  feature_dir: "/path/your/extracted/features/are/stored/in"
+
+  # A table (.xlsx or .csv) relating every patient to their feature files.
+  # The table must contain at least two columns,
+  # one titled with the value of `patient_label` (as defined below),
+  # containing the patient ID (matching those in the `clini_table`),
+  # and one titled according to `filename_label` (also defined below)
+  # containing the feature file path relative to `feature_dir`.
+  # Patient IDs not present in the clini table
+  # as well as non-existent feature paths
+  # are ignored. NOTE: Don't forget to add the .h5 file extension.
+  slide_table: "/path/of/slide.csv"
+
+  # Task to infer (classification, regression, survival)
+  task: "classification"
+
+  # Name of the column from the clini table to train on.
+  ground_truth_label: "KRAS"
+
+  # For survival (should be status and follow-up days columns in clini table)
+  # status_label: "event"
+  # time_label: "time"
+
+  # Optional settings:
+  patient_label: "PATIENT"
+  filename_label: "FILENAME"
+
+  # The categories occurring in the target label column of the clini table.
+  # If unspecified, they will be inferred from the table itself.
+  #categories: ["mutated", "wild type"]
+
+  # Number of folds to split the data into for cross-validation
+  #n_splits: 5
+
+  # Path to a YAML file with advanced training parameters.
+  #params_path: "path/to/train_params.yaml"
+
+  # Experimental features:
+
+  # Change the precision of features during training
+  #use_vary_precision_transform: true
+
+
+
+training:
+  output_dir: "/path/to/save/files/to"
+
+  # An excel (.xlsx) or CSV (.csv) table containing the clinical information of
+  # patients.  Patients not present in this file will be ignored during training.
+  # Has to contain at least two columns,
+  # one titled with the value of `patient_label` (as defined below)
+  # containing a unique ID for each patient,
+  # and one with the value of `ground_truth_label` (also defined below),
+  # containing the ground truth corresponding to that patient.
+  clini_table: "/path/of/clini.csv"
+
+  # Directory the extracted features are saved in.
+  feature_dir: "/path/your/extracted/features/are/stored/in"
+
+  # A table (.xlsx or .csv) relating every patient to their feature files.
+  # The table must contain at least two columns,
+  # one titled with the value of `patient_label` (as defined below),
+  # containing the patient ID (matching those in the `clini_table`),
+  # and one titled according to `filename_label` (also defined below)
+  # containing the feature file path relative to `feature_dir`.
+  # Patient IDs not present in the clini table
+  # as well as non-existent feature paths
+  # are ignored. NOTE: Don't forget to add the .h5 file extension.
+  slide_table: "/path/of/slide.csv"
+
+  # Task to infer (classification, regression, survival)
+  task: "classification"
+
+  # Name of the column from the clini table to train on.
+  ground_truth_label: "KRAS"
+
+  # For survival (should be status and follow-up days columns in clini table)
+  # status_label: "event"
+  # time_label: "time"
+
+  # Optional settings:
+
+  # The categories occurring in the target label column of the clini table.
+  # If unspecified, they will be inferred from the table itself.
+  #categories: ["mutated", "wild type"]
+
+  # Path to a YAML file with advanced training parameters.
+  #params_path: "path/to/model_params.yaml"
+
+  # Experimental features:
+
+  # Change the precision of features during training
+  #use_vary_precision_transform: true
+
+
+deployment:
+  output_dir: "/path/to/save/files/to"
+
+  # An excel (.xlsx) or CSV (.csv) table containing the clinical information of
+  # patients.  Patients not present in this file will be ignored during training.
+  # Has to contain at least two columns, one titled "PATIENT", containing a patient ID,
+  # and a second column containing the categorical ground truths for that patient.
+  clini_table: "/path/of/clini.csv"
+
+  # Directory the extracted features are saved in.
+  feature_dir: "/path/your/extracted/features/are/stored/in"
+
+  # A table (.xlsx or .csv) relating every patient to their feature files.
+  # The table must contain at least two columns, one titled "PATIENT",
+  # containing the patient ID (matching those in the `clini_table`), and one
+  # called "FILENAME", containing the feature file path relative to `feature_dir`.
+  # Patient IDs not present in the clini table as well as non-existent feature
+  # paths are ignored. NOTE: Don't forget to add the .h5 file extension.
+  slide_table: "/path/of/slide.csv"
+
+  # Name of the column from the clini to compare predictions to.
+  ground_truth_label: "KRAS"
+
+  # For survival (should be status and follow-up days columns in clini table)
+  # status_label: "event"
+  # time_label: "time"
+
+  patient_label: "PATIENT"
+  filename_label: "FILENAME"
+
+  # Path of the trained model to deploy.
+  checkpoint_paths:
+  - "/path/to/model.ckpt"
+  # You can also combine multiple models to get a majority vote from multiple models.
+  # This is especially handy to e.g. combine the models from a cross-validation.
+  #- "/path/to/model2.ckpt"
+  #- "/path/to/model3.ckpt"
+
+
+statistics:
+  output_dir: "/path/to/save/files/to"
+
+  # Task to infer (classification, regression, survival)
+  task: "classification"
+
+  # Name of the target label.
+  ground_truth_label: "KRAS"
+
+  # A lot of the statistics are computed "one-vs-all", i.e. there needs to be
+  # a positive class to calculate the statistics for.
+  true_class: "mutated"
+
+  # For survival (should be status and follow-up days columns in clini table)
+  # status_label: "event"
+  # time_label: "time"
+
+  # The patient predictions to generate the statistics from.
+  # For a single deployment, it could look like this:
+  pred_csvs:
+  - "/path/to/patient-preds.csv"
+
+  # For a cross-validation with five folds, it could look like this:
+  #pred_csvs:
+  #- "/path/to/split-0/patient-preds.csv"
+  #- "/path/to/split-1/patient-preds.csv"
+  #- "/path/to/split-2/patient-preds.csv"
+  #- "/path/to/split-3/patient-preds.csv"
+  #- "/path/to/split-4/patient-preds.csv"
+
+
+heatmaps:
+  output_dir: "/path/to/save/files/to"
+
+  # Directory the extracted features are saved in.
+  feature_dir: "/path/your/extracted/features/are/stored/in"
+
+  wsi_dir: "/path/containing/whole/slide/images/to/extract/features/from"
+
+  # Path of the model to generate the heatmaps with.
+  checkpoint_path: "/path/to/model.ckpt"
+
+  # Overlay plot opacity. A value of 0 means transparent and 1 opaque.
+  #opacity = 0.6
+
+  # Slides to generate the heatmaps for.
+  # The slide paths have to be specified relative to `wsi_dir`.
+  # If not specified, stamp will generate heatmaps for all slides in `wsi_dir`.
+  #slide_paths:
+  #- slide1.svs
+  #- slide2.mrxs
+  
+
+  # The number of top- and bottom-scoring tiles to extract
+  #topk: 5
+  #bottomk: 5
+
+
+slide_encoding:
+  # Encoder to use for slide encoding. Possible options are "cobra",
+  # "eagle", "titan", "gigapath", "chief", "prism", "madeleine".
+  encoder: "chief"
+  
+  # Directory to save the output files.
+  output_dir: "/path/to/save/files/to"
+  
+  # Directory where the extracted features are stored.
+  feat_dir: "/path/your/extracted/features/are/stored/in"
+  
+  # Device to run slide encoding on ("cpu", "cuda", "cuda:0", etc.)
+  device: "cuda"
+
+  # Optional settings:
+  # Directory where the aggregated features are stored. Needed for
+  # some encoders such as eagle (it requires virchow2 features).
+  #agg_feat_dir: "/path/your/aggregated/features/are/stored/in"
+
+  # Add a hash of the entire preprocessing codebase in the feature folder name.
+  #generate_hash: True
+
+
+patient_encoding:
+  # Encoder to use for patient encoding. Possible options are "cobra",
+  # "eagle", "titan", "gigapath", "chief", "prism", "madeleine".
+  encoder: "chief"
+  
+  # Directory to save the output files.
+  output_dir: "/path/to/save/files/to"
+  
+  # Directory where the extracted features are stored.
+  feat_dir: "/path/your/extracted/features/are/stored/in"
+  
+  # A table (.xlsx or .csv) relating every slide to their feature files.
+  # The table must contain at least two columns, one titled "SLIDE",
+  # containing the slide ID, and one called "FILENAME", containing the feature file path relative to `feat_dir`.
+  slide_table: "/path/of/slide.csv"
+  
+  # Device to run slide encoding on ("cpu", "cuda", "cuda:0", etc.)
+  device: "cuda"
+
+  # Optional settings:
+  patient_label: "PATIENT"
+  filename_label: "FILENAME"
+  
+  # Directory where the aggregated features are stored. Needed for
+  # some encoders such as eagle (it requires virchow2 features).
+  #agg_feat_dir: "/path/your/aggregated/features/are/stored/in"
+
+  # Add a hash of the entire preprocessing codebase in the feature folder name.
+  #generate_hash: True
+
+
+advanced_config:
+  seed: 42
+  max_epochs: 32
+  patience: 16
+  batch_size: 64
+  # Only for tile-level training. Reducing its amount could affect
+  # model performance. Reduces memory consumption. Default value works
+  # fine for most cases.
+  bag_size: 512
+  #num_workers: 16 # Default chosen by cpu cores
+  # One Cycle Learning Rate Scheduler parameters. Check docs for more info.
+  # Determines the initial learning rate via initial_lr = max_lr/div_factor
+  max_lr: 1e-4
+  div_factor: 25. 
+  # Select a model regardless of task
+  model_name: "vit" # or mlp, trans_mil
+
+  model_params:
+    vit: # Vision Transformer
+      dim_model: 512
+      dim_feedforward: 512
+      n_heads: 8
+      n_layers: 2
+      dropout: 0.25
+      # Experimental feature: Use ALiBi positional embedding
+      use_alibi: false
+
+    trans_mil: # https://arxiv.org/abs/2106.00908
+      dim_hidden: 512
+
+    mlp: # Multilayer Perceptron
+      dim_hidden: 512
+      num_layers: 2
+      dropout: 0.25

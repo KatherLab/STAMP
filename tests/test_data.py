@@ -1,0 +1,368 @@
+import tempfile
+from io import BytesIO
+from pathlib import Path
+
+import h5py
+import pytest
+import torch
+from random_data import (
+    create_good_and_bad_slide_tables,
+    create_random_patient_level_feature_file,
+    create_random_slide_tables,
+    make_feature_file,
+    make_old_feature_file,
+)
+from torch.utils.data import DataLoader
+
+from stamp.modeling.data import (
+    BagDataset,
+    CoordsInfo,
+    PatientData,
+    PatientFeatureDataset,
+    filter_complete_patient_data_,
+    get_coords,
+    slide_to_patient_from_slide_table_,
+)
+from stamp.seed import Seed
+from stamp.types import (
+    BagSize,
+    FeaturePath,
+    GroundTruth,
+    Microns,
+    PatientId,
+    SlideMPP,
+    TilePixels,
+)
+
+
+@pytest.mark.filterwarnings("ignore:some patients have no associated slides")
+@pytest.mark.filterwarnings("ignore:some feature files could not be found")
+def test_get_cohort_df(tmp_path: Path) -> None:
+    with (
+        tempfile.NamedTemporaryFile(dir=tmp_path) as slide_a1,
+        tempfile.NamedTemporaryFile(dir=tmp_path) as slide_b1,
+        tempfile.NamedTemporaryFile(dir=tmp_path) as slide_b2,
+        tempfile.NamedTemporaryFile(dir=tmp_path) as slide_c1,
+    ):
+        patients_with_complete_data = filter_complete_patient_data_(
+            patient_to_ground_truth={
+                # patient with one slide
+                PatientId("Patient A"): GroundTruth("mutated"),
+                # patient with two slides
+                PatientId("Patient B"): GroundTruth("mutated"),
+                # patient with two slides, one of which has no feature file
+                PatientId("Patient C"): GroundTruth("wild type"),
+                # patient without slides
+                PatientId("Patient D"): GroundTruth("wild type"),
+                # patient one slide but without corresponding features
+                PatientId("Patient E"): GroundTruth("wild type"),
+            },
+            slide_to_patient={
+                FeaturePath(Path(slide_a1.name)): PatientId("Patient A"),
+                FeaturePath(Path(slide_b1.name)): PatientId("Patient B"),
+                FeaturePath(Path(slide_b2.name)): PatientId("Patient B"),
+                FeaturePath(Path(slide_c1.name)): PatientId("Patient C"),
+            },
+            drop_patients_with_missing_ground_truth=True,
+        )
+
+        assert patients_with_complete_data == {
+            "Patient A": PatientData(
+                ground_truth=GroundTruth("mutated"),
+                feature_files={FeaturePath(Path(slide_a1.name))},
+            ),
+            "Patient B": PatientData(
+                ground_truth=GroundTruth("mutated"),
+                feature_files={
+                    FeaturePath(Path(slide_b1.name)),
+                    FeaturePath(Path(slide_b2.name)),
+                },
+            ),
+            "Patient C": PatientData(
+                ground_truth=GroundTruth("wild type"),
+                feature_files={FeaturePath(Path(slide_c1.name))},
+            ),
+        }
+
+
+@pytest.mark.parametrize(
+    "feature_file_creator",
+    [make_feature_file, make_old_feature_file],
+)
+def test_bag_dataset(
+    feature_file_creator,
+    bag_size: BagSize = BagSize(5),
+    dim_feats: int = 34,
+    batch_size: int = 2,
+) -> None:
+    Seed.set(1234)
+    ds = BagDataset(
+        bags=[
+            [
+                feature_file_creator(
+                    feats=torch.rand((12, dim_feats)), coords=torch.rand(12, 2)
+                )
+            ],
+            [
+                feature_file_creator(
+                    feats=torch.rand((8, dim_feats)), coords=torch.rand(8, 2)
+                )
+            ],
+            [
+                feature_file_creator(
+                    feats=torch.rand((34, dim_feats)), coords=torch.rand(34, 2)
+                )
+            ],
+        ],
+        bag_size=bag_size,
+        ground_truths=torch.rand(3, 4) > 0.5,
+        transform=None,
+    )
+
+    assert len(ds) == 3
+
+    # Test single dataset item
+    item_bag, coords, item_bag_size, _ = ds[0]
+    assert item_bag.shape == (bag_size, dim_feats)
+    assert coords.shape == (bag_size, 2)
+    assert item_bag_size <= bag_size
+
+    # Test batching
+    dl = DataLoader(
+        ds,
+        batch_size=batch_size,
+        shuffle=False,
+        num_workers=1,
+        worker_init_fn=Seed.get_loader_worker_init() if Seed._is_set() else None,
+        generator=Seed.get_torch_generator() if Seed._is_set() else None,
+    )
+    bag, coords, bag_sizes, _ = next(iter(dl))
+    assert bag.shape == (batch_size, bag_size, dim_feats)
+    assert coords.shape == (batch_size, bag_size, 2)
+    assert (bag_sizes <= bag_size).all()
+
+
+def test_patient_feature_dataset(
+    tmp_path: Path, dim_feats: int = 16, batch_size: int = 2
+) -> None:
+    Seed.set(1234)
+    # Create 3 random patient-level feature files on disk
+    files = [
+        create_random_patient_level_feature_file(tmp_path=tmp_path, feat_dim=dim_feats)
+        for _ in range(3)
+    ]
+    # One-hot encoded labels for 3 samples, 4 categories
+    labels = torch.eye(4)[:3]
+
+    ds = PatientFeatureDataset(files, labels, transform=None)
+    assert len(ds) == 3
+
+    # Test single dataset item
+    feats, label = ds[0]
+    assert feats.shape == (dim_feats,)
+    assert torch.allclose(label, labels[0])
+
+    # Test batching
+    dl = DataLoader(
+        ds,
+        batch_size=batch_size,
+        shuffle=False,
+        num_workers=1,
+        worker_init_fn=Seed.get_loader_worker_init() if Seed._is_set() else None,
+        generator=Seed.get_torch_generator() if Seed._is_set() else None,
+    )
+
+    feats_batch, labels_batch = next(iter(dl))
+    assert feats_batch.shape == (batch_size, dim_feats)
+    assert labels_batch.shape == (batch_size, 4)
+
+
+def test_get_coords_with_mpp() -> None:
+    # Test new feature file with valid mpp calculation
+    file_bytes = make_feature_file(
+        feats=torch.rand((34, 34)),
+        coords=torch.rand(34, 2),
+        tile_size_um=Microns(2508.0),
+        tile_size_px=TilePixels(512),
+    )
+    with h5py.File(file_bytes, "r") as h5:
+        coords_info = get_coords(h5)
+        assert type(coords_info) is CoordsInfo
+        from math import isclose
+
+        assert isclose(coords_info.mpp, (2508.0 / 512), rel_tol=1e-9)
+
+    # Test old feature file without mpp calculation
+    file_bytes = make_old_feature_file(
+        feats=torch.rand((34, 34)),
+        coords=torch.rand(34, 2),
+        tile_size_um=Microns(2508.0),
+    )
+    with h5py.File(file_bytes, "r") as h5:
+        coords_info = get_coords(h5)
+        assert type(coords_info) is CoordsInfo
+        assert coords_info.tile_size_um == Microns(2508.0)
+        assert coords_info.tile_size_px is None
+        with pytest.raises(RuntimeError, match="tile size in pixels is not available"):
+            _ = coords_info.mpp
+
+
+def test_get_coords_invalid_file() -> None:
+    # Test invalid feature file with missing attributes
+    file_bytes = BytesIO()
+    with h5py.File(file_bytes, "w") as h5:
+        h5.create_dataset("coords", data=torch.rand(34, 2).numpy())
+    with h5py.File(file_bytes, "r") as h5:
+        with pytest.raises(RuntimeError, match="unable to infer coordinates"):
+            get_coords(h5)
+
+
+def test_get_coords_historic_format() -> None:
+    # Test historic STAMP format with inferred mpp
+    file_bytes = make_old_feature_file(
+        feats=torch.rand((34, 34)),
+        coords=torch.rand(34, 2),
+    )
+    with h5py.File(file_bytes, "w") as h5:
+        h5.attrs["tile_size"] = 224
+        h5.attrs["unit"] = "px"
+        h5.create_dataset("coords_historic", data=torch.rand(34, 2).numpy())
+    with h5py.File(file_bytes, "r") as h5:
+        coords_info = get_coords(h5)
+        assert type(coords_info) is CoordsInfo
+        assert coords_info.tile_size_um == Microns(256.0)
+        assert coords_info.tile_size_px == TilePixels(224)
+        assert coords_info.mpp == SlideMPP(256.0 / 224)
+
+
+def test_slide_table_h5_validation(tmp_path: Path) -> None:
+    """
+    Tests that an error is properly raised in
+    slide_to_patient_from_slide_table_() when none of items in the
+    filename_labels column of a slide table have an .h5 extension and
+    verifies that the error isn't raised when there is at least one
+    filename with a .h5 extension in the filename_labels column.
+    """
+    feature_dir = tmp_path
+
+    (
+        good_slide_path,
+        bad_slide_path,
+        one_bad_slide_path,
+    ) = create_good_and_bad_slide_tables(tmp_path=tmp_path)
+
+    # Test with all files having .h5 extensions in filename_label column
+    # (should be no error regarding no .h5 extensions)
+    result = slide_to_patient_from_slide_table_(
+        slide_table_path=good_slide_path,
+        feature_dir=feature_dir,
+        patient_label="PATIENT",
+        filename_label="FILENAME",
+    )
+    assert isinstance(result, dict)
+    # Test without any .h5 extensions in filename_label column
+    with pytest.raises(
+        ValueError,
+        match="One or more files are missing the .h5 extension "
+        "in the filename_label column. The first file missing "
+        "the .h5 extension is: slide1.jpg",
+    ):
+        slide_to_patient_from_slide_table_(
+            slide_table_path=bad_slide_path,
+            feature_dir=feature_dir,
+            patient_label="PATIENT",
+            filename_label="FILENAME",
+        )
+    # Test with one filename missing .h5 extension
+    with pytest.raises(
+        ValueError,
+        match="One or more files are missing the .h5 extension "
+        "in the filename_label column. The first file missing "
+        "the .h5 extension is: slide3.jpg",
+    ):
+        slide_to_patient_from_slide_table_(
+            slide_table_path=one_bad_slide_path,
+            feature_dir=feature_dir,
+            patient_label="PATIENT",
+            filename_label="FILENAME",
+        )
+
+
+def test_slide_table_h5_validation_random(
+    tmp_path: Path,
+) -> None:
+    """
+    Tests that an error is properly raised in
+    slide_to_patient_from_slide_table_() when none of items in the
+    filename_labels column of a slide table have an .h5 extension and
+    verifies that the error isn't raised when there is at least one
+    filename with a .h5 extension in the filename_labels column.
+    Uses random data.
+    """
+
+    feature_dir = tmp_path
+
+    good_slide_path, bad_slide_path = create_random_slide_tables(
+        n_patients=10, tmp_path=tmp_path
+    )
+    # Test with .h5 extensions in filename_label column (should be no error
+    # regarding no .h5 extensions)
+    result = slide_to_patient_from_slide_table_(
+        slide_table_path=good_slide_path,
+        feature_dir=feature_dir,
+        patient_label="PATIENT",
+        filename_label="FILENAME",
+    )
+    assert isinstance(result, dict)
+
+    # Test without .h5 extensions in filename_label column
+    with pytest.raises(
+        ValueError,
+        match="One or more files are missing the .h5 extension "
+        "in the filename_label column",
+    ):
+        slide_to_patient_from_slide_table_(
+            slide_table_path=bad_slide_path,
+            feature_dir=feature_dir,
+            patient_label="PATIENT",
+            filename_label="FILENAME",
+        )
+
+
+def test_two_dataloaders_diverge():
+    # Global seed so dataset construction is deterministic
+    Seed.set(1234)
+
+    ds = BagDataset(
+        bags=[
+            [make_feature_file(feats=torch.rand((12, 8)), coords=torch.rand(12, 2))],
+            [make_feature_file(feats=torch.rand((12, 8)), coords=torch.rand(12, 2))],
+        ],
+        bag_size=BagSize(5),  # triggers per-sample random subsampling
+        ground_truths=torch.rand(2, 3) > 0.5,
+        transform=None,
+    )
+
+    base = 98765
+    g2 = torch.Generator().manual_seed(base)  # loader 1 generator
+
+    # Loader A: no workers ⇒ __getitem__ randomness runs in main process
+    dl1 = DataLoader(ds, batch_size=1, shuffle=True, num_workers=0)
+
+    # Loader B: 1 worker ⇒ worker RNG is derived from DataLoader's base_seed
+    dl2 = DataLoader(
+        ds,
+        batch_size=1,
+        shuffle=True,
+        num_workers=1,
+        worker_init_fn=Seed.get_loader_worker_init(),
+        generator=g2,
+    )
+
+    # With same seed, shuffle order tends to match, but per-sample RNG differs
+    diffs = 0
+    for (f1, *_), (f2, *_) in zip(dl1, dl2):
+        if not torch.equal(f1, f2):
+            diffs += 1
+
+    assert diffs >= 1, "Expected at least one batch to differ despite same seed"
