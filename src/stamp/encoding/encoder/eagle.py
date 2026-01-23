@@ -233,9 +233,6 @@ class Eagle(Encoder):
                     )
                     continue
 
-                # feats, agg_feats = self._validate_and_read_features_with_agg(
-                #     h5_ctp, h5_vir2, slide_name
-                # )
                 feats_list.append(feats)
                 agg_feats_list.append(agg_feats)
 
