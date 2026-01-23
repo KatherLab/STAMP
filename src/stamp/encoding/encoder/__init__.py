@@ -1,5 +1,6 @@
 import logging
 import os
+import re
 from abc import ABC, abstractmethod
 from pathlib import Path
 from tempfile import NamedTemporaryFile
@@ -62,7 +63,7 @@ class Encoder(ABC):
 
         for tile_feats_filename in (progress := tqdm(os.listdir(feat_dir))):
             h5_path = os.path.join(feat_dir, tile_feats_filename)
-            slide_name: str = Path(tile_feats_filename).name
+            slide_name: str = Path(tile_feats_filename).stem
             progress.set_description(slide_name)
 
             # skip patient in case feature file already exists
@@ -218,23 +219,22 @@ class Encoder(ABC):
             _logger.debug(f"saved features to {output_path}")
 
 
-def _resolve_extractor_name(raw: str) -> ExtractorName:
-    if not raw:
-        raise ValueError("Empty extractor string")
+_HASH_RE = re.compile(r"^[0-9a-fA-F]{6,}$")
 
-    name = str(raw).strip().lower()
-    name = name.replace("_", "-")
 
-    for e in ExtractorName:
-        if name == e.value.lower():
-            return e
+def _resolve_extractor_name(name: str) -> str:
+    if not name:
+        raise ValueError("Empty extractor name")
 
-    for e in ExtractorName:
-        if name.startswith(e.value.lower() + "-"):
-            return e
+    name = str(name).strip()
 
-    raise ValueError(
-        f"Unknown extractor '{raw}'. "
-        f"Expected one of {[e.value for e in ExtractorName]} "
-        f"or a versioned variant like '<name>-<hash>'."
-    )
+    if "-" not in name:
+        return name
+
+    base, suffix = name.rsplit("-", 1)
+
+    # Strip ONLY if suffix looks like a real hash
+    if _HASH_RE.match(suffix):
+        return base
+
+    return name
