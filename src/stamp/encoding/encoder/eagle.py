@@ -238,9 +238,17 @@ class Eagle(Encoder):
                 h5_ctp = os.path.join(feat_dir, slide_filename)
                 h5_vir2 = os.path.join(agg_feat_dir, slide_filename)
 
-                feats, agg_feats = self._validate_and_read_features_with_agg(
-                    h5_ctp, h5_vir2, slide_name
-                )
+                # robust reading
+                try:
+                    feats, agg_feats = self._validate_and_read_features_with_agg(
+                        str(h5_ctp), str(h5_vir2), slide_name
+                    )
+                except FileNotFoundError as e:
+                    tqdm.write(
+                        f"[{patient_id}] skip slide (FileNotFoundError): {slide_name} -> {e}"
+                    )
+                    continue
+
                 feats_list.append(feats)
                 agg_feats_list.append(agg_feats)
 
