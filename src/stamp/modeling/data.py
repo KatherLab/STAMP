@@ -37,7 +37,6 @@ from stamp.types import (
 )
 
 _logger = logging.getLogger("stamp")
-_logged_stamp_v1_warning = False
 
 
 __author__ = "Marko van Treeck, Minh Duc Nguyen"
@@ -569,13 +568,9 @@ def get_coords(feature_h5: h5py.File) -> CoordsInfo:
         == 224
     ):
         # Historic STAMP format
-        # TODO: find a better way to get this warning just once
-        global _logged_stamp_v1_warning
-        if not _logged_stamp_v1_warning:
-            _logger.info(
-                f"{feature_h5.filename}: tile stride is roughly 224, assuming coordinates have unit 256um/224px (historic STAMP format)"
-            )
-            _logged_stamp_v1_warning = True
+        _logger.debug(
+            f"{feature_h5.filename}: tile stride is roughly 224, assuming coordinates have unit 256um/224px (historic STAMP format)"
+        )
         tile_size_um = Microns(256.0)
         tile_size_px = TilePixels(224)
         coords_um = coords / 224 * 256
