@@ -1,5 +1,5 @@
 import logging
-import 
+import os
 import re
 from abc import ABC, abstractmethod
 from pathlib import Path
@@ -63,7 +63,7 @@ class Encoder(ABC):
 
         for tile_feats_filename in (progress := tqdm(os.listdir(feat_dir))):
             h5_path = os.path.join(feat_dir, tile_feats_filename)
-            slide_name: str = Path(tile_feats_filename).name
+            slide_name: str = Path(tile_feats_filename).stem
             progress.set_description(slide_name)
 
             # skip patient in case feature file already exists
