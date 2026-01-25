@@ -28,6 +28,7 @@ class ExtractorName(StrEnum):
     MUSK = "musk"
     MSTAR = "mstar"
     PLIP = "plip"
+    TICON = "ticon"
     EMPTY = "empty"
 
 
@@ -44,6 +45,7 @@ class PreprocessingConfig(BaseModel, arbitrary_types_allowed=True):
     tile_size_um: Microns = Microns(256.0)
     tile_size_px: TilePixels = TilePixels(224)
     extractor: ExtractorName
+    tile_extractor: ExtractorName
     max_workers: int = 8
     device: str = "cuda" if torch.cuda.is_available() else "cpu"
     generate_hash: bool = True

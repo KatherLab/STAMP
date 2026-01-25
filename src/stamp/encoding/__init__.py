@@ -69,6 +69,11 @@ def init_slide_encoder_(
 
             selected_encoder: Encoder = Prism()
 
+        case EncoderName.TICON:
+            from stamp.encoding.encoder.ticon_encoder import TiconEncoder
+
+            selected_encoder: Encoder = TiconEncoder()
+
         case Encoder():
             selected_encoder = encoder
 
@@ -154,6 +159,11 @@ def init_patient_encoder_(
             from stamp.encoding.encoder.prism import Prism
 
             selected_encoder: Encoder = Prism()
+
+        case EncoderName.TICON:
+            from stamp.encoding.encoder.ticon_encoder import TiconEncoder
+
+            selected_encoder: Encoder = TiconEncoder()
 
         case Encoder():
             selected_encoder = encoder
