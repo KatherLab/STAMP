@@ -296,19 +296,25 @@ def _get_splits(
     *, patient_to_data: Mapping[PatientId, PatientData[Any]], n_splits: int, spliter
 ) -> _Splits:
     patients = np.array(list(patient_to_data.keys()))
-    skf = spliter(n_splits=n_splits, shuffle=True, random_state=0)
+
+    # Detect survival GT: "time status"
+    tokens = [str(p.ground_truth).split() for p in patient_to_data.values()]
+
+    if all(len(t) == 2 for t in tokens):
+        y = np.array([int(t[1]) for t in tokens], dtype=int)
+        skf = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=0)
+        iterator = skf.split(patients, y)
+    else:
+        skf = KFold(n_splits=n_splits, shuffle=True, random_state=0)
+        iterator = skf.split(patients)
+
     splits = _Splits(
         splits=[
             _Split(
-                train_patients=set(patients[train_indices]),
-                test_patients=set(patients[test_indices]),
+                train_patients=set(patients[train_idx]),
+                test_patients=set(patients[test_idx]),
             )
-            for train_indices, test_indices in skf.split(
-                patients,
-                np.array(
-                    [patient.ground_truth for patient in patient_to_data.values()]
-                ),
-            )
+            for train_idx, test_idx in iterator
         ]
     )
     return splits
