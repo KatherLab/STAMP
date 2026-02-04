@@ -98,6 +98,31 @@ class TransMILModelParams(BaseModel):
     model_config = ConfigDict(extra="forbid")
     dim_hidden: int = 512
 
+class MILTabularModelParams(BaseModel):
+    # -------- Tabular (FT-Transformer) --------
+    tab_categories: tuple[int, ...]
+    tab_num_continuous: int
+    tab_embed_dim: int
+    tab_depth: int
+    tab_num_heads: int
+    tab_head_dim: int
+    tab_out_dim: int
+    tab_num_special_tokens: int
+    tab_attn_dropout: float
+    tab_ff_dropout: float
+    tab_num_residual_streams: int
+    # -------- MIL (Vision Transformer) --------
+    mil_model_dim: int
+    mil_num_layers: int
+    mil_num_heads: int
+    mil_ff_dim: int
+    mil_dropout: float
+    mil_use_alibi: bool
+    # -------- Fusion / control --------
+    use_tabular: bool = True
+    use_image: bool = True
+    output_dim: int = 1  # numerical output (regression / survival)
+
 
 class LinearModelParams(BaseModel):
     model_config = ConfigDict(extra="forbid")
@@ -109,6 +134,7 @@ class ModelParams(BaseModel):
     trans_mil: TransMILModelParams = Field(default_factory=TransMILModelParams)
     mlp: MlpModelParams = Field(default_factory=MlpModelParams)
     linear: LinearModelParams = Field(default_factory=LinearModelParams)
+    mil_tabular: MILTabularModelParams | None = None
 
 
 class AdvancedConfig(BaseModel):

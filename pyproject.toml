@@ -41,7 +41,7 @@ dependencies = [
     "pyyaml>=6.0.2",
     "scikit-learn>=1.6.1",
     "scipy>=1.16.1",
-    "torch>=2.7.1,<2.8.0",
+    "torch>=2.8.3",
     "torchmetrics>=1.6.0",
     "torchvision>=0.22.1",
     "tqdm>=4.67.1",
@@ -50,6 +50,7 @@ dependencies = [
     "lifelines>=0.28.0",
 ]
 
+
 [project.optional-dependencies]
 build = [
     "setuptools",
@@ -57,9 +58,10 @@ build = [
     "psutil",
     "ninja"
 ]
-flash-attention = [
-    "flash-attn>=2.8.3",
-    ]
+# flash-attention = [
+#     "flash-attn>=2.8.3",
+#     ]
+flash-attention = [] # Disabled due to build issues on some platforms, see
 conch = [
     "huggingface-hub>=0.26.2",
     "conch @ git+https://github.com/KatherLab/CONCH",
@@ -98,14 +100,14 @@ virchow2 = [
     "huggingface-hub>=0.27.1",
     "torch>=2.0.0",
 ]
-cobra = [
-    "stamp[flash-attention]",
-    "causal-conv1d>=1.5.3.post1",
-    "mamba-ssm>=2.2.6.post3",
-    "cobra @ git+http://github.com/KatherLab/COBRA.git@49d231191db5a9c2ea37a2398dd922c8c9ee9cdb",
-    "jinja2>=3.1.4", 
-    "triton"
-]
+# cobra = [
+#     "stamp[flash-attention]",
+#     "causal-conv1d>=1.5.3.post1",
+#     # "mamba-ssm>=2.2.6.post3",
+#     "cobra @ git+http://github.com/KatherLab/COBRA.git@49d231191db5a9c2ea37a2398dd922c8c9ee9cdb",
+#     "jinja2>=3.1.4", 
+#     "triton"
+# ]
 prism_cpu = [
     "sacremoses==0.1.1",
     "environs==11.0.0",
@@ -132,11 +134,15 @@ plip = [
 mcp = [
     "fastmcp>=2.11.2",
 ]
-
+tabular_experimental = [
+  "discrete-continuous-embed-readout",
+  "hyper-connections",
+]
 
 # Blanket target
 cpu = ["stamp[conch,ctranspath,uni,virchow2,chief_ctranspath,conch1_5_cpu,prism_cpu,madeleine,musk_cpu,plip_cpu]"]
-gpu = ["stamp[conch,ctranspath,uni,virchow2,chief_ctranspath,conch1_5,prism,madeleine,musk,plip,gigapath,cobra]"]
+# gpu = ["stamp[conch,ctranspath,uni,virchow2,chief_ctranspath,conch1_5,prism,madeleine,musk,plip,gigapath,cobra]"]
+gpu = ["stamp[conch,ctranspath,uni,virchow2,chief_ctranspath,conch1_5,prism,madeleine,musk,plip]"]
 all = ["stamp[cpu]"]
 
 [project.scripts]
@@ -179,7 +185,7 @@ conflicts = [
     ]
 ]
 build-constraint-dependencies = [
-  "torch<2.8",
+  "torch>=2.8.3",
   "torchvision<0.23",
 ]
 
@@ -214,19 +220,19 @@ requires-dist = [
 ]
 
 
-[[tool.uv.dependency-metadata]]
-name = "flash-attn"
-requires-dist = [
-    "torch",
-    "einops",
-]
+# [[tool.uv.dependency-metadata]]
+# name = "flash-attn"
+# requires-dist = [
+#     "torch",
+#     "einops",
+# ]
 
 
-[[tool.uv.dependency-metadata]]
-name = "mamba-ssm"
-requires-dist = [
-    "setuptools",
-]
+# [[tool.uv.dependency-metadata]]
+# name = "mamba-ssm"
+# requires-dist = [
+#     "setuptools",
+# ]
 
 [[tool.uv.dependency-metadata]]
 name = "causal-conv1d"
@@ -236,8 +242,8 @@ requires-dist = [
 ]
 
 [tool.uv.extra-build-dependencies]
-cobra = [{ requirement = "torch", match-runtime = true }]
-flash-attn = [{ requirement = "torch", match-runtime = true }]
-mamba-ssm = [{ requirement = "torch", match-runtime = true }]
+# cobra = [{ requirement = "torch", match-runtime = true }]
+# flash-attn = [{ requirement = "torch", match-runtime = true }]
+# mamba-ssm = [{ requirement = "torch", match-runtime = true }]
 gigapath = [{ requirement = "torch", match-runtime = true }]
 conch = [{ requirement = "torch", match-runtime = true }]

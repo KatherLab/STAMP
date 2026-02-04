@@ -21,6 +21,7 @@ class ModelName(StrEnum):
     MLP = "mlp"
     TRANS_MIL = "trans_mil"
     LINEAR = "linear"
+    MILTabularModel = "mil_tabular"
 
 
 # Map (feature_type, task) → correct Lightning wrapper class
@@ -57,6 +58,11 @@ def load_model_class(task: Task, feature_type: str, model_name: ModelName):
         case ModelName.LINEAR:
             from stamp.modeling.models.mlp import (
                 Linear as ModelClass,
+            )
+
+        case ModelName.MILTabularModel:
+            from stamp.modeling.models.mil_tabular import (
+                MILTabularModel as ModelClass,
             )
 
         case _:

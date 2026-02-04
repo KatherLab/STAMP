@@ -57,3 +57,8 @@ PandasLabel: TypeAlias = str
 GroundTruthType = TypeVar("GroundTruthType", covariant=True)
 
 Task: TypeAlias = Literal["classification", "regression", "survival"]
+
+Tabular: TypeAlias = tuple[
+    Tensor,
+    Tensor,
+]

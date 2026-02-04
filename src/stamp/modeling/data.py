@@ -17,6 +17,7 @@ from torch import Tensor
 from torch.utils.data import DataLoader, Dataset
 
 import stamp
+from stamp.modeling.tabular_config import TAB_COLS, encode_tabular
 from stamp.seed import Seed
 from stamp.types import (
     Bags,
@@ -52,7 +53,22 @@ _BinaryIOLike: TypeAlias = Union[BinaryIO, IO[bytes]]
 - regression: float [1]
 """
 _Coordinates: TypeAlias = Float[Tensor, "tile 2"]
+_Tabular: TypeAlias = tuple[
+    Tensor,
+    Tensor,
+]
+"""Tabular data:    
+- x_categ: LongTensor [B, num_categories]
+- x_numer: FloatTensor [B, num_continuous]
+"""
 
+_BagItem: TypeAlias = tuple[
+    _Bag,
+    _Coordinates,
+    BagSize,
+    _Tabular | None,
+    _EncodedTarget,
+]
 
 @dataclass
 class PatientData(Generic[GroundTruthType]):
@@ -61,6 +77,7 @@ class PatientData(Generic[GroundTruthType]):
     _ = KW_ONLY
     ground_truth: GroundTruthType
     feature_files: Iterable[FeaturePath | BinaryIO]
+    tabular: tuple[Tensor, Tensor] | None = None
 
 
 def tile_bag_dataloader(
@@ -87,6 +104,17 @@ def tile_bag_dataloader(
         task='regression':
             returns float targets
     """
+
+    tabular = None
+    if any(p.tabular is not None for p in patient_data):
+        x_categ = torch.stack(
+            [cast(tuple[Tensor, Tensor], p.tabular)[0] for p in patient_data]
+        )
+        x_numer = torch.stack(
+            [cast(tuple[Tensor, Tensor], p.tabular)[1] for p in patient_data]
+        )
+        tabular = (x_categ, x_numer)
+
     if task == "classification":
         raw_ground_truths = np.array([patient.ground_truth for patient in patient_data])
         categories = (
@@ -99,6 +127,7 @@ def tile_bag_dataloader(
         ds = BagDataset(
             bags=[patient.feature_files for patient in patient_data],
             bag_size=bag_size,
+            tabular=tabular,
             ground_truths=one_hot,
             transform=transform,
         )
@@ -117,6 +146,7 @@ def tile_bag_dataloader(
         ds = BagDataset(
             bags=[patient.feature_files for patient in patient_data],
             bag_size=bag_size,
+            tabular=tabular,
             ground_truths=y,
             transform=transform,
         )
@@ -160,6 +190,7 @@ def tile_bag_dataloader(
         ds = BagDataset(
             bags=[patient.feature_files for patient in patient_data],
             bag_size=bag_size,
+            tabular=tabular,
             ground_truths=y,
             transform=transform,
         )
@@ -187,15 +218,30 @@ def tile_bag_dataloader(
 
 
 def _collate_to_tuple(
-    items: list[tuple[_Bag, _Coordinates, BagSize, _EncodedTarget]],
-) -> tuple[Bags, CoordinatesBatch, BagSizes, EncodedTargets]:
-    bags = torch.stack([bag for bag, _, _, _ in items])
-    coords = torch.stack([coord for _, coord, _, _ in items])
-    bag_sizes = torch.tensor([bagsize for _, _, bagsize, _ in items])
+    items: list[_BagItem],
+) -> tuple[Bags, CoordinatesBatch, BagSizes, _Tabular | None, EncodedTargets]:
+    bags = torch.stack([bag for bag, _, _, _, _ in items])
+    coords = torch.stack([coord for _, coord, _, _, _ in items])
+    bag_sizes = torch.tensor([bagsize for _, _, bagsize, _, _ in items])
 
-    targets = [et for _, _, _, et in items]
+    tabular_items = [tab for _, _, _, tab, _ in items]
+    targets = [et for _, _, _, _, et in items]
 
     # Normalize target shapes
+    fixed_targets = []
+    for et in targets:
+        et = torch.as_tensor(et)
+        if et.ndim == 0:  # scalar → (1,)
+            et = et.unsqueeze(0)
+        elif et.ndim > 1:  # e.g. (1,2) → (2,)
+            et = et.view(-1)
+        fixed_targets.append(et)
+
+    if any(t is None for t in tabular_items):
+        batch_tabular: _Tabular | None = None
+    else:
+        batch_tabular = torch.stack(tabular_items)  # type: ignore[arg-type]
+
     fixed_targets = []
     for et in targets:
         et = torch.as_tensor(et)
@@ -208,7 +254,7 @@ def _collate_to_tuple(
     # Stack into (B, D)
     encoded_targets = torch.stack(fixed_targets)
 
-    return (bags, coords, bag_sizes, encoded_targets)
+    return (bags, coords, bag_sizes, batch_tabular, encoded_targets)
 
 
 def patient_feature_dataloader(
@@ -355,6 +401,11 @@ def load_patient_level_data(
         - survival via `time_label` + `status_label` (stored as "time status")
     """
 
+    clini_df = read_table(clini_table)
+    tab_df = clini_df[[patient_label] + TAB_COLS]
+    tab_df = tab_df.set_index(patient_label)
+    tab_categ, tab_numer = encode_tabular(tab_df)
+
     # Load ground truth mapping
     if task == "survival" and time_label is not None and status_label is not None:
         # Survival: use the existing helper
@@ -382,13 +433,20 @@ def load_patient_level_data(
     missing_features = []
     for pid, gt in patient_to_ground_truth.items():
         feature_file = feature_dir / f"{pid}{feature_ext}"
-        if feature_file.exists():
-            patient_to_data[pid] = PatientData(
-                ground_truth=gt,
-                feature_files=[FeaturePath(feature_file)],
-            )
-        else:
+        if not feature_file.exists():
             missing_features.append(pid)
+            continue
+
+        if pid not in tab_df.index:
+            continue  # or warn / raise
+
+        idx = cast(int, tab_df.index.get_loc(pid))
+
+        patient_to_data[pid] = PatientData(
+            ground_truth=gt,
+            feature_files=[FeaturePath(feature_file)],
+            tabular=(tab_categ[idx], tab_numer[idx]),  # 👈 tuple
+        )
 
     if missing_features:
         _logger.warning(
@@ -399,7 +457,7 @@ def load_patient_level_data(
 
 
 @dataclass
-class BagDataset(Dataset[tuple[_Bag, _Coordinates, BagSize, _EncodedTarget]]):
+class BagDataset(Dataset[_BagItem]):
     """A dataset of bags of instances."""
 
     _: KW_ONLY
@@ -420,6 +478,12 @@ class BagDataset(Dataset[tuple[_Bag, _Coordinates, BagSize, _EncodedTarget]]):
     If `bag_size` is None, all the samples will be used.
     """
 
+    tabular: tuple[Tensor, Tensor] | None = None
+    """Optional tabular data for each bag.
+    
+
+    """
+
     ground_truths: Float[Tensor, "index category_is_hot"] | Float[Tensor, "index 1"]
 
     # ground_truths: Bool[Tensor, "index category_is_hot"]
@@ -428,6 +492,8 @@ class BagDataset(Dataset[tuple[_Bag, _Coordinates, BagSize, _EncodedTarget]]):
     transform: Callable[[Tensor], Tensor] | None
 
     def __post_init__(self) -> None:
+        if self.tabular is not None:
+            assert len(self.tabular) == len(self.bags)
         if len(self.bags) != len(self.ground_truths):
             raise ValueError(
                 "the number of ground truths has to match the number of bags"
@@ -436,9 +502,7 @@ class BagDataset(Dataset[tuple[_Bag, _Coordinates, BagSize, _EncodedTarget]]):
     def __len__(self) -> int:
         return len(self.bags)
 
-    def __getitem__(
-        self, index: int
-    ) -> tuple[_Bag, _Coordinates, BagSize, _EncodedTarget]:
+    def __getitem__(self, index: int) -> _BagItem:
         # Collect all the features
         feats = []
         coords_um = []
@@ -458,10 +522,17 @@ class BagDataset(Dataset[tuple[_Bag, _Coordinates, BagSize, _EncodedTarget]]):
         if self.transform is not None:
             feats = self.transform(feats)
 
+        # tabular
+        tab = None
+        if self.tabular is not None:
+            x_categ, x_numer = self.tabular
+            tab = (x_categ[index], x_numer[index])
+
         # Sample a subset, if required
         if self.bag_size is not None:
             return (
                 *_to_fixed_size_bag(feats, coords=coords_um, bag_size=self.bag_size),
+                tab,
                 self.ground_truths[index],
             )
         else:
@@ -469,6 +540,7 @@ class BagDataset(Dataset[tuple[_Bag, _Coordinates, BagSize, _EncodedTarget]]):
                 feats,
                 coords_um,
                 len(feats),
+                tab,
                 self.ground_truths[index],
             )
 

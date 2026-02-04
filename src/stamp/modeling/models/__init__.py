@@ -3,7 +3,7 @@
 import inspect
 from abc import ABC
 from collections.abc import Iterable, Sequence
-from typing import Any, TypeAlias
+from typing import Any, Optional, TypeAlias
 
 import lightning
 import numpy as np
@@ -23,6 +23,7 @@ from stamp.types import (
     EncodedTargets,
     PandasLabel,
     PatientId,
+    Tabular,
 )
 
 __author__ = "Minh Duc Nguyen"
@@ -723,7 +724,7 @@ class LitTileSurvival(LitSurvivalBase):
         return self.model(bags, coords=coords, mask=mask)
 
     def training_step(self, batch, batch_idx):
-        bags, coords, bag_sizes, targets = batch
+        bags, coords, bag_sizes, tabular, targets = batch
         preds = self.model(bags, coords=coords, mask=None)
         y = targets.to(preds.device, dtype=torch.float32)
         times, events = y[:, 0], y[:, 1]
@@ -747,10 +748,16 @@ class LitTileSurvival(LitSurvivalBase):
 
     def validation_step(
         self,
-        batch: tuple[Bags, CoordinatesBatch, BagSizes, EncodedTargets],
+        batch: tuple[
+            Bags,
+            CoordinatesBatch,
+            BagSizes,
+            Optional[tuple[Tensor, Tensor]],
+            EncodedTargets,
+        ],
         batch_idx: int,
     ) -> Any:
-        bags, coords, bag_sizes, targets = batch
+        bags, coords, bag_sizes, tabular, targets = batch
         preds = self.model(bags, coords=coords, mask=None).squeeze(-1)
 
         y = targets.to(preds.device, dtype=torch.float32)
@@ -818,3 +825,4 @@ class LitPatientSurvival(LitSlideSurvival):
     """
 
     supported_features = ["patient"]
+

@@ -354,7 +354,7 @@ def setup_dataloaders_for_training(
         # Infer feature dimension automatically
         batch = next(iter(train_dl))
         if feature_type == "tile":
-            bags, _, _, _ = batch
+            bags, _, _, tabular, _ = batch
             dim_feats = bags.shape[-1]
         else:
             feats, _ = batch
@@ -419,7 +419,7 @@ def train_model_(
         #     the default strategy no multiple GPUs
         #  2. `barspoon.model.SafeMulticlassAUROC` breaks on multiple GPUs
         accelerator=accelerator,
-        devices=1,
+        devices=2,
         # gradient_clip_val=0.5,
         logger=CSVLogger(save_dir=output_dir),
         log_every_n_steps=len(train_dl),
