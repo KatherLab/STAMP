@@ -28,6 +28,7 @@ class ExtractorName(StrEnum):
     MUSK = "musk"
     MSTAR = "mstar"
     PLIP = "plip"
+    TICON = "ticon"
     EMPTY = "empty"
 
 
