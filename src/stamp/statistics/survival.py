@@ -24,7 +24,7 @@ def _comparable_pairs_count(times: np.ndarray, events: np.ndarray) -> int:
 def _cindex(
     time: np.ndarray,
     event: np.ndarray,
-    risk: np.ndarray,  # will be flipped in function
+    risk: np.ndarray,
 ) -> tuple[float, int]:
     """Compute C-index using Lifelines convention:
     higher risk → shorter survival (worse outcome).
@@ -40,13 +40,13 @@ def _survival_stats_for_csv(
     time_label: str,
     status_label: str,
     risk_label: str | None = None,
-    cut_off: float | None = None,  # will be flipped in function
+    cut_off: float | None = None,
 ) -> pd.Series:
     """Compute C-index and log-rank p for one CSV."""
     if risk_label is None:
         risk_label = "pred_score"
 
-    # --- Clean NaNs and invalid events before computing stats ---
+    # Clean NaNs and invalid events before computing stats
     df = df.dropna(subset=[time_label, status_label, risk_label]).copy()
     df = df[df[status_label].isin([0, 1])]
     if len(df) == 0:
@@ -56,10 +56,10 @@ def _survival_stats_for_csv(
     event = np.asarray(df[status_label], dtype=int)
     risk = np.asarray(df[risk_label], dtype=float)
 
-    # --- Concordance index ---
+    # Concordance index
     c_index, n_pairs = _cindex(time, event, risk)
 
-    # --- Log-rank test (median split) ---
+    # Log-rank test (median split)
     median_risk = float(cut_off) if cut_off is not None else float(np.nanmedian(risk))
     low_mask = risk <= median_risk
     high_mask = risk > median_risk
@@ -113,7 +113,7 @@ def _plot_km(
     event = np.asarray(df[status_label], dtype=int)
     risk = np.asarray(df[risk_label], dtype=float)
 
-    # --- split groups ---
+    # split groups
     median_risk = float(cut_off) if cut_off is not None else np.nanmedian(risk)
     low_mask = risk <= median_risk
     high_mask = risk > median_risk

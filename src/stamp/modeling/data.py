@@ -341,9 +341,9 @@ def load_patient_level_data(
     clini_table: Path,
     feature_dir: Path,
     patient_label: PandasLabel,
-    ground_truth_label: PandasLabel | None = None,  # <- now optional
-    time_label: PandasLabel | None = None,  # <- for survival
-    status_label: PandasLabel | None = None,  # <- for survival
+    ground_truth_label: PandasLabel | None = None,
+    time_label: PandasLabel | None = None,
+    status_label: PandasLabel | None = None,
     feature_ext: str = ".h5",
 ) -> dict[PatientId, PatientData]:
     """
@@ -902,15 +902,7 @@ def _parse_survival_status(value) -> int | None:
         None, NaN, '' -> None
     """
 
-    # Handle missing inputs gracefully
-    # if value is None:
-    #     return 0  # treat empty/missing as censored
-    # if isinstance(value, float) and math.isnan(value):
-    #     return 0  # treat empty/missing as censored
-
     s = str(value).strip().lower()
-    # if s in {"", "nan", "none"}:
-    #     return 0  # treat empty/missing as censored
 
     # Known mappings
     positives = {"1", "event", "dead", "deceased", "yes", "y", "True", "true"}
