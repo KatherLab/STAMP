@@ -136,16 +136,27 @@ def _plot_km(
         )
         kmf_high.plot_survival_function(ax=ax, ci_show=False, color="red")
 
-    add_at_risk_counts(kmf_low, kmf_high, ax=ax)
+    # ---- add at-risk counts only for fitted curves ----
+    fitters = []
+    if len(low_df) > 0:
+        fitters.append(kmf_low)
+    if len(high_df) > 0:
+        fitters.append(kmf_high)
 
-    # --- log-rank and c-index ---
-    res = logrank_test(
-        low_df[time_label],
-        high_df[time_label],
-        event_observed_A=low_df[status_label],
-        event_observed_B=high_df[status_label],
-    )
-    logrank_p = float(res.p_value)
+    if len(fitters) > 0:
+        add_at_risk_counts(*fitters, ax=ax)
+
+    # ---- log-rank only if both groups exist ----
+    if len(low_df) > 0 and len(high_df) > 0:
+        res = logrank_test(
+            low_df[time_label],
+            high_df[time_label],
+            event_observed_A=low_df[status_label],
+            event_observed_B=high_df[status_label],
+        )
+        logrank_p = float(res.p_value)
+    else:
+        logrank_p = float("nan")
     c_used, used, *_ = _cindex(time, event, risk)
 
     ax.text(

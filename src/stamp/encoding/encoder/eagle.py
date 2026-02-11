@@ -263,10 +263,12 @@ def _align_vir2_to_ctp_by_coords(
     decimals: int = 5,
 ) -> tuple[torch.Tensor, np.ndarray]:
     """Align vir2 features to ctp features based on coordinates."""
+    # round coordinates to avoid floating-point precision mismatches
     ref = np.round(np.asarray(ref_coords_um, dtype=np.float64), decimals)
     oth = np.round(np.asarray(other_coords_um, dtype=np.float64), decimals)
 
-    # coord -> queue(indices)
+    # build mapping: coordinate -> queue of indices
+    # using deque ensures stable matching when duplicates exist
     buckets = defaultdict(deque)
     for j, key in enumerate(map(tuple, oth)):
         buckets[key].append(j)
