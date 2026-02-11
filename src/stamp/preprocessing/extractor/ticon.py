@@ -1,3 +1,9 @@
+"""
+This file contains code adapted from:
+TICON: A Slide-Level Tile Contextualizer for Histopathology Representation Learning
+https://github.com/cvlab-stonybrook/TICON
+"""
+
 import math
 from collections.abc import Callable, Mapping
 from functools import partial
@@ -8,8 +14,6 @@ import torch
 import torch.nn as nn
 from huggingface_hub import hf_hub_download
 from jaxtyping import Float
-
-# from omegaconf import OmegaConf
 from torch import Tensor
 from torchvision import transforms
 

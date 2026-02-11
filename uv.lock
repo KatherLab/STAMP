@@ -3699,13 +3699,14 @@ wheels = [
 
 [[package]]
 name = "stamp"
-version = "2.3.0"
+version = "2.4.0"
 source = { editable = "." }
 dependencies = [
     { name = "beartype" },
     { name = "einops" },
     { name = "h5py" },
     { name = "jaxtyping" },
+    { name = "lifelines" },
     { name = "lightning" },
     { name = "matplotlib" },
     { name = "numpy" },
@@ -3807,7 +3808,6 @@ gigapath = [
     { name = "fvcore" },
     { name = "gigapath" },
     { name = "iopath" },
-    { name = "lifelines" },
     { name = "monai" },
     { name = "scikit-image" },
     { name = "scikit-survival" },
@@ -3828,7 +3828,6 @@ gpu = [
     { name = "huggingface-hub" },
     { name = "iopath" },
     { name = "jinja2" },
-    { name = "lifelines" },
     { name = "madeleine" },
     { name = "mamba-ssm" },
     { name = "monai" },
@@ -3920,7 +3919,7 @@ requires-dist = [
     { name = "iopath", marker = "extra == 'gigapath'" },
     { name = "jaxtyping", specifier = ">=0.3.2" },
     { name = "jinja2", marker = "extra == 'cobra'", specifier = ">=3.1.4" },
-    { name = "lifelines", marker = "extra == 'gigapath'" },
+    { name = "lifelines", specifier = ">=0.28.0" },
     { name = "lightning", specifier = ">=2.5.2" },
     { name = "madeleine", marker = "extra == 'madeleine'", git = "https://github.com/mahmoodlab/MADELEINE.git?rev=de7c85acc2bdad352e6df8eee5694f8b6f288012" },
     { name = "mamba-ssm", marker = "extra == 'cobra'", specifier = ">=2.2.6.post3" },

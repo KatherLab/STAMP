@@ -24,7 +24,7 @@ def _comparable_pairs_count(times: np.ndarray, events: np.ndarray) -> int:
 def _cindex(
     time: np.ndarray,
     event: np.ndarray,
-    risk: np.ndarray,  # will be flipped in function
+    risk: np.ndarray,
 ) -> tuple[float, int]:
     """Compute C-index using Lifelines convention:
     higher risk → shorter survival (worse outcome).
@@ -40,13 +40,13 @@ def _survival_stats_for_csv(
     time_label: str,
     status_label: str,
     risk_label: str | None = None,
-    cut_off: float | None = None,  # will be flipped in function
+    cut_off: float | None = None,
 ) -> pd.Series:
     """Compute C-index and log-rank p for one CSV."""
     if risk_label is None:
         risk_label = "pred_score"
 
-    # --- Clean NaNs and invalid events before computing stats ---
+    # Clean NaNs and invalid events before computing stats
     df = df.dropna(subset=[time_label, status_label, risk_label]).copy()
     df = df[df[status_label].isin([0, 1])]
     if len(df) == 0:
@@ -56,10 +56,10 @@ def _survival_stats_for_csv(
     event = np.asarray(df[status_label], dtype=int)
     risk = np.asarray(df[risk_label], dtype=float)
 
-    # --- Concordance index ---
+    # Concordance index
     c_index, n_pairs = _cindex(time, event, risk)
 
-    # --- Log-rank test (median split) ---
+    # Log-rank test (median split)
     median_risk = float(cut_off) if cut_off is not None else float(np.nanmedian(risk))
     low_mask = risk <= median_risk
     high_mask = risk > median_risk
@@ -113,7 +113,7 @@ def _plot_km(
     event = np.asarray(df[status_label], dtype=int)
     risk = np.asarray(df[risk_label], dtype=float)
 
-    # --- split groups ---
+    # split groups
     median_risk = float(cut_off) if cut_off is not None else np.nanmedian(risk)
     low_mask = risk <= median_risk
     high_mask = risk > median_risk
@@ -136,16 +136,27 @@ def _plot_km(
         )
         kmf_high.plot_survival_function(ax=ax, ci_show=False, color="red")
 
-    add_at_risk_counts(kmf_low, kmf_high, ax=ax)
+    # add at-risk counts only for fitted curves
+    fitters = []
+    if len(low_df) > 0:
+        fitters.append(kmf_low)
+    if len(high_df) > 0:
+        fitters.append(kmf_high)
 
-    # --- log-rank and c-index ---
-    res = logrank_test(
-        low_df[time_label],
-        high_df[time_label],
-        event_observed_A=low_df[status_label],
-        event_observed_B=high_df[status_label],
-    )
-    logrank_p = float(res.p_value)
+    if len(fitters) > 0:
+        add_at_risk_counts(*fitters, ax=ax)
+
+    # log-rank only if both groups exist
+    if len(low_df) > 0 and len(high_df) > 0:
+        res = logrank_test(
+            low_df[time_label],
+            high_df[time_label],
+            event_observed_A=low_df[status_label],
+            event_observed_B=high_df[status_label],
+        )
+        logrank_p = float(res.p_value)
+    else:
+        logrank_p = float("nan")
     c_used, used, *_ = _cindex(time, event, risk)
 
     ax.text(
