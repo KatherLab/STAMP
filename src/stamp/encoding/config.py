@@ -8,6 +8,7 @@ from stamp.types import DeviceLikeType, PandasLabel
 
 class EncoderName(StrEnum):
     COBRA = "cobra"
+    COBRAII = "cobraII"
     EAGLE = "eagle"
     CHIEF_CTRANSPATH = "chief"
     TITAN = "titan"

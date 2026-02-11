@@ -6,7 +6,7 @@ from stamp.preprocessing.config import ExtractorName
 
 try:
     import torch
-    from cobra.utils.load_cobra import get_cobraII, get_cobra
+    from cobra.utils.load_cobra import get_cobraII
 except ModuleNotFoundError as e:
     raise ModuleNotFoundError(
         "cobra dependencies not installed."
@@ -21,10 +21,10 @@ __credits__ = ["Lenz, Neidlinger, et al. (https://github.com/KatherLab/COBRA)"]
 
 class Cobra(Encoder):
     def __init__(self) -> None:
-        model = get_cobra(download_weights=True)
+        model = get_cobraII(download_weights=True)
         if torch.cuda.get_device_capability()[0] < 8:
             print(
-                f"\033[93mCOBRA (Mamba2) is designed to run on GPUs with compute capability 8.0 or higher!! "
+                f"\033[93mCOBRAII (Mamba2) is designed to run on GPUs with compute capability 8.0 or higher!! "
                 f"Your GPU has compute capability {torch.cuda.get_device_capability()[0]}. "
                 f"We are forced to switch to mixed FP16 precision. This may lead to numerical instability and reduced performance!!\033[0m"
             )
@@ -33,10 +33,10 @@ class Cobra(Encoder):
             precision = torch.float32
         super().__init__(
             model=model,
-            identifier=EncoderName.COBRA,
+            identifier=EncoderName.COBRAII,
             precision=precision,
             required_extractors=[
-                ExtractorName.CTRANSPATH,
+                ExtractorName.CONCH,
                 ExtractorName.UNI,
                 ExtractorName.VIRCHOW2,
                 ExtractorName.H_OPTIMUS_0,
