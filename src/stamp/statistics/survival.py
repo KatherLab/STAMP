@@ -136,7 +136,7 @@ def _plot_km(
         )
         kmf_high.plot_survival_function(ax=ax, ci_show=False, color="red")
 
-    # ---- add at-risk counts only for fitted curves ----
+    # add at-risk counts only for fitted curves
     fitters = []
     if len(low_df) > 0:
         fitters.append(kmf_low)
@@ -146,7 +146,7 @@ def _plot_km(
     if len(fitters) > 0:
         add_at_risk_counts(*fitters, ax=ax)
 
-    # ---- log-rank only if both groups exist ----
+    # log-rank only if both groups exist
     if len(low_df) > 0 and len(high_df) > 0:
         res = logrank_test(
             low_df[time_label],
