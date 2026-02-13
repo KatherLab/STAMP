@@ -7,8 +7,9 @@ from stamp.types import DeviceLikeType, PandasLabel
 
 
 class EncoderName(StrEnum):
-    COBRA = "cobra"
-    COBRAII = "cobraII"
+    # CORBAII should still be default but COBRAI should exist also (as this is the only one thats published)
+    COBRA = "cobraI"
+    COBRAII = "cobra" 
     EAGLE = "eagle"
     CHIEF_CTRANSPATH = "chief"
     TITAN = "titan"

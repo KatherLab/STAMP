@@ -61,7 +61,7 @@ class Encoder(ABC):
         if self.precision == torch.float16:
             self.model.half()
 
-        for tile_feats_filename in (progress := tqdm(os.listdir(feat_dir))):
+        for tile_feats_filename in (progress := tqdm([f for f in os.listdir(feat_dir) if f.endswith(".h5")])):
             h5_path = os.path.join(feat_dir, tile_feats_filename)
             slide_name: str = Path(tile_feats_filename).stem
             progress.set_description(slide_name)
