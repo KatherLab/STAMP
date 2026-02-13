@@ -1,6 +1,7 @@
 from enum import StrEnum
 
 from stamp.modeling.models import (
+    LitEncDecTransformer,
     LitPatientClassifier,
     LitPatientRegressor,
     LitPatientSurvival,
@@ -21,6 +22,7 @@ class ModelName(StrEnum):
     MLP = "mlp"
     TRANS_MIL = "trans_mil"
     LINEAR = "linear"
+    BARSPOON = "barspoon"
 
 
 # Map (feature_type, task) → correct Lightning wrapper class
@@ -34,6 +36,7 @@ MODEL_REGISTRY = {
     ("patient", "classification"): LitPatientClassifier,
     ("patient", "regression"): LitPatientRegressor,
     ("patient", "survival"): LitPatientSurvival,
+    # ("tile", "multiclass"): LitEncDecTransformer,
 }
 
 
@@ -53,6 +56,13 @@ def load_model_class(task: Task, feature_type: str, model_name: ModelName):
 
         case ModelName.MLP:
             from stamp.modeling.models.mlp import MLP as ModelClass
+
+        case ModelName.BARSPOON:
+            from stamp.modeling.models.barspoon import (
+                EncDecTransformer as ModelClass,
+            )
+
+            LitModelClass = LitEncDecTransformer
 
         case ModelName.LINEAR:
             from stamp.modeling.models.mlp import (

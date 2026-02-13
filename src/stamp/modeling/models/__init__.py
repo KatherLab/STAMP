@@ -3,7 +3,7 @@
 import inspect
 from abc import ABC
 from collections.abc import Iterable, Sequence
-from typing import Any, TypeAlias
+from typing import Any, Mapping, TypeAlias
 
 import lightning
 import numpy as np
@@ -14,6 +14,11 @@ from torch import Tensor, nn, optim
 from torchmetrics.classification import MulticlassAUROC
 
 import stamp
+from stamp.modeling.models.barspoon import (
+    EncDecTransformer,
+    LitMilClassificationMixin,
+    TargetLabel,
+)
 from stamp.modeling.models.cox import neg_partial_log_likelihood
 from stamp.types import (
     Bags,
@@ -818,3 +823,75 @@ class LitPatientSurvival(LitSlideSurvival):
     """
 
     supported_features = ["patient"]
+
+
+class LitEncDecTransformer(LitMilClassificationMixin):
+    def __init__(
+        self,
+        *,
+        dim_input: int,
+        category_weights: Mapping[TargetLabel, torch.Tensor],
+        model_class: type[nn.Module] | None = None,
+        ground_truth_label: PandasLabel | Sequence[PandasLabel] | None,
+        categories: Mapping[str, Sequence[Category]],
+        # Model parameters
+        d_model: int = 512,
+        num_encoder_heads: int = 8,
+        num_decoder_heads: int = 8,
+        num_encoder_layers: int = 2,
+        num_decoder_layers: int = 2,
+        dim_feedforward: int = 2048,
+        positional_encoding: bool = True,
+        # Other hparams
+        learning_rate: float = 1e-4,
+        **hparams: Any,
+    ) -> None:
+        weights_dict: dict[TargetLabel, torch.Tensor] = dict(category_weights)
+        super().__init__(
+            weights=weights_dict,
+            learning_rate=learning_rate,
+        )
+        _ = hparams  # so we don't get unused parameter warnings
+
+        self.model = EncDecTransformer(
+            d_features=dim_input,
+            target_n_outs={t: len(w) for t, w in category_weights.items()},
+            d_model=d_model,
+            num_encoder_heads=num_encoder_heads,
+            num_decoder_heads=num_decoder_heads,
+            num_encoder_layers=num_encoder_layers,
+            num_decoder_layers=num_decoder_layers,
+            dim_feedforward=dim_feedforward,
+            positional_encoding=positional_encoding,
+        )
+
+        self.hparams["supported_features"] = "tile"
+        self.hparams.update({"task": "classification"})
+        # ---- Normalize categories into strict mapping[str, list[str]] ----
+        if not isinstance(categories, Mapping):
+            raise ValueError(
+                "Multi-target classification requires categories as Mapping[str, Sequence[str]]."
+            )
+
+        normalized_categories: dict[str, list[str]] = {
+            str(k): list(v) for k, v in categories.items()
+        }
+
+        # Sanity check: head size must match category size
+        for t, w in category_weights.items():
+            if t not in normalized_categories:
+                raise ValueError(f"Missing categories for target '{t}'")
+            if len(normalized_categories[t]) != len(w):
+                raise ValueError(
+                    f"Category mismatch for target '{t}': "
+                    f"{len(normalized_categories[t])} categories "
+                    f"but head has {len(w)} outputs."
+                )
+
+        self.ground_truth_label = ground_truth_label
+        self.categories = normalized_categories
+
+        self.save_hyperparameters()
+
+    def forward(self, *args):
+        return self.model(*args)

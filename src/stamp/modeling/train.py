@@ -2,7 +2,7 @@ import logging
 import shutil
 from collections.abc import Callable, Mapping, Sequence
 from pathlib import Path
-from typing import cast
+from typing import Any, cast
 
 import lightning
 import torch
@@ -18,13 +18,7 @@ from stamp.modeling.data import (
     PatientData,
     PatientFeatureDataset,
     create_dataloader,
-    detect_feature_type,
-    filter_complete_patient_data_,
-    load_patient_level_data,
-    log_patient_class_summary,
-    patient_to_ground_truth_from_clini_table_,
-    patient_to_survival_from_clini_table_,
-    slide_to_patient_from_slide_table_,
+    load_patient_data_,
 )
 from stamp.modeling.registry import ModelName, load_model_class
 from stamp.modeling.transforms import VaryPrecisionTransform
@@ -53,65 +47,24 @@ def train_categorical_model_(
     advanced: AdvancedConfig,
 ) -> None:
     """Trains a model based on the feature type."""
-    feature_type = detect_feature_type(config.feature_dir)
-    _logger.info(f"Detected feature type: {feature_type}")
-
-    if feature_type in ("tile", "slide"):
-        if config.slide_table is None:
-            raise ValueError("A slide table is required for modeling")
-        if config.task == "survival":
-            if config.time_label is None or config.status_label is None:
-                raise ValueError(
-                    "Both time_label and status_label is required for survival modeling"
-                )
-            patient_to_ground_truth = patient_to_survival_from_clini_table_(
-                clini_table_path=config.clini_table,
-                time_label=config.time_label,
-                status_label=config.status_label,
-                patient_label=config.patient_label,
-            )
-        else:
-            if config.ground_truth_label is None:
-                raise ValueError(
-                    "Ground truth label is required for tile-level modeling"
-                )
-            patient_to_ground_truth = patient_to_ground_truth_from_clini_table_(
-                clini_table_path=config.clini_table,
-                ground_truth_label=config.ground_truth_label,
-                patient_label=config.patient_label,
-            )
-        slide_to_patient = slide_to_patient_from_slide_table_(
-            slide_table_path=config.slide_table,
-            feature_dir=config.feature_dir,
-            patient_label=config.patient_label,
-            filename_label=config.filename_label,
-        )
-        patient_to_data = filter_complete_patient_data_(
-            patient_to_ground_truth=patient_to_ground_truth,
-            slide_to_patient=slide_to_patient,
-            drop_patients_with_missing_ground_truth=True,
-        )
-    elif feature_type == "patient":
-        # Patient-level: ignore slide_table
-        if config.slide_table is not None:
-            _logger.warning("slide_table is ignored for patient-level features.")
-
-        patient_to_data = load_patient_level_data(
-            task=config.task,
-            clini_table=config.clini_table,
-            feature_dir=config.feature_dir,
-            patient_label=config.patient_label,
-            ground_truth_label=config.ground_truth_label,
-            time_label=config.time_label,
-            status_label=config.status_label,
-        )
-    else:
-        raise RuntimeError(f"Unknown feature type: {feature_type}")
-
     if config.task is None:
         raise ValueError(
             "task must be set to 'classification' | 'regression' | 'survival'"
         )
+
+    patient_to_data, feature_type = load_patient_data_(
+        feature_dir=config.feature_dir,
+        clini_table=config.clini_table,
+        slide_table=config.slide_table,
+        task=config.task,
+        ground_truth_label=config.ground_truth_label,
+        time_label=config.time_label,
+        status_label=config.status_label,
+        patient_label=config.patient_label,
+        filename_label=config.filename_label,
+        drop_patients_with_missing_ground_truth=True,
+    )
+    _logger.info(f"Detected feature type: {feature_type}")
 
     # Train the model (the rest of the logic is unchanged)
     model, train_dl, valid_dl = setup_model_for_training(
@@ -145,14 +98,14 @@ def train_categorical_model_(
 
 def setup_model_for_training(
     *,
-    patient_to_data: Mapping[PatientId, PatientData[GroundTruth]],
+    patient_to_data: Mapping[PatientId, PatientData[GroundTruth | None | dict]],
     task: Task,
     categories: Sequence[Category] | None,
     train_transform: Callable[[torch.Tensor], torch.Tensor] | None,
     feature_type: str,
     advanced: AdvancedConfig,
     # Metadata, has no effect on model training
-    ground_truth_label: PandasLabel | None,
+    ground_truth_label: PandasLabel | Sequence[PandasLabel] | None,
     time_label: PandasLabel | None,
     status_label: PandasLabel | None,
     clini_table: Path,
@@ -193,10 +146,6 @@ def setup_model_for_training(
             feature_type=feature_type,
             train_categories=train_categories,
         )
-        log_patient_class_summary(
-            patient_to_data={pid: patient_to_data[pid] for pid in patient_to_data},
-            categories=categories,
-        )
 
     # 1. Default to a model if none is specified
     if advanced.model_name is None:
@@ -209,6 +158,7 @@ def setup_model_for_training(
     LitModelClass, ModelClass = load_model_class(
         task, feature_type, advanced.model_name
     )
+    print(f"Using Lightning wrapper class: {LitModelClass}")
 
     # 3. Validate that the chosen model supports the feature type
     if feature_type not in LitModelClass.supported_features:
@@ -272,7 +222,7 @@ def setup_model_for_training(
 
 def setup_dataloaders_for_training(
     *,
-    patient_to_data: Mapping[PatientId, PatientData[GroundTruth]],
+    patient_to_data: Mapping[PatientId, PatientData[GroundTruth | None | dict]],
     task: Task,
     categories: Sequence[Category] | None,
     bag_size: int,
@@ -283,7 +233,7 @@ def setup_dataloaders_for_training(
 ) -> tuple[
     DataLoader,
     DataLoader,
-    Sequence[Category],
+    Sequence[Category] | Mapping[str, Sequence[Category]],
     int,
     Sequence[PatientId],
     Sequence[PatientId],
@@ -310,10 +260,25 @@ def setup_dataloaders_for_training(
         )
 
     if task == "classification":
-        stratify = ground_truths
+        # Handle both single and multi-target cases
+        if ground_truths and isinstance(ground_truths[0], dict):
+            # Multi-target: use first target for stratification
+            first_key = list(ground_truths[0].keys())[0]
+            stratify = [cast(dict, gt)[first_key] for gt in ground_truths]
+        else:
+            stratify = ground_truths
     elif task == "survival":
-        # Extract event indicator (status)
-        statuses = [int(gt.split()[1]) for gt in ground_truths]
+        # Extract event indicator (status) - handle both single and multi-target
+        statuses = []
+        for gt in ground_truths:
+            if isinstance(gt, dict):
+                # Multi-target survival: extract from first target
+                first_key = list(gt.keys())[0]
+                val = cast(dict, gt)[first_key]
+                if val:
+                    statuses.append(int(val.split()[1]))
+            else:
+                statuses.append(int(gt.split()[1]))
         stratify = statuses
     elif task == "regression":
         stratify = None
@@ -321,7 +286,10 @@ def setup_dataloaders_for_training(
     train_patients, valid_patients = cast(
         tuple[Sequence[PatientId], Sequence[PatientId]],
         train_test_split(
-            list(patient_to_data), stratify=stratify, shuffle=True, random_state=0
+            list(patient_to_data),
+            stratify=cast(Any, stratify),
+            shuffle=True,
+            random_state=0,
         ),
     )
 
@@ -441,28 +409,50 @@ def _compute_class_weights_and_check_categories(
     *,
     train_dl: DataLoader,
     feature_type: str,
-    train_categories: Sequence[str],
-) -> torch.Tensor:
+    train_categories: Sequence[str] | Mapping[str, Sequence[str]],
+) -> torch.Tensor | dict[str, torch.Tensor]:
     """
     Computes class weights and checks for category issues.
     Logs warnings if there are too few or underpopulated categories.
     Returns normalized category weights as a torch.Tensor.
     """
     if feature_type == "tile":
-        category_counts = cast(BagDataset, train_dl.dataset).ground_truths.sum(dim=0)
+        dataset = cast(BagDataset, train_dl.dataset)
+
+        if isinstance(dataset.ground_truths, list):
+            # Multi-target case: compute weights per target head
+            weights_per_target: dict[str, torch.Tensor] = {}
+
+            target_keys = dataset.ground_truths[0].keys()
+
+            for key in target_keys:
+                stacked = torch.stack([gt[key] for gt in dataset.ground_truths], dim=0)
+                counts = stacked.sum(dim=0)
+                w = counts.sum() / counts
+                weights_per_target[key] = w / w.sum()
+
+            return weights_per_target
+        else:
+            category_counts = dataset.ground_truths.sum(dim=0)
     else:
-        category_counts = cast(
-            PatientFeatureDataset, train_dl.dataset
-        ).ground_truths.sum(dim=0)
+        dataset = cast(PatientFeatureDataset, train_dl.dataset)
+        category_counts = dataset.ground_truths.sum(dim=0)
     cat_ratio_reciprocal = category_counts.sum() / category_counts
     category_weights = cat_ratio_reciprocal / cat_ratio_reciprocal.sum()
 
     if len(train_categories) <= 1:
         raise ValueError(f"not enough categories to train on: {train_categories}")
-    elif any(category_counts < 16):
+    elif (category_counts < 16).any():
+        category_counts_list = (
+            category_counts.tolist()
+            if category_counts.dim() > 0
+            else [category_counts.item()]
+        )
         underpopulated_categories = {
             category: int(count)
-            for category, count in zip(train_categories, category_counts, strict=True)
+            for category, count in zip(
+                train_categories, category_counts_list, strict=True
+            )
             if count < 16
         }
         _logger.warning(

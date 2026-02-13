@@ -7,7 +7,7 @@ import lightning
 import numpy as np
 import pandas as pd
 import torch
-from jaxtyping import Float
+import torch.nn.functional as F
 from lightning.pytorch.accelerators.accelerator import Accelerator
 
 from stamp.modeling.data import (
@@ -20,7 +20,7 @@ from stamp.modeling.data import (
     slide_to_patient_from_slide_table_,
 )
 from stamp.modeling.registry import ModelName, load_model_class
-from stamp.types import GroundTruth, PandasLabel, PatientId
+from stamp.types import Category, GroundTruth, PandasLabel, PatientId
 
 __all__ = ["deploy_categorical_model_"]
 
@@ -31,6 +31,13 @@ __license__ = "MIT"
 _logger = logging.getLogger("stamp")
 
 Logit: TypeAlias = float
+
+# Prediction type aliases
+PredictionSingle: TypeAlias = torch.Tensor
+PredictionMulti: TypeAlias = dict[str, torch.Tensor]
+PredictionsType: TypeAlias = Mapping[
+    PatientId, Union[PredictionSingle, PredictionMulti]
+]
 
 
 def load_model_from_ckpt(path: Union[str, Path]):
@@ -50,7 +57,7 @@ def deploy_categorical_model_(
     clini_table: Path | None,
     slide_table: Path | None,
     feature_dir: Path,
-    ground_truth_label: PandasLabel | None,
+    ground_truth_label: PandasLabel | Sequence[PandasLabel] | None,
     time_label: PandasLabel | None,
     status_label: PandasLabel | None,
     patient_label: PandasLabel,
@@ -126,7 +133,12 @@ def deploy_categorical_model_(
         # classification/regression: still use ground_truth_label
         if (
             len(
-                ground_truth_labels := set(model.ground_truth_label for model in models)
+                ground_truth_labels := {
+                    tuple(model.ground_truth_label)
+                    if isinstance(model.ground_truth_label, list)
+                    else (model.ground_truth_label,)
+                    for model in models
+                }
             )
             != 1
         ):
@@ -145,17 +157,21 @@ def deploy_categorical_model_(
                 f"{ground_truth_label} vs {model_ground_truth_label}"
             )
 
-        ground_truth_label = ground_truth_label or model_ground_truth_label
+        ground_truth_label = ground_truth_label or cast(
+            PandasLabel, model_ground_truth_label
+        )
 
     output_dir.mkdir(exist_ok=True, parents=True)
 
     model_categories = None
     if task == "classification":
         # Ensure the categories were the same between all models
-        category_sets = {tuple(m.categories) for m in models}
+        category_sets = {
+            tuple(cast(Sequence[GroundTruth], m.categories)) for m in models
+        }
         if len(category_sets) != 1:
             raise RuntimeError(f"Categories differ between models: {category_sets}")
-        model_categories = list(models[0].categories)
+        model_categories = list(cast(Sequence[GroundTruth], models[0].categories))
 
     # Data loading logic
     if feature_type in ("tile", "slide"):
@@ -171,6 +187,15 @@ def deploy_categorical_model_(
         )
         if clini_table is not None:
             if task == "survival":
+                if not hasattr(models[0], "time_label") or not isinstance(
+                    models[0].time_label, str
+                ):
+                    raise AttributeError("Model is missing valid 'time_label' (str).")
+                if not hasattr(models[0], "status_label") or not isinstance(
+                    models[0].status_label, str
+                ):
+                    raise AttributeError("Model is missing valid 'status_label' (str).")
+
                 patient_to_ground_truth = patient_to_survival_from_clini_table_(
                     clini_table_path=clini_table,
                     patient_label=patient_label,
@@ -192,7 +217,10 @@ def deploy_categorical_model_(
                 patient_id: None for patient_id in set(slide_to_patient.values())
             }
         patient_to_data = filter_complete_patient_data_(
-            patient_to_ground_truth=patient_to_ground_truth,
+            patient_to_ground_truth=cast(
+                Mapping[PatientId, GroundTruth | None],
+                patient_to_ground_truth,
+            ),
             slide_to_patient=slide_to_patient,
             drop_patients_with_missing_ground_truth=False,
         )
@@ -241,7 +269,10 @@ def deploy_categorical_model_(
         "regression": _to_regression_prediction_df,
         "survival": _to_survival_prediction_df,
     }[task]
-    all_predictions: list[Mapping[PatientId, Float[torch.Tensor, "category"]]] = []  # noqa: F821
+    all_predictions: list[PredictionsType] = []
+    categories_for_export: (
+        Sequence[Category] | Mapping[str, Sequence[Category]] | None
+    ) = cast(Sequence[Category] | Mapping[str, Sequence[Category]] | None, None)
     for model_i, model in enumerate(models):
         predictions = _predict(
             model=model,
@@ -250,6 +281,26 @@ def deploy_categorical_model_(
             accelerator=accelerator,
         )
         all_predictions.append(predictions)
+
+        if isinstance(next(iter(predictions.values())), dict):
+            # Multi-target case: gather categories across all targets for export (use model categories if available, else infer from GT)
+            categories_accum: dict[str, set[GroundTruth]] = {}
+
+            for pd_item in patient_to_data.values():
+                gt = pd_item.ground_truth
+                if isinstance(gt, dict):
+                    for k, v in gt.items():
+                        if v is not None:
+                            categories_accum.setdefault(k, set()).add(v)
+
+            categories_for_export = {k: sorted(v) for k, v in categories_accum.items()}
+
+        else:
+            # Single-target case: use categories from model if available, else infer from GT
+            if task == "classification":
+                categories_for_export = models[0].categories
+            else:
+                categories_for_export = []
 
         # cut-off values from survival ckpt
         cut_off = (
@@ -261,7 +312,7 @@ def deploy_categorical_model_(
         # Only save individual model files when deploying multiple models (ensemble)
         if len(models) > 1:
             df_builder(
-                categories=model_categories,
+                categories=categories_for_export,
                 patient_to_ground_truth=patient_to_ground_truth,
                 predictions=predictions,
                 patient_label=patient_label,
@@ -270,7 +321,7 @@ def deploy_categorical_model_(
             ).to_csv(output_dir / f"patient-preds-{model_i}.csv", index=False)
         else:
             df_builder(
-                categories=model_categories,
+                categories=categories_for_export,
                 patient_to_ground_truth=patient_to_ground_truth,
                 predictions=predictions,
                 patient_label=patient_label,
@@ -279,17 +330,29 @@ def deploy_categorical_model_(
             ).to_csv(output_dir / "patient-preds.csv", index=False)
 
     if task == "classification":
-        # TODO we probably also want to save the 95% confidence interval in addition to the mean
+        # compute mean prediction across models (supports single- and multi-target)
+        mean_preds: dict[PatientId, object] = {}
+        for pid in patient_ids:
+            model_preds = cast(
+                list[torch.Tensor], [preds[pid] for preds in all_predictions]
+            )
+            firstp = model_preds[0]
+            if isinstance(firstp, dict):
+                # per-target averaging
+                mean_preds[pid] = {
+                    t: torch.stack([p[t] for p in model_preds]).mean(dim=0)
+                    for t in firstp.keys()
+                }
+            else:
+                mean_preds[pid] = torch.stack(model_preds).mean(dim=0)
+
+        assert categories_for_export is not None, (
+            "categories_for_export must be set before use"
+        )
         df_builder(
-            categories=model_categories,
+            categories=categories_for_export,
             patient_to_ground_truth=patient_to_ground_truth,
-            predictions={
-                # Mean prediction
-                patient_id: torch.stack(
-                    [predictions[patient_id] for predictions in all_predictions]
-                ).mean(dim=0)
-                for patient_id in patient_ids
-            },
+            predictions=mean_preds,
             patient_label=patient_label,
             ground_truth_label=ground_truth_label,
         ).to_csv(output_dir / "patient-preds_95_confidence_interval.csv", index=False)
@@ -301,7 +364,7 @@ def _predict(
     test_dl: torch.utils.data.DataLoader,
     patient_ids: Sequence[PatientId],
     accelerator: str | Accelerator,
-) -> Mapping[PatientId, Float[torch.Tensor, "..."]]:
+) -> PredictionsType:
     model = model.eval()
     torch.set_float32_matmul_precision("medium")
 
@@ -310,8 +373,11 @@ def _predict(
         getattr(model, "train_patients", [])
     ) | set(getattr(model, "valid_patients", []))
     if overlap := patients_used_for_training & set(patient_ids):
-        raise ValueError(
-            f"some of the patients in the validation set were used during training: {overlap}"
+        _logger.critical(
+            "DATA LEAKAGE DETECTED: %d patient(s) in deployment set were used "
+            "during training/validation. Overlapping IDs: %s",
+            len(overlap),
+            sorted(overlap),
         )
 
     trainer = lightning.Trainer(
@@ -320,51 +386,190 @@ def _predict(
         logger=False,
     )
 
-    raw_preds = torch.concat(cast(list[torch.Tensor], trainer.predict(model, test_dl)))
+    outs = trainer.predict(model, test_dl)
+
+    if not outs:
+        return {}
+
+    first = outs[0]
+
+    # Multi-target case: each element of outs is a dict[target_label -> tensor]
+    if isinstance(first, dict):
+        per_target_lists: dict[str, list[torch.Tensor]] = {}
+        for out in outs:
+            if not isinstance(out, dict):
+                raise RuntimeError("Mixed prediction output types from model")
+            for k, v in out.items():
+                per_target_lists.setdefault(k, []).append(v)
+
+        per_target_tensors: dict[str, torch.Tensor] = {
+            k: torch.cat(vlist, dim=0) for k, vlist in per_target_lists.items()
+        }
+
+        if getattr(model.hparams, "task", None) == "classification":
+            for k in list(per_target_tensors.keys()):
+                per_target_tensors[k] = torch.softmax(per_target_tensors[k], dim=1)
+
+        # build per-patient dicts
+        num_preds = next(iter(per_target_tensors.values())).shape[0]
+        predictions: dict[PatientId, dict[str, torch.Tensor]] = {}
+        for i, pid in enumerate(patient_ids[:num_preds]):
+            predictions[pid] = {
+                k: per_target_tensors[k][i] for k in per_target_tensors.keys()
+            }
+
+        return predictions
+
+    # Single-target case: each element of outs is a tensor
+    outs_single = cast(list[torch.Tensor], outs)
+
+    raw_preds = torch.cat(outs_single, dim=0)
 
     if getattr(model.hparams, "task", None) == "classification":
-        predictions = torch.softmax(raw_preds, dim=1)
+        raw_preds = torch.softmax(raw_preds, dim=1)
     elif getattr(model.hparams, "task", None) == "survival":
-        predictions = raw_preds.squeeze(-1)  # (N,) risk scores
-    else:  # regression
-        predictions = raw_preds
+        raw_preds = raw_preds.squeeze(-1)
 
-    return dict(zip(patient_ids, predictions, strict=True))
+    result: dict[PatientId, torch.Tensor] = {
+        pid: raw_preds[i] for i, pid in enumerate(patient_ids)
+    }
+
+    return result
 
 
 def _to_prediction_df(
     *,
-    categories: Sequence[GroundTruth],
-    patient_to_ground_truth: Mapping[PatientId, GroundTruth | None],
-    predictions: Mapping[PatientId, torch.Tensor],
+    categories: Sequence[GroundTruth] | Mapping[str, Sequence[GroundTruth]],
+    patient_to_ground_truth: Mapping[PatientId, GroundTruth | None]
+    | Mapping[PatientId, dict[str, GroundTruth | None]],
+    predictions: Mapping[PatientId, torch.Tensor]
+    | Mapping[PatientId, dict[str, torch.Tensor]],
     patient_label: PandasLabel,
-    ground_truth_label: PandasLabel,
+    ground_truth_label: PandasLabel | Sequence[PandasLabel],
     **kwargs,
 ) -> pd.DataFrame:
-    """Compiles deployment results into a DataFrame."""
-    return pd.DataFrame(
-        [
-            {
-                patient_label: patient_id,
-                ground_truth_label: patient_to_ground_truth.get(patient_id),
-                "pred": categories[int(prediction.argmax())],
-                **{
-                    f"{ground_truth_label}_{category}": prediction[i_cat].item()
-                    for i_cat, category in enumerate(categories)
-                },
-                "loss": (
-                    torch.nn.functional.cross_entropy(
-                        prediction.reshape(1, -1),
-                        torch.tensor(np.where(np.array(categories) == ground_truth)[0]),
-                    ).item()
-                    if (ground_truth := patient_to_ground_truth.get(patient_id))
-                    is not None
-                    else None
-                ),
-            }
-            for patient_id, prediction in predictions.items()
-        ]
-    ).sort_values(by="loss")
+    """Compiles deployment results into a DataFrame.
+
+    Supports single-target and multi-target classification.
+    - Single-target: `predictions` maps patient -> tensor and `categories` is a sequence.
+    - Multi-target: `predictions` maps patient -> dict[target_label -> tensor] and
+      `categories` is a mapping from target_label -> sequence of category names.
+    """
+    first_pred = next(iter(predictions.values()))
+
+    # Multi-target predictions: dict per patient
+    if isinstance(first_pred, dict):
+        # determine target labels
+        target_labels = list(cast(dict, first_pred).keys())
+
+        # prepare categories mapping
+        if isinstance(categories, dict):
+            cats_map = categories
+        else:
+            # try infer categories list ordering: assume categories is a sequence-of-sequences
+            cats_map = {}
+            if isinstance(categories, Sequence):
+                try:
+                    for i, t in enumerate(target_labels):
+                        cats_map[t] = list(
+                            cast(Sequence[Sequence[GroundTruth]], categories)[i]
+                        )
+                except Exception:
+                    cats_map = {}
+
+        # infer missing category lists from ground truth
+        if any(t not in cats_map for t in target_labels):
+            inferred: dict[str, set] = {t: set() for t in target_labels}
+            for pid, gt in patient_to_ground_truth.items():
+                if isinstance(gt, dict):
+                    for t in target_labels:
+                        val = gt.get(t)
+                        if val is not None:
+                            inferred[t].add(val)
+            for t in target_labels:
+                if t not in cats_map:
+                    cats_map[t] = sorted(inferred.get(t, []))
+
+        rows = []
+        for pid, pred_dict in predictions.items():
+            row: dict = {patient_label: pid}
+            gt_entry = patient_to_ground_truth.get(pid)
+            # ground truths per target
+            for t in target_labels:
+                if isinstance(gt_entry, dict):
+                    row[t] = gt_entry.get(t)
+                else:
+                    row[t] = gt_entry
+
+            total_loss = 0.0
+            has_loss = False
+            for t in target_labels:
+                tensor = cast(dict[str, torch.Tensor], pred_dict)[t]
+                probs = tensor.detach().cpu()
+                cats: Sequence[GroundTruth] = cast(
+                    Sequence[GroundTruth],
+                    cats_map.get(t, []),
+                )
+                if probs.numel() == 1:
+                    row[f"pred_{t}"] = float(probs.item())
+                else:
+                    pred_idx = int(probs.argmax().item())
+                    row[f"pred_{t}"] = (
+                        cats[pred_idx] if pred_idx < len(cats) else pred_idx
+                    )
+                for i_cat, cat in enumerate(cats):
+                    if i_cat < probs.shape[0]:
+                        row[f"{t}_{cat}"] = float(probs[i_cat].item())
+                    else:
+                        row[f"{t}_{cat}"] = None
+
+                if isinstance(gt_entry, dict) and (gt := gt_entry.get(t)) is not None:
+                    try:
+                        target_index = int(np.where(np.array(cats) == gt)[0][0])
+                        loss = torch.nn.functional.cross_entropy(
+                            probs.reshape(1, -1), torch.tensor([target_index])
+                        ).item()
+                        total_loss += loss
+                        has_loss = True
+                    except Exception:
+                        pass
+
+            row["loss"] = total_loss if has_loss else None
+            rows.append(row)
+
+        return pd.DataFrame(rows)
+
+    # Single-target (original behaviour)
+    if not all(isinstance(p, torch.Tensor) for p in predictions.values()):
+        raise TypeError("Single-target block received multi-target dict predictions.")
+
+    predictions = cast(Mapping[PatientId, torch.Tensor], predictions)
+
+    rows = []
+    for pid, prediction in predictions.items():
+        gt = patient_to_ground_truth.get(pid)
+        cats = cast(Sequence[GroundTruth], categories)
+        pred_idx = int(prediction.argmax())
+        row = {
+            patient_label: pid,
+            ground_truth_label: gt,
+            "pred": cats[pred_idx],
+            **{
+                f"{ground_truth_label}_{category}": float(prediction[i_cat].item())
+                for i_cat, category in enumerate(cats)
+            },
+            "loss": (
+                torch.nn.functional.cross_entropy(
+                    prediction.reshape(1, -1),
+                    torch.tensor(np.where(np.array(cats) == gt)[0]),
+                ).item()
+                if gt is not None
+                else None
+            ),
+        }
+        rows.append(row)
+
+    return pd.DataFrame(rows).sort_values(by="loss")
 
 
 def _to_regression_prediction_df(
@@ -383,8 +588,6 @@ def _to_regression_prediction_df(
       - pred (float)
       - loss (per-sample L1 loss if GT available, else None)
     """
-    import torch.nn.functional as F
-
     return pd.DataFrame(
         [
             {

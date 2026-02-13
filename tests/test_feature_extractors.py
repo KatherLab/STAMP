@@ -7,8 +7,8 @@ import pytest
 import torch
 from huggingface_hub.errors import GatedRepoError
 
-from stamp.cache import download_file
 from stamp.preprocessing import ExtractorName, Microns, TilePixels, extract_
+from stamp.utils.cache import download_file
 
 
 @pytest.mark.slow

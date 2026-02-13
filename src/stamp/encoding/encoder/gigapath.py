@@ -9,12 +9,12 @@ import torch
 from gigapath import slide_encoder
 from tqdm import tqdm
 
-from stamp.cache import get_processing_code_hash
 from stamp.encoding.config import EncoderName
 from stamp.encoding.encoder import Encoder
 from stamp.modeling.data import CoordsInfo
 from stamp.preprocessing.config import ExtractorName
 from stamp.types import PandasLabel, SlideMPP
+from stamp.utils.cache import get_processing_code_hash
 
 __author__ = "Juan Pablo Ricapito"
 __copyright__ = "Copyright (C) 2025 Juan Pablo Ricapito"

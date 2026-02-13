@@ -1,5 +1,6 @@
 import torch
 
+from stamp.modeling.models.barspoon import EncDecTransformer
 from stamp.modeling.models.mlp import MLP
 from stamp.modeling.models.trans_mil import TransMIL
 from stamp.modeling.models.vision_tranformer import VisionTransformer
@@ -162,3 +163,114 @@ def test_trans_mil_inference_reproducibility(
         )
 
     assert logits1.allclose(logits2)
+
+
+def test_enc_dec_transformer_dims(
+    batch_size: int = 6,
+    n_tiles: int = 75,
+    input_dim: int = 456,
+    d_model: int = 128,
+) -> None:
+    target_n_outs = {"subtype": 3, "grade": 4}
+    model = EncDecTransformer(
+        d_features=input_dim,
+        target_n_outs=target_n_outs,
+        d_model=d_model,
+        num_encoder_heads=4,
+        num_decoder_heads=4,
+        num_encoder_layers=2,
+        num_decoder_layers=2,
+        dim_feedforward=256,
+        positional_encoding=True,
+    )
+
+    bags = torch.rand((batch_size, n_tiles, input_dim))
+    coords = torch.rand((batch_size, n_tiles, 2))
+    logits = model.forward(bags, coords)
+
+    assert set(logits.keys()) == set(target_n_outs.keys())
+    for target_label, n_out in target_n_outs.items():
+        assert logits[target_label].shape == (batch_size, n_out)
+
+
+def test_enc_dec_transformer_single_target(
+    batch_size: int = 4,
+    n_tiles: int = 50,
+    input_dim: int = 256,
+    d_model: int = 64,
+) -> None:
+    target_n_outs = {"label": 5}
+    model = EncDecTransformer(
+        d_features=input_dim,
+        target_n_outs=target_n_outs,
+        d_model=d_model,
+        num_encoder_heads=4,
+        num_decoder_heads=4,
+        num_encoder_layers=1,
+        num_decoder_layers=1,
+        dim_feedforward=128,
+    )
+
+    bags = torch.rand((batch_size, n_tiles, input_dim))
+    coords = torch.rand((batch_size, n_tiles, 2))
+    logits = model.forward(bags, coords)
+
+    assert list(logits.keys()) == ["label"]
+    assert logits["label"].shape == (batch_size, 5)
+
+
+def test_enc_dec_transformer_no_positional_encoding(
+    batch_size: int = 4,
+    n_tiles: int = 30,
+    input_dim: int = 128,
+    d_model: int = 64,
+) -> None:
+    target_n_outs = {"a": 2, "b": 3}
+    model = EncDecTransformer(
+        d_features=input_dim,
+        target_n_outs=target_n_outs,
+        d_model=d_model,
+        num_encoder_heads=4,
+        num_decoder_heads=4,
+        num_encoder_layers=1,
+        num_decoder_layers=1,
+        dim_feedforward=128,
+        positional_encoding=False,
+    )
+
+    bags = torch.rand((batch_size, n_tiles, input_dim))
+    coords = torch.rand((batch_size, n_tiles, 2))
+    logits = model.forward(bags, coords)
+
+    for target_label, n_out in target_n_outs.items():
+        assert logits[target_label].shape == (batch_size, n_out)
+
+
+def test_enc_dec_transformer_inference_reproducibility(
+    batch_size: int = 5,
+    n_tiles: int = 40,
+    input_dim: int = 200,
+    d_model: int = 64,
+) -> None:
+    target_n_outs = {"subtype": 3, "grade": 4}
+    model = EncDecTransformer(
+        d_features=input_dim,
+        target_n_outs=target_n_outs,
+        d_model=d_model,
+        num_encoder_heads=4,
+        num_decoder_heads=4,
+        num_encoder_layers=2,
+        num_decoder_layers=2,
+        dim_feedforward=128,
+    )
+    model = model.eval()
+
+    bags = torch.rand((batch_size, n_tiles, input_dim))
+    coords = torch.rand((batch_size, n_tiles, 2))
+
+    with torch.inference_mode():
+        logits1 = model.forward(bags, coords)
+        logits2 = model.forward(bags, coords)
+
+    for target_label in target_n_outs:
+        assert logits1[target_label].allclose(logits2[target_label])

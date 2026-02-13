@@ -8,6 +8,7 @@ import pytest
 import torch
 from random_data import (
     create_random_dataset,
+    create_random_multi_target_dataset,
     create_random_patient_level_dataset,
     create_random_patient_level_survival_dataset,
     create_random_regression_dataset,
@@ -22,8 +23,9 @@ from stamp.modeling.config import (
     VitModelParams,
 )
 from stamp.modeling.deploy import deploy_categorical_model_
+from stamp.modeling.registry import ModelName
 from stamp.modeling.train import train_categorical_model_
-from stamp.seed import Seed
+from stamp.utils.seed import Seed
 
 
 @pytest.mark.slow
@@ -122,6 +124,9 @@ def test_train_deploy_integration(
         pytest.param(True, False, id="use alibi"),
         pytest.param(False, True, id="use vary_precision_transform"),
     ],
+)
+@pytest.mark.filterwarnings(
+    "ignore:.*violates type hint.*not instance of tuple:UserWarning"
 )
 def test_train_deploy_patient_level_integration(
     *,
@@ -356,6 +361,9 @@ def test_train_deploy_survival_integration(
 
 
 @pytest.mark.slow
+@pytest.mark.filterwarnings(
+    "ignore:.*violates type hint.*not instance of tuple:UserWarning"
+)
 def test_train_deploy_patient_level_regression_integration(
     *,
     tmp_path: Path,
@@ -465,6 +473,9 @@ def test_train_deploy_patient_level_regression_integration(
 
 
 @pytest.mark.slow
+@pytest.mark.filterwarnings(
+    "ignore:.*violates type hint.*not instance of tuple:UserWarning"
+)
 def test_train_deploy_patient_level_survival_integration(
     *,
     tmp_path: Path,
@@ -528,6 +539,92 @@ def test_train_deploy_patient_level_survival_integration(
         time_label="day",
         status_label="status",
         filename_label="slide_path",  # unused
+        accelerator="gpu" if torch.cuda.is_available() else "cpu",
+        num_workers=min(os.cpu_count() or 1, 16),
+    )
+
+
+@pytest.mark.slow
+@pytest.mark.filterwarnings("ignore:No positive samples in targets")
+def test_train_deploy_multi_target_integration(
+    *,
+    tmp_path: Path,
+    feat_dim: int = 25,
+) -> None:
+    """Integration test: train + deploy a multi-target tile-level classification model."""
+    Seed.set(42)
+
+    (tmp_path / "train").mkdir()
+    (tmp_path / "deploy").mkdir()
+
+    # Define multi-target setup: subtype (2 categories) and grade (3 categories)
+    target_labels = ["subtype", "grade"]
+    categories_per_target = [["A", "B"], ["1", "2", "3"]]
+
+    # Create random multi-target tile-level dataset
+    train_clini_path, train_slide_path, train_feature_dir, _ = (
+        create_random_multi_target_dataset(
+            dir=tmp_path / "train",
+            n_patients=400,
+            max_slides_per_patient=3,
+            min_tiles_per_slide=20,
+            max_tiles_per_slide=600,
+            feat_dim=feat_dim,
+            target_labels=target_labels,
+            categories_per_target=categories_per_target,
+        )
+    )
+    deploy_clini_path, deploy_slide_path, deploy_feature_dir, _ = (
+        create_random_multi_target_dataset(
+            dir=tmp_path / "deploy",
+            n_patients=50,
+            max_slides_per_patient=3,
+            min_tiles_per_slide=20,
+            max_tiles_per_slide=600,
+            feat_dim=feat_dim,
+            target_labels=target_labels,
+            categories_per_target=categories_per_target,
+        )
+    )
+
+    # Build config objects
+    config = TrainConfig(
+        task="classification",
+        clini_table=train_clini_path,
+        slide_table=train_slide_path,
+        feature_dir=train_feature_dir,
+        output_dir=tmp_path / "train_output",
+        patient_label="patient",
+        ground_truth_label=target_labels,
+        filename_label="slide_path",
+        categories=[cat for cats in categories_per_target for cat in cats],
+    )
+
+    advanced = AdvancedConfig(
+        bag_size=500,
+        num_workers=min(os.cpu_count() or 1, 16),
+        batch_size=8,
+        max_epochs=2,
+        patience=1,
+        accelerator="gpu" if torch.cuda.is_available() else "cpu",
+        model_params=ModelParams(),
+        model_name=ModelName.BARSPOON,
+    )
+
+    # Train + deploy multi-target model
+    train_categorical_model_(config=config, advanced=advanced)
+
+    deploy_categorical_model_(
+        output_dir=tmp_path / "deploy_output",
+        checkpoint_paths=[tmp_path / "train_output" / "model.ckpt"],
+        clini_table=deploy_clini_path,
+        slide_table=deploy_slide_path,
+        feature_dir=deploy_feature_dir,
+        patient_label="patient",
+        ground_truth_label=target_labels,
+        time_label=None,
+        status_label=None,
+        filename_label="slide_path",
         accelerator="gpu" if torch.cuda.is_available() else "cpu",
         num_workers=min(os.cpu_count() or 1, 16),
     )

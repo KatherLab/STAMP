@@ -10,11 +10,11 @@ import torch.nn.functional as F
 from numpy import ndarray
 from tqdm import tqdm
 
-from stamp.cache import STAMP_CACHE_DIR, file_digest, get_processing_code_hash
 from stamp.encoding.config import EncoderName
 from stamp.encoding.encoder import Encoder
 from stamp.preprocessing.config import ExtractorName
 from stamp.types import DeviceLikeType, PandasLabel
+from stamp.utils.cache import STAMP_CACHE_DIR, file_digest, get_processing_code_hash
 
 __author__ = "Juan Pablo Ricapito"
 __copyright__ = "Copyright (C) 2025 Juan Pablo Ricapito"

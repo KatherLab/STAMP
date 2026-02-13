@@ -10,13 +10,13 @@ import torch
 from huggingface_hub.errors import GatedRepoError
 from random_data import create_random_dataset, create_random_feature_file, random_string
 
-from stamp.cache import download_file
 from stamp.encoding import (
     EncoderName,
     init_patient_encoder_,
     init_slide_encoder_,
 )
 from stamp.preprocessing.config import ExtractorName
+from stamp.utils.cache import download_file
 
 # Contains an accepted input patch-level feature encoder
 # TODO: Make a class for each extractor instead of a function. This class

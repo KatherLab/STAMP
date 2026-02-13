@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from stamp.cache import STAMP_CACHE_DIR, file_digest
+from stamp.utils.cache import STAMP_CACHE_DIR, file_digest
 
 try:
     import gdown

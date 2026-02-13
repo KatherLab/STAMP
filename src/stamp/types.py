@@ -37,6 +37,7 @@ DeviceLikeType: TypeAlias = str | torch.device | int
 
 PatientId: TypeAlias = str
 GroundTruth: TypeAlias = str
+MultiClassGroundTruth: TypeAlias = tuple[str, ...]
 FeaturePath = NewType("FeaturePath", Path)
 
 Category: TypeAlias = str

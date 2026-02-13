@@ -1,8 +1,10 @@
 import logging
+from collections import Counter
 from collections.abc import Mapping, Sequence
-from typing import Any, Final
+from typing import Any, cast
 
 import numpy as np
+import torch
 from pydantic import BaseModel
 from sklearn.model_selection import KFold, StratifiedKFold
 
@@ -10,13 +12,8 @@ from stamp.modeling.config import AdvancedConfig, CrossvalConfig
 from stamp.modeling.data import (
     PatientData,
     create_dataloader,
-    detect_feature_type,
-    filter_complete_patient_data_,
-    load_patient_level_data,
+    load_patient_data_,
     log_patient_class_summary,
-    patient_to_ground_truth_from_clini_table_,
-    patient_to_survival_from_clini_table_,
-    slide_to_patient_from_slide_table_,
 )
 from stamp.modeling.deploy import (
     _predict,
@@ -28,7 +25,6 @@ from stamp.modeling.deploy import (
 from stamp.modeling.train import setup_model_for_training, train_model_
 from stamp.modeling.transforms import VaryPrecisionTransform
 from stamp.types import (
-    FeaturePath,
     GroundTruth,
     PatientId,
 )
@@ -53,67 +49,31 @@ def categorical_crossval_(
     config: CrossvalConfig,
     advanced: AdvancedConfig,
 ) -> None:
-    feature_type = detect_feature_type(config.feature_dir)
+    if config.task is None:
+        raise ValueError(
+            "task must be set to 'classification' | 'regression' | 'survival'"
+        )
+
+    patient_to_data, feature_type = load_patient_data_(
+        feature_dir=config.feature_dir,
+        clini_table=config.clini_table,
+        slide_table=config.slide_table,
+        task=config.task,
+        ground_truth_label=config.ground_truth_label,
+        time_label=config.time_label,
+        status_label=config.status_label,
+        patient_label=config.patient_label,
+        filename_label=config.filename_label,
+        drop_patients_with_missing_ground_truth=True,
+    )
     _logger.info(f"Detected feature type: {feature_type}")
 
-    if feature_type in ("tile", "slide"):
-        if config.slide_table is None:
-            raise ValueError("A slide table is required for modeling")
-        if config.task == "survival":
-            if config.time_label is None or config.status_label is None:
-                raise ValueError(
-                    "Both time_label and status_label are is required for survival modeling"
-                )
-            patient_to_ground_truth: dict[PatientId, GroundTruth] = (
-                patient_to_survival_from_clini_table_(
-                    clini_table_path=config.clini_table,
-                    time_label=config.time_label,
-                    status_label=config.status_label,
-                    patient_label=config.patient_label,
-                )
-            )
-        else:
-            if config.ground_truth_label is None:
-                raise ValueError(
-                    "Ground truth label is required for classification or regression modeling"
-                )
-            patient_to_ground_truth: dict[PatientId, GroundTruth] = (
-                patient_to_ground_truth_from_clini_table_(
-                    clini_table_path=config.clini_table,
-                    ground_truth_label=config.ground_truth_label,
-                    patient_label=config.patient_label,
-                )
-            )
-        slide_to_patient: Final[dict[FeaturePath, PatientId]] = (
-            slide_to_patient_from_slide_table_(
-                slide_table_path=config.slide_table,
-                feature_dir=config.feature_dir,
-                patient_label=config.patient_label,
-                filename_label=config.filename_label,
-            )
-        )
-        patient_to_data: Mapping[PatientId, PatientData] = (
-            filter_complete_patient_data_(
-                patient_to_ground_truth=patient_to_ground_truth,
-                slide_to_patient=slide_to_patient,
-                drop_patients_with_missing_ground_truth=True,
-            )
-        )
-    elif feature_type == "patient":
-        patient_to_data: Mapping[PatientId, PatientData] = load_patient_level_data(
-            task=config.task,
-            clini_table=config.clini_table,
-            feature_dir=config.feature_dir,
-            patient_label=config.patient_label,
-            ground_truth_label=config.ground_truth_label,
-            time_label=config.time_label,
-            status_label=config.status_label,
-        )
-        patient_to_ground_truth: dict[PatientId, GroundTruth] = {
-            pid: pd.ground_truth for pid, pd in patient_to_data.items()
-        }
-    else:
-        raise RuntimeError(f"Unsupported feature type: {feature_type}")
+    patient_to_ground_truth = {
+        pid: pd.ground_truth for pid, pd in patient_to_data.items()
+    }
+
+    if feature_type not in ("tile", "slide", "patient"):
+        raise ValueError(f"Unknown feature type: {feature_type}")
 
     config.output_dir.mkdir(parents=True, exist_ok=True)
     splits_file = config.output_dir / "splits.json"
@@ -158,18 +118,51 @@ def categorical_crossval_(
             f"{ground_truths_not_in_split}"
         )
 
+    categories_for_export: (
+        dict[str, list] | list
+    ) = []  # declare upfront to avoid unbound variable warnings
+    categories: Sequence[GroundTruth] | list | None = []  # type: ignore  # declare upfront to avoid unbound variable warnings
+
     if config.task == "classification":
-        categories = config.categories or sorted(
-            {
-                patient_data.ground_truth
-                for patient_data in patient_to_data.values()
-                if patient_data.ground_truth is not None
-            }
-        )
-        log_patient_class_summary(
-            patient_to_data={pid: patient_to_data[pid] for pid in patient_to_data},
-            categories=categories,
-        )
+        # Determine categories for training (single-target) and for export (supports multi-target)
+        if isinstance(config.ground_truth_label, str):
+            categories = config.categories or sorted(
+                {
+                    patient_data.ground_truth
+                    for patient_data in patient_to_data.values()
+                    if patient_data.ground_truth is not None
+                }
+            )
+            log_patient_class_summary(
+                patient_to_data={pid: patient_to_data[pid] for pid in patient_to_data},
+                categories=categories,
+            )
+            categories_for_export = cast(list, categories)
+        else:
+            # Multi-target: build a mapping from target label -> sorted list of categories
+            categories_accum: dict[str, set[GroundTruth]] = {}
+            for patient_data in patient_to_data.values():
+                gt = patient_data.ground_truth
+                if isinstance(gt, dict):
+                    for k, v in gt.items():
+                        if v is not None:
+                            categories_accum.setdefault(k, set()).add(v)
+            categories_for_export = {k: sorted(v) for k, v in categories_accum.items()}
+            # Log summary per target
+            for t, cats in categories_for_export.items():
+                ground_truths = [
+                    pd.ground_truth.get(t)
+                    for pd in patient_to_data.values()
+                    if isinstance(pd.ground_truth, dict)
+                    and pd.ground_truth.get(t) is not None
+                ]
+                counter = Counter(ground_truths)
+                _logger.info(
+                    f"{t} | Total patients: {len(ground_truths)} | "
+                    + " | ".join([f"Class {c}: {counter.get(c, 0)}" for c in cats])
+                )
+            # For training, categories can remain None (inferred later)
+            categories = config.categories or None
     else:
         categories = []
 
@@ -206,12 +199,18 @@ def categorical_crossval_(
                 },
                 categories=(
                     categories
-                    or sorted(
-                        {
-                            patient_data.ground_truth
-                            for patient_data in patient_to_data.values()
-                            if patient_data.ground_truth is not None
-                        }
+                    if categories is not None
+                    else (
+                        sorted(
+                            {
+                                patient_data.ground_truth
+                                for patient_data in patient_to_data.values()
+                                if patient_data.ground_truth is not None
+                                and not isinstance(patient_data.ground_truth, dict)
+                            }
+                        )
+                        if not isinstance(config.ground_truth_label, Sequence)
+                        else None
                     )
                 ),
                 train_transform=(
@@ -263,30 +262,48 @@ def categorical_crossval_(
             )
 
             if config.task == "survival":
-                _to_survival_prediction_df(
-                    patient_to_ground_truth=patient_to_ground_truth,
-                    predictions=predictions,
-                    patient_label=config.patient_label,
-                    cut_off=getattr(model.hparams, "train_pred_median", None),
-                ).to_csv(split_dir / "patient-preds.csv", index=False)
+                if isinstance(config.ground_truth_label, str):
+                    _to_survival_prediction_df(
+                        patient_to_ground_truth=cast(
+                            Mapping[PatientId, str | None], patient_to_ground_truth
+                        ),
+                        predictions=cast(Mapping[PatientId, torch.Tensor], predictions),
+                        patient_label=config.patient_label,
+                        cut_off=getattr(model.hparams, "train_pred_median", None),
+                    ).to_csv(split_dir / "patient-preds.csv", index=False)
+                else:
+                    _logger.warning(
+                        "Multi-target survival prediction export not yet supported; skipping CSV save"
+                    )
             elif config.task == "regression":
                 if config.ground_truth_label is None:
                     raise RuntimeError("Grounf truth label is required for regression")
-                _to_regression_prediction_df(
-                    patient_to_ground_truth=patient_to_ground_truth,
-                    predictions=predictions,
-                    patient_label=config.patient_label,
-                    ground_truth_label=config.ground_truth_label,
-                ).to_csv(split_dir / "patient-preds.csv", index=False)
+                if isinstance(config.ground_truth_label, str):
+                    _to_regression_prediction_df(
+                        patient_to_ground_truth=cast(
+                            Mapping[PatientId, str | None], patient_to_ground_truth
+                        ),
+                        predictions=cast(Mapping[PatientId, torch.Tensor], predictions),
+                        patient_label=config.patient_label,
+                        ground_truth_label=config.ground_truth_label,
+                    ).to_csv(split_dir / "patient-preds.csv", index=False)
+                else:
+                    _logger.warning(
+                        "Multi-target regression prediction export not yet supported; skipping CSV save"
+                    )
             else:
                 if config.ground_truth_label is None:
                     raise RuntimeError(
                         "Grounf truth label is required for classification"
                     )
                 _to_prediction_df(
-                    categories=categories,
+                    categories=categories_for_export,
                     patient_to_ground_truth=patient_to_ground_truth,
-                    predictions=predictions,
+                    predictions=cast(
+                        Mapping[PatientId, torch.Tensor]
+                        | Mapping[PatientId, dict[str, torch.Tensor]],
+                        predictions,
+                    ),
                     patient_label=config.patient_label,
                     ground_truth_label=config.ground_truth_label,
                 ).to_csv(split_dir / "patient-preds.csv", index=False)
@@ -296,6 +313,16 @@ def _get_splits(
     *, patient_to_data: Mapping[PatientId, PatientData[Any]], n_splits: int, spliter
 ) -> _Splits:
     patients = np.array(list(patient_to_data.keys()))
+
+    # Extract ground truth for stratification.
+    # For multi-target (dict), use the first target's value
+    y_strat = np.array(
+        [
+            next(iter(gt.values())) if isinstance(gt, dict) else gt
+            for gt in [patient.ground_truth for patient in patient_to_data.values()]
+        ]
+    )
+
     skf = spliter(n_splits=n_splits, shuffle=True, random_state=0)
     splits = _Splits(
         splits=[
@@ -303,12 +330,7 @@ def _get_splits(
                 train_patients=set(patients[train_indices]),
                 test_patients=set(patients[test_indices]),
             )
-            for train_indices, test_indices in skf.split(
-                patients,
-                np.array(
-                    [patient.ground_truth for patient in patient_to_data.values()]
-                ),
-            )
+            for train_indices, test_indices in skf.split(patients, y_strat)
         ]
     )
     return splits

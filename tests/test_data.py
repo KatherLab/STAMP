@@ -23,7 +23,6 @@ from stamp.modeling.data import (
     get_coords,
     slide_to_patient_from_slide_table_,
 )
-from stamp.seed import Seed
 from stamp.types import (
     BagSize,
     FeaturePath,
@@ -33,6 +32,7 @@ from stamp.types import (
     SlideMPP,
     TilePixels,
 )
+from stamp.utils.seed import Seed
 
 
 @pytest.mark.filterwarnings("ignore:some patients have no associated slides")

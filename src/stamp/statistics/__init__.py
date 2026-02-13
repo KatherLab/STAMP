@@ -1,3 +1,11 @@
+"""Statistics utilities (wrappers) for classification, regression and survival.
+
+This module provides a small, stable wrapper `compute_stats_` that dispatches
+to the task-specific statistic implementations found in the submodules.
+"""
+
+from __future__ import annotations
+
 from collections.abc import Sequence
 from pathlib import Path
 from typing import NewType
@@ -17,11 +25,11 @@ from stamp.statistics.roc import (
     plot_multiple_decorated_roc_curves,
     plot_single_decorated_roc_curve,
 )
-from stamp.statistics.survival import (
-    _plot_km,
-    _survival_stats_for_csv,
-)
+from stamp.statistics.survival import _plot_km, _survival_stats_for_csv
 from stamp.types import PandasLabel, Task
+
+__all__ = ["StatsConfig", "compute_stats_"]
+
 
 __author__ = "Marko van Treeck, Minh Duc Nguyen"
 __copyright__ = "Copyright (C) 2022-2024 Marko van Treeck, Minh Duc Nguyen"
@@ -29,11 +37,13 @@ __license__ = "MIT"
 
 
 def _read_table(file: Path, **kwargs) -> pd.DataFrame:
-    """Loads a dataframe from a file."""
+    """Load a dataframe from CSV or XLSX file path.
+
+    This small helper centralizes file IO formatting and keeps callers simple.
+    """
     if isinstance(file, Path) and file.suffix == ".xlsx":
         return pd.read_excel(file, **kwargs)
-    else:
-        return pd.read_csv(file, **kwargs)
+    return pd.read_csv(file, **kwargs)
 
 
 class StatsConfig(BaseModel):
@@ -60,6 +70,11 @@ def compute_stats_(
     time_label: str | None = None,
     status_label: str | None = None,
 ) -> None:
+    """Compute and save statistics for the provided task and prediction CSVs.
+
+    This wrapper keeps the external API stable while delegating the detailed
+    computations and plotting to the submodules under `stamp.statistics.*`.
+    """
     match task:
         case "classification":
             if true_class is None or ground_truth_label is None:
@@ -105,7 +120,6 @@ def compute_stats_(
                     n_bootstrap_samples=n_bootstrap_samples,
                     threshold_cmap=threshold_cmap,
                 )
-
             else:
                 plot_multiple_decorated_roc_curves(
                     ax=ax,
@@ -116,9 +130,7 @@ def compute_stats_(
                 )
 
             fig.tight_layout()
-            if not output_dir.exists():
-                output_dir.mkdir(parents=True, exist_ok=True)
-
+            output_dir.mkdir(parents=True, exist_ok=True)
             fig.savefig(output_dir / f"roc-curve_{ground_truth_label}={true_class}.svg")
             plt.close(fig)
 
@@ -134,7 +146,6 @@ def compute_stats_(
                     title=f"{ground_truth_label} = {true_class}",
                     n_bootstrap_samples=n_bootstrap_samples,
                 )
-
             else:
                 plot_multiple_decorated_precision_recall_curves(
                     ax=ax,
@@ -203,12 +214,7 @@ def compute_stats_(
                     cut_off=cut_off,
                 )
 
-            # ------------------------------------------------------------------ #
             # Save individual and aggregated CSVs
-            # ------------------------------------------------------------------ #
             stats_df = pd.DataFrame(per_fold).transpose()
             stats_df.index.name = "fold_name"  # label the index column
             stats_df.to_csv(output_dir / "survival-stats_individual.csv", index=True)
-
-            # agg_df = _aggregate_with_ci(stats_df)
-            # agg_df.to_csv(output_dir / "survival-stats_aggregated.csv", index=True)

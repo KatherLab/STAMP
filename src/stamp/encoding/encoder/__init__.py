@@ -12,11 +12,11 @@ from torch import Tensor
 from tqdm import tqdm
 
 import stamp
-from stamp.cache import get_processing_code_hash
 from stamp.encoding.config import EncoderName
 from stamp.modeling.data import CoordsInfo, get_coords, read_table
 from stamp.preprocessing.config import ExtractorName
 from stamp.types import DeviceLikeType, PandasLabel
+from stamp.utils.cache import get_processing_code_hash
 
 __author__ = "Juan Pablo Ricapito"
 __copyright__ = "Copyright (C) 2025 Juan Pablo Ricapito"

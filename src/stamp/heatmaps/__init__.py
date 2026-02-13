@@ -70,14 +70,14 @@ def _attention_rollout_single(
 
     device = feats.device
 
-    # --- 1. Forward pass to fill attn_weights in each SelfAttention layer ---
+    # 1. Forward pass to fill attn_weights in each SelfAttention layer
     _ = model(
         bags=feats.unsqueeze(0),
         coords=coords.unsqueeze(0),
         mask=torch.zeros(1, len(feats), dtype=torch.bool, device=device),
     )
 
-    # --- 2. Rollout computation ---
+    # 2. Rollout computation
     attn_rollout: torch.Tensor | None = None
     for layer in model.transformer.layers:  # type: ignore
         attn = getattr(layer[0], "attn_weights", None)  # SelfAttention.attn_weights
@@ -96,10 +96,10 @@ def _attention_rollout_single(
     if attn_rollout is None:
         raise RuntimeError("No attention maps collected from transformer layers.")
 
-    # --- 3. Extract CLS → tiles attention ---
+    # 3. Extract CLS → tiles attention
     cls_attn = attn_rollout[0, 1:]  # [tile]
 
-    # --- 4. Normalize for visualization consistency ---
+    # 4. Normalize for visualization consistency
     cls_attn = cls_attn - cls_attn.min()
     cls_attn = cls_attn / (cls_attn.max().clamp(min=1e-8))
 

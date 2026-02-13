@@ -4,7 +4,7 @@ preprocessing:
   # Extractor to use for feature extractor.  Possible options are "ctranspath",
   # "uni", "conch", "chief-ctranspath", "conch1_5", "uni2", "dino-bloom",
   # "gigapath", "h-optimus-0", "h-optimus-1", "virchow2", "virchow", 
-  # "virchow-full", "musk", "mstar", "plip"
+  # "virchow-full", "musk", "mstar", "plip", "ticon"
   # Some of them require requesting access to the respective authors beforehand.
   extractor: "chief-ctranspath"
 
@@ -73,6 +73,8 @@ crossval:
 
   # Name of the column from the clini table to train on.
   ground_truth_label: "KRAS"
+  # For multi-target classification you may specify a list of columns,
+  # e.g. ground_truth_label: ["KRAS", "BRAF", "NRAS"]
 
   # For survival (should be status and follow-up days columns in clini table)
   # status_label: "event"
@@ -130,6 +132,8 @@ training:
 
   # Name of the column from the clini table to train on.
   ground_truth_label: "KRAS"
+  # For multi-target classification you may specify a list of columns,
+  # e.g. ground_truth_label: ["KRAS", "BRAF", "NRAS"]
 
   # For survival (should be status and follow-up days columns in clini table)
   # status_label: "event"
@@ -172,6 +176,8 @@ deployment:
 
   # Name of the column from the clini to compare predictions to.
   ground_truth_label: "KRAS"
+  # For multi-target classification you may specify a list of columns,
+  # e.g. ground_truth_label: ["KRAS", "BRAF", "NRAS"]
 
   # For survival (should be status and follow-up days columns in clini table)
   # status_label: "event"
@@ -197,6 +203,8 @@ statistics:
 
   # Name of the target label.
   ground_truth_label: "KRAS"
+  # For multi-target classification you may specify a list of columns,
+  # e.g. ground_truth_label: ["KRAS", "BRAF", "NRAS"]
 
   # A lot of the statistics are computed "one-vs-all", i.e. there needs to be
   # a positive class to calculate the statistics for.
@@ -316,7 +324,7 @@ advanced_config:
   max_lr: 1e-4
   div_factor: 25. 
   # Select a model regardless of task
-  model_name: "vit" # or mlp, trans_mil
+  model_name: "vit" # or mlp, trans_mil, barspoon
 
   model_params:
     vit: # Vision Transformer
@@ -335,3 +343,15 @@ advanced_config:
       dim_hidden: 512
       num_layers: 2
       dropout: 0.25
+
+    # NOTE: Only the `barspoon` model supports multi-target classification
+    # (i.e. `ground_truth_label` can be a list of column names). Other
+    # models expect a single target column.
+    barspoon: # Encoder-Decoder Transformer for multi-target classification
+      d_model: 512
+      num_encoder_heads: 8
+      num_decoder_heads: 8
+      num_encoder_layers: 2
+      num_decoder_layers: 2
+      dim_feedforward: 2048
+      positional_encoding: true

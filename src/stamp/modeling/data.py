@@ -5,19 +5,29 @@ from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import KW_ONLY, dataclass
 from itertools import groupby
 from pathlib import Path
-from typing import IO, BinaryIO, Counter, Generic, TextIO, TypeAlias, Union, cast
+from typing import (
+    IO,
+    Any,
+    BinaryIO,
+    Dict,
+    Final,
+    Generic,
+    List,
+    TextIO,
+    TypeAlias,
+    Union,
+    cast,
+)
 
 import h5py
 import numpy as np
 import pandas as pd
 import torch
-from jaxtyping import Float
 from packaging.version import Version
 from torch import Tensor
 from torch.utils.data import DataLoader, Dataset
 
 import stamp
-from stamp.seed import Seed
 from stamp.types import (
     Bags,
     BagSize,
@@ -35,6 +45,7 @@ from stamp.types import (
     Task,
     TilePixels,
 )
+from stamp.utils.seed import Seed
 
 _logger = logging.getLogger("stamp")
 
@@ -43,14 +54,17 @@ __author__ = "Marko van Treeck, Minh Duc Nguyen"
 __copyright__ = "Copyright (C) 2022-2025 Marko van Treeck, Minh Duc Nguyen"
 __license__ = "MIT"
 
-_Bag: TypeAlias = Float[Tensor, "tile feature"]
-_EncodedTarget: TypeAlias = Float[Tensor, "category_is_hot"] | Float[Tensor, "1"]  # noqa: F821
+_Bag: TypeAlias = Tensor
+_EncodedTarget: TypeAlias = (
+    Tensor | dict[str, Tensor]
+)  # Union of encoded targets or multi-target dict
 _BinaryIOLike: TypeAlias = Union[BinaryIO, IO[bytes]]
 """The ground truth, encoded numerically
 - classification: one-hot float [C]
 - regression: float [1]
+- multi-target: dict[target_name -> one-hot/regression value]
 """
-_Coordinates: TypeAlias = Float[Tensor, "tile 2"]
+_Coordinates: TypeAlias = Tensor
 
 
 @dataclass
@@ -64,7 +78,7 @@ class PatientData(Generic[GroundTruthType]):
 
 def tile_bag_dataloader(
     *,
-    patient_data: Sequence[PatientData[GroundTruth | None]],
+    patient_data: Sequence[PatientData[GroundTruth | None | dict]],
     bag_size: int | None,
     task: Task,
     categories: Sequence[Category] | None = None,
@@ -74,7 +88,7 @@ def tile_bag_dataloader(
     transform: Callable[[Tensor], Tensor] | None,
 ) -> tuple[
     DataLoader[tuple[Bags, CoordinatesBatch, BagSizes, EncodedTargets]],
-    Sequence[Category],
+    Sequence[Category] | Mapping[str, Sequence[Category]],
 ]:
     """Creates a dataloader from patient data for tile-level (bagged) features.
 
@@ -86,103 +100,139 @@ def tile_bag_dataloader(
         task='regression':
             returns float targets
     """
-    if task == "classification":
-        raw_ground_truths = np.array([patient.ground_truth for patient in patient_data])
-        categories = (
-            categories if categories is not None else list(np.unique(raw_ground_truths))
-        )
-        # one_hot = torch.tensor(raw_ground_truths.reshape(-1, 1) == categories)
-        one_hot = torch.tensor(
-            raw_ground_truths.reshape(-1, 1) == categories, dtype=torch.float32
-        )
-        ds = BagDataset(
-            bags=[patient.feature_files for patient in patient_data],
-            bag_size=bag_size,
-            ground_truths=one_hot,
-            transform=transform,
-        )
-        cats_out: Sequence[Category] = list(categories)
 
-    elif task == "regression":
-        raw_targets = np.array(
-            [
-                np.nan if p.ground_truth is None else float(p.ground_truth)
-                for p in patient_data
-            ],
-            dtype=np.float32,
-        )
-        y = torch.from_numpy(raw_targets).reshape(-1, 1)
+    targets, cats_out = _parse_targets(
+        patient_data=patient_data,
+        task=task,
+        categories=categories,
+    )
 
-        ds = BagDataset(
-            bags=[patient.feature_files for patient in patient_data],
-            bag_size=bag_size,
-            ground_truths=y,
-            transform=transform,
-        )
-        cats_out = []
+    is_multitarget = isinstance(targets[0], dict)
 
-    elif task == "survival":  # Not yet support logistic-harzard
-        times: list[float] = []
-        events: list[float] = []
+    collate_fn = _collate_multitarget if is_multitarget else _collate_to_tuple
 
-        for p in patient_data:
-            if p.ground_truth is None:
-                times.append(np.nan)
-                events.append(np.nan)
-                continue
-
-            try:
-                time_str, status_str = p.ground_truth.split(" ", 1)
-
-                # Handle missing values encoded as "nan"
-                if time_str.lower() == "nan":
-                    times.append(np.nan)
-                else:
-                    times.append(float(time_str))
-
-                if status_str.lower() == "nan":
-                    events.append(np.nan)
-                elif status_str.lower() in {"dead", "event", "1", "Yes", "yes"}:
-                    events.append(1.0)
-                elif status_str.lower() in {"alive", "censored", "0", "No", "no"}:
-                    events.append(0.0)
-                else:
-                    events.append(np.nan)  # unknown status → mark missing
-
-            except Exception:
-                times.append(np.nan)
-                events.append(np.nan)
-
-        # Final tensor shape: (N, 2)
-        y = torch.tensor(np.column_stack([times, events]), dtype=torch.float32)
-
-        ds = BagDataset(
-            bags=[patient.feature_files for patient in patient_data],
-            bag_size=bag_size,
-            ground_truths=y,
-            transform=transform,
-        )
-        cats_out: Sequence[Category] = []  # survival has no categories
-
-    else:
-        raise ValueError(f"Unknown task: {task}")
+    ds = BagDataset(
+        bags=[patient.feature_files for patient in patient_data],
+        bag_size=bag_size,
+        ground_truths=targets,
+        transform=transform,
+    )
+    dl = DataLoader(
+        ds,
+        batch_size=batch_size,
+        shuffle=shuffle,
+        num_workers=num_workers,
+        collate_fn=collate_fn,
+        worker_init_fn=Seed.get_loader_worker_init() if Seed._is_set() else None,
+    )
 
     return (
         cast(
             DataLoader[tuple[Bags, CoordinatesBatch, BagSizes, EncodedTargets]],
-            DataLoader(
-                ds,
-                batch_size=batch_size,
-                shuffle=shuffle,
-                num_workers=num_workers,
-                collate_fn=_collate_to_tuple,
-                worker_init_fn=Seed.get_loader_worker_init()
-                if Seed._is_set()
-                else None,
-            ),
+            dl,
         ),
         cats_out,
     )
+
+
+def _parse_targets(
+    *,
+    patient_data: Sequence,
+    task: Task,
+    categories: Sequence[Category] | None = None,
+    target_spec: dict[str, Any] | None = None,
+    target_label: str | None = None,
+) -> tuple[
+    Union[torch.Tensor, list[dict[str, torch.Tensor]]],
+    Sequence[Category] | Mapping[str, Sequence[Category]],
+]:
+    """
+    Parse raw GroundTruth (str) into model-ready tensors.
+    This is the ONLY place task semantics live.
+    """
+
+    gts = [p.ground_truth for p in patient_data]
+
+    if task == "classification":
+        if any(isinstance(gt, dict) for gt in gts if gt is not None):
+            # infer target names from the first non-None dict
+            first_dict = next(gt for gt in gts if isinstance(gt, dict))
+            target_names = list(first_dict.keys())
+
+            # infer categories per target (ignore None patients, ignore None values)
+            categories_out: dict[str, list[str]] = {t: [] for t in target_names}
+            for gt in gts:
+                if not isinstance(gt, dict):
+                    continue
+                for t in target_names:
+                    v = gt.get(t)
+                    if v is not None:
+                        categories_out[t].append(v)
+
+            # make unique + sorted
+            categories_out = {
+                t: sorted(set(vals)) for t, vals in categories_out.items()
+            }
+
+            # encode per patient; if gt missing -> all zeros
+            encoded: list[dict[str, Tensor]] = []
+            for gt in gts:
+                patient_encoded: dict[str, Tensor] = {}
+                for t in target_names:
+                    cats = categories_out[t]
+                    if not isinstance(gt, dict) or gt.get(t) is None:
+                        one_hot = torch.zeros(len(cats), dtype=torch.float32)
+                    else:
+                        one_hot = torch.tensor(
+                            [gt[t] == c for c in cats],
+                            dtype=torch.float32,
+                        )
+                    patient_encoded[t] = one_hot
+                encoded.append(patient_encoded)
+
+            # IMPORTANT: return categories as mapping, not list-of-target-names
+            return encoded, categories_out
+
+        # single target
+        unique = {gt for gt in gts if gt is not None}
+        if len(unique) >= 2 or categories is not None:
+            raw = np.array([p.ground_truth for p in patient_data])
+            categories = categories or list(sorted(unique))
+            labels = torch.tensor(
+                raw.reshape(-1, 1) == categories,
+                dtype=torch.float32,
+            )
+            return labels, categories
+
+        raise ValueError(
+            "Only one unique class found in classification task. "
+            "This is usually a data or configuration error."
+        )
+
+    elif task == "regression":
+        y = torch.tensor(
+            [np.nan if gt is None else float(gt) for gt in gts],
+            dtype=torch.float32,
+        ).reshape(-1, 1)
+        return y, []
+
+    elif task == "survival":
+        times, events = [], []
+        for gt in gts:
+            if gt is None:
+                times.append(np.nan)
+                events.append(np.nan)
+                continue
+
+            time_str, status_str = gt.split(" ", 1)
+            times.append(np.nan if time_str.lower() == "nan" else float(time_str))
+            events.append(_parse_survival_status(status_str))
+
+        y = torch.tensor(np.column_stack([times, events]), dtype=torch.float32)
+        return y, []
+
+    else:
+        raise ValueError(f"Unsupported task: {task}")
 
 
 def _collate_to_tuple(
@@ -208,6 +258,24 @@ def _collate_to_tuple(
     encoded_targets = torch.stack(fixed_targets)
 
     return (bags, coords, bag_sizes, encoded_targets)
+
+
+def _collate_multitarget(
+    items: list[tuple[_Bag, _Coordinates, BagSize, Dict[str, Tensor]]],
+) -> tuple[Bags, CoordinatesBatch, BagSizes, Dict[str, Tensor]]:
+    bags = torch.stack([b for b, _, _, _ in items])
+    coords = torch.stack([c for _, c, _, _ in items])
+    bag_sizes = torch.tensor([s for _, _, s, _ in items])
+
+    acc: Dict[str, List[Tensor]] = {}
+
+    for _, _, _, tdict in items:
+        for k, v in tdict.items():
+            acc.setdefault(k, []).append(v)
+
+    targets: Dict[str, Tensor] = {k: torch.stack(v, dim=0) for k, v in acc.items()}
+
+    return bags, coords, bag_sizes, targets
 
 
 def patient_feature_dataloader(
@@ -237,21 +305,31 @@ def create_dataloader(
     *,
     feature_type: str,
     task: Task,
-    patient_data: Sequence[PatientData[GroundTruth | None]],
+    patient_data: Sequence[PatientData[GroundTruth | None | dict]],
     bag_size: int | None = None,
     batch_size: int,
     shuffle: bool,
     num_workers: int,
     transform: Callable[[Tensor], Tensor] | None,
-    categories: Sequence[Category] | None = None,
-) -> tuple[DataLoader, Sequence[Category]]:
+    categories: Sequence[Category] | Mapping[str, Sequence[Category]] | None = None,
+) -> tuple[DataLoader, Sequence[Category] | Mapping[str, Sequence[Category]]]:
     """Unified dataloader for all feature types and tasks."""
     if feature_type == "tile":
+        # For multi-target classification, categories may be a mapping from
+        # target name to per-target categories. _parse_targets (used inside
+        # tile_bag_dataloader) only consumes explicit categories for the
+        # single-target case, so we pass a sequence or None here.
+        cats_arg: Sequence[Category] | None
+        if isinstance(categories, Mapping):
+            cats_arg = None
+        else:
+            cats_arg = categories
+
         return tile_bag_dataloader(
             patient_data=patient_data,
             bag_size=bag_size,
             task=task,
-            categories=categories,
+            categories=cats_arg,
             batch_size=batch_size,
             shuffle=shuffle,
             num_workers=num_workers,
@@ -263,21 +341,32 @@ def create_dataloader(
 
         if task == "classification":
             raw = np.array([p.ground_truth for p in patient_data])
-            categories = categories or list(np.unique(raw))
-            labels = torch.tensor(raw.reshape(-1, 1) == categories, dtype=torch.float32)
-        elif task == "regression":
+            categories_out = categories or list(np.unique(raw))
             labels = torch.tensor(
-                [
-                    float(gt)
-                    for gt in (p.ground_truth for p in patient_data)
-                    if gt is not None
-                ],
-                dtype=torch.float32,
-            ).reshape(-1, 1)
+                raw.reshape(-1, 1) == categories_out, dtype=torch.float32
+            )
+        elif task == "regression":
+            values: list[float] = []
+            for gt in (p.ground_truth for p in patient_data):
+                if gt is None:
+                    continue
+                if isinstance(gt, dict):
+                    # Use first value for multi-target regression
+                    first_val = next(iter(gt.values()))
+                    values.append(float(first_val))
+                else:
+                    values.append(float(gt))
+
+            labels = torch.tensor(values, dtype=torch.float32).reshape(-1, 1)
         elif task == "survival":
             times, events = [], []
             for p in patient_data:
-                t, e = (p.ground_truth or "nan nan").split(" ", 1)
+                if isinstance(p.ground_truth, dict):
+                    # Multi-target survival: use first target
+                    val = list(p.ground_truth.values())[0]
+                    t, e = (val or "nan nan").split(" ", 1)
+                else:
+                    t, e = (p.ground_truth or "nan nan").split(" ", 1)
                 times.append(float(t) if t.lower() != "nan" else np.nan)
                 events.append(_parse_survival_status(e))
 
@@ -340,9 +429,9 @@ def load_patient_level_data(
     clini_table: Path,
     feature_dir: Path,
     patient_label: PandasLabel,
-    ground_truth_label: PandasLabel | None = None,  # <- now optional
-    time_label: PandasLabel | None = None,  # <- for survival
-    status_label: PandasLabel | None = None,  # <- for survival
+    ground_truth_label: PandasLabel | Sequence[PandasLabel] | None = None,
+    time_label: PandasLabel | None = None,
+    status_label: PandasLabel | None = None,
     feature_ext: str = ".h5",
 ) -> dict[PatientId, PatientData]:
     """
@@ -419,7 +508,7 @@ class BagDataset(Dataset[tuple[_Bag, _Coordinates, BagSize, _EncodedTarget]]):
     If `bag_size` is None, all the samples will be used.
     """
 
-    ground_truths: Float[Tensor, "index category_is_hot"] | Float[Tensor, "index 1"]
+    ground_truths: Tensor | list[dict[str, Tensor]]
 
     # ground_truths: Bool[Tensor, "index category_is_hot"]
     # """The ground truth for each bag, one-hot encoded."""
@@ -529,7 +618,7 @@ class CoordsInfo:
 
 
 def get_coords(feature_h5: h5py.File) -> CoordsInfo:
-    # --- NEW: handle missing coords ----multiplex data bypass: no coords found; generated fake coords
+    # NEW: handle missing coords - multiplex data bypass: no coords found; generated fake coords
     if "coords" not in feature_h5:
         feats_obj = feature_h5["patch_embeddings"]
 
@@ -627,33 +716,71 @@ def patient_to_ground_truth_from_clini_table_(
     *,
     clini_table_path: Path | TextIO,
     patient_label: PandasLabel,
-    ground_truth_label: PandasLabel,
-) -> dict[PatientId, GroundTruth]:
-    """Loads the patients and their ground truths from a clini table."""
+    ground_truth_label: PandasLabel | Sequence[PandasLabel],
+) -> (
+    dict[PatientId, GroundTruth | None] | dict[PatientId, dict[str, GroundTruth | None]]
+):
+    """Loads the patients and their ground truths from a clini table.
+
+    `ground_truth_label` may be either a single column name (str) or a sequence
+    of column names. In the latter case the returned mapping will contain a
+    dict mapping column -> value for each patient (supporting multi-target
+    setups).
+    """
+    # Normalize to list for uniform handling
+    if isinstance(ground_truth_label, str):
+        cols = [patient_label, ground_truth_label]
+        multi = False
+        target_cols_inner: list[PandasLabel] = []
+    else:
+        cols = [patient_label, *list(ground_truth_label)]
+        multi = True
+        target_cols_inner = [c for c in cols if c != patient_label]
+
     clini_df = read_table(
         clini_table_path,
-        usecols=[patient_label, ground_truth_label],
+        usecols=cols,
         dtype=str,
-    ).dropna()
+    )
+
+    # If multi-target, keep rows where at least one target is present; for
+    # single target behave like before and drop rows missing the value.
+    if multi:
+        clini_df = clini_df.dropna(subset=target_cols_inner, how="all")
+    else:
+        clini_df = clini_df.dropna(subset=[ground_truth_label])
+
     try:
-        patient_to_ground_truth: Mapping[PatientId, GroundTruth] = clini_df.set_index(
-            patient_label, verify_integrity=True
-        )[ground_truth_label].to_dict()
+        if multi:
+            # Build mapping patient -> {col: value}
+            result: dict[PatientId, dict[str, GroundTruth | None]] = {}
+            for _, row in clini_df.iterrows():
+                pid = row[patient_label]
+                # Convert pandas nan to None and keep strings otherwise
+                result[pid] = {
+                    col: (None if pd.isna(row[col]) else str(row[col]))
+                    for col in target_cols_inner
+                }
+            return result
+        else:
+            patient_to_ground_truth: Mapping[PatientId, str] = cast(
+                Mapping[PatientId, str],
+                clini_df.set_index(patient_label, verify_integrity=True)[
+                    cast(PandasLabel, ground_truth_label)
+                ].to_dict(),
+            )
+            return cast(dict[PatientId, GroundTruth | None], patient_to_ground_truth)
     except KeyError as e:
         if patient_label not in clini_df:
             raise ValueError(
                 f"{patient_label} was not found in clini table "
                 f"(columns in clini table: {clini_df.columns})"
             ) from e
-        elif ground_truth_label not in clini_df:
+        else:
             raise ValueError(
-                f"{ground_truth_label} was not found in clini table "
+                f"One or more ground truth columns were not found in clini table "
                 f"(columns in clini table: {clini_df.columns})"
             ) from e
-        else:
-            raise e from e
-
-    return patient_to_ground_truth
 
 
 def patient_to_survival_from_clini_table_(
@@ -667,7 +794,6 @@ def patient_to_survival_from_clini_table_(
     Loads patients and their survival ground truths (time + event) from a clini table.
 
     Returns
-    -------
     dict[PatientId, GroundTruth]
         Mapping patient_id -> "time status" (e.g. "302 dead", "476 alive").
     """
@@ -780,7 +906,9 @@ def read_table(path: Path | TextIO, **kwargs) -> pd.DataFrame:
 
 def filter_complete_patient_data_(
     *,
-    patient_to_ground_truth: Mapping[PatientId, GroundTruth | None],
+    patient_to_ground_truth: Mapping[
+        PatientId, GroundTruth | dict[str, GroundTruth] | None
+    ],
     slide_to_patient: Mapping[FeaturePath, PatientId],
     drop_patients_with_missing_ground_truth: bool,
 ) -> Mapping[PatientId, PatientData]:
@@ -865,7 +993,7 @@ def _log_patient_slide_feature_inconsistencies(
         )
 
 
-def get_stride(coords: Float[Tensor, "tile 2"]) -> float:
+def get_stride(coords: Tensor) -> float:
     """Gets the minimum step width between any two coordintes."""
     xs: Tensor = coords[:, 0].unique(sorted=True)
     ys: Tensor = coords[:, 1].unique(sorted=True)
@@ -927,26 +1055,130 @@ def _parse_survival_status(value) -> int | None:
         )
 
 
+def load_patient_data_(
+    *,
+    feature_dir: Path,
+    clini_table: Path,
+    slide_table: Path | None,
+    task: Task,
+    ground_truth_label: PandasLabel | Sequence[PandasLabel] | None,
+    time_label: PandasLabel | None,
+    status_label: PandasLabel | None,
+    patient_label: PandasLabel,
+    filename_label: PandasLabel,
+    drop_patients_with_missing_ground_truth: bool = True,
+) -> tuple[Mapping[PatientId, PatientData], str]:
+    """Load patient data based on feature type (tile, slide, or patient).
+
+    This consolidates the common data loading logic used across train, crossval, and deploy.
+
+    Returns:
+        (patient_to_data, feature_type)
+    """
+    feature_type = detect_feature_type(feature_dir)
+
+    if feature_type in ("tile", "slide"):
+        if slide_table is None:
+            raise ValueError("A slide table is required for tile/slide-level features")
+
+        # Load ground truth based on task
+        if task == "survival":
+            if time_label is None or status_label is None:
+                raise ValueError(
+                    "Both time_label and status_label are required for survival modeling"
+                )
+            patient_to_ground_truth = patient_to_survival_from_clini_table_(
+                clini_table_path=clini_table,
+                time_label=time_label,
+                status_label=status_label,
+                patient_label=patient_label,
+            )
+        else:
+            if ground_truth_label is None:
+                raise ValueError(
+                    "Ground truth label is required for classification or regression modeling"
+                )
+            patient_to_ground_truth = patient_to_ground_truth_from_clini_table_(
+                clini_table_path=clini_table,
+                ground_truth_label=ground_truth_label,
+                patient_label=patient_label,
+            )
+
+        # Link slides to patients
+        slide_to_patient: Final[dict[FeaturePath, PatientId]] = (
+            slide_to_patient_from_slide_table_(
+                slide_table_path=slide_table,
+                feature_dir=feature_dir,
+                patient_label=patient_label,
+                filename_label=filename_label,
+            )
+        )
+
+        # Filter to complete patient data
+        patient_to_data = filter_complete_patient_data_(
+            patient_to_ground_truth=cast(
+                Mapping[PatientId, GroundTruth | dict[str, GroundTruth] | None],
+                patient_to_ground_truth,
+            ),
+            slide_to_patient=slide_to_patient,
+            drop_patients_with_missing_ground_truth=drop_patients_with_missing_ground_truth,
+        )
+    elif feature_type == "patient":
+        patient_to_data = load_patient_level_data(
+            task=task,
+            clini_table=clini_table,
+            feature_dir=feature_dir,
+            patient_label=patient_label,
+            ground_truth_label=ground_truth_label,
+            time_label=time_label,
+            status_label=status_label,
+        )
+    else:
+        raise RuntimeError(f"Unknown feature type: {feature_type}")
+
+    return patient_to_data, feature_type
+
+
 def log_patient_class_summary(
     *,
     patient_to_data: Mapping[PatientId, PatientData],
     categories: Sequence[Category] | None,
-    prefix: str = "",
 ) -> None:
+    """
+    Logs class distribution.
+    Supports both single-target and multi-target classification.
+    """
+
     ground_truths = [
-        pd.ground_truth
-        for pd in patient_to_data.values()
-        if pd.ground_truth is not None
+        p.ground_truth for p in patient_to_data.values() if p.ground_truth is not None
     ]
 
     if not ground_truths:
-        _logger.warning(f"{prefix}No ground truths available to summarize.")
+        _logger.warning("No ground truths available for summary.")
         return
 
-    cats = categories or sorted(set(ground_truths))
-    counter = Counter(ground_truths)
+    # Multi-target
+    if isinstance(ground_truths[0], dict):
+        # Collect per-target values
+        per_target: dict[str, list] = {}
 
-    _logger.info(
-        f"{prefix}Total patients: {len(ground_truths)} | "
-        + " | ".join([f"Class {c}: {counter.get(c, 0)}" for c in cats])
-    )
+        for gt in ground_truths:
+            for key, value in gt.items():
+                per_target.setdefault(key, []).append(value)
+
+        for target_name, values in per_target.items():
+            counts = {}
+            for v in values:
+                counts[v] = counts.get(v, 0) + 1
+
+            _logger.info(
+                f"[Multi-target] Target '{target_name}' distribution: {counts}"
+            )
+
+    # Single-target
+    else:
+        counts = {}
+        for gt in ground_truths:
+            counts[gt] = counts.get(gt, 0) + 1
+
+        _logger.info(f"Class distribution: {counts}")

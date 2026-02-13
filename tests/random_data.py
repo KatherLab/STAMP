@@ -254,6 +254,92 @@ def create_random_patient_level_dataset(
     return clini_path, slide_path, feat_dir, categories
 
 
+def create_random_multi_target_dataset(
+    *,
+    dir: Path,
+    n_patients: int,
+    max_slides_per_patient: int,
+    min_tiles_per_slide: int,
+    max_tiles_per_slide: int,
+    feat_dim: int,
+    target_labels: Sequence[str],
+    categories_per_target: Sequence[Sequence[str]],
+    extractor_name: str = "random-test-generator",
+    min_slides_per_patient: int = 1,
+) -> tuple[Path, Path, Path, Sequence[Sequence[str]]]:
+    """
+    Create a random multi-target tile-level dataset.
+
+    Args:
+        dir: Directory to create dataset in
+        n_patients: Number of patients
+        max_slides_per_patient: Maximum slides per patient
+        min_tiles_per_slide: Minimum tiles per slide
+        max_tiles_per_slide: Maximum tiles per slide
+        feat_dim: Feature dimension
+        target_labels: Names of the target columns (e.g., ["subtype", "grade"])
+        categories_per_target: Categories for each target (e.g., [["A", "B"], ["1", "2", "3"]])
+        extractor_name: Name of the extractor
+        min_slides_per_patient: Minimum slides per patient
+
+    Returns:
+        Tuple of (clini_path, slide_path, feat_dir, categories_per_target)
+    """
+    if len(target_labels) != len(categories_per_target):
+        raise ValueError(
+            "target_labels and categories_per_target must have same length"
+        )
+
+    slide_path_to_patient: Mapping[Path, PatientId] = {}
+    patient_to_ground_truths: Mapping[PatientId, dict[str, str]] = {}
+    clini_path = dir / "clini.csv"
+    slide_path = dir / "slide.csv"
+
+    feat_dir = dir / "feats"
+    feat_dir.mkdir()
+
+    for _ in range(n_patients):
+        # Random patient ID
+        patient_id = random_string(16)
+
+        # Generate ground truths for each target
+        ground_truths = {}
+        for target_label, categories in zip(target_labels, categories_per_target):
+            ground_truths[target_label] = random.choice(categories)
+
+        patient_to_ground_truths[patient_id] = ground_truths
+
+        # Generate some slides
+        for _ in range(random.randint(min_slides_per_patient, max_slides_per_patient)):
+            slide_path_to_patient[
+                create_random_feature_file(
+                    tmp_path=feat_dir,
+                    min_tiles=min_tiles_per_slide,
+                    max_tiles=max_tiles_per_slide,
+                    feat_dim=feat_dim,
+                    extractor_name=extractor_name,
+                ).relative_to(feat_dir)
+            ] = patient_id
+
+    # Create clinical table with multiple target columns
+    clini_data = []
+    for patient_id, ground_truths in patient_to_ground_truths.items():
+        row = {"patient": patient_id}
+        row.update(ground_truths)
+        clini_data.append(row)
+
+    clini_df = pd.DataFrame(clini_data)
+    clini_df.to_csv(clini_path, index=False)
+
+    slide_df = pd.DataFrame(
+        slide_path_to_patient.items(),
+        columns=["slide_path", "patient"],
+    )
+    slide_df.to_csv(slide_path, index=False)
+
+    return clini_path, slide_path, feat_dir, categories_per_target
+
+
 def create_random_feature_file(
     *,
     tmp_path: Path,

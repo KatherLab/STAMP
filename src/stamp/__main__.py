@@ -6,14 +6,14 @@ from pathlib import Path
 
 import yaml
 
-from stamp.config import StampConfig
 from stamp.modeling.config import (
     AdvancedConfig,
     MlpModelParams,
     ModelParams,
     VitModelParams,
 )
-from stamp.seed import Seed
+from stamp.utils.config import StampConfig
+from stamp.utils.seed import Seed
 
 STAMP_FACTORY_SETTINGS = Path(__file__).with_name("config.yaml")
 

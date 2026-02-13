@@ -7,7 +7,7 @@ from itertools import repeat
 from pathlib import Path
 from typing import Optional, TypeVar, cast
 
-from stamp.cache import STAMP_CACHE_DIR, file_digest
+from stamp.utils.cache import STAMP_CACHE_DIR, file_digest
 
 try:
     import gdown

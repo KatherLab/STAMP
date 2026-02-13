@@ -46,7 +46,7 @@ def _survival_stats_for_csv(
     if risk_label is None:
         risk_label = "pred_score"
 
-    # --- Clean NaNs and invalid events before computing stats ---
+    # Clean NaNs and invalid events before computing stats
     df = df.dropna(subset=[time_label, status_label, risk_label]).copy()
     df = df[df[status_label].isin([0, 1])]
     if len(df) == 0:
@@ -56,10 +56,10 @@ def _survival_stats_for_csv(
     event = np.asarray(df[status_label], dtype=int)
     risk = np.asarray(df[risk_label], dtype=float)
 
-    # --- Concordance index ---
+    # Concordance index
     c_index, n_pairs = _cindex(time, event, risk)
 
-    # --- Log-rank test (median split) ---
+    # Log-rank test (median split)
     median_risk = float(cut_off) if cut_off is not None else float(np.nanmedian(risk))
     low_mask = risk <= median_risk
     high_mask = risk > median_risk
@@ -101,7 +101,7 @@ def _plot_km(
     if risk_label is None:
         risk_label = "pred_score"
 
-    # --- Clean NaNs and invalid entries ---
+    # Clean NaNs and invalid entries
     df = df.replace(["NaN", "nan", "None", "Inf", "inf"], np.nan)
     df = df.dropna(subset=[time_label, status_label, risk_label]).copy()
     df = df[df[status_label].isin([0, 1])]
@@ -113,7 +113,7 @@ def _plot_km(
     event = np.asarray(df[status_label], dtype=int)
     risk = np.asarray(df[risk_label], dtype=float)
 
-    # --- split groups ---
+    # split groups
     median_risk = float(cut_off) if cut_off is not None else np.nanmedian(risk)
     low_mask = risk <= median_risk
     high_mask = risk > median_risk
@@ -138,7 +138,7 @@ def _plot_km(
 
     add_at_risk_counts(kmf_low, kmf_high, ax=ax)
 
-    # --- log-rank and c-index ---
+    # log-rank and c-index
     res = logrank_test(
         low_df[time_label],
         high_df[time_label],
