@@ -1,8 +1,12 @@
+from typing import Callable, cast
+
 try:
     import timm
     import torch
-    from timm.data import resolve_data_config  # type: ignore
+    from PIL import Image
+    from timm.data.config import resolve_data_config
     from timm.data.transforms_factory import create_transform
+    from timm.layers.mlp import SwiGLUPacked
 except ModuleNotFoundError as e:
     raise ModuleNotFoundError(
         "uni2 dependencies not installed."
@@ -13,7 +17,7 @@ from stamp.preprocessing.config import ExtractorName
 from stamp.preprocessing.extractor import Extractor
 
 
-def uni2() -> Extractor:
+def uni2() -> Extractor[torch.nn.Module]:
     # pretrained=True needed to load UNI2-h weights (and download weights for the first time)
     timm_kwargs = {
         "img_size": 224,
@@ -25,7 +29,7 @@ def uni2() -> Extractor:
         "mlp_ratio": 2.66667 * 2,
         "num_classes": 0,
         "no_embed_class": True,
-        "mlp_layer": timm.layers.SwiGLUPacked,
+        "mlp_layer": SwiGLUPacked,
         "act_layer": torch.nn.SiLU,
         "reg_tokens": 8,
         "dynamic_img_size": True,
@@ -33,13 +37,14 @@ def uni2() -> Extractor:
     model = timm.create_model(
         "hf-hub:MahmoodLab/UNI2-h", pretrained=True, **timm_kwargs
     )
-    transform = create_transform(
-        **resolve_data_config(model.pretrained_cfg, model=model)
+    transform = cast(
+        Callable[[Image.Image], torch.Tensor],
+        create_transform(**resolve_data_config(model.pretrained_cfg, model=model)),
     )
     model.eval()
 
     return Extractor(
         model=model,
         transform=transform,
-        identifier=ExtractorName.UNI2,  # type: ignore
+        identifier=ExtractorName.UNI2,
     )

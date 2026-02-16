@@ -19,6 +19,7 @@ class ExtractorName(StrEnum):
     UNI = "uni"
     UNI2 = "uni2"
     DINO_BLOOM = "dino-bloom"
+    RED_DINO = "red_dino"
     GIGAPATH = "gigapath"
     H_OPTIMUS_0 = "h-optimus-0"
     H_OPTIMUS_1 = "h-optimus-1"
