@@ -74,13 +74,13 @@ def create_random_dataset(
 
     clini_df = pd.DataFrame(
         patient_to_ground_truth.items(),
-        columns=["patient", "ground-truth"],  # pyright: ignore[reportArgumentType]
+        columns=["patient", "ground-truth"],
     )
     clini_df.to_csv(clini_path, index=False)
 
     slide_df = pd.DataFrame(
         slide_path_to_patient.items(),
-        columns=["slide_path", "patient"],  # pyright: ignore[reportArgumentType]
+        columns=["slide_path", "patient"],
     )
     slide_df.to_csv(slide_path, index=False)
 
@@ -130,7 +130,7 @@ def create_random_regression_dataset(
 
     # --- Write clini + slide tables ---
     clini_df = pd.DataFrame(patient_to_target, columns=["patient", "target"])
-    clini_df["target"] = clini_df["target"].astype(float)  # ✅ ensure numeric dtype
+    clini_df["target"] = clini_df["target"].astype(float)  # ensure numeric dtype
     clini_df.to_csv(clini_path, index=False)
 
     slide_df = pd.DataFrame(

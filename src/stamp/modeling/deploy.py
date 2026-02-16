@@ -276,7 +276,7 @@ def deploy_categorical_model_(
     for model_i, model in enumerate(models):
         predictions = _predict(
             model=model,
-            test_dl=test_dl,  # pyright: ignore[reportPossiblyUnboundVariable]
+            test_dl=test_dl,
             patient_ids=patient_ids,
             accelerator=accelerator,
         )

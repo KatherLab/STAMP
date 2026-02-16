@@ -518,7 +518,7 @@ class _WindowAttention(nn.Module):
         attn = q @ k.transpose(-2, -1)
 
         relative_position_bias = self.relative_position_bias_table[
-            self.relative_position_index.view(-1)
+            self.relative_position_index.view(-1)  # pyright: ignore[reportCallIssue]
         ].view(
             self.window_size[0] * self.window_size[1],
             self.window_size[0] * self.window_size[1],

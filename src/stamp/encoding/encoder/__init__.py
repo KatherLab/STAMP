@@ -4,6 +4,7 @@ import re
 from abc import ABC, abstractmethod
 from pathlib import Path
 from tempfile import NamedTemporaryFile
+from typing import cast
 
 import h5py
 import numpy as np
@@ -183,7 +184,8 @@ class Encoder(ABC):
         elif not h5_path.endswith(".h5"):
             raise ValueError(f"File is not of type .h5: {os.path.basename(h5_path)}")
         with h5py.File(h5_path, "r") as f:
-            feats: Tensor = torch.tensor(f["feats"][:], dtype=self.precision)  # type: ignore
+            feats_ds = cast(h5py.Dataset, f["feats"])
+            feats: Tensor = torch.tensor(feats_ds[:], dtype=self.precision)
             coords: CoordsInfo = get_coords(f)
             extractor: str = f.attrs.get("extractor", "")
             if extractor == "":

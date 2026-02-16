@@ -62,29 +62,29 @@ def _categorical(preds_df: pd.DataFrame, target_label: str) -> pd.DataFrame:
 
     # roc_auc
     stats_df["roc_auc_score"] = [
-        metrics.roc_auc_score(y_true == cat, y_pred[:, i])  # pyright: ignore[reportCallIssue,reportArgumentType]
+        metrics.roc_auc_score(y_true == cat, y_pred[:, i])
         for i, cat in enumerate(categories)
     ]
 
     # average_precision
     stats_df["average_precision_score"] = [
-        metrics.average_precision_score(y_true == cat, y_pred[:, i])  # pyright: ignore[reportCallIssue,reportArgumentType]
+        metrics.average_precision_score(y_true == cat, y_pred[:, i])
         for i, cat in enumerate(categories)
     ]
 
     # f1 score
     y_pred_labels = categories[y_pred.argmax(axis=1)]
     stats_df["f1_score"] = [
-        metrics.f1_score(y_true == cat, y_pred_labels == cat)  # pyright: ignore[reportCallIssue,reportArgumentType]
-        for cat in categories
+        metrics.f1_score(y_true == cat, y_pred_labels == cat) for cat in categories
     ]
 
     # p values
     p_values = []
     for i, cat in enumerate(categories):
-        pos_scores = y_pred[:, i][y_true == cat]  # pyright: ignore[reportCallIssue,reportArgumentType]
-        neg_scores = y_pred[:, i][y_true != cat]  # pyright: ignore[reportCallIssue,reportArgumentType]
-        p_values.append(st.ttest_ind(pos_scores, neg_scores).pvalue)  # pyright: ignore[reportGeneralTypeIssues, reportAttributeAccessIssue]
+        pos_scores = y_pred[:, i][y_true == cat]
+        neg_scores = y_pred[:, i][y_true != cat]
+        _, p_value = st.ttest_ind(pos_scores, neg_scores)
+        p_values.append(p_value)
     stats_df["p_value"] = p_values
 
     assert set(_score_labels) & set(stats_df.columns) == set(_score_labels)

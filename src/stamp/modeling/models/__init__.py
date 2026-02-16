@@ -3,11 +3,13 @@
 import inspect
 from abc import ABC
 from collections.abc import Iterable, Sequence
-from typing import Any, Mapping, TypeAlias
+from typing import Any, TypeAlias
 
 import lightning
-import numpy as np
 import torch
+
+# Use beartype.typing.Mapping to avoid PEP-585 deprecation warnings in beartype
+from beartype.typing import Mapping
 from jaxtyping import Bool, Float
 from packaging.version import Version
 from torch import Tensor, nn, optim
@@ -148,6 +150,19 @@ class Base(lightning.LightningModule, ABC):
         )
 
 
+class _TileLevelMixin:
+    """Mixin for tile-level models providing shared MIL masking logic."""
+
+    @staticmethod
+    def _mask_from_bags(bags: Bags, bag_sizes: BagSizes) -> Bool[Tensor, "batch tile"]:
+        """Create attention mask for padded tiles in variable-length bags."""
+        max_possible_bag_size = bags.size(1)
+        mask = torch.arange(max_possible_bag_size).type_as(bag_sizes).unsqueeze(
+            0
+        ).repeat(len(bags), 1) >= bag_sizes.unsqueeze(1)
+        return mask
+
+
 class LitBaseClassifier(Base):
     """
     PyTorch Lightning wrapper for tile level and patient level clasification.
@@ -199,15 +214,16 @@ class LitBaseClassifier(Base):
         self.class_weights = category_weights
         self.valid_auroc = MulticlassAUROC(len(categories))
         # Number classes
-        self.categories = np.array(categories)
+        self.categories = list(categories)
 
         self.hparams.update({"task": "classification"})
 
 
-class LitTileClassifier(LitBaseClassifier):
+class LitTileClassifier(_TileLevelMixin, LitBaseClassifier):
     """
-    PyTorch Lightning wrapper for the model used in weakly supervised
-    learning settings, such as Multiple Instance Learning (MIL) for whole-slide images or patch-based data.
+    PyTorch Lightning wrapper for tile-level MIL classification.
+
+    Used in weakly supervised settings for whole-slide images or patch-based data.
     """
 
     supported_features = ["tile"]
@@ -249,7 +265,6 @@ class LitTileClassifier(LitBaseClassifier):
         )
 
         if step_name == "validation":
-            # TODO this is a bit ugly, we'd like to have `_step` without special cases
             self.valid_auroc.update(logits, targets.long().argmax(dim=-1))
             self.log(
                 f"{step_name}_auroc",
@@ -291,31 +306,19 @@ class LitTileClassifier(LitBaseClassifier):
         # adding a mask here will *drastically* and *unbearably* increase memory usage
         return self.model(bags, coords=coords, mask=None)
 
-    def _mask_from_bags(
-        *,
-        bags: Bags,
-        bag_sizes: BagSizes,
-    ) -> Bool[Tensor, "batch tile"]:
-        max_possible_bag_size = bags.size(1)
-        mask = torch.arange(max_possible_bag_size).type_as(bag_sizes).unsqueeze(
-            0
-        ).repeat(len(bags), 1) >= bag_sizes.unsqueeze(1)
-
-        return mask
-
 
 class LitSlideClassifier(LitBaseClassifier):
-    """
-    PyTorch Lightning wrapper for MLPClassifier.
-    """
+    """PyTorch Lightning wrapper for slide/patient-level classification."""
 
     supported_features = ["slide"]
 
     def forward(self, x: Tensor) -> Tensor:
         return self.model(x)
 
-    def _step(self, batch, step_name: str):
-        feats, targets = batch
+    def _step(
+        self, batch: tuple[Tensor, Tensor] | list[Tensor], step_name: str
+    ) -> Loss:
+        feats, targets = list(batch)  # Works for both tuple and list
         logits = self.model(feats.float())
         loss = nn.functional.cross_entropy(
             logits,
@@ -341,17 +344,25 @@ class LitSlideClassifier(LitBaseClassifier):
             )
         return loss
 
-    def training_step(self, batch, batch_idx):
+    def training_step(
+        self, batch: tuple[Tensor, Tensor] | list[Tensor], batch_idx: int
+    ) -> Loss:
         return self._step(batch, "training")
 
-    def validation_step(self, batch, batch_idx):
+    def validation_step(
+        self, batch: tuple[Tensor, Tensor] | list[Tensor], batch_idx: int
+    ) -> Loss:
         return self._step(batch, "validation")
 
-    def test_step(self, batch, batch_idx):
+    def test_step(
+        self, batch: tuple[Tensor, Tensor] | list[Tensor], batch_idx: int
+    ) -> Loss:
         return self._step(batch, "test")
 
-    def predict_step(self, batch, batch_idx):
-        feats, _ = batch
+    def predict_step(
+        self, batch: tuple[Tensor, Tensor] | list[Tensor], batch_idx: int
+    ) -> Tensor:
+        feats, _ = batch if isinstance(batch, tuple) else batch
         return self.model(feats)
 
 
@@ -402,9 +413,10 @@ class LitBaseRegressor(Base):
         return nn.functional.l1_loss(y_true, y_pred)
 
 
-class LitTileRegressor(LitBaseRegressor):
+class LitTileRegressor(_TileLevelMixin, LitBaseRegressor):
     """
-    PyTorch Lightning wrapper for weakly supervised / MIL regression at tile/patient level.
+    PyTorch Lightning wrapper for tile-level MIL regression.
+
     Produces a single continuous output per bag (dim_output = 1).
     """
 
@@ -491,38 +503,22 @@ class LitTileRegressor(LitBaseRegressor):
         # keep memory usage low as in classifier
         return self.model(bags, coords=coords, mask=None)
 
-    def _mask_from_bags(
-        *,
-        bags: Bags,
-        bag_sizes: BagSizes,
-    ) -> Bool[Tensor, "batch tile"]:
-        max_possible_bag_size = bags.size(1)
-        mask = torch.arange(max_possible_bag_size).type_as(bag_sizes).unsqueeze(
-            0
-        ).repeat(len(bags), 1) >= bag_sizes.unsqueeze(1)
-
-        return mask
-
 
 class LitSlideRegressor(LitBaseRegressor):
-    """
-    PyTorch Lightning wrapper for slide-level or patient-level regression.
-    Produces a single continuous output per slide (dim_output = 1).
-    """
+    """PyTorch Lightning wrapper for slide/patient-level regression."""
 
     supported_features = ["slide"]
 
     def forward(self, feats: Tensor) -> Tensor:
-        """Forward pass for slide-level features."""
         return self.model(feats.float())
 
     def _step(
         self,
         *,
-        batch: tuple[Tensor, Tensor],
+        batch: tuple[Tensor, Tensor] | list[Tensor],
         step_name: str,
     ) -> Loss:
-        feats, targets = batch
+        feats, targets = list(batch)  # Works for both tuple and list
 
         preds = self.model(feats.float(), mask=None)  # (B, 1)
         y = targets.to(preds).float()
@@ -539,7 +535,6 @@ class LitSlideRegressor(LitBaseRegressor):
         )
 
         if step_name == "validation":
-            # same metrics as LitTileRegressor
             p = preds.squeeze(-1)
             t = y.squeeze(-1)
             self.log(
@@ -552,17 +547,25 @@ class LitSlideRegressor(LitBaseRegressor):
 
         return loss
 
-    def training_step(self, batch, batch_idx):
+    def training_step(
+        self, batch: tuple[Tensor, Tensor] | list[Tensor], batch_idx: int
+    ) -> Loss:
         return self._step(batch=batch, step_name="training")
 
-    def validation_step(self, batch, batch_idx):
+    def validation_step(
+        self, batch: tuple[Tensor, Tensor] | list[Tensor], batch_idx: int
+    ) -> Loss:
         return self._step(batch=batch, step_name="validation")
 
-    def test_step(self, batch, batch_idx):
+    def test_step(
+        self, batch: tuple[Tensor, Tensor] | list[Tensor], batch_idx: int
+    ) -> Loss:
         return self._step(batch=batch, step_name="test")
 
-    def predict_step(self, batch, batch_idx):
-        feats, _ = batch
+    def predict_step(
+        self, batch: tuple[Tensor, Tensor] | list[Tensor], batch_idx: int
+    ) -> Tensor:
+        feats, _ = batch if isinstance(batch, tuple) else batch
         return self.model(feats.float())
 
 
@@ -707,12 +710,12 @@ class LitSurvivalBase(Base):
             self.hparams.update({"train_pred_median": self.train_pred_median})
 
 
-class LitTileSurvival(LitSurvivalBase):
+class LitTileSurvival(_TileLevelMixin, LitSurvivalBase):
     """
-    Tile-level or patch-level survival analysis.
-    Expects dataloader batches like:
-      (bags, coords, bag_sizes, targets)
-    where targets is shape (B,2): [:,0]=time, [:,1]=event (1=event, 0=censored).
+    Tile-level survival analysis with Cox proportional hazards loss.
+
+    Expects batches: (bags, coords, bag_sizes, targets)
+    where targets.shape = (B, 2): [:,0]=time, [:,1]=event (0=censored, 1=event).
     """
 
     supported_features = ["tile"]

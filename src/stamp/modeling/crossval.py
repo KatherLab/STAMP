@@ -121,7 +121,7 @@ def categorical_crossval_(
     categories_for_export: (
         dict[str, list] | list
     ) = []  # declare upfront to avoid unbound variable warnings
-    categories: Sequence[GroundTruth] | list | None = []  # type: ignore  # declare upfront to avoid unbound variable warnings
+    categories: Sequence[GroundTruth] | list | None = []
 
     if config.task == "classification":
         # Determine categories for training (single-target) and for export (supports multi-target)

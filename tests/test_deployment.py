@@ -167,7 +167,7 @@ def test_to_prediction_df(task: str) -> None:
     )
     if task == "classification":
         preds_df = _to_prediction_df(
-            categories=list(model.categories),  # type: ignore
+            categories=list(cast(list, model.categories)),
             patient_to_ground_truth={
                 PatientId("pat5"): GroundTruth("foo"),
                 PatientId("pat6"): None,
@@ -196,13 +196,13 @@ def test_to_prediction_df(task: str) -> None:
 
         # Check if no loss / target is given for targets with missing ground truths
         no_ground_truth = preds_df[preds_df["patient"].isin(["pat6"])]
-        assert no_ground_truth["target"].isna().all()  # pyright: ignore[reportGeneralTypeIssues,reportAttributeAccessIssue]
-        assert no_ground_truth["loss"].isna().all()  # pyright: ignore[reportGeneralTypeIssues,reportAttributeAccessIssue]
+        assert no_ground_truth["target"].isna().all()
+        assert no_ground_truth["loss"].isna().all()
 
         # Check if loss / target is given for targets with ground truths
         with_ground_truth = preds_df[preds_df["patient"].isin(["pat5", "pat7"])]
-        assert (~with_ground_truth["target"].isna()).all()  # pyright: ignore[reportGeneralTypeIssues,reportAttributeAccessIssue]
-        assert (~with_ground_truth["loss"].isna()).all()  # pyright: ignore[reportGeneralTypeIssues,reportAttributeAccessIssue]
+        assert (~with_ground_truth["target"].isna()).all()
+        assert (~with_ground_truth["loss"].isna()).all()
 
     elif task == "regression":
         patient_to_ground_truth = {}

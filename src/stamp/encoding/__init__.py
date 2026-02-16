@@ -73,7 +73,7 @@ def init_slide_encoder_(
             selected_encoder = encoder
 
         case _ as unreachable:
-            assert_never(unreachable)  # type: ignore
+            assert_never(unreachable)
 
     selected_encoder.encode_slides_(
         output_dir=output_dir,

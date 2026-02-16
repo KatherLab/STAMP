@@ -461,7 +461,10 @@ def _extract_mpp_from_metadata(slide: openslide.AbstractSlide) -> SlideMPP | Non
             return None
         doc = minidom.parseString(xml_path)
         collection = doc.documentElement
-        images = collection.getElementsByTagName("Image")  # pyright: ignore[reportOptionalMemberAccess]
+        if collection is None:
+            _logger.error("Document element is None, unable to extract MPP.")
+            return None
+        images = collection.getElementsByTagName("Image")
         pixels = images[0].getElementsByTagName("Pixels")
         mpp = float(pixels[0].getAttribute("PhysicalSizeX"))
     except Exception:

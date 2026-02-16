@@ -3,13 +3,13 @@
 import logging
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import KW_ONLY, dataclass
+from io import BytesIO  # accept in _BinaryIOLike at runtime
 from itertools import groupby
 from pathlib import Path
 from typing import (
     IO,
     Any,
     BinaryIO,
-    Dict,
     Final,
     Generic,
     List,
@@ -23,6 +23,9 @@ import h5py
 import numpy as np
 import pandas as pd
 import torch
+
+# Use beartype's typing for PEP-585 deprecation-safe hints
+from beartype.typing import Dict
 from packaging.version import Version
 from torch import Tensor
 from torch.utils.data import DataLoader, Dataset
@@ -58,7 +61,9 @@ _Bag: TypeAlias = Tensor
 _EncodedTarget: TypeAlias = (
     Tensor | dict[str, Tensor]
 )  # Union of encoded targets or multi-target dict
-_BinaryIOLike: TypeAlias = Union[BinaryIO, IO[bytes]]
+_BinaryIOLike: TypeAlias = Union[
+    BinaryIO, IO[bytes], BytesIO
+]  # includes io.BytesIO for runtime checks
 """The ground truth, encoded numerically
 - classification: one-hot float [C]
 - regression: float [1]
@@ -73,7 +78,7 @@ class PatientData(Generic[GroundTruthType]):
 
     _ = KW_ONLY
     ground_truth: GroundTruthType
-    feature_files: Iterable[FeaturePath | BinaryIO]
+    feature_files: Iterable[FeaturePath | _BinaryIOLike]
 
 
 def tile_bag_dataloader(
@@ -533,9 +538,19 @@ class BagDataset(Dataset[tuple[_Bag, _Coordinates, BagSize, _EncodedTarget]]):
         for bag_file in self.bags[index]:
             with h5py.File(bag_file, "r") as h5:
                 if "feats" in h5:
-                    arr = h5["feats"][:]  # pyright: ignore[reportIndexIssue] # original STAMP files
+                    feats_obj = h5["feats"]
+                    if not isinstance(feats_obj, h5py.Dataset):
+                        raise RuntimeError(
+                            f"expected 'feats' to be an HDF5 dataset but got {type(feats_obj)}"
+                        )
+                    arr = feats_obj[:]  # original STAMP files
                 else:
-                    arr = h5["patch_embeddings"][:]  # type: ignore # your Kronos files
+                    embeddings_obj = h5["patch_embeddings"]
+                    if not isinstance(embeddings_obj, h5py.Dataset):
+                        raise RuntimeError(
+                            f"expected 'patch_embeddings' to be an HDF5 dataset but got {type(embeddings_obj)}"
+                        )
+                    arr = embeddings_obj[:]  # your Kronos files
 
                 feats.append(torch.from_numpy(arr))
                 coords_um.append(torch.from_numpy(get_coords(h5).coords_um))
@@ -569,7 +584,7 @@ class PatientFeatureDataset(Dataset):
 
     def __init__(
         self,
-        feature_files: Sequence[FeaturePath | BinaryIO],
+        feature_files: Sequence[FeaturePath | _BinaryIOLike],
         ground_truths: Tensor,  # shape: [num_samples, num_classes]
         transform: Callable[[Tensor], Tensor] | None,
     ):
@@ -585,7 +600,12 @@ class PatientFeatureDataset(Dataset):
     def __getitem__(self, idx: int):
         feature_file = self.feature_files[idx]
         with h5py.File(feature_file, "r") as h5:
-            feats = torch.from_numpy(h5["feats"][:])  # pyright: ignore[reportIndexIssue]
+            feats_obj = h5["feats"]
+            if not isinstance(feats_obj, h5py.Dataset):
+                raise RuntimeError(
+                    f"expected 'feats' to be an HDF5 dataset but got {type(feats_obj)}"
+                )
+            feats = torch.from_numpy(feats_obj[:])
             # Accept [V] or [1, V]
             if feats.ndim == 2 and feats.shape[0] == 1:
                 feats = feats[0]
@@ -634,10 +654,15 @@ def get_coords(feature_h5: h5py.File) -> CoordsInfo:
         tile_size_px = TilePixels(0)
 
         return CoordsInfo(coords_um, tile_size_um, tile_size_px)
-    coords: np.ndarray = feature_h5["coords"][:]  # type: ignore
-    coords_um: np.ndarray | None = None
+    coords_obj = feature_h5["coords"]
+    if not isinstance(coords_obj, h5py.Dataset):
+        raise RuntimeError(
+            f"{feature_h5.filename}: expected 'coords' to be an HDF5 dataset but got {type(coords_obj)}"
+        )
+    coords: np.ndarray = coords_obj[:]
     tile_size_um: Microns | None = None
     tile_size_px: TilePixels | None = None
+    coords_um: np.ndarray | None = None
     if (tile_size := feature_h5.attrs.get("tile_size", None)) and feature_h5.attrs.get(
         "unit", None
     ) == "um":
@@ -672,7 +697,15 @@ def get_coords(feature_h5: h5py.File) -> CoordsInfo:
         )
 
     if not tile_size_px and "tile_size_px" in feature_h5.attrs:
-        tile_size_px = TilePixels(int(feature_h5.attrs["tile_size_px"]))  # pyright: ignore[reportArgumentType]
+        tile_size_px_attr = feature_h5.attrs.get("tile_size_px")
+        if tile_size_px_attr is not None and isinstance(
+            tile_size_px_attr, (int, float)
+        ):
+            tile_size_px = TilePixels(int(tile_size_px_attr))
+        else:
+            raise RuntimeError(
+                "Invalid or missing 'tile_size_px' attribute in the feature file."
+            )
 
     if not tile_size_um or coords_um is None:
         raise RuntimeError(
