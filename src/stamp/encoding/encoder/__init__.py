@@ -1,5 +1,6 @@
 import logging
 import os
+import re
 from abc import ABC, abstractmethod
 from pathlib import Path
 from tempfile import NamedTemporaryFile
@@ -218,33 +219,22 @@ class Encoder(ABC):
             _logger.debug(f"saved features to {output_path}")
 
 
-def _resolve_extractor_name(raw: str) -> ExtractorName:
-    """
-    Resolve an extractor string to a valid ExtractorName.
+_HASH_RE = re.compile(r"^[0-9a-fA-F]{6,}$")
 
-    Handles:
-      - exact matches ('gigapath', 'virchow-full')
-      - versioned strings like 'gigapath-ae23d', 'virchow-full-2025abc'
-    Raises ValueError if the base name is not recognized.
-    """
-    if not raw:
-        raise ValueError("Empty extractor string")
 
-    name = str(raw).strip().lower()
+def _resolve_extractor_name(name: str) -> str:
+    if not name:
+        raise ValueError("Empty extractor name")
 
-    # Exact match
-    for e in ExtractorName:
-        if name == e.value.lower():
-            return e
+    name = str(name).strip()
 
-    # Versioned form: '<enum-value>-something'
-    for e in ExtractorName:
-        if name.startswith(e.value.lower() + "-"):
-            return e
+    if "-" not in name:
+        return name
 
-    # Otherwise fail
-    raise ValueError(
-        f"Unknown extractor '{raw}'. "
-        f"Expected one of {[e.value for e in ExtractorName]} "
-        f"or a versioned variant like '<name>-<hash>'."
-    )
+    base, suffix = name.rsplit("-", 1)
+
+    # Strip ONLY if suffix looks like a real hash
+    if _HASH_RE.match(suffix):
+        return base
+
+    return name
