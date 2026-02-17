@@ -20,7 +20,13 @@ from stamp.modeling.data import (
     slide_to_patient_from_slide_table_,
 )
 from stamp.modeling.registry import ModelName, load_model_class
-from stamp.types import Category, GroundTruth, PandasLabel, PatientId
+from stamp.types import (
+    Category,
+    GroundTruth,
+    PandasLabel,
+    PatientId,
+    SurvivalGroundTruth,
+)
 
 __all__ = ["deploy_categorical_model_"]
 
@@ -218,7 +224,7 @@ def deploy_categorical_model_(
             }
         patient_to_data = filter_complete_patient_data_(
             patient_to_ground_truth=cast(
-                Mapping[PatientId, GroundTruth | None],
+                Mapping[PatientId, GroundTruth | dict[str, GroundTruth] | None],
                 patient_to_ground_truth,
             ),
             slide_to_patient=slide_to_patient,
@@ -622,7 +628,9 @@ def _to_regression_prediction_df(
 
 def _to_survival_prediction_df(
     *,
-    patient_to_ground_truth: Mapping[PatientId, GroundTruth | None],
+    patient_to_ground_truth: Mapping[
+        PatientId, GroundTruth | SurvivalGroundTruth | None
+    ],
     predictions: Mapping[PatientId, torch.Tensor],
     patient_label: PandasLabel,
     cut_off: float | None = None,

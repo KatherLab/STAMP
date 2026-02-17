@@ -17,6 +17,7 @@ from stamp.modeling.data import (
     BagDataset,
     PatientData,
     PatientFeatureDataset,
+    _parse_survival_status,
     create_dataloader,
     load_patient_data_,
 )
@@ -154,11 +155,21 @@ def setup_model_for_training(
             f"No model specified, defaulting to '{advanced.model_name.value}' for feature type '{feature_type}'"
         )
 
+    # Prevent selecting `barspoon` for single-target classification
+    if (
+        task == "classification"
+        and isinstance(ground_truth_label, str)
+        and advanced.model_name == ModelName.BARSPOON
+    ):
+        raise ValueError(
+            "Model 'barspoon' requires multi-target classification. "
+            "For single-target classification set model_name to 'vit', 'trans_mil', or 'mlp'."
+        )
+
     # 2. Instantiate the lightning wrapper (based on provided task, feature type) and model backbone dynamically
     LitModelClass, ModelClass = load_model_class(
         task, feature_type, advanced.model_name
     )
-    print(f"Using Lightning wrapper class: {LitModelClass}")
 
     # 3. Validate that the chosen model supports the feature type
     if feature_type not in LitModelClass.supported_features:
@@ -220,6 +231,124 @@ def setup_model_for_training(
     return model, train_dl, valid_dl
 
 
+def setup_model_from_dataloaders(
+    *,
+    train_dl: DataLoader,
+    valid_dl: DataLoader,
+    task: Task,
+    train_categories: Sequence[Category] | Mapping[str, Sequence[Category]],
+    dim_feats: int,
+    train_patients: Sequence[PatientId],
+    valid_patients: Sequence[PatientId],
+    feature_type: str,
+    advanced: AdvancedConfig,
+    # Metadata, has no effect on model training
+    ground_truth_label: PandasLabel | Sequence[PandasLabel] | None,
+    time_label: PandasLabel | None,
+    status_label: PandasLabel | None,
+    clini_table: Path,
+    slide_table: Path | None,
+    feature_dir: Path,
+) -> lightning.LightningModule:
+    """Creates a model from pre-built dataloaders (no internal split)."""
+
+    _logger.info(
+        "Training dataloaders: task=%s, feature_type=%s",
+        task,
+        feature_type,
+    )
+
+    category_weights: torch.Tensor | dict[str, torch.Tensor] | list = []
+    if task == "classification":
+        category_weights = _compute_class_weights_and_check_categories(
+            train_dl=train_dl,
+            feature_type=feature_type,
+            train_categories=train_categories,
+        )
+
+    # 1. Default to a model if none is specified
+    if advanced.model_name is None:
+        advanced.model_name = ModelName.VIT if feature_type == "tile" else ModelName.MLP
+        _logger.info(
+            f"No model specified, defaulting to '{advanced.model_name.value}' for feature type '{feature_type}'"
+        )
+
+    # Prevent selecting `barspoon` for single-target classification
+    if (
+        task == "classification"
+        and isinstance(ground_truth_label, str)
+        and advanced.model_name == ModelName.BARSPOON
+    ):
+        raise ValueError(
+            "Model 'barspoon' requires multi-target classification. "
+            "For single-target classification set model_name to 'vit', 'trans_mil', or 'mlp'."
+        )
+
+    # 2. Instantiate the lightning wrapper (based on provided task, feature type) and model backbone dynamically
+    LitModelClass, ModelClass = load_model_class(
+        task, feature_type, advanced.model_name
+    )
+
+    # 3. Validate that the chosen model supports the feature type
+    if feature_type not in LitModelClass.supported_features:
+        raise ValueError(
+            f"Model '{advanced.model_name.value}' does not support feature type '{feature_type}'. "
+            f"Supported types are: {LitModelClass.supported_features}"
+        )
+    elif (
+        feature_type in ("slide", "patient")
+        and advanced.model_name.value.lower() != "mlp"
+    ):
+        raise ValueError(
+            f"Feature type '{feature_type}' only supports MLP backbones. "
+            f"Got '{advanced.model_name.value}'. Please set model_name='mlp'."
+        )
+
+    # 4. Get model-specific hyperparameters
+    model_specific_params = (
+        advanced.model_params.model_dump().get(advanced.model_name.value) or {}
+    )
+
+    # 5. Calculate total steps for scheduler
+    steps_per_epoch = len(train_dl)
+    total_steps = steps_per_epoch * advanced.max_epochs
+
+    # 6. Prepare common parameters
+    common_params = {
+        "categories": train_categories,
+        "category_weights": category_weights,
+        "dim_input": dim_feats,
+        "total_steps": total_steps,
+        "max_lr": advanced.max_lr,
+        "div_factor": advanced.div_factor,
+        # Metadata, has no effect on model training
+        "model_name": advanced.model_name.value,
+        "ground_truth_label": ground_truth_label,
+        "time_label": time_label,
+        "status_label": status_label,
+        "train_patients": train_patients,
+        "valid_patients": valid_patients,
+        "clini_table": clini_table,
+        "slide_table": slide_table,
+        "feature_dir": feature_dir,
+    }
+
+    all_params = {**common_params, **model_specific_params}
+
+    _logger.info(
+        f"Instantiating model '{advanced.model_name.value}' with parameters: {model_specific_params}"
+    )
+    _logger.info(
+        "Other params: max_epochs=%s, patience=%s",
+        advanced.max_epochs,
+        advanced.patience,
+    )
+
+    model = LitModelClass(model_class=ModelClass, **all_params)
+
+    return model
+
+
 def setup_dataloaders_for_training(
     *,
     patient_to_data: Mapping[PatientId, PatientData[GroundTruth | None | dict]],
@@ -259,6 +388,12 @@ def setup_dataloaders_for_training(
             "patient_to_data must have a ground truth defined for all targets!"
         )
 
+    # Multi-target ground truths are only supported for classification
+    if task != "classification" and any(isinstance(gt, dict) for gt in ground_truths):
+        raise ValueError(
+            "Multi-target ground truths are only supported for classification tasks"
+        )
+
     if task == "classification":
         # Handle both single and multi-target cases
         if ground_truths and isinstance(ground_truths[0], dict):
@@ -268,17 +403,37 @@ def setup_dataloaders_for_training(
         else:
             stratify = ground_truths
     elif task == "survival":
-        # Extract event indicator (status) - handle both single and multi-target
-        statuses = []
+        # Extract event indicator (status). Accept either structured (time,event)
+        # or legacy string "time status" formats.
+        statuses: list[int] = []
         for gt in ground_truths:
             if isinstance(gt, dict):
-                # Multi-target survival: extract from first target
-                first_key = list(gt.keys())[0]
-                val = cast(dict, gt)[first_key]
-                if val:
-                    statuses.append(int(val.split()[1]))
+                raise ValueError(
+                    "Multi-target survival is not supported; provide a single survival time/status per patient"
+                )
+            if isinstance(gt, (tuple, list)) and len(gt) == 2:
+                status_val = gt[1]
+                if status_val is None:
+                    raise ValueError(
+                        "Missing survival status for a patient; cannot stratify"
+                    )
+                statuses.append(int(status_val))
             else:
-                statuses.append(int(gt.split()[1]))
+                parts = str(gt).split()
+                if len(parts) >= 2:
+                    status_token = parts[1]
+                elif len(parts) == 1:
+                    status_token = parts[0]
+                else:
+                    raise ValueError(
+                        "Unrecognized survival ground-truth format for stratification"
+                    )
+                parsed_status = _parse_survival_status(status_token)
+                if parsed_status is None:
+                    raise ValueError(
+                        f"Unrecognized survival status token for stratification: {status_token!r}"
+                    )
+                statuses.append(int(parsed_status))
         stratify = statuses
     elif task == "regression":
         stratify = None

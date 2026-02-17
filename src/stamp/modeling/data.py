@@ -121,6 +121,7 @@ def tile_bag_dataloader(
         bag_size=bag_size,
         ground_truths=targets,
         transform=transform,
+        deterministic=(not shuffle),
     )
     dl = DataLoader(
         ds,
@@ -229,9 +230,20 @@ def _parse_targets(
                 events.append(np.nan)
                 continue
 
-            time_str, status_str = gt.split(" ", 1)
-            times.append(np.nan if time_str.lower() == "nan" else float(time_str))
-            events.append(_parse_survival_status(status_str))
+            # Accept either structured tuple/list (time, event) or the legacy
+            # string form "time status".
+            if isinstance(gt, (tuple, list)) and len(gt) == 2:
+                t_val, e_val = gt
+                times.append(
+                    np.nan
+                    if t_val is None or str(t_val).lower() == "nan"
+                    else float(t_val)
+                )
+                events.append(float(e_val) if e_val is not None else np.nan)
+            else:
+                time_str, status_str = str(gt).split(" ", 1)
+                times.append(np.nan if time_str.lower() == "nan" else float(time_str))
+                events.append(_parse_survival_status(status_str))
 
         y = torch.tensor(np.column_stack([times, events]), dtype=torch.float32)
         return y, []
@@ -356,22 +368,20 @@ def create_dataloader(
                 if gt is None:
                     continue
                 if isinstance(gt, dict):
-                    # Use first value for multi-target regression
-                    first_val = next(iter(gt.values()))
-                    values.append(float(first_val))
-                else:
-                    values.append(float(gt))
+                    raise ValueError(
+                        "Multi-target regression is not supported; provide a single numeric target per patient"
+                    )
+                values.append(float(gt))
 
             labels = torch.tensor(values, dtype=torch.float32).reshape(-1, 1)
         elif task == "survival":
             times, events = [], []
             for p in patient_data:
                 if isinstance(p.ground_truth, dict):
-                    # Multi-target survival: use first target
-                    val = list(p.ground_truth.values())[0]
-                    t, e = (val or "nan nan").split(" ", 1)
-                else:
-                    t, e = (p.ground_truth or "nan nan").split(" ", 1)
+                    raise ValueError(
+                        "Multi-target survival is not supported; provide a single survival time/status per patient"
+                    )
+                t, e = (p.ground_truth or "nan nan").split(" ", 1)
                 times.append(float(t) if t.lower() != "nan" else np.nan)
                 events.append(_parse_survival_status(e))
 
@@ -449,6 +459,15 @@ def load_patient_level_data(
     """
 
     # Load ground truth mapping
+    # Multi-target ground truths are only supported for classification.
+    if task is not None and task != "classification":
+        if isinstance(ground_truth_label, Sequence) and not isinstance(
+            ground_truth_label, str
+        ):
+            raise ValueError(
+                "Multi-target ground_truth_label is only supported for classification tasks"
+            )
+
     if task == "survival" and time_label is not None and status_label is not None:
         # Survival: use the existing helper
         patient_to_ground_truth = patient_to_survival_from_clini_table_(
@@ -519,6 +538,7 @@ class BagDataset(Dataset[tuple[_Bag, _Coordinates, BagSize, _EncodedTarget]]):
     # """The ground truth for each bag, one-hot encoded."""
 
     transform: Callable[[Tensor], Tensor] | None
+    deterministic: bool = False
 
     def __post_init__(self) -> None:
         if len(self.bags) != len(self.ground_truths):
@@ -564,7 +584,12 @@ class BagDataset(Dataset[tuple[_Bag, _Coordinates, BagSize, _EncodedTarget]]):
         # Sample a subset, if required
         if self.bag_size is not None:
             return (
-                *_to_fixed_size_bag(feats, coords=coords_um, bag_size=self.bag_size),
+                *_to_fixed_size_bag(
+                    feats,
+                    coords=coords_um,
+                    bag_size=self.bag_size,
+                    deterministic=self.deterministic,
+                ),
                 self.ground_truths[index],
             )
         else:
@@ -697,15 +722,7 @@ def get_coords(feature_h5: h5py.File) -> CoordsInfo:
         )
 
     if not tile_size_px and "tile_size_px" in feature_h5.attrs:
-        tile_size_px_attr = feature_h5.attrs.get("tile_size_px")
-        if tile_size_px_attr is not None and isinstance(
-            tile_size_px_attr, (int, float)
-        ):
-            tile_size_px = TilePixels(int(tile_size_px_attr))
-        else:
-            raise RuntimeError(
-                "Invalid or missing 'tile_size_px' attribute in the feature file."
-            )
+        tile_size_px = TilePixels(int(feature_h5.attrs["tile_size_px"]))  # pyright: ignore[reportArgumentType]
 
     if not tile_size_um or coords_um is None:
         raise RuntimeError(
@@ -716,7 +733,7 @@ def get_coords(feature_h5: h5py.File) -> CoordsInfo:
 
 
 def _to_fixed_size_bag(
-    bag: _Bag, coords: _Coordinates, bag_size: BagSize
+    bag: _Bag, coords: _Coordinates, bag_size: BagSize, deterministic: bool = False
 ) -> tuple[_Bag, _Coordinates, BagSize]:
     """Samples a fixed-size bag of tiles from an arbitrary one.
 
@@ -725,23 +742,47 @@ def _to_fixed_size_bag(
     """
     # get up to bag_size elements
     n_tiles, _dim_feats = bag.shape
-    bag_idxs = torch.randperm(n_tiles)[:bag_size]
+    if n_tiles <= bag_size:
+        # take all and pad later
+        bag_idxs = torch.arange(n_tiles, device=bag.device)
+    else:
+        if deterministic:
+            # equidistant indices across the bag
+            idxs = torch.linspace(0, n_tiles - 1, steps=bag_size, device=bag.device)
+            bag_idxs = idxs.round().long()
+        else:
+            bag_idxs = torch.randperm(n_tiles, device=bag.device)[:bag_size]
+
     bag_samples = bag[bag_idxs]
     coord_samples = coords[bag_idxs]
 
     # zero-pad if we don't have enough samples
-    zero_padded_bag = torch.cat(
-        (
-            bag_samples,
-            torch.zeros(bag_size - bag_samples.shape[0], bag_samples.shape[1]),
+    if bag_samples.shape[0] < bag_size:
+        zero_padded_bag = torch.cat(
+            (
+                bag_samples,
+                torch.zeros(
+                    bag_size - bag_samples.shape[0],
+                    bag_samples.shape[1],
+                    device=bag.device,
+                    dtype=bag.dtype,
+                ),
+            )
         )
-    )
-    zero_padded_coord = torch.cat(
-        (
-            coord_samples,
-            torch.zeros(bag_size - coord_samples.shape[0], coord_samples.shape[1]),
+        zero_padded_coord = torch.cat(
+            (
+                coord_samples,
+                torch.zeros(
+                    bag_size - coord_samples.shape[0],
+                    coord_samples.shape[1],
+                    device=coords.device,
+                    dtype=coords.dtype,
+                ),
+            )
         )
-    )
+    else:
+        zero_padded_bag = bag_samples
+        zero_padded_coord = coord_samples
     return zero_padded_bag, zero_padded_coord, min(bag_size, len(bag))
 
 
@@ -822,13 +863,14 @@ def patient_to_survival_from_clini_table_(
     patient_label: PandasLabel,
     time_label: PandasLabel,
     status_label: PandasLabel,
-) -> dict[PatientId, GroundTruth]:
+) -> dict[PatientId, tuple[float | None, int | None]]:
     """
     Loads patients and their survival ground truths (time + event) from a clini table.
 
     Returns
     dict[PatientId, GroundTruth]
-        Mapping patient_id -> "time status" (e.g. "302 dead", "476 alive").
+        Mapping patient_id -> tuple (time, event) where `time` is a numeric follow-up
+        value and `event` is an integer indicator (1=event/death, 0=censored).
     """
     clini_df = read_table(
         clini_table_path,
@@ -864,7 +906,7 @@ def patient_to_survival_from_clini_table_(
     # Only drop rows where BOTH time and status are missing
     clini_df = clini_df.dropna(subset=[time_label, status_label], how="all")
 
-    patient_to_ground_truth: dict[PatientId, GroundTruth] = {}
+    patient_to_ground_truth: dict[PatientId, tuple[float | None, int | None]] = {}
     for _, row in clini_df.iterrows():
         pid = row[patient_label]
         time_str = row[time_label]
@@ -877,10 +919,9 @@ def patient_to_survival_from_clini_table_(
         # Encode status: keep both dead (event=1) and alive (event=0)
         status = _parse_survival_status(status_str)
 
-        # Encode back to "alive"/"dead" like before
-        # status = "dead" if status_val == 1 else "alive"
-
-        patient_to_ground_truth[pid] = f"{time_str} {status}"
+        # Store structured ground-truth as (time, event) to avoid repeated string parsing
+        time_val = None if pd.isna(time_str) else float(time_str)
+        patient_to_ground_truth[pid] = (time_val, status)
 
     return patient_to_ground_truth
 
@@ -940,7 +981,7 @@ def read_table(path: Path | TextIO, **kwargs) -> pd.DataFrame:
 def filter_complete_patient_data_(
     *,
     patient_to_ground_truth: Mapping[
-        PatientId, GroundTruth | dict[str, GroundTruth] | None
+        PatientId, GroundTruth | dict[str, GroundTruth] | tuple[float | None, int | None] | None
     ],
     slide_to_patient: Mapping[FeaturePath, PatientId],
     drop_patients_with_missing_ground_truth: bool,
@@ -1021,8 +1062,10 @@ def _log_patient_slide_feature_inconsistencies(
     if slides_without_features := {
         slide for slide in slide_to_patient.keys() if not slide.exists()
     }:
+        slides_list = sorted(str(s) for s in slides_without_features)
         _logger.warning(
-            f"some feature files could not be found: {slides_without_features}"
+            "some feature files could not be found: %s",
+            ", ".join(slides_list),
         )
 
 
@@ -1130,6 +1173,15 @@ def load_patient_data_(
             if ground_truth_label is None:
                 raise ValueError(
                     "Ground truth label is required for classification or regression modeling"
+                )
+            # Disallow multi-target ground truth for non-classification tasks
+            if (
+                task != "classification"
+                and isinstance(ground_truth_label, Sequence)
+                and not isinstance(ground_truth_label, str)
+            ):
+                raise ValueError(
+                    "Multi-target ground_truth_label is only supported for classification tasks"
                 )
             patient_to_ground_truth = patient_to_ground_truth_from_clini_table_(
                 clini_table_path=clini_table,

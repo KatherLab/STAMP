@@ -6,7 +6,9 @@ from collections.abc import Iterable, Sequence
 from typing import Any, TypeAlias
 
 import lightning
+import numpy as np
 import torch
+from lifelines.utils import concordance_index as lifelines_cindex
 
 # Use beartype.typing.Mapping to avoid PEP-585 deprecation warnings in beartype
 from beartype.typing import Mapping
@@ -653,27 +655,36 @@ class LitSurvivalBase(Base):
     def c_index(
         scores: torch.Tensor, times: torch.Tensor, events: torch.Tensor
     ) -> torch.Tensor:
-        # """
-        # Concordance index: proportion of correctly ordered comparable pairs.
-        # """
-        N = len(times)
-        if N <= 1:
+        """
+        Concordance index using lifelines implementation for consistency with statistics.
+
+        Uses the same convention as stamp.statistics.survival:
+        - Higher risk scores should correspond to shorter survival (worse outcome).
+        - We negate scores so lifelines interprets higher values as longer survival.
+        """
+        # Convert to numpy for lifelines
+        scores_np = scores.detach().cpu().numpy().flatten()
+        times_np = times.detach().cpu().numpy().flatten()
+        events_np = events.detach().cpu().numpy().flatten()
+
+        # Filter out NaN values
+        valid_mask = ~(np.isnan(times_np) | np.isnan(events_np) | np.isnan(scores_np))
+        if valid_mask.sum() <= 1:
             return torch.tensor(float("nan"), device=scores.device)
 
-        t_i = times.view(-1, 1).expand(N, N)
-        t_j = times.view(1, -1).expand(N, N)
-        e_i = events.view(-1, 1).expand(N, N)
+        times_np = times_np[valid_mask]
+        events_np = events_np[valid_mask]
+        scores_np = scores_np[valid_mask]
 
-        mask = (t_i < t_j) & e_i.bool()
-        if mask.sum() == 0:
+        # Use lifelines concordance_index with negated risk (same as statistics module)
+        # lifelines expects: higher predicted value = longer survival
+        # Cox outputs: higher risk = shorter survival, so we negate
+        try:
+            ci = lifelines_cindex(times_np, -scores_np, events_np)
+        except Exception:
             return torch.tensor(float("nan"), device=scores.device)
 
-        s_i = scores.view(-1, 1).expand(N, N)[mask]
-        s_j = scores.view(1, -1).expand(N, N)[mask]
-
-        conc = (s_i > s_j).float()
-        ties = (s_i == s_j).float() * 0.5
-        return (conc + ties).sum() / mask.sum()
+        return torch.tensor(ci, device=scores.device, dtype=scores.dtype)
 
     def on_validation_epoch_end(self):
         if (

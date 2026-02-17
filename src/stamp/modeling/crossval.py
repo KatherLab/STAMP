@@ -22,7 +22,7 @@ from stamp.modeling.deploy import (
     _to_survival_prediction_df,
     load_model_from_ckpt,
 )
-from stamp.modeling.train import setup_model_for_training, train_model_
+from stamp.modeling.train import setup_model_from_dataloaders, train_model_
 from stamp.modeling.transforms import VaryPrecisionTransform
 from stamp.types import (
     GroundTruth,
@@ -80,19 +80,28 @@ def categorical_crossval_(
 
     # Generate the splits, or load them from the splits file if they already exist
     if not splits_file.exists():
-        splits = (
-            _get_splits(
-                patient_to_data=patient_to_data,
-                n_splits=config.n_splits,
-                spliter=KFold,
-            )
-            if config.task == "regression"
-            else _get_splits(
-                patient_to_data=patient_to_data,
-                n_splits=config.n_splits,
-                spliter=StratifiedKFold,
-            )
+        # Detect multi-target classification (ground_truth is a dict)
+        is_multitarget = any(
+            isinstance(pd.ground_truth, dict) for pd in patient_to_data.values()
         )
+
+        # Use KFold for regression or multi-target classification; otherwise StratifiedKFold.
+        # For survival we want StratifiedKFold so folds are balanced by event status.
+        spliter = (
+            KFold
+            if (config.task == "regression" or is_multitarget)
+            else StratifiedKFold
+        )
+
+        _logger.info(f"Using {spliter.__name__} for cross-validation splits")
+
+        splits = _get_splits(
+            patient_to_data=patient_to_data,
+            n_splits=config.n_splits,
+            spliter=spliter,
+            task=config.task,
+        )
+
         with open(splits_file, "w") as fp:
             fp.write(splits.model_dump_json(indent=4))
     else:
@@ -183,48 +192,93 @@ def categorical_crossval_(
 
         # Train the model
         if not (split_dir / "model.ckpt").exists():
-            model, train_dl, valid_dl = setup_model_for_training(
-                clini_table=config.clini_table,
-                slide_table=config.slide_table,
-                feature_dir=config.feature_dir,
+            # Build train and test dataloaders directly (pure 2-way k-fold split)
+            train_patient_ids = [
+                pid for pid in split.train_patients if pid in patient_to_data
+            ]
+            test_patient_ids = [
+                pid for pid in split.test_patients if pid in patient_to_data
+            ]
+            train_patient_data = [patient_to_data[pid] for pid in train_patient_ids]
+            test_patient_data = [patient_to_data[pid] for pid in test_patient_ids]
+
+            fold_categories = (
+                categories
+                if categories is not None
+                else (
+                    sorted(
+                        {
+                            patient_data.ground_truth
+                            for patient_data in patient_to_data.values()
+                            if patient_data.ground_truth is not None
+                            and not isinstance(patient_data.ground_truth, dict)
+                        }
+                    )
+                    if not isinstance(config.ground_truth_label, Sequence)
+                    else None
+                )
+            )
+
+            train_transform = (
+                VaryPrecisionTransform(min_fraction_bits=1)
+                if config.use_vary_precision_transform
+                else None
+            )
+
+            train_dl, train_categories = create_dataloader(
+                feature_type=feature_type,
+                task=config.task,
+                patient_data=train_patient_data,
+                bag_size=advanced.bag_size,
+                batch_size=advanced.batch_size,
+                shuffle=True,
+                num_workers=advanced.num_workers,
+                transform=train_transform,
+                categories=fold_categories,
+            )
+            test_dl, _ = create_dataloader(
+                feature_type=feature_type,
+                task=config.task,
+                patient_data=test_patient_data,
+                bag_size=None,
+                batch_size=1,
+                shuffle=False,
+                num_workers=advanced.num_workers,
+                transform=None,
+                categories=train_categories,
+            )
+
+            # Infer feature dimension
+            batch = next(iter(train_dl))
+            if feature_type == "tile":
+                bags, _, _, _ = batch
+                dim_feats = bags.shape[-1]
+            else:
+                feats, _ = batch
+                dim_feats = feats.shape[-1]
+
+            model = setup_model_from_dataloaders(
+                train_dl=train_dl,
+                valid_dl=test_dl,
+                task=config.task,
+                train_categories=train_categories,
+                dim_feats=dim_feats,
+                train_patients=train_patient_ids,
+                valid_patients=test_patient_ids,
+                feature_type=feature_type,
+                advanced=advanced,
                 ground_truth_label=config.ground_truth_label,
                 time_label=config.time_label,
                 status_label=config.status_label,
-                advanced=advanced,
-                task=config.task,
-                patient_to_data={
-                    patient_id: patient_data
-                    for patient_id, patient_data in patient_to_data.items()
-                    if patient_id in split.train_patients
-                },
-                categories=(
-                    categories
-                    if categories is not None
-                    else (
-                        sorted(
-                            {
-                                patient_data.ground_truth
-                                for patient_data in patient_to_data.values()
-                                if patient_data.ground_truth is not None
-                                and not isinstance(patient_data.ground_truth, dict)
-                            }
-                        )
-                        if not isinstance(config.ground_truth_label, Sequence)
-                        else None
-                    )
-                ),
-                train_transform=(
-                    VaryPrecisionTransform(min_fraction_bits=1)
-                    if config.use_vary_precision_transform
-                    else None
-                ),
-                feature_type=feature_type,
+                clini_table=config.clini_table,
+                slide_table=config.slide_table,
+                feature_dir=config.feature_dir,
             )
             model = train_model_(
                 output_dir=split_dir,
                 model=model,
                 train_dl=train_dl,
-                valid_dl=valid_dl,
+                valid_dl=test_dl,
                 max_epochs=advanced.max_epochs,
                 patience=advanced.patience,
                 accelerator=advanced.accelerator,
@@ -235,9 +289,9 @@ def categorical_crossval_(
             else:
                 model = load_model_from_ckpt(split_dir / "model.ckpt")
 
-        # Deploy on test set
+        # Deploy on test fold (used as validation/prediction set)
         if not (split_dir / "patient-preds.csv").exists():
-            # Prepare test dataloader
+            # Prepare validation dataloader for predictions
             test_patients = [
                 pid for pid in split.test_patients if pid in patient_to_data
             ]
@@ -262,19 +316,24 @@ def categorical_crossval_(
             )
 
             if config.task == "survival":
-                if isinstance(config.ground_truth_label, str):
+                # Export only when patients have single-target survival labels ("time status").
+                # Don't rely on `ground_truth_label` for survival — check the loaded patient data.
+                if any(isinstance(gt, dict) for gt in patient_to_ground_truth.values()):
+                    _logger.warning(
+                        "Multi-target survival prediction export not yet supported; skipping CSV save"
+                    )
+                else:
                     _to_survival_prediction_df(
                         patient_to_ground_truth=cast(
-                            Mapping[PatientId, str | None], patient_to_ground_truth
+                            Mapping[
+                                PatientId, str | tuple[float | None, int | None] | None
+                            ],
+                            patient_to_ground_truth,
                         ),
                         predictions=cast(Mapping[PatientId, torch.Tensor], predictions),
                         patient_label=config.patient_label,
                         cut_off=getattr(model.hparams, "train_pred_median", None),
                     ).to_csv(split_dir / "patient-preds.csv", index=False)
-                else:
-                    _logger.warning(
-                        "Multi-target survival prediction export not yet supported; skipping CSV save"
-                    )
             elif config.task == "regression":
                 if config.ground_truth_label is None:
                     raise RuntimeError("Grounf truth label is required for regression")
@@ -310,27 +369,56 @@ def categorical_crossval_(
 
 
 def _get_splits(
-    *, patient_to_data: Mapping[PatientId, PatientData[Any]], n_splits: int, spliter
+    *,
+    patient_to_data: Mapping[PatientId, PatientData[Any]],
+    n_splits: int,
+    spliter,
+    task: str | None = None,
 ) -> _Splits:
     patients = np.array(list(patient_to_data.keys()))
 
-    # Extract ground truth for stratification.
-    # For multi-target (dict), use the first target's value
-    y_strat = np.array(
-        [
-            next(iter(gt.values())) if isinstance(gt, dict) else gt
-            for gt in [patient.ground_truth for patient in patient_to_data.values()]
-        ]
-    )
+    # Build stratification labels depending on the task
+    gts = [patient.ground_truth for patient in patient_to_data.values()]
+
+    if task == "survival":
+        # use event status (0/1) for stratification
+        # Ground-truths are expected to be pre-parsed into (time, status) tuples
+        # by the data loading pipeline; extract the status element directly.
+        statuses: list[int] = []
+        for gt in gts:
+            # support multi-target fallback: use first target
+            val = next(iter(gt.values())) if isinstance(gt, dict) else gt
+            # If structured (time, status) use second element, otherwise assume val is status
+            if isinstance(val, (tuple, list)) and len(val) == 2:
+                status_val = val[1]
+            else:
+                status_val = val
+            statuses.append(int(cast(int, status_val)) if status_val is not None else 0)
+
+        y_strat = np.array(statuses)
+    elif task == "classification":
+        # For multi-target (dict), use the first target's value
+        y_strat = np.array(
+            [next(iter(gt.values())) if isinstance(gt, dict) else gt for gt in gts]
+        )
+    else:
+        # regression or unknown: do not stratify (KFold will ignore y)
+        y_strat = None
 
     skf = spliter(n_splits=n_splits, shuffle=True, random_state=0)
+
+    if y_strat is None:
+        splits_iter = skf.split(patients)
+    else:
+        splits_iter = skf.split(patients, y_strat)
+
     splits = _Splits(
         splits=[
             _Split(
                 train_patients=set(patients[train_indices]),
                 test_patients=set(patients[test_indices]),
             )
-            for train_indices, test_indices in skf.split(patients, y_strat)
+            for train_indices, test_indices in splits_iter
         ]
     )
     return splits
