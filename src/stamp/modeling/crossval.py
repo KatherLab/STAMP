@@ -17,6 +17,7 @@ from stamp.modeling.data import (
     patient_to_ground_truth_from_clini_table_,
     patient_to_survival_from_clini_table_,
     slide_to_patient_from_slide_table_,
+    tabular_to_patient,
 )
 from stamp.modeling.deploy import (
     _predict,
@@ -25,6 +26,7 @@ from stamp.modeling.deploy import (
     _to_survival_prediction_df,
     load_model_from_ckpt,
 )
+from stamp.modeling.tabular_config import TAB_COLS, encode_tabular
 from stamp.modeling.train import setup_model_for_training, train_model_
 from stamp.modeling.transforms import VaryPrecisionTransform
 from stamp.types import (
@@ -72,6 +74,7 @@ def categorical_crossval_(
                     patient_label=config.patient_label,
                 )
             )
+
         else:
             if config.ground_truth_label is None:
                 raise ValueError(
@@ -84,6 +87,15 @@ def categorical_crossval_(
                     patient_label=config.patient_label,
                 )
             )
+        #  Create a mapping from patient ID to their tabular data (categorical + numerical)
+        tabular_map = tabular_to_patient(config)
+
+        patient_to_ground_truth = {
+            pid: gt
+            for pid, gt in patient_to_ground_truth.items()
+            if pid in set(tabular_map.keys())
+        }
+
         slide_to_patient: Final[dict[FeaturePath, PatientId]] = (
             slide_to_patient_from_slide_table_(
                 slide_table_path=config.slide_table,
@@ -92,13 +104,22 @@ def categorical_crossval_(
                 filename_label=config.filename_label,
             )
         )
-        patient_to_data: Mapping[PatientId, PatientData] = (
+        patient_to_data = dict(
             filter_complete_patient_data_(
                 patient_to_ground_truth=patient_to_ground_truth,
                 slide_to_patient=slide_to_patient,
+                tabular=tabular_map,
                 drop_patients_with_missing_ground_truth=True,
             )
         )
+
+        # Attach tabular to MIL patients
+        for pid, pdata in patient_to_data.items():
+            if pid in tabular_map:
+                pdata.tabular = tabular_map[pid]
+            else:
+                _logger.warning(f"No tabular data found for patient {pid}")
+
     elif feature_type == "patient":
         patient_to_data: Mapping[PatientId, PatientData] = load_patient_level_data(
             task=config.task,

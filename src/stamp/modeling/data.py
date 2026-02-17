@@ -4,6 +4,7 @@ import logging
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import KW_ONLY, dataclass
 from itertools import groupby
+from logging import config
 from pathlib import Path
 from typing import IO, BinaryIO, Counter, Generic, TextIO, TypeAlias, Union, cast
 
@@ -240,7 +241,10 @@ def _collate_to_tuple(
     if any(t is None for t in tabular_items):
         batch_tabular: _Tabular | None = None
     else:
-        batch_tabular = torch.stack(tabular_items)  # type: ignore[arg-type]
+        x_categ_list, x_numer_list = zip(*tabular_items)
+        batch_x_categ = torch.stack(x_categ_list)
+        batch_x_numer = torch.stack(x_numer_list)
+        batch_tabular = (batch_x_categ, batch_x_numer)
 
     fixed_targets = []
     for et in targets:
@@ -445,7 +449,7 @@ def load_patient_level_data(
         patient_to_data[pid] = PatientData(
             ground_truth=gt,
             feature_files=[FeaturePath(feature_file)],
-            tabular=(tab_categ[idx], tab_numer[idx]),  # 👈 tuple
+            tabular=(tab_categ[idx], tab_numer[idx]),
         )
 
     if missing_features:
@@ -492,8 +496,6 @@ class BagDataset(Dataset[_BagItem]):
     transform: Callable[[Tensor], Tensor] | None
 
     def __post_init__(self) -> None:
-        if self.tabular is not None:
-            assert len(self.tabular) == len(self.bags)
         if len(self.bags) != len(self.ground_truths):
             raise ValueError(
                 "the number of ground truths has to match the number of bags"
@@ -777,6 +779,10 @@ def patient_to_survival_from_clini_table_(
         ],
         np.nan,
     )
+    # Normalize decimal commas to dots
+    clini_df[time_label] = (
+        clini_df[time_label].astype(str).str.replace(",", ".", regex=False)
+    )
     clini_df[status_label] = clini_df[status_label].str.strip().str.lower()
 
     # Only drop rows where BOTH time and status are missing
@@ -845,20 +851,29 @@ def slide_to_patient_from_slide_table_(
 def read_table(path: Path | TextIO, **kwargs) -> pd.DataFrame:
     if not isinstance(path, Path):
         return pd.read_csv(path, **kwargs)
-    elif path.suffix == ".xlsx":
+
+    if path.suffix == ".xlsx":
         return pd.read_excel(path, **kwargs)
-    elif path.suffix == ".csv":
-        return pd.read_csv(path, **kwargs)
-    else:
-        raise ValueError(
-            "table to load has to either be an excel (`*.xlsx`) or csv (`*.csv`) file."
-        )
+
+    if path.suffix == ".csv":
+        try:
+            # First try UTF-8 (modern, correct)
+            return pd.read_csv(path, **kwargs)
+        except UnicodeDecodeError:
+            # Fallback for legacy clinical data (Excel / SPSS / Windows)
+            return pd.read_csv(path, encoding="latin-1", **kwargs)
+
+    raise ValueError(
+        "table to load has to either be an excel (`*.xlsx`) or csv (`*.csv`) file."
+    )
+
 
 
 def filter_complete_patient_data_(
     *,
     patient_to_ground_truth: Mapping[PatientId, GroundTruth | None],
     slide_to_patient: Mapping[FeaturePath, PatientId],
+    tabular: Mapping[PatientId, tuple[Tensor, Tensor]] | None = None,
     drop_patients_with_missing_ground_truth: bool,
 ) -> Mapping[PatientId, PatientData]:
     """Aggregate information for all patients for which we have complete data.
@@ -890,7 +905,9 @@ def filter_complete_patient_data_(
 
     patients = {
         patient_id: PatientData(
-            ground_truth=ground_truth, feature_files=existing_features_for_patient
+            ground_truth=ground_truth,
+            feature_files=existing_features_for_patient,
+            tabular=tabular.get(patient_id) if tabular is not None else None,
         )
         for patient_id, ground_truth in patient_to_ground_truth.items()
         # Restrict to only patients which have slides and features
@@ -1027,3 +1044,23 @@ def log_patient_class_summary(
         f"{prefix}Total patients: {len(ground_truths)} | "
         + " | ".join([f"Class {c}: {counter.get(c, 0)}" for c in cats])
     )
+
+
+def tabular_to_patient(config):
+    """Load and encode tabular data from clinical table."""
+
+    # ---- load tabular once (patient-level) ----
+    clini_df = read_table(config.clini_table)
+    tab_df = (
+        clini_df[[config.patient_label] + TAB_COLS]
+        .set_index(config.patient_label)
+        .dropna()
+    )
+    if not tab_df.index.is_unique:
+        raise ValueError("Clinical table patient IDs must be unique")
+    tab_categ, tab_numer = encode_tabular(tab_df)
+
+    pids = list(tab_df.index)
+    tabular_map = {pid: (tab_categ[i], tab_numer[i]) for i, pid in enumerate(pids)}
+
+    return tabular_map

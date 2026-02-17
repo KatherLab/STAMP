@@ -725,7 +725,7 @@ class LitTileSurvival(LitSurvivalBase):
 
     def training_step(self, batch, batch_idx):
         bags, coords, bag_sizes, tabular, targets = batch
-        preds = self.model(bags, coords=coords, mask=None)
+        preds = self.model(bags, coords=coords, tabular=tabular, mask=None)
         y = targets.to(preds.device, dtype=torch.float32)
         times, events = y[:, 0], y[:, 1]
 
@@ -758,7 +758,7 @@ class LitTileSurvival(LitSurvivalBase):
         batch_idx: int,
     ) -> Any:
         bags, coords, bag_sizes, tabular, targets = batch
-        preds = self.model(bags, coords=coords, mask=None).squeeze(-1)
+        preds = self.model(bags, coords=coords, tabular=tabular, mask=None).squeeze(-1)
 
         y = targets.to(preds.device, dtype=torch.float32)
         times, events = y[:, 0], y[:, 1]
@@ -769,8 +769,8 @@ class LitTileSurvival(LitSurvivalBase):
         self._val_events.append(events.detach().cpu())
 
     def predict_step(self, batch, batch_idx):
-        feats, coords, n_tiles, survival_target = batch
-        return self.model(feats.float(), coords=coords, mask=None)
+        feats, coords, n_tiles, tabular, _ = batch
+        return self.model(feats.float(), coords=coords, tabular=tabular, mask=None)
 
 
 class LitSlideSurvival(LitSurvivalBase):

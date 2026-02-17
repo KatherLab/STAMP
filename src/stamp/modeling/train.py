@@ -419,7 +419,7 @@ def train_model_(
         #     the default strategy no multiple GPUs
         #  2. `barspoon.model.SafeMulticlassAUROC` breaks on multiple GPUs
         accelerator=accelerator,
-        devices=2,
+        devices=1,
         # gradient_clip_val=0.5,
         logger=CSVLogger(save_dir=output_dir),
         log_every_n_steps=len(train_dl),
