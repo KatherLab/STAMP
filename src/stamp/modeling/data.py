@@ -981,7 +981,8 @@ def read_table(path: Path | TextIO, **kwargs) -> pd.DataFrame:
 def filter_complete_patient_data_(
     *,
     patient_to_ground_truth: Mapping[
-        PatientId, GroundTruth | dict[str, GroundTruth] | tuple[float | None, int | None] | None
+        PatientId,
+        GroundTruth | dict[str, GroundTruth] | tuple[float | None, int | None] | None,
     ],
     slide_to_patient: Mapping[FeaturePath, PatientId],
     drop_patients_with_missing_ground_truth: bool,
