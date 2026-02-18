@@ -59,6 +59,7 @@ Stamp currently supports the following feature extractors:
   - [MUSK][musk]
   - [PLIP][plip]
   - [TICON][ticon]
+  - [RedDino][reddino]
 
 
 As some of the above require you to request access to the model on huggingface,
