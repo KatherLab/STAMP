@@ -4,8 +4,8 @@ In parts from https://github.com/Novartis/torchsurv/blob/main/src/torchsurv/loss
 # pylint: disable=C0103
 # pylint: disable=C0301
 
+import logging
 import sys
-import warnings
 
 import torch
 
@@ -15,6 +15,8 @@ __all__ = [
     "_partial_likelihood_breslow",
     "neg_partial_log_likelihood",
 ]
+
+_logger = logging.getLogger("stamp")
 
 
 def _partial_likelihood_cox(
@@ -219,7 +221,7 @@ def neg_partial_log_likelihood(
     #     validate_model(log_hz, event, model_type="cox")
 
     if any([event.sum().item() == 0, len(log_hz.size()) == 0]):
-        warnings.warn(
+        _logger.warning(
             "No events OR single sample. Returning zero loss for the batch",
             stacklevel=2,
         )
@@ -236,7 +238,7 @@ def neg_partial_log_likelihood(
         pll = _partial_likelihood_cox(log_hz_sorted, event_sorted)
     else:
         # add warning about ties
-        warnings.warn(
+        _logger.warning(
             f"Ties in `time` detected; using {ties_method}'s method to handle ties.",
             stacklevel=2,
         )

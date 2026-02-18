@@ -8,11 +8,11 @@ from typing import Any, TypeAlias
 import lightning
 import numpy as np
 import torch
-from lifelines.utils import concordance_index as lifelines_cindex
 
 # Use beartype.typing.Mapping to avoid PEP-585 deprecation warnings in beartype
 from beartype.typing import Mapping
 from jaxtyping import Bool, Float
+from lifelines.utils import concordance_index as lifelines_cindex
 from packaging.version import Version
 from torch import Tensor, nn, optim
 from torchmetrics.classification import MulticlassAUROC
@@ -858,6 +858,10 @@ class LitEncDecTransformer(LitMilClassificationMixin):
         positional_encoding: bool = True,
         # Other hparams
         learning_rate: float = 1e-4,
+        # Deployment metadata (optional) — keep parity with `Base`
+        train_patients: Iterable[PatientId] = (),
+        valid_patients: Iterable[PatientId] = (),
+        stamp_version: Version = Version(stamp.__version__),
         **hparams: Any,
     ) -> None:
         weights_dict: dict[TargetLabel, torch.Tensor] = dict(category_weights)
@@ -904,6 +908,13 @@ class LitEncDecTransformer(LitMilClassificationMixin):
 
         self.ground_truth_label = ground_truth_label
         self.categories = normalized_categories
+
+        # Deployment metadata — mirror `Base` behavior so checkpoints include
+        # train/valid patient lists and stamp version for leak-detection and
+        # compatibility checks.
+        self.train_patients = train_patients
+        self.valid_patients = valid_patients
+        self.stamp_version = str(stamp_version)
 
         self.save_hyperparameters()
 

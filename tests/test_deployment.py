@@ -221,8 +221,8 @@ def test_to_prediction_df(task: str) -> None:
         assert preds_df["loss"].isna().all()
     else:
         patient_to_ground_truth = {
-            PatientId("p1"): "10.0 1",
-            PatientId("p2"): "12.3 0",
+            PatientId("p1"): (10.0, 1),
+            PatientId("p2"): (12.3, 0),
         }
         predictions = {
             PatientId("p1"): torch.tensor([0.8]),
