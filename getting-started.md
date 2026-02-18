@@ -161,6 +161,7 @@ meaning ignored that it was ignored during feature extraction.
 [MADELEINE]: https://huggingface.co/MahmoodLab/madeleine
 [PRISM]: https://huggingface.co/paige-ai/Prism
 [TICON]: https://cvlab-stonybrook.github.io/TICON/ "TICON: A Slide-Level Tile Contextualizer for Histopathology Representation Learning"
+[reddino]: https://github.com/Snarci/RedDino "RedDino: A Foundation Model for Red Blood Cell Analysis"
 
 
 
