@@ -1,7 +1,6 @@
 from enum import StrEnum
 from pathlib import Path
 
-import torch
 from pydantic import BaseModel, ConfigDict, Field
 
 from stamp.types import ImageExtension, Microns, SlideMPP, TilePixels
@@ -45,7 +44,11 @@ class PreprocessingConfig(BaseModel, arbitrary_types_allowed=True):
     tile_size_px: TilePixels = TilePixels(224)
     extractor: ExtractorName
     max_workers: int = 8
-    device: str = "cuda" if torch.cuda.is_available() else "cpu"
+    device: str = Field(
+        default_factory=lambda: (
+            "cuda" if __import__("torch").cuda.is_available() else "cpu"
+        )
+    )
     generate_hash: bool = True
 
     default_slide_mpp: SlideMPP | None = None

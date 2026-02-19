@@ -6,15 +6,6 @@ from pathlib import Path
 
 import yaml
 
-from stamp.modeling.config import (
-    AdvancedConfig,
-    MlpModelParams,
-    ModelParams,
-    VitModelParams,
-)
-from stamp.utils.config import StampConfig
-from stamp.utils.seed import Seed
-
 STAMP_FACTORY_SETTINGS = Path(__file__).with_name("config.yaml")
 
 # Set up the logger
@@ -41,23 +32,38 @@ def _create_config_file(config_file: Path) -> None:
 
 
 def _run_cli(args: argparse.Namespace) -> None:
-    # Handle init command
+    # Handle init command before any stamp-internal imports so that
+    # `stamp init` and `stamp --help` don't pay the full torch/pydantic
+    # import cost.
     if args.command == "init":
         _create_config_file(args.config_file_path)
         return
+
+    # Deferred imports: only reached for real commands, not --help / init.
+    from stamp.modeling.config import (
+        AdvancedConfig,
+        MlpModelParams,
+        ModelParams,
+        VitModelParams,
+    )
+    from stamp.utils.config import StampConfig
+    from stamp.utils.seed import Seed
 
     # Load YAML configuration
     with open(args.config_file_path, "r") as config_yaml:
         config = StampConfig.model_validate(yaml.safe_load(config_yaml))
 
-    # use default advanced config in case none is provided
-    if config.advanced_config is None:
-        config.advanced_config = AdvancedConfig(
-            model_params=ModelParams(vit=VitModelParams(), mlp=MlpModelParams()),
-        )
+    # Only build a default AdvancedConfig (with model-params) for commands
+    # that actually use it.  Preprocess / encode / statistics / heatmaps
+    # never touch config.advanced_config, so don't pay the construction cost.
+    if args.command in {"train", "crossval"}:
+        if config.advanced_config is None:
+            config.advanced_config = AdvancedConfig(
+                model_params=ModelParams(vit=VitModelParams(), mlp=MlpModelParams()),
+            )
 
-    # Set global random seed
-    if config.advanced_config.seed is not None:
+    # Apply the global seed for any command that has one configured.
+    if config.advanced_config is not None and config.advanced_config.seed is not None:
         Seed.set(config.advanced_config.seed)
 
     match args.command:
@@ -153,6 +159,7 @@ def _run_cli(args: argparse.Namespace) -> None:
             if config.training.task is None:
                 raise ValueError("task must be set in training configuration")
 
+            assert config.advanced_config is not None  # guaranteed above for "train"
             train_categorical_model_(
                 config=config.training, advanced=config.advanced_config
             )
@@ -198,6 +205,7 @@ def _run_cli(args: argparse.Namespace) -> None:
                 f"{yaml.dump(config.crossval.model_dump(mode='json', exclude_none=True))}"
             )
 
+            assert config.advanced_config is not None  # guaranteed above for "crossval"
             categorical_crossval_(
                 config=config.crossval,
                 advanced=config.advanced_config,

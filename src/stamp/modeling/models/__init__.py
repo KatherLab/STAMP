@@ -239,7 +239,7 @@ class LitTileClassifier(_TileLevelMixin, LitBaseClassifier):
     def _step(
         self,
         *,
-        batch: tuple[Bags, CoordinatesBatch, BagSizes, EncodedTargets],
+        batch: tuple[Bags, CoordinatesBatch, BagSizes, EncodedTargets] | list[Tensor],
         step_name: str,
         use_mask: bool,
     ) -> Loss:
@@ -280,32 +280,36 @@ class LitTileClassifier(_TileLevelMixin, LitBaseClassifier):
 
     def training_step(
         self,
-        batch: tuple[Bags, CoordinatesBatch, BagSizes, EncodedTargets],
+        batch: tuple[Bags, CoordinatesBatch, BagSizes, EncodedTargets] | list[Tensor],
         batch_idx: int,
     ) -> Loss:
         return self._step(batch=batch, step_name="training", use_mask=False)
 
     def validation_step(
         self,
-        batch: tuple[Bags, CoordinatesBatch, BagSizes, EncodedTargets],
+        batch: tuple[Bags, CoordinatesBatch, BagSizes, EncodedTargets] | list[Tensor],
         batch_idx: int,
     ) -> Loss:
         return self._step(batch=batch, step_name="validation", use_mask=False)
 
     def test_step(
         self,
-        batch: tuple[Bags, CoordinatesBatch, BagSizes, EncodedTargets],
+        batch: tuple[Bags, CoordinatesBatch, BagSizes, EncodedTargets] | list[Tensor],
         batch_idx: int,
     ) -> Loss:
         return self._step(batch=batch, step_name="test", use_mask=False)
 
     def predict_step(
         self,
-        batch: tuple[Bags, CoordinatesBatch, BagSizes, EncodedTargets],
+        batch: tuple[Bags, CoordinatesBatch, BagSizes, EncodedTargets] | list[Tensor],
         batch_idx: int,
     ) -> Float[Tensor, "batch logit"]:
         bags, coords, bag_sizes, _ = batch
         # adding a mask here will *drastically* and *unbearably* increase memory usage
+        # Ensure input dtype matches model weights to avoid dtype-mismatch errors
+        param_dtype = next(self.model.parameters()).dtype
+        bags = bags.to(dtype=param_dtype)
+        coords = coords.to(dtype=param_dtype)
         return self.model(bags, coords=coords, mask=None)
 
 
@@ -365,6 +369,9 @@ class LitSlideClassifier(LitBaseClassifier):
         self, batch: tuple[Tensor, Tensor] | list[Tensor], batch_idx: int
     ) -> Tensor:
         feats, _ = batch if isinstance(batch, tuple) else batch
+        # Cast inputs to model parameter dtype to avoid Half/Float mismatches
+        param_dtype = next(self.model.parameters()).dtype
+        feats = feats.to(dtype=param_dtype)
         return self.model(feats)
 
 
@@ -437,7 +444,7 @@ class LitTileRegressor(_TileLevelMixin, LitBaseRegressor):
     def _step(
         self,
         *,
-        batch: tuple[Bags, CoordinatesBatch, BagSizes, EncodedTargets],
+        batch: tuple[Bags, CoordinatesBatch, BagSizes, EncodedTargets] | list[Tensor],
         step_name: str,
         use_mask: bool,
     ) -> Loss:
@@ -477,28 +484,28 @@ class LitTileRegressor(_TileLevelMixin, LitBaseRegressor):
 
     def training_step(
         self,
-        batch: tuple[Bags, CoordinatesBatch, BagSizes, EncodedTargets],
+        batch: tuple[Bags, CoordinatesBatch, BagSizes, EncodedTargets] | list[Tensor],
         batch_idx: int,
     ) -> Loss:
         return self._step(batch=batch, step_name="training", use_mask=False)
 
     def validation_step(
         self,
-        batch: tuple[Bags, CoordinatesBatch, BagSizes, EncodedTargets],
+        batch: tuple[Bags, CoordinatesBatch, BagSizes, EncodedTargets] | list[Tensor],
         batch_idx: int,
     ) -> Loss:
         return self._step(batch=batch, step_name="validation", use_mask=False)
 
     def test_step(
         self,
-        batch: tuple[Bags, CoordinatesBatch, BagSizes, EncodedTargets],
+        batch: tuple[Bags, CoordinatesBatch, BagSizes, EncodedTargets] | list[Tensor],
         batch_idx: int,
     ) -> Loss:
         return self._step(batch=batch, step_name="test", use_mask=False)
 
     def predict_step(
         self,
-        batch: tuple[Bags, CoordinatesBatch, BagSizes, EncodedTargets],
+        batch: tuple[Bags, CoordinatesBatch, BagSizes, EncodedTargets] | list[Tensor],
         batch_idx: int,
     ) -> Float[Tensor, "batch 1"]:
         bags, coords, bag_sizes, _ = batch
@@ -741,7 +748,11 @@ class LitTileSurvival(_TileLevelMixin, LitSurvivalBase):
         # (most ViT backbones accept coords/mask even if unused)
         return self.model(bags, coords=coords, mask=mask)
 
-    def training_step(self, batch, batch_idx):
+    def training_step(
+        self,
+        batch: tuple[Bags, CoordinatesBatch, BagSizes, EncodedTargets] | list[Tensor],
+        batch_idx: int,
+    ) -> Loss:
         bags, coords, bag_sizes, targets = batch
         preds = self.model(bags, coords=coords, mask=None)
         y = targets.to(preds.device, dtype=torch.float32)
@@ -766,7 +777,7 @@ class LitTileSurvival(_TileLevelMixin, LitSurvivalBase):
 
     def validation_step(
         self,
-        batch: tuple[Bags, CoordinatesBatch, BagSizes, EncodedTargets],
+        batch: tuple[Bags, CoordinatesBatch, BagSizes, EncodedTargets] | list[Tensor],
         batch_idx: int,
     ) -> Any:
         bags, coords, bag_sizes, targets = batch
@@ -780,9 +791,13 @@ class LitTileSurvival(_TileLevelMixin, LitSurvivalBase):
         self._val_times.append(times.detach().cpu())
         self._val_events.append(events.detach().cpu())
 
-    def predict_step(self, batch, batch_idx):
-        feats, coords, n_tiles, survival_target = batch
-        return self.model(feats.float(), coords=coords, mask=None)
+    def predict_step(
+        self,
+        batch: tuple[Bags, CoordinatesBatch, BagSizes, EncodedTargets] | list[Tensor],
+        batch_idx: int,
+    ) -> Float[Tensor, "batch 1"]:
+        bags, coords, bag_sizes, survival_target = batch
+        return self.model(bags, coords=coords, mask=None)
 
 
 class LitSlideSurvival(LitSurvivalBase):

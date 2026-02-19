@@ -53,7 +53,9 @@ def _categorical(preds_df: pd.DataFrame, target_label: str) -> pd.DataFrame:
     """
     categories = preds_df[target_label].unique()
     y_true = preds_df[target_label]
-    y_pred = preds_df[[f"{target_label}_{cat}" for cat in categories]].map(float).values
+    y_pred = (
+        preds_df[[f"{target_label}_{cat}" for cat in categories]].astype(float).values
+    )
 
     stats_df = pd.DataFrame(index=categories)
 
@@ -156,15 +158,19 @@ def categorical_aggregated_multitarget_(
 
     all_target_stats = {}
 
+    # Read each CSV once and cache so we don't re-read N×M times.
+    csv_cache: dict[str, pd.DataFrame] = {
+        Path(p).parent.name: pd.read_csv(p, dtype=str) for p in preds_csvs
+    }
+
     for target_label in target_labels:
         # Process each target separately
         preds_dfs = {}
-        for p in preds_csvs:
-            df = pd.read_csv(p, dtype=str)
+        for fold_name, df in csv_cache.items():
             # Drop rows where this target's ground truth is missing
             df_clean = df.dropna(subset=[target_label])
             if len(df_clean) > 0:
-                preds_dfs[Path(p).parent.name] = _categorical(df_clean, target_label)
+                preds_dfs[fold_name] = _categorical(df_clean, target_label)
 
         if not preds_dfs:
             continue

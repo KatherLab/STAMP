@@ -665,21 +665,11 @@ def _to_survival_prediction_df(
         else:
             row["pred_score"] = pred.cpu().tolist()
 
-        # Ground truth: time + event
-        if gt is not None:
-            if isinstance(gt, str) and " " in gt:
-                time_str, status_str = gt.split(" ", 1)
-                row["time"] = float(time_str) if time_str.lower() != "nan" else None
-                if status_str.lower() in {"dead", "event", "1"}:
-                    row["event"] = 1
-                elif status_str.lower() in {"alive", "censored", "0"}:
-                    row["event"] = 0
-                else:
-                    row["event"] = None
-            elif isinstance(gt, (tuple, list)) and len(gt) == 2:
-                row["time"], row["event"] = gt
-            else:
-                row["time"], row["event"] = None, None
+        # Ground truth: prefer structured tuple/list (time, event). Do not
+        # call .split on ground-truth values — assume structured input. If
+        # the value is not a 2-tuple/list, treat both fields as unknown.
+        if isinstance(gt, (tuple, list)) and len(gt) == 2:
+            row["time"], row["event"] = gt
         else:
             row["time"], row["event"] = None, None
 

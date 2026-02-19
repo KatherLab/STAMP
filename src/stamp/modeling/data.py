@@ -130,6 +130,8 @@ def tile_bag_dataloader(
         num_workers=num_workers,
         collate_fn=collate_fn,
         worker_init_fn=Seed.get_loader_worker_init() if Seed._is_set() else None,
+        persistent_workers=(num_workers > 0),
+        pin_memory=torch.cuda.is_available(),
     )
 
     return (
@@ -241,8 +243,18 @@ def _parse_targets(
                 )
                 events.append(float(e_val) if e_val is not None else np.nan)
             else:
-                time_str, status_str = str(gt).split(" ", 1)
-                times.append(np.nan if time_str.lower() == "nan" else float(time_str))
+                # Legacy string form supported historically, but prefer the
+                # structured (time, event) tuple. Do NOT call .split here;
+                # treat the entire value as the time string and mark status
+                # as unknown. This avoids AttributeError when gt is a tuple.
+                time_str, status_str = str(gt), "nan"
+                # Parse time defensively to avoid ValueError on non-numeric strings
+                try:
+                    times.append(
+                        np.nan if time_str.lower() == "nan" else float(time_str)
+                    )
+                except Exception:
+                    times.append(np.nan)
                 events.append(_parse_survival_status(status_str))
 
         y = torch.tensor(np.column_stack([times, events]), dtype=torch.float32)
@@ -358,10 +370,8 @@ def create_dataloader(
 
         if task == "classification":
             raw = np.array([p.ground_truth for p in patient_data])
-            categories_out = categories or list(np.unique(raw))
-            labels = torch.tensor(
-                raw.reshape(-1, 1) == categories_out, dtype=torch.float32
-            )
+            categories = categories or list(np.unique(raw))
+            labels = torch.tensor(raw.reshape(-1, 1) == categories, dtype=torch.float32)
         elif task == "regression":
             values: list[float] = []
             for gt in (p.ground_truth for p in patient_data):
@@ -381,8 +391,28 @@ def create_dataloader(
                     raise ValueError(
                         "Multi-target survival is not supported; provide a single survival time/status per patient"
                     )
-                t, e = (p.ground_truth or "nan nan").split(" ", 1)
-                times.append(float(t) if t.lower() != "nan" else np.nan)
+                gt = p.ground_truth
+                # Prefer structured (time, event) tuples. Do NOT call .split
+                # on the ground-truth value. If not a tuple/list, treat time
+                # as the whole value and event as unknown.
+                if isinstance(gt, (tuple, list)) and len(gt) == 2:
+                    t, e = gt
+                elif gt is None:
+                    t, e = None, None
+                else:
+                    t, e = str(gt), "nan"
+
+                # Parse time defensively
+                if t is None:
+                    times.append(np.nan)
+                elif isinstance(t, str):
+                    try:
+                        times.append(np.nan if t.lower() == "nan" else float(t))
+                    except Exception:
+                        times.append(np.nan)
+                else:
+                    times.append(float(t))
+
                 events.append(_parse_survival_status(e))
 
             labels = torch.tensor(np.column_stack([times, events]), dtype=torch.float32)
@@ -396,6 +426,8 @@ def create_dataloader(
             shuffle=shuffle,
             num_workers=num_workers,
             worker_init_fn=Seed.get_loader_worker_init() if Seed._is_set() else None,
+            persistent_workers=(num_workers > 0),
+            pin_memory=torch.cuda.is_available(),
         )
         return dl, categories or []
     else:
@@ -545,6 +577,9 @@ class BagDataset(Dataset[tuple[_Bag, _Coordinates, BagSize, _EncodedTarget]]):
             raise ValueError(
                 "the number of ground truths has to match the number of bags"
             )
+        # Initialise per-worker HDF5 handle cache here so __getitem__ avoids
+        # a hasattr() call on every tile read.
+        self._h5_handle_cache: dict[FeaturePath | _BinaryIOLike, h5py.File] = {}
 
     def __len__(self) -> int:
         return len(self.bags)
@@ -556,24 +591,43 @@ class BagDataset(Dataset[tuple[_Bag, _Coordinates, BagSize, _EncodedTarget]]):
         feats = []
         coords_um = []
         for bag_file in self.bags[index]:
-            with h5py.File(bag_file, "r") as h5:
-                if "feats" in h5:
-                    feats_obj = h5["feats"]
-                    if not isinstance(feats_obj, h5py.Dataset):
-                        raise RuntimeError(
-                            f"expected 'feats' to be an HDF5 dataset but got {type(feats_obj)}"
-                        )
-                    arr = feats_obj[:]  # original STAMP files
-                else:
-                    embeddings_obj = h5["patch_embeddings"]
-                    if not isinstance(embeddings_obj, h5py.Dataset):
-                        raise RuntimeError(
-                            f"expected 'patch_embeddings' to be an HDF5 dataset but got {type(embeddings_obj)}"
-                        )
-                    arr = embeddings_obj[:]  # your Kronos files
+            if bag_file not in self._h5_handle_cache:
+                # Limit open handles to avoid reaching OS ulimits
+                if len(self._h5_handle_cache) >= 128:
+                    _, h = self._h5_handle_cache.popitem()
+                    h.close()
 
-                feats.append(torch.from_numpy(arr))
-                coords_um.append(torch.from_numpy(get_coords(h5).coords_um))
+                try:
+                    # libver='latest' and swmr=True can provide better performance
+                    # on some network/HPC filesystems
+                    self._h5_handle_cache[bag_file] = h5py.File(
+                        bag_file, "r", swmr=True, libver="latest"
+                    )
+                except Exception:
+                    # Fallback for older HDF5 files or unconventional storage
+                    self._h5_handle_cache[bag_file] = h5py.File(bag_file, "r")
+
+            h5 = self._h5_handle_cache[bag_file]
+
+            if "feats" in h5:
+                feats_obj = h5["feats"]
+                if not isinstance(feats_obj, h5py.Dataset):
+                    raise RuntimeError(
+                        f"expected 'feats' to be an HDF5 dataset but got {type(feats_obj)}"
+                    )
+                arr = feats_obj[
+                    ()
+                ]  # uses [()] instead of [:] for clarity, both read entire dataset
+            else:
+                embeddings_obj = h5["patch_embeddings"]
+                if not isinstance(embeddings_obj, h5py.Dataset):
+                    raise RuntimeError(
+                        f"expected 'patch_embeddings' to be an HDF5 dataset but got {type(embeddings_obj)}"
+                    )
+                arr = embeddings_obj[()]  # your Kronos files
+
+            feats.append(torch.from_numpy(arr))
+            coords_um.append(torch.from_numpy(get_coords(h5).coords_um))
 
         feats = torch.concat(feats).float()
         coords_um = torch.concat(coords_um).float()
@@ -618,31 +672,45 @@ class PatientFeatureDataset(Dataset):
         self.feature_files = feature_files
         self.ground_truths = ground_truths
         self.transform = transform
+        # Initialise per-worker HDF5 handle cache eagerly so __getitem__ avoids
+        # a hasattr() call on every sample read.
+        self._h5_handle_cache: dict[FeaturePath | _BinaryIOLike, h5py.File] = {}
 
     def __len__(self):
         return len(self.feature_files)
 
     def __getitem__(self, idx: int):
         feature_file = self.feature_files[idx]
-        with h5py.File(feature_file, "r") as h5:
-            feats_obj = h5["feats"]
-            if not isinstance(feats_obj, h5py.Dataset):
-                raise RuntimeError(
-                    f"expected 'feats' to be an HDF5 dataset but got {type(feats_obj)}"
+        if feature_file not in self._h5_handle_cache:
+            if len(self._h5_handle_cache) >= 128:
+                _, h = self._h5_handle_cache.popitem()
+                h.close()
+            try:
+                self._h5_handle_cache[feature_file] = h5py.File(
+                    feature_file, "r", swmr=True, libver="latest"
                 )
-            feats = torch.from_numpy(feats_obj[:])
-            # Accept [V] or [1, V]
-            if feats.ndim == 2 and feats.shape[0] == 1:
-                feats = feats[0]
-            elif feats.ndim == 1:
-                pass
-            else:
-                raise RuntimeError(
-                    f"Expected single feature vector (shape [F] or [1, F]), got {feats.shape} in {feature_file}."
-                    "Check that the features are patient-level."
-                )
-            if self.transform is not None:
-                feats = self.transform(feats)
+            except Exception:
+                self._h5_handle_cache[feature_file] = h5py.File(feature_file, "r")
+
+        h5 = self._h5_handle_cache[feature_file]
+        feats_obj = h5["feats"]
+        if not isinstance(feats_obj, h5py.Dataset):
+            raise RuntimeError(
+                f"expected 'feats' to be an HDF5 dataset but got {type(feats_obj)}"
+            )
+        feats = torch.from_numpy(feats_obj[()])
+        # Accept [V] or [1, V]
+        if feats.ndim == 2 and feats.shape[0] == 1:
+            feats = feats[0]
+        elif feats.ndim == 1:
+            pass
+        else:
+            raise RuntimeError(
+                f"Expected single feature vector (shape [F] or [1, F]), got {feats.shape} in {feature_file}."
+                "Check that the features are patient-level."
+            )
+        if self.transform is not None:
+            feats = self.transform(feats)
         label = self.ground_truths[idx]
         return feats, label
 
@@ -1063,7 +1131,8 @@ def _log_patient_slide_feature_inconsistencies(
     if slides_without_features := {
         slide for slide in slide_to_patient.keys() if not slide.exists()
     }:
-        slides_list = sorted(str(s) for s in slides_without_features)
+        # Log only the filenames (not full paths) to keep warnings concise.
+        slides_list = sorted(s.name for s in slides_without_features)
         _logger.warning(
             "some feature files could not be found: %s",
             ", ".join(slides_list),
