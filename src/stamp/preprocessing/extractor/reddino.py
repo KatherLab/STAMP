@@ -19,8 +19,6 @@ except ModuleNotFoundError as e:
 from stamp.preprocessing.config import ExtractorName
 from stamp.preprocessing.extractor import Extractor
 
-__author__ = ""
-__copyright__ = ""
 __license__ = "MIT"
 
 
