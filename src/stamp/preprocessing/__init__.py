@@ -215,6 +215,11 @@ def extract_(
 
             extractor = plip()
 
+        case ExtractorName.KEEP:
+            from stamp.preprocessing.extractor.keep import keep
+
+            extractor = keep()
+
         case ExtractorName.EMPTY:
             from stamp.preprocessing.extractor.empty import empty
 
