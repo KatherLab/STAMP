@@ -4,11 +4,11 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import lifelines.plotting as lifelines_plotting
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from lifelines import KaplanMeierFitter
-from lifelines.plotting import add_at_risk_counts
 from lifelines.statistics import logrank_test
 from lifelines.utils import concordance_index
 
@@ -142,6 +142,10 @@ def _plot_km(
         fitters.append(kmf_low)
     if len(high_df) > 0:
         fitters.append(kmf_high)
+
+    # add at-risk table for fitted curves
+    if len(fitters) > 0:
+        lifelines_plotting.add_at_risk_counts(*fitters, ax=ax)
 
     # log-rank and c-index
     res = logrank_test(
