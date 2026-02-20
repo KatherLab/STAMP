@@ -59,6 +59,7 @@ Stamp currently supports the following feature extractors:
   - [MUSK][musk]
   - [PLIP][plip]
   - [KEEP][keep]
+  - [TICON][ticon]
 
 
 As some of the above require you to request access to the model on huggingface,
@@ -160,6 +161,7 @@ meaning ignored that it was ignored during feature extraction.
 [EAGLE]: https://github.com/KatherLab/EAGLE
 [MADELEINE]: https://huggingface.co/MahmoodLab/madeleine
 [PRISM]: https://huggingface.co/paige-ai/Prism
+[TICON]: https://cvlab-stonybrook.github.io/TICON/ "TICON: A Slide-Level Tile Contextualizer for Histopathology Representation Learning"
 
 
 

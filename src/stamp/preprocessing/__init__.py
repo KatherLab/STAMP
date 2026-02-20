@@ -219,6 +219,10 @@ def extract_(
             from stamp.preprocessing.extractor.keep import keep
 
             extractor = keep()
+        case ExtractorName.TICON:
+            from stamp.preprocessing.extractor.ticon import ticon
+
+            extractor = ticon()
 
         case ExtractorName.EMPTY:
             from stamp.preprocessing.extractor.empty import empty

@@ -1171,15 +1171,7 @@ def _parse_survival_status(value) -> int | None:
         None, NaN, '' -> None
     """
 
-    # Handle missing inputs gracefully
-    # if value is None:
-    #     return 0  # treat empty/missing as censored
-    # if isinstance(value, float) and math.isnan(value):
-    #     return 0  # treat empty/missing as censored
-
     s = str(value).strip().lower()
-    # if s in {"", "nan", "none"}:
-    #     return 0  # treat empty/missing as censored
 
     # Known mappings
     positives = {"1", "event", "dead", "deceased", "yes", "y", "True", "true"}

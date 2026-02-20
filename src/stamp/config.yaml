@@ -26,6 +26,9 @@ preprocessing:
   #tile_size_um: 256.0
   #tile_size_px: 224
 
+  # Magnification level to extract tiles from
+  #default_slide_mpp: 1.0
+
   # How many workers to use for tile extraction.  Should be less or equal to
   # the number of cores of your system.
   #max_workers: 8
