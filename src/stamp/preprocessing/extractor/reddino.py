@@ -11,10 +11,7 @@ try:
     from PIL import Image
     from torchvision import transforms
 except ModuleNotFoundError as e:
-    raise ModuleNotFoundError(
-        "red_dino dependencies not installed."
-        " Please reinstall stamp using `pip install 'stamp[red_dino]'`"
-    ) from e
+    raise ModuleNotFoundError("red-dino dependencies not installed.") from e
 
 from stamp.preprocessing.config import ExtractorName
 from stamp.preprocessing.extractor import Extractor
