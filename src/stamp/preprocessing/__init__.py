@@ -170,6 +170,11 @@ def extract_(
 
             extractor = dino_bloom()
 
+        case ExtractorName.RED_DINO:
+            from stamp.preprocessing.extractor.reddino import red_dino
+
+            extractor = red_dino()
+
         case ExtractorName.VIRCHOW:
             from stamp.preprocessing.extractor.virchow import virchow
 

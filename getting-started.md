@@ -60,6 +60,7 @@ Stamp currently supports the following feature extractors:
   - [PLIP][plip]
   - [KEEP][keep]
   - [TICON][ticon]
+  - [RedDino][reddino]
 
 
 As some of the above require you to request access to the model on huggingface,
@@ -162,6 +163,7 @@ meaning ignored that it was ignored during feature extraction.
 [MADELEINE]: https://huggingface.co/MahmoodLab/madeleine
 [PRISM]: https://huggingface.co/paige-ai/Prism
 [TICON]: https://cvlab-stonybrook.github.io/TICON/ "TICON: A Slide-Level Tile Contextualizer for Histopathology Representation Learning"
+[reddino]: https://github.com/Snarci/RedDino "RedDino: A Foundation Model for Red Blood Cell Analysis"
 
 
 
