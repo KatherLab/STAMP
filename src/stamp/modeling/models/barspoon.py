@@ -223,7 +223,7 @@ class LitMilClassificationMixin(lightning.LightningModule):
         _ = hparams  # So we don't get unused parameter warnings
 
         # Check if version is compatible.
-        if stamp_version < Version("2.4.0"):
+        if stamp_version < Version("2.4.1"):
             # Update this as we change our model in incompatible ways!
             raise ValueError(
                 f"model has been built with stamp version {stamp_version} "
@@ -261,7 +261,7 @@ class LitMilClassificationMixin(lightning.LightningModule):
 
     def step(
         self,
-        batch: tuple[Bags, CoordinatesBatch, BagSizes, dict[str, torch.Tensor]],
+        batch: tuple[Bags, CoordinatesBatch, BagSizes, dict[str, torch.Tensor]] | list,
         step_name=None,
     ):
         """Process a batch with structure (feats, coords, bag_sizes, targets).
