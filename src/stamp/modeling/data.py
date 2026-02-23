@@ -580,7 +580,9 @@ class BagDataset(Dataset[tuple[_Bag, _Coordinates, BagSize, _EncodedTarget]]):
             )
         # Initialise per-worker HDF5 handle cache here so __getitem__ avoids
         # a hasattr() call on every tile read.
-        self._h5_handle_cache: OrderedDict[FeaturePath | _BinaryIOLike, h5py.File] = OrderedDict()
+        self._h5_handle_cache: OrderedDict[FeaturePath | _BinaryIOLike, h5py.File] = (
+            OrderedDict()
+        )
 
     def __len__(self) -> int:
         return len(self.bags)
