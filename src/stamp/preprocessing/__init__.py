@@ -251,7 +251,7 @@ def extract_(
     slide_paths = [
         slide_path
         for extension in supported_extensions
-        for slide_path in wsi_dir.glob(f"**/*{extension}")
+        for slide_path in wsi_dir.glob(f"**/**/*{extension}")
     ]
     # We shuffle so if we run multiple jobs on multiple computers at the same time,
     # They won't interfere with each other too much

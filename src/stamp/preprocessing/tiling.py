@@ -2,10 +2,12 @@ import hashlib
 import json
 import logging
 import re
+import tarfile
 import xml.dom.minidom as minidom
 from collections.abc import Iterator
 from concurrent import futures
 from dataclasses import dataclass
+from io import BytesIO
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 from typing import (
@@ -16,7 +18,6 @@ from typing import (
     TypeVar,
     cast,
 )
-from zipfile import ZipFile
 
 import cv2
 import numpy as np
@@ -107,7 +108,7 @@ def tiles_with_cache(
         json.dumps(tiler_params, sort_keys=True).encode()
     ).hexdigest()
     cache_file_path = (
-        cache_dir / slide_path.with_suffix(f".{tiler_params_hash}.zip").name
+        cache_dir / slide_path.with_suffix(f".{tiler_params_hash}.tar").name
     )
     if cache_file_path.exists():
         # If we have a cached version of the tiles
@@ -120,16 +121,19 @@ def tiles_with_cache(
 
         # We first open a temporary file and then rename it at the end.
         # Since renaming is an atomic operation on most file systems,
-        # this will ensure that our cache zips will always be consistent.
+        # this will ensure that our cache tars will always be consistent.
         with (
             NamedTemporaryFile(
                 dir=cache_file_path.parent, delete=False
             ) as tmp_cache_file,
-            ZipFile(tmp_cache_file.name, "w") as zip,
+            tarfile.open(tmp_cache_file.name, "w") as tar,
         ):
             try:
-                with zip.open("tiler_params.json", "w") as tiler_params_json_fp:
-                    tiler_params_json_fp.write(json.dumps(tiler_params).encode())
+                # Add tiler_params.json to tar
+                tiler_params_json = json.dumps(tiler_params).encode()
+                tarinfo = tarfile.TarInfo(name="tiler_params.json")
+                tarinfo.size = len(tiler_params_json)
+                tar.addfile(tarinfo, BytesIO(tiler_params_json))
 
                 for tile in _tiles_with_tissue(
                     openslide.open_slide(slide_path),
@@ -141,12 +145,10 @@ def tiles_with_cache(
                     canny_cutoff=canny_cutoff,
                     default_slide_mpp=default_slide_mpp,
                 ):
-                    with zip.open(
-                        f"tile_({float(tile.coordinates.x)}, {float(tile.coordinates.y)}).{cache_tiles_ext}",
-                        "w",
-                    ) as tile_zip_fp:
+                    # Save tile image to temporary file first
+                    with NamedTemporaryFile(suffix=f'.{cache_tiles_ext}', delete=False) as tile_tmp:
                         tile.image.save(
-                            tile_zip_fp,
+                            tile_tmp,
                             format=EXTENSION_TO_FORMAT[cache_tiles_ext],
                             **(
                                 # Remove ICC profile for PNG images because that sometimes produces >1MB metadata,
@@ -157,6 +159,12 @@ def tiles_with_cache(
                                 else {}
                             ),
                         )
+                        tile_tmp.flush()
+                        
+                        # Add tile to tar
+                        tile_name = f"tile_({float(tile.coordinates.x)}, {float(tile.coordinates.y)}).{cache_tiles_ext}"
+                        tar.add(tile_tmp.name, arcname=tile_name)
+                        Path(tile_tmp.name).unlink()
 
                     yield tile
             except Exception as e:
@@ -304,7 +312,7 @@ def _supertiles(
     slide_mpp = cast(SlideMPP, get_slide_mpp_(slide, default_mpp=default_slide_mpp))
 
     # We calculate the `supertile_slide_px` such that they can hold a whole number of tiles
-    # which, before scaling down, is still less than `max_supertile_slide_px`
+    # which, before scaling down, is still less than `max_supertile_size_slide_px`
     max_supertile_um = max_supertile_size_slide_px * slide_mpp
     len_of_supertile_in_tiles = max(int(max_supertile_um // tile_size_um), 1)
 
@@ -376,16 +384,16 @@ class _TilerParams(TypedDict):
 
 
 def _tiles_from_cache_file(cache_file_path: Path) -> Iterator[_Tile]:
-    with ZipFile(cache_file_path, "r") as zip_fp:
-        tiler_params: _TilerParams = json.loads(
-            zip_fp.read("tiler_params.json").decode()
-        )
+    with tarfile.open(cache_file_path, "r") as tar:
+        tiler_params_member = tar.getmember("tiler_params.json")
+        tiler_params_fp = tar.extractfile(tiler_params_member)
+        tiler_params: _TilerParams = json.loads(tiler_params_fp.read().decode())
 
         # Use jpg as default for backwards compatibility
         cache_tiles_ext = tiler_params.get("tile_ext", "jpg")
-        for name in zip_fp.namelist():
+        for member in tar.getmembers():
             match = re.match(
-                rf"tile_\((\d+\.\d+), (\d+\.\d+)\).{cache_tiles_ext}", name
+                rf"tile_\((\d+\.\d+), (\d+\.\d+)\).{cache_tiles_ext}", member.name
             )
             if match is None:
                 continue
@@ -394,12 +402,12 @@ def _tiles_from_cache_file(cache_file_path: Path) -> Iterator[_Tile]:
             x_um_str, y_um_str = match.groups()
             x_um, y_um = Microns(float(x_um_str)), Microns(float(y_um_str))
 
-            with zip_fp.open(name, "r") as tile_fp:
-                yield _Tile(
-                    image=Image.open(tile_fp),
-                    coordinates=_XYCoords(x_um, y_um),
-                    size=tiler_params["tile_size_um"],
-                )
+            tile_fp = tar.extractfile(member)
+            yield _Tile(
+                image=Image.open(tile_fp),
+                coordinates=_XYCoords(x_um, y_um),
+                size=tiler_params["tile_size_um"],
+            )
 
 
 def get_slide_mpp_(
