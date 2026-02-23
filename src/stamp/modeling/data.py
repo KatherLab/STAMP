@@ -572,6 +572,14 @@ class BagDataset(Dataset[tuple[_Bag, _Coordinates, BagSize, _EncodedTarget]]):
             OrderedDict()
         )
 
+    def __getstate__(self) -> dict:
+        # h5py file handles cannot be pickled (required when DataLoader uses
+        # spawn-based multiprocessing). Drop the cache; each worker reopens
+        # files lazily on the first __getitem__ access.
+        state = self.__dict__.copy()
+        state["_h5_handle_cache"] = OrderedDict()
+        return state
+
     def __len__(self) -> int:
         return len(self.bags)
 
@@ -669,6 +677,14 @@ class PatientFeatureDataset(Dataset):
         # Initialise per-worker HDF5 handle cache eagerly so __getitem__ avoids
         # a hasattr() call on every sample read.
         self._h5_handle_cache: dict[FeaturePath | _BinaryIOLike, h5py.File] = {}
+
+    def __getstate__(self) -> dict:
+        # h5py file handles cannot be pickled (required when DataLoader uses
+        # spawn-based multiprocessing). Drop the cache; each worker reopens
+        # files lazily on the first __getitem__ access.
+        state = self.__dict__.copy()
+        state["_h5_handle_cache"] = {}
+        return state
 
     def __len__(self):
         return len(self.feature_files)
