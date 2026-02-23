@@ -1,6 +1,7 @@
 """Helper classes to manage pytorch data."""
 
 import logging
+from collections import OrderedDict
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import KW_ONLY, dataclass
 from io import BytesIO  # accept in _BinaryIOLike at runtime
@@ -579,7 +580,7 @@ class BagDataset(Dataset[tuple[_Bag, _Coordinates, BagSize, _EncodedTarget]]):
             )
         # Initialise per-worker HDF5 handle cache here so __getitem__ avoids
         # a hasattr() call on every tile read.
-        self._h5_handle_cache: dict[FeaturePath | _BinaryIOLike, h5py.File] = {}
+        self._h5_handle_cache: OrderedDict[FeaturePath | _BinaryIOLike, h5py.File] = OrderedDict()
 
     def __len__(self) -> int:
         return len(self.bags)
@@ -594,7 +595,7 @@ class BagDataset(Dataset[tuple[_Bag, _Coordinates, BagSize, _EncodedTarget]]):
             if bag_file not in self._h5_handle_cache:
                 # Limit open handles to avoid reaching OS ulimits
                 if len(self._h5_handle_cache) >= 128:
-                    _, h = self._h5_handle_cache.popitem()
+                    _, h = self._h5_handle_cache.popitem(last=False)
                     h.close()
 
                 try:
@@ -606,6 +607,9 @@ class BagDataset(Dataset[tuple[_Bag, _Coordinates, BagSize, _EncodedTarget]]):
                 except Exception:
                     # Fallback for older HDF5 files or unconventional storage
                     self._h5_handle_cache[bag_file] = h5py.File(bag_file, "r")
+            else:
+                # Move recently accessed file to end (mark as recently used)
+                self._h5_handle_cache.move_to_end(bag_file)
 
             h5 = self._h5_handle_cache[bag_file]
 
