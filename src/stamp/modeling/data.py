@@ -232,9 +232,7 @@ def _parse_targets(
                 times.append(np.nan)
                 events.append(np.nan)
                 continue
-
-            # Accept either structured tuple/list (time, event) or the legacy
-            # string form "time status".
+            # Expect a structured tuple/list (time, event).
             if isinstance(gt, (tuple, list)) and len(gt) == 2:
                 t_val, e_val = gt
                 times.append(
@@ -244,19 +242,9 @@ def _parse_targets(
                 )
                 events.append(float(e_val) if e_val is not None else np.nan)
             else:
-                # Legacy string form supported historically, but prefer the
-                # structured (time, event) tuple. Do NOT call .split here;
-                # treat the entire value as the time string and mark status
-                # as unknown. This avoids AttributeError when gt is a tuple.
-                time_str, status_str = str(gt), "nan"
-                # Parse time defensively to avoid ValueError on non-numeric strings
-                try:
-                    times.append(
-                        np.nan if time_str.lower() == "nan" else float(time_str)
-                    )
-                except Exception:
-                    times.append(np.nan)
-                events.append(_parse_survival_status(status_str))
+                raise ValueError(
+                    "survival ground truth must be a (time, event) tuple/list"
+                )
 
         y = torch.tensor(np.column_stack([times, events]), dtype=torch.float32)
         return y, []
