@@ -304,17 +304,19 @@ def test_mil_predict_generic(tmp_path: Path, task: Task) -> None:
         feature_file = make_old_feature_file(
             feats=torch.rand(23, dim_feats), coords=torch.rand(23, 2)
         )
-        gt = GroundTruth("foo")
+        gt = cast(GroundTruth, "foo")
     elif task == "regression":
         feature_file = make_old_feature_file(
             feats=torch.rand(30, dim_feats), coords=torch.rand(30, 2)
         )
-        gt = GroundTruth(42.5)  # numeric target wrapped for typing
+        gt = cast(GroundTruth, 42.5)  # numeric target wrapped for typing
     else:  # survival
         feature_file = make_old_feature_file(
             feats=torch.rand(40, dim_feats), coords=torch.rand(40, 2)
         )
-        gt = GroundTruth("12  0")  # (time, status)
+        gt = cast(
+            GroundTruth, (12.0, 0)
+        )  # (time, status) - use raw tuple (GroundTruth is a str alias)
 
     patient_to_data = {
         PatientId("pat_test"): PatientData(
