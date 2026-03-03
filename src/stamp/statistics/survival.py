@@ -8,7 +8,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from lifelines import KaplanMeierFitter
-from lifelines.plotting import add_at_risk_counts
 from lifelines.statistics import logrank_test
 from lifelines.utils import concordance_index
 
