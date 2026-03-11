@@ -1,4 +1,14 @@
+import multiprocessing
 from stamp.preprocessing import ExtractorName
+
+# Ensure tests use a safe multiprocessing start method to avoid
+# fork-from-multi-threaded-process warnings on Linux.
+if multiprocessing.get_start_method(allow_none=True) != "spawn":
+    try:
+        multiprocessing.set_start_method("spawn")
+    except RuntimeError:
+        # start method already set by the test runner/environment
+        pass
 
 
 # This lets you choose which extractors to run on pytest. Useful for the

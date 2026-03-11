@@ -221,8 +221,8 @@ def test_to_prediction_df(task: str) -> None:
         assert preds_df["loss"].isna().all()
     else:
         patient_to_ground_truth = {
-            PatientId("p1"): "10.0 1",
-            PatientId("p2"): "12.3 0",
+            PatientId("p1"): (10.0, 1),
+            PatientId("p2"): (12.3, 0),
         }
         predictions = {
             PatientId("p1"): torch.tensor([0.8]),
@@ -304,17 +304,19 @@ def test_mil_predict_generic(tmp_path: Path, task: Task) -> None:
         feature_file = make_old_feature_file(
             feats=torch.rand(23, dim_feats), coords=torch.rand(23, 2)
         )
-        gt = GroundTruth("foo")
+        gt = cast(GroundTruth, "foo")
     elif task == "regression":
         feature_file = make_old_feature_file(
             feats=torch.rand(30, dim_feats), coords=torch.rand(30, 2)
         )
-        gt = GroundTruth(42.5)  # numeric target wrapped for typing
+        gt = cast(GroundTruth, 42.5)  # numeric target wrapped for typing
     else:  # survival
         feature_file = make_old_feature_file(
             feats=torch.rand(40, dim_feats), coords=torch.rand(40, 2)
         )
-        gt = GroundTruth("12  0")  # (time, status)
+        gt = cast(
+            GroundTruth, (12.0, 0)
+        )  # (time, status) - use raw tuple (GroundTruth is a str alias)
 
     patient_to_data = {
         PatientId("pat_test"): PatientData(

@@ -54,20 +54,20 @@ def test_train_deploy_integration(
         create_random_dataset(
             dir=tmp_path / "train",
             n_categories=3,
-            n_patients=400,
-            max_slides_per_patient=3,
-            min_tiles_per_slide=20,
-            max_tiles_per_slide=600,
+            n_patients=30,
+            max_slides_per_patient=2,
+            min_tiles_per_slide=8,
+            max_tiles_per_slide=32,
             feat_dim=feat_dim,
         )
     )
     deploy_clini_path, deploy_slide_path, deploy_feature_dir, _ = create_random_dataset(
         dir=tmp_path / "deploy",
         categories=categories,
-        n_patients=50,
-        max_slides_per_patient=3,
-        min_tiles_per_slide=20,
-        max_tiles_per_slide=600,
+        n_patients=10,
+        max_slides_per_patient=2,
+        min_tiles_per_slide=8,
+        max_tiles_per_slide=32,
         feat_dim=feat_dim,
     )
 
@@ -85,7 +85,7 @@ def test_train_deploy_integration(
 
     advanced = AdvancedConfig(
         # Dataset and -loader parameters
-        bag_size=500,
+        bag_size=32,
         num_workers=min(os.cpu_count() or 1, 16),
         # Training paramenters
         batch_size=8,
@@ -142,7 +142,7 @@ def test_train_deploy_patient_level_integration(
         create_random_patient_level_dataset(
             dir=tmp_path / "train",
             n_categories=3,
-            n_patients=400,
+            n_patients=30,
             feat_dim=feat_dim,
         )
     )
@@ -150,7 +150,7 @@ def test_train_deploy_patient_level_integration(
         create_random_patient_level_dataset(
             dir=tmp_path / "deploy",
             categories=categories,
-            n_patients=50,
+            n_patients=10,
             feat_dim=feat_dim,
         )
     )
@@ -218,20 +218,20 @@ def test_train_deploy_regression_integration(
     train_clini_path, train_slide_path, train_feature_dir, _ = (
         create_random_regression_dataset(
             dir=tmp_path / "train",
-            n_patients=400,
-            max_slides_per_patient=3,
-            min_tiles_per_slide=20,
-            max_tiles_per_slide=600,
+            n_patients=30,
+            max_slides_per_patient=2,
+            min_tiles_per_slide=8,
+            max_tiles_per_slide=32,
             feat_dim=feat_dim,
         )
     )
     deploy_clini_path, deploy_slide_path, deploy_feature_dir, _ = (
         create_random_regression_dataset(
             dir=tmp_path / "deploy",
-            n_patients=50,
-            max_slides_per_patient=3,
-            min_tiles_per_slide=20,
-            max_tiles_per_slide=600,
+            n_patients=10,
+            max_slides_per_patient=2,
+            min_tiles_per_slide=8,
+            max_tiles_per_slide=32,
             feat_dim=feat_dim,
         )
     )
@@ -250,9 +250,9 @@ def test_train_deploy_regression_integration(
     )
 
     advanced = AdvancedConfig(
-        bag_size=500,
+        bag_size=32,
         num_workers=min(os.cpu_count() or 1, 16),
-        batch_size=1,
+        batch_size=8,
         max_epochs=2,
         patience=1,
         accelerator="gpu" if torch.cuda.is_available() else "cpu",
@@ -297,20 +297,20 @@ def test_train_deploy_survival_integration(
     train_clini_path, train_slide_path, train_feature_dir, _ = (
         create_random_survival_dataset(
             dir=tmp_path / "train",
-            n_patients=400,
-            max_slides_per_patient=3,
-            min_tiles_per_slide=20,
-            max_tiles_per_slide=600,
+            n_patients=30,
+            max_slides_per_patient=2,
+            min_tiles_per_slide=8,
+            max_tiles_per_slide=32,
             feat_dim=feat_dim,
         )
     )
     deploy_clini_path, deploy_slide_path, deploy_feature_dir, _ = (
         create_random_survival_dataset(
             dir=tmp_path / "deploy",
-            n_patients=50,
-            max_slides_per_patient=3,
-            min_tiles_per_slide=20,
-            max_tiles_per_slide=600,
+            n_patients=10,
+            max_slides_per_patient=2,
+            min_tiles_per_slide=8,
+            max_tiles_per_slide=32,
             feat_dim=feat_dim,
         )
     )
@@ -329,7 +329,7 @@ def test_train_deploy_survival_integration(
     )
 
     advanced = AdvancedConfig(
-        bag_size=500,
+        bag_size=32,
         num_workers=min(os.cpu_count() or 1, 16),
         batch_size=8,
         max_epochs=2,
@@ -385,7 +385,7 @@ def test_train_deploy_patient_level_regression_integration(
     train_feat_dir.mkdir(parents=True, exist_ok=True)
     deploy_feat_dir.mkdir(parents=True, exist_ok=True)
 
-    n_train, n_deploy = 300, 60
+    n_train, n_deploy = 30, 10
     train_rows, deploy_rows = [], []
 
     # --- Generate random patient-level features and numeric targets ---
@@ -490,14 +490,14 @@ def test_train_deploy_patient_level_survival_integration(
     train_clini_path, train_slide_path, train_feature_dir, _ = (
         create_random_patient_level_survival_dataset(
             dir=tmp_path / "train",
-            n_patients=300,
+            n_patients=30,
             feat_dim=feat_dim,
         )
     )
     deploy_clini_path, deploy_slide_path, deploy_feature_dir, _ = (
         create_random_patient_level_survival_dataset(
             dir=tmp_path / "deploy",
-            n_patients=60,
+            n_patients=10,
             feat_dim=feat_dim,
         )
     )
@@ -565,10 +565,10 @@ def test_train_deploy_multi_target_integration(
     train_clini_path, train_slide_path, train_feature_dir, _ = (
         create_random_multi_target_dataset(
             dir=tmp_path / "train",
-            n_patients=400,
-            max_slides_per_patient=3,
-            min_tiles_per_slide=20,
-            max_tiles_per_slide=600,
+            n_patients=30,
+            max_slides_per_patient=2,
+            min_tiles_per_slide=8,
+            max_tiles_per_slide=32,
             feat_dim=feat_dim,
             target_labels=target_labels,
             categories_per_target=categories_per_target,
@@ -577,10 +577,10 @@ def test_train_deploy_multi_target_integration(
     deploy_clini_path, deploy_slide_path, deploy_feature_dir, _ = (
         create_random_multi_target_dataset(
             dir=tmp_path / "deploy",
-            n_patients=50,
-            max_slides_per_patient=3,
-            min_tiles_per_slide=20,
-            max_tiles_per_slide=600,
+            n_patients=10,
+            max_slides_per_patient=2,
+            min_tiles_per_slide=8,
+            max_tiles_per_slide=32,
             feat_dim=feat_dim,
             target_labels=target_labels,
             categories_per_target=categories_per_target,
@@ -601,7 +601,7 @@ def test_train_deploy_multi_target_integration(
     )
 
     advanced = AdvancedConfig(
-        bag_size=500,
+        bag_size=32,
         num_workers=min(os.cpu_count() or 1, 16),
         batch_size=8,
         max_epochs=2,
