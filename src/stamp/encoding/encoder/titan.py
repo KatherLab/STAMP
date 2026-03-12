@@ -10,12 +10,12 @@ from torch import Tensor
 from tqdm import tqdm
 from transformers import AutoModel
 
-from stamp.cache import get_processing_code_hash
 from stamp.encoding.config import EncoderName
 from stamp.encoding.encoder import Encoder
 from stamp.modeling.data import CoordsInfo
 from stamp.preprocessing.config import ExtractorName
 from stamp.types import DeviceLikeType, Microns, PandasLabel, SlideMPP
+from stamp.utils.cache import get_processing_code_hash
 
 __author__ = "Juan Pablo Ricapito"
 __copyright__ = "Copyright (C) 2025 Juan Pablo Ricapito"

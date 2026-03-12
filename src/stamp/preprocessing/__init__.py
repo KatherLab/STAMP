@@ -16,7 +16,6 @@ from torch.utils.data import DataLoader, IterableDataset
 from tqdm import tqdm
 
 import stamp
-from stamp.cache import get_processing_code_hash
 from stamp.preprocessing.config import ExtractorName
 from stamp.preprocessing.extractor import Extractor
 from stamp.preprocessing.tiling import (
@@ -32,6 +31,7 @@ from stamp.types import (
     SlidePixels,
     TilePixels,
 )
+from stamp.utils.cache import get_processing_code_hash
 
 __author__ = "Marko van Treeck"
 __copyright__ = "Copyright (C) 2022-2024 Marko van Treeck"

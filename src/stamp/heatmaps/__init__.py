@@ -5,7 +5,7 @@ os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"
 import logging
 from collections.abc import Collection, Iterable
 from pathlib import Path
-from typing import cast, no_type_check
+from typing import cast
 
 import h5py
 import matplotlib.pyplot as plt
@@ -19,7 +19,7 @@ from matplotlib.patches import Patch
 from packaging.version import Version
 from PIL import Image
 from torch import Tensor
-from torch.func import jacrev  # pyright: ignore[reportPrivateImportUsage]
+from torch.func import jacrev
 
 from stamp.modeling.data import get_coords, get_stride
 from stamp.modeling.deploy import load_model_from_ckpt
@@ -29,6 +29,8 @@ from stamp.types import DeviceLikeType, Microns, SlideMPP, TilePixels
 
 _logger = logging.getLogger("stamp")
 
+_SlideLike = openslide.OpenSlide | openslide.ImageSlide
+
 
 def _gradcam_per_category(
     model: torch.nn.Module,
@@ -37,23 +39,19 @@ def _gradcam_per_category(
 ) -> Float[Tensor, "tile category"]:
     feat_dim = -1
 
-    cam = (
-        (
-            feats
-            * jacrev(
-                lambda bags: model.forward(
-                    bags.unsqueeze(0),
-                    coords=coords.unsqueeze(0),
-                    mask=None,
-                ).squeeze(0)
-            )(feats)
-        )
-        .mean(feat_dim)  # type: ignore
-        .abs()
+    jac = cast(
+        Tensor,
+        jacrev(
+            lambda bags: model.forward(
+                bags.unsqueeze(0),
+                coords=coords.unsqueeze(0),
+                mask=None,
+            ).squeeze(0)
+        )(feats),
     )
 
+    cam = (feats * jac).mean(feat_dim).abs()
     cam = torch.softmax(cam, dim=-1)
-
     return cam.permute(-1, -2)
 
 
@@ -79,12 +77,19 @@ def _attention_rollout_single(
 
     # --- 2. Rollout computation ---
     attn_rollout: torch.Tensor | None = None
-    for layer in model.transformer.layers:  # type: ignore
-        attn = getattr(layer[0], "attn_weights", None)  # SelfAttention.attn_weights
+    transformer = getattr(model, "transformer", None)
+    if transformer is None:
+        raise RuntimeError("Model does not have a transformer attribute")
+    for layer in transformer.layers:
+        attn = getattr(layer, "attn_weights", None)
+        if attn is None:
+            first_child = next(iter(layer.children()), None)
+            if first_child is not None:
+                attn = getattr(first_child, "attn_weights", None)
         if attn is None:
             raise RuntimeError(
                 "SelfAttention.attn_weights not found. "
-                "Make sure SelfAttention stores them."
+                "Make sure SelfAttention stores them on the layer or its first child."
             )
 
         # attn: [heads, seq, seq]
@@ -117,15 +122,18 @@ def _gradcam_single(
     """
     feat_dim = -1
 
-    jac = jacrev(
-        lambda bags: model.forward(
-            bags.unsqueeze(0),
-            coords=coords.unsqueeze(0),
-            mask=None,
-        ).squeeze()
-    )(feats)
+    jac = cast(
+        Tensor,
+        jacrev(
+            lambda bags: model.forward(
+                bags.unsqueeze(0),
+                coords=coords.unsqueeze(0),
+                mask=None,
+            ).squeeze()
+        )(feats),
+    )
 
-    cam = (feats * jac).mean(feat_dim).abs()  # type: ignore # [tile]
+    cam = (feats * jac).mean(feat_dim).abs()  # [tile]
 
     return cam
 
@@ -148,17 +156,21 @@ def _vals_to_im(
 
 
 def _show_thumb(
-    slide, thumb_ax: Axes, attention: Tensor, default_slide_mpp: SlideMPP | None
+    slide: _SlideLike,
+    thumb_ax: Axes,
+    attention: Tensor,
+    default_slide_mpp: SlideMPP | None,
 ) -> np.ndarray:
     mpp = get_slide_mpp_(slide, default_mpp=default_slide_mpp)
     dims_um = np.array(slide.dimensions) * mpp
-    thumb = slide.get_thumbnail(np.round(dims_um * 8 / 256).astype(int))
+    thumb_size = tuple(np.round(dims_um * 8 / 256).astype(int).tolist())
+    thumb = slide.get_thumbnail(thumb_size)
     thumb_ax.imshow(np.array(thumb)[: attention.shape[0] * 8, : attention.shape[1] * 8])
     return np.array(thumb)[: attention.shape[0] * 8, : attention.shape[1] * 8]
 
 
 def _get_thumb_array(
-    slide,
+    slide: _SlideLike,
     attention: torch.Tensor,
     default_slide_mpp: SlideMPP | None,
 ) -> np.ndarray:
@@ -168,12 +180,12 @@ def _get_thumb_array(
     """
     mpp = get_slide_mpp_(slide, default_mpp=default_slide_mpp)
     dims_um = np.array(slide.dimensions) * mpp
-    thumb = np.array(slide.get_thumbnail(np.round(dims_um * 8 / 256).astype(int)))
+    thumb_size = tuple(np.round(dims_um * 8 / 256).astype(int).tolist())
+    thumb = np.array(slide.get_thumbnail(thumb_size))
     thumb_crop = thumb[: attention.shape[0] * 8, : attention.shape[1] * 8]
     return thumb_crop
 
 
-@no_type_check  # beartype<=0.19.0 breaks here for some reason
 def _show_class_map(
     class_ax: Axes,
     top_score_indices: Integer[Tensor, "width height"],
@@ -298,13 +310,8 @@ def heatmaps_(
                 raise ValueError(
                     f"Feature file {h5_path} is a slide or patient level feature. Heatmaps are currently supported for tile-level features only."
                 )
-            feats = (
-                torch.tensor(
-                    h5["feats"][:]  # pyright: ignore[reportIndexIssue]
-                )
-                .float()
-                .to(device)
-            )
+            feats_np = np.asarray(h5["feats"])
+            feats = torch.from_numpy(feats_np).float().to(device)
             coords_info = get_coords(h5)
             coords_um = torch.from_numpy(coords_info.coords_um).float()
             stride_um = Microns(get_stride(coords_um))
@@ -322,9 +329,10 @@ def heatmaps_(
         model = load_model_from_ckpt(checkpoint_path).eval()
 
         # TODO: Update version when a newer model logic breaks heatmaps.
-        if Version(model.stamp_version) < Version("2.4.0"):
+        stamp_version = str(getattr(model, "stamp_version", ""))
+        if Version(stamp_version) < Version("2.4.0"):
             raise ValueError(
-                f"model has been built with stamp version {model.stamp_version} "
+                f"model has been built with stamp version {stamp_version} "
                 f"which is incompatible with the current version."
             )
 
@@ -356,7 +364,7 @@ def heatmaps_(
 
                 with torch.no_grad():
                     scores = torch.softmax(
-                        model.model.forward(
+                        model.model(
                             feats.unsqueeze(-2),
                             coords=coords_um.unsqueeze(-2),
                             mask=torch.zeros(

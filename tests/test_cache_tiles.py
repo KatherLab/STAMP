@@ -6,10 +6,10 @@ from zipfile import ZipFile
 import numpy as np
 import pytest
 
-from stamp.cache import download_file
 from stamp.preprocessing import Microns, TilePixels
 from stamp.preprocessing.tiling import _Tile, tiles_with_cache
 from stamp.types import ImageExtension, SlidePixels
+from stamp.utils.cache import download_file
 
 
 def _get_tiles_and_images(

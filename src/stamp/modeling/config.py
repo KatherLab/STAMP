@@ -21,7 +21,7 @@ class TrainConfig(BaseModel):
     )
     feature_dir: Path = Field(description="Directory containing feature files")
 
-    ground_truth_label: PandasLabel | None = Field(
+    ground_truth_label: PandasLabel | Sequence[PandasLabel] | None = Field(
         default=None,
         description="Name of categorical column in clinical table to train on",
     )
@@ -64,7 +64,7 @@ class DeploymentConfig(BaseModel):
     slide_table: Path
     feature_dir: Path
 
-    ground_truth_label: PandasLabel | None = None
+    ground_truth_label: PandasLabel | Sequence[PandasLabel] | None = None
     patient_label: PandasLabel = "PATIENT"
     filename_label: PandasLabel = "FILENAME"
 
@@ -99,8 +99,29 @@ class TransMILModelParams(BaseModel):
     dim_hidden: int = 512
 
 
+class BarspoonParams(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    d_model: int = 512
+    num_encoder_heads: int = 8
+    num_decoder_heads: int = 8
+    num_encoder_layers: int = 2
+    num_decoder_layers: int = 2
+    dim_feedforward: int = 2048
+    positional_encoding: bool = True
+    # Other hparams
+    learning_rate: float = 1e-4
+
+
 class LinearModelParams(BaseModel):
     model_config = ConfigDict(extra="forbid")
+    num_encoder_heads: int = 8
+    num_decoder_heads: int = 8
+    num_encoder_layers: int = 2
+    num_decoder_layers: int = 2
+    dim_feedforward: int = 2048
+    positional_encoding: bool = True
+    # Other hparams
+    learning_rate: float = 1e-4
 
 
 class ModelParams(BaseModel):
@@ -109,6 +130,7 @@ class ModelParams(BaseModel):
     trans_mil: TransMILModelParams = Field(default_factory=TransMILModelParams)
     mlp: MlpModelParams = Field(default_factory=MlpModelParams)
     linear: LinearModelParams = Field(default_factory=LinearModelParams)
+    barspoon: BarspoonParams = Field(default_factory=BarspoonParams)
 
 
 class AdvancedConfig(BaseModel):

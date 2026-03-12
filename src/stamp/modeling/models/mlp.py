@@ -29,7 +29,7 @@ class MLP(nn.Module):
             layers.append(nn.Dropout(dropout))
             in_dim = dim_hidden
         layers.append(nn.Linear(in_dim, dim_output))
-        self.mlp = nn.Sequential(*layers)  # type: ignore
+        self.mlp = nn.Sequential(*layers)
 
     @jaxtyped(typechecker=beartype)
     def forward(

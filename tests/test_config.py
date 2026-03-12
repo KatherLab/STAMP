@@ -1,7 +1,6 @@
 # %%
 from pathlib import Path
 
-from stamp.config import StampConfig
 from stamp.heatmaps.config import HeatmapConfig
 from stamp.modeling.config import (
     AdvancedConfig,
@@ -21,6 +20,7 @@ from stamp.preprocessing.config import (
     TilePixels,
 )
 from stamp.statistics import StatsConfig
+from stamp.utils.config import StampConfig
 
 
 def test_config_parsing() -> None:

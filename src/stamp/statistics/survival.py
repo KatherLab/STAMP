@@ -8,7 +8,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from lifelines import KaplanMeierFitter
-from lifelines.plotting import add_at_risk_counts
 from lifelines.statistics import logrank_test
 from lifelines.utils import concordance_index
 
@@ -101,7 +100,7 @@ def _plot_km(
     if risk_label is None:
         risk_label = "pred_score"
 
-    # --- Clean NaNs and invalid entries ---
+    # Clean NaNs and invalid entries
     df = df.replace(["NaN", "nan", "None", "Inf", "inf"], np.nan)
     df = df.dropna(subset=[time_label, status_label, risk_label]).copy()
     df = df[df[status_label].isin([0, 1])]
@@ -143,20 +142,14 @@ def _plot_km(
     if len(high_df) > 0:
         fitters.append(kmf_high)
 
-    if len(fitters) > 0:
-        add_at_risk_counts(*fitters, ax=ax)
-
-    # log-rank only if both groups exist
-    if len(low_df) > 0 and len(high_df) > 0:
-        res = logrank_test(
-            low_df[time_label],
-            high_df[time_label],
-            event_observed_A=low_df[status_label],
-            event_observed_B=high_df[status_label],
-        )
-        logrank_p = float(res.p_value)
-    else:
-        logrank_p = float("nan")
+    # log-rank and c-index
+    res = logrank_test(
+        low_df[time_label],
+        high_df[time_label],
+        event_observed_A=low_df[status_label],
+        event_observed_B=high_df[status_label],
+    )
+    logrank_p = float(res.p_value)
     c_used, used, *_ = _cindex(time, event, risk)
 
     ax.text(

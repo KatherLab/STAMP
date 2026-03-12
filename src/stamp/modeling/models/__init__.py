@@ -8,12 +8,21 @@ from typing import Any, TypeAlias
 import lightning
 import numpy as np
 import torch
+from lifelines.utils import concordance_index as lifelines_cindex
+
+# Use beartype.typing.Mapping to avoid PEP-585 deprecation warnings in beartype
+from beartype.typing import Mapping
 from jaxtyping import Bool, Float
 from packaging.version import Version
 from torch import Tensor, nn, optim
 from torchmetrics.classification import MulticlassAUROC
 
 import stamp
+from stamp.modeling.models.barspoon import (
+    EncDecTransformer,
+    LitMilClassificationMixin,
+    TargetLabel,
+)
 from stamp.modeling.models.cox import neg_partial_log_likelihood
 from stamp.types import (
     Bags,
@@ -143,6 +152,19 @@ class Base(lightning.LightningModule, ABC):
         )
 
 
+class _TileLevelMixin:
+    """Mixin for tile-level models providing shared MIL masking logic."""
+
+    @staticmethod
+    def _mask_from_bags(bags: Bags, bag_sizes: BagSizes) -> Bool[Tensor, "batch tile"]:
+        """Create attention mask for padded tiles in variable-length bags."""
+        max_possible_bag_size = bags.size(1)
+        mask = torch.arange(max_possible_bag_size).type_as(bag_sizes).unsqueeze(
+            0
+        ).repeat(len(bags), 1) >= bag_sizes.unsqueeze(1)
+        return mask
+
+
 class LitBaseClassifier(Base):
     """
     PyTorch Lightning wrapper for tile level and patient level clasification.
@@ -194,15 +216,16 @@ class LitBaseClassifier(Base):
         self.class_weights = category_weights
         self.valid_auroc = MulticlassAUROC(len(categories))
         # Number classes
-        self.categories = np.array(categories)
+        self.categories = list(categories)
 
         self.hparams.update({"task": "classification"})
 
 
-class LitTileClassifier(LitBaseClassifier):
+class LitTileClassifier(_TileLevelMixin, LitBaseClassifier):
     """
-    PyTorch Lightning wrapper for the model used in weakly supervised
-    learning settings, such as Multiple Instance Learning (MIL) for whole-slide images or patch-based data.
+    PyTorch Lightning wrapper for tile-level MIL classification.
+
+    Used in weakly supervised settings for whole-slide images or patch-based data.
     """
 
     supported_features = ["tile"]
@@ -244,7 +267,6 @@ class LitTileClassifier(LitBaseClassifier):
         )
 
         if step_name == "validation":
-            # TODO this is a bit ugly, we'd like to have `_step` without special cases
             self.valid_auroc.update(logits, targets.long().argmax(dim=-1))
             self.log(
                 f"{step_name}_auroc",
@@ -286,31 +308,19 @@ class LitTileClassifier(LitBaseClassifier):
         # adding a mask here will *drastically* and *unbearably* increase memory usage
         return self.model(bags, coords=coords, mask=None)
 
-    def _mask_from_bags(
-        *,
-        bags: Bags,
-        bag_sizes: BagSizes,
-    ) -> Bool[Tensor, "batch tile"]:
-        max_possible_bag_size = bags.size(1)
-        mask = torch.arange(max_possible_bag_size).type_as(bag_sizes).unsqueeze(
-            0
-        ).repeat(len(bags), 1) >= bag_sizes.unsqueeze(1)
-
-        return mask
-
 
 class LitSlideClassifier(LitBaseClassifier):
-    """
-    PyTorch Lightning wrapper for MLPClassifier.
-    """
+    """PyTorch Lightning wrapper for slide/patient-level classification."""
 
     supported_features = ["slide"]
 
     def forward(self, x: Tensor) -> Tensor:
         return self.model(x)
 
-    def _step(self, batch, step_name: str):
-        feats, targets = batch
+    def _step(
+        self, batch: tuple[Tensor, Tensor] | list[Tensor], step_name: str
+    ) -> Loss:
+        feats, targets = list(batch)  # Works for both tuple and list
         logits = self.model(feats.float())
         loss = nn.functional.cross_entropy(
             logits,
@@ -336,17 +346,25 @@ class LitSlideClassifier(LitBaseClassifier):
             )
         return loss
 
-    def training_step(self, batch, batch_idx):
+    def training_step(
+        self, batch: tuple[Tensor, Tensor] | list[Tensor], batch_idx: int
+    ) -> Loss:
         return self._step(batch, "training")
 
-    def validation_step(self, batch, batch_idx):
+    def validation_step(
+        self, batch: tuple[Tensor, Tensor] | list[Tensor], batch_idx: int
+    ) -> Loss:
         return self._step(batch, "validation")
 
-    def test_step(self, batch, batch_idx):
+    def test_step(
+        self, batch: tuple[Tensor, Tensor] | list[Tensor], batch_idx: int
+    ) -> Loss:
         return self._step(batch, "test")
 
-    def predict_step(self, batch, batch_idx):
-        feats, _ = batch
+    def predict_step(
+        self, batch: tuple[Tensor, Tensor] | list[Tensor], batch_idx: int
+    ) -> Tensor:
+        feats, _ = batch if isinstance(batch, tuple) else batch
         return self.model(feats)
 
 
@@ -397,9 +415,10 @@ class LitBaseRegressor(Base):
         return nn.functional.l1_loss(y_true, y_pred)
 
 
-class LitTileRegressor(LitBaseRegressor):
+class LitTileRegressor(_TileLevelMixin, LitBaseRegressor):
     """
-    PyTorch Lightning wrapper for weakly supervised / MIL regression at tile/patient level.
+    PyTorch Lightning wrapper for tile-level MIL regression.
+
     Produces a single continuous output per bag (dim_output = 1).
     """
 
@@ -486,38 +505,22 @@ class LitTileRegressor(LitBaseRegressor):
         # keep memory usage low as in classifier
         return self.model(bags, coords=coords, mask=None)
 
-    def _mask_from_bags(
-        *,
-        bags: Bags,
-        bag_sizes: BagSizes,
-    ) -> Bool[Tensor, "batch tile"]:
-        max_possible_bag_size = bags.size(1)
-        mask = torch.arange(max_possible_bag_size).type_as(bag_sizes).unsqueeze(
-            0
-        ).repeat(len(bags), 1) >= bag_sizes.unsqueeze(1)
-
-        return mask
-
 
 class LitSlideRegressor(LitBaseRegressor):
-    """
-    PyTorch Lightning wrapper for slide-level or patient-level regression.
-    Produces a single continuous output per slide (dim_output = 1).
-    """
+    """PyTorch Lightning wrapper for slide/patient-level regression."""
 
     supported_features = ["slide"]
 
     def forward(self, feats: Tensor) -> Tensor:
-        """Forward pass for slide-level features."""
         return self.model(feats.float())
 
     def _step(
         self,
         *,
-        batch: tuple[Tensor, Tensor],
+        batch: tuple[Tensor, Tensor] | list[Tensor],
         step_name: str,
     ) -> Loss:
-        feats, targets = batch
+        feats, targets = list(batch)  # Works for both tuple and list
 
         preds = self.model(feats.float(), mask=None)  # (B, 1)
         y = targets.to(preds).float()
@@ -534,7 +537,6 @@ class LitSlideRegressor(LitBaseRegressor):
         )
 
         if step_name == "validation":
-            # same metrics as LitTileRegressor
             p = preds.squeeze(-1)
             t = y.squeeze(-1)
             self.log(
@@ -547,17 +549,25 @@ class LitSlideRegressor(LitBaseRegressor):
 
         return loss
 
-    def training_step(self, batch, batch_idx):
+    def training_step(
+        self, batch: tuple[Tensor, Tensor] | list[Tensor], batch_idx: int
+    ) -> Loss:
         return self._step(batch=batch, step_name="training")
 
-    def validation_step(self, batch, batch_idx):
+    def validation_step(
+        self, batch: tuple[Tensor, Tensor] | list[Tensor], batch_idx: int
+    ) -> Loss:
         return self._step(batch=batch, step_name="validation")
 
-    def test_step(self, batch, batch_idx):
+    def test_step(
+        self, batch: tuple[Tensor, Tensor] | list[Tensor], batch_idx: int
+    ) -> Loss:
         return self._step(batch=batch, step_name="test")
 
-    def predict_step(self, batch, batch_idx):
-        feats, _ = batch
+    def predict_step(
+        self, batch: tuple[Tensor, Tensor] | list[Tensor], batch_idx: int
+    ) -> Tensor:
+        feats, _ = batch if isinstance(batch, tuple) else batch
         return self.model(feats.float())
 
 
@@ -645,27 +655,36 @@ class LitSurvivalBase(Base):
     def c_index(
         scores: torch.Tensor, times: torch.Tensor, events: torch.Tensor
     ) -> torch.Tensor:
-        # """
-        # Concordance index: proportion of correctly ordered comparable pairs.
-        # """
-        N = len(times)
-        if N <= 1:
+        """
+        Concordance index using lifelines implementation for consistency with statistics.
+
+        Uses the same convention as stamp.statistics.survival:
+        - Higher risk scores should correspond to shorter survival (worse outcome).
+        - We negate scores so lifelines interprets higher values as longer survival.
+        """
+        # Convert to numpy for lifelines
+        scores_np = scores.detach().cpu().numpy().flatten()
+        times_np = times.detach().cpu().numpy().flatten()
+        events_np = events.detach().cpu().numpy().flatten()
+
+        # Filter out NaN values
+        valid_mask = ~(np.isnan(times_np) | np.isnan(events_np) | np.isnan(scores_np))
+        if valid_mask.sum() <= 1:
             return torch.tensor(float("nan"), device=scores.device)
 
-        t_i = times.view(-1, 1).expand(N, N)
-        t_j = times.view(1, -1).expand(N, N)
-        e_i = events.view(-1, 1).expand(N, N)
+        times_np = times_np[valid_mask]
+        events_np = events_np[valid_mask]
+        scores_np = scores_np[valid_mask]
 
-        mask = (t_i < t_j) & e_i.bool()
-        if mask.sum() == 0:
+        # Use lifelines concordance_index with negated risk (same as statistics module)
+        # lifelines expects: higher predicted value = longer survival
+        # Cox outputs: higher risk = shorter survival, so we negate
+        try:
+            ci = lifelines_cindex(times_np, -scores_np, events_np)
+        except Exception:
             return torch.tensor(float("nan"), device=scores.device)
 
-        s_i = scores.view(-1, 1).expand(N, N)[mask]
-        s_j = scores.view(1, -1).expand(N, N)[mask]
-
-        conc = (s_i > s_j).float()
-        ties = (s_i == s_j).float() * 0.5
-        return (conc + ties).sum() / mask.sum()
+        return torch.tensor(ci, device=scores.device, dtype=scores.dtype)
 
     def on_validation_epoch_end(self):
         if (
@@ -702,12 +721,12 @@ class LitSurvivalBase(Base):
             self.hparams.update({"train_pred_median": self.train_pred_median})
 
 
-class LitTileSurvival(LitSurvivalBase):
+class LitTileSurvival(_TileLevelMixin, LitSurvivalBase):
     """
-    Tile-level or patch-level survival analysis.
-    Expects dataloader batches like:
-      (bags, coords, bag_sizes, targets)
-    where targets is shape (B,2): [:,0]=time, [:,1]=event (1=event, 0=censored).
+    Tile-level survival analysis with Cox proportional hazards loss.
+
+    Expects batches: (bags, coords, bag_sizes, targets)
+    where targets.shape = (B, 2): [:,0]=time, [:,1]=event (0=censored, 1=event).
     """
 
     supported_features = ["tile"]
@@ -818,3 +837,75 @@ class LitPatientSurvival(LitSlideSurvival):
     """
 
     supported_features = ["patient"]
+
+
+class LitEncDecTransformer(LitMilClassificationMixin):
+    def __init__(
+        self,
+        *,
+        dim_input: int,
+        category_weights: Mapping[TargetLabel, torch.Tensor],
+        model_class: type[nn.Module] | None = None,
+        ground_truth_label: PandasLabel | Sequence[PandasLabel] | None,
+        categories: Mapping[str, Sequence[Category]],
+        # Model parameters
+        d_model: int = 512,
+        num_encoder_heads: int = 8,
+        num_decoder_heads: int = 8,
+        num_encoder_layers: int = 2,
+        num_decoder_layers: int = 2,
+        dim_feedforward: int = 2048,
+        positional_encoding: bool = True,
+        # Other hparams
+        learning_rate: float = 1e-4,
+        **hparams: Any,
+    ) -> None:
+        weights_dict: dict[TargetLabel, torch.Tensor] = dict(category_weights)
+        super().__init__(
+            weights=weights_dict,
+            learning_rate=learning_rate,
+        )
+        _ = hparams  # so we don't get unused parameter warnings
+
+        self.model = EncDecTransformer(
+            d_features=dim_input,
+            target_n_outs={t: len(w) for t, w in category_weights.items()},
+            d_model=d_model,
+            num_encoder_heads=num_encoder_heads,
+            num_decoder_heads=num_decoder_heads,
+            num_encoder_layers=num_encoder_layers,
+            num_decoder_layers=num_decoder_layers,
+            dim_feedforward=dim_feedforward,
+            positional_encoding=positional_encoding,
+        )
+
+        self.hparams["supported_features"] = "tile"
+        self.hparams.update({"task": "classification"})
+        # ---- Normalize categories into strict mapping[str, list[str]] ----
+        if not isinstance(categories, Mapping):
+            raise ValueError(
+                "Multi-target classification requires categories as Mapping[str, Sequence[str]]."
+            )
+
+        normalized_categories: dict[str, list[str]] = {
+            str(k): list(v) for k, v in categories.items()
+        }
+
+        # Sanity check: head size must match category size
+        for t, w in category_weights.items():
+            if t not in normalized_categories:
+                raise ValueError(f"Missing categories for target '{t}'")
+            if len(normalized_categories[t]) != len(w):
+                raise ValueError(
+                    f"Category mismatch for target '{t}': "
+                    f"{len(normalized_categories[t])} categories "
+                    f"but head has {len(w)} outputs."
+                )
+
+        self.ground_truth_label = ground_truth_label
+        self.categories = normalized_categories
+
+        self.save_hyperparameters()
+
+    def forward(self, *args):
+        return self.model(*args)

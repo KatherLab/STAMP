@@ -13,7 +13,7 @@ from stamp.modeling.config import (
     VitModelParams,
 )
 from stamp.modeling.crossval import categorical_crossval_
-from stamp.seed import Seed
+from stamp.utils.seed import Seed
 
 
 @pytest.mark.slow

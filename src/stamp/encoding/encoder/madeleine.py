@@ -3,10 +3,10 @@ import os
 import torch
 from numpy import ndarray
 
-from stamp.cache import STAMP_CACHE_DIR
 from stamp.encoding.config import EncoderName
 from stamp.encoding.encoder import Encoder
 from stamp.preprocessing.config import ExtractorName
+from stamp.utils.cache import STAMP_CACHE_DIR
 
 try:
     from madeleine.models.factory import create_model_from_pretrained

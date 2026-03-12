@@ -3,6 +3,7 @@ from io import BytesIO
 from pathlib import Path
 
 import h5py
+import pandas as pd
 import pytest
 import torch
 from random_data import (
@@ -21,9 +22,9 @@ from stamp.modeling.data import (
     PatientFeatureDataset,
     filter_complete_patient_data_,
     get_coords,
+    patient_to_ground_truth_from_clini_table_,
     slide_to_patient_from_slide_table_,
 )
-from stamp.seed import Seed
 from stamp.types import (
     BagSize,
     FeaturePath,
@@ -33,6 +34,7 @@ from stamp.types import (
     SlideMPP,
     TilePixels,
 )
+from stamp.utils.seed import Seed
 
 
 @pytest.mark.filterwarnings("ignore:some patients have no associated slides")
@@ -83,6 +85,31 @@ def test_get_cohort_df(tmp_path: Path) -> None:
                 feature_files={FeaturePath(Path(slide_c1.name))},
             ),
         }
+
+
+def test_patient_to_ground_truth_multi_target(tmp_path: Path) -> None:
+    """Verify multi-target clini parsing returns dicts and drops rows missing all targets."""
+    df = pd.DataFrame(
+        {
+            "patient": ["p1", "p2", "p3", "p4"],
+            "subtype": ["A", None, "B", None],
+            "grade": ["1", "2", None, None],
+        }
+    )
+    df.to_csv(tmp_path / "clini.csv", index=False)
+
+    result = patient_to_ground_truth_from_clini_table_(
+        clini_table_path=tmp_path / "clini.csv",
+        patient_label="patient",
+        ground_truth_label=["subtype", "grade"],
+    )
+
+    # p4 has both targets missing → dropped
+    assert "p4" not in result
+
+    assert result["p1"] == {"subtype": "A", "grade": "1"}
+    assert result["p2"] == {"subtype": None, "grade": "2"}
+    assert result["p3"] == {"subtype": "B", "grade": None}
 
 
 @pytest.mark.parametrize(

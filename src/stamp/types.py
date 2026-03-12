@@ -37,6 +37,9 @@ DeviceLikeType: TypeAlias = str | torch.device | int
 
 PatientId: TypeAlias = str
 GroundTruth: TypeAlias = str
+# Survival ground-truth is represented as (time, event)
+SurvivalGroundTruth: TypeAlias = tuple[float | None, int | None]
+MultiClassGroundTruth: TypeAlias = tuple[str, ...]
 FeaturePath = NewType("FeaturePath", Path)
 
 Category: TypeAlias = str

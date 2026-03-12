@@ -7,7 +7,7 @@ from itertools import repeat
 from pathlib import Path
 from typing import Optional, TypeVar, cast
 
-from stamp.cache import STAMP_CACHE_DIR, file_digest
+from stamp.utils.cache import STAMP_CACHE_DIR, file_digest
 
 try:
     import gdown
@@ -518,7 +518,7 @@ class _WindowAttention(nn.Module):
         attn = q @ k.transpose(-2, -1)
 
         relative_position_bias = self.relative_position_bias_table[
-            self.relative_position_index.view(-1)
+            self.relative_position_index.view(-1)  # pyright: ignore[reportCallIssue]
         ].view(
             self.window_size[0] * self.window_size[1],
             self.window_size[0] * self.window_size[1],

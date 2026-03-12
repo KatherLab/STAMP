@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import cast
 
 import numpy as np
 import pytest
@@ -24,8 +25,8 @@ from stamp.modeling.models import (
 )
 from stamp.modeling.models.mlp import MLP
 from stamp.modeling.models.vision_tranformer import VisionTransformer
-from stamp.seed import Seed
 from stamp.types import GroundTruth, PatientId, Task
+from stamp.utils.seed import Seed
 
 
 def test_predict_patient_level(
@@ -83,7 +84,8 @@ def test_predict_patient_level(
 
     assert len(predictions) == len(patient_to_data)
     for pid in patient_ids:
-        assert predictions[pid].shape == torch.Size([3]), "expected one score per class"
+        pred = cast(torch.Tensor, predictions[pid])
+        assert pred.shape == torch.Size([3]), "expected one score per class"
 
     # Check if scores are consistent between runs and different for different patients
     more_patient_ids = [PatientId(f"pat{i}") for i in range(8, 11)]
@@ -124,11 +126,13 @@ def test_predict_patient_level(
     assert len(more_predictions) == len(all_patient_ids)
     # Different patients should give different results
     assert not torch.allclose(
-        more_predictions[more_patient_ids[0]], more_predictions[more_patient_ids[1]]
+        cast(torch.Tensor, more_predictions[more_patient_ids[0]]),
+        cast(torch.Tensor, more_predictions[more_patient_ids[1]]),
     ), "different inputs should give different results"
     # The same patient should yield the same result
     assert torch.allclose(
-        predictions[patient_ids[0]], more_predictions[patient_ids[0]]
+        cast(torch.Tensor, predictions[patient_ids[0]]),
+        cast(torch.Tensor, more_predictions[patient_ids[0]]),
     ), "the same inputs should repeatedly yield the same results"
 
 
@@ -163,7 +167,7 @@ def test_to_prediction_df(task: str) -> None:
     )
     if task == "classification":
         preds_df = _to_prediction_df(
-            categories=list(model.categories),  # type: ignore
+            categories=list(cast(list, model.categories)),
             patient_to_ground_truth={
                 PatientId("pat5"): GroundTruth("foo"),
                 PatientId("pat6"): None,
@@ -192,13 +196,13 @@ def test_to_prediction_df(task: str) -> None:
 
         # Check if no loss / target is given for targets with missing ground truths
         no_ground_truth = preds_df[preds_df["patient"].isin(["pat6"])]
-        assert no_ground_truth["target"].isna().all()  # pyright: ignore[reportGeneralTypeIssues,reportAttributeAccessIssue]
-        assert no_ground_truth["loss"].isna().all()  # pyright: ignore[reportGeneralTypeIssues,reportAttributeAccessIssue]
+        assert no_ground_truth["target"].isna().all()
+        assert no_ground_truth["loss"].isna().all()
 
         # Check if loss / target is given for targets with ground truths
         with_ground_truth = preds_df[preds_df["patient"].isin(["pat5", "pat7"])]
-        assert (~with_ground_truth["target"].isna()).all()  # pyright: ignore[reportGeneralTypeIssues,reportAttributeAccessIssue]
-        assert (~with_ground_truth["loss"].isna()).all()  # pyright: ignore[reportGeneralTypeIssues,reportAttributeAccessIssue]
+        assert (~with_ground_truth["target"].isna()).all()
+        assert (~with_ground_truth["loss"].isna()).all()
 
     elif task == "regression":
         patient_to_ground_truth = {}
@@ -217,8 +221,8 @@ def test_to_prediction_df(task: str) -> None:
         assert preds_df["loss"].isna().all()
     else:
         patient_to_ground_truth = {
-            PatientId("p1"): "10.0 1",
-            PatientId("p2"): "12.3 0",
+            PatientId("p1"): (10.0, 1),
+            PatientId("p2"): (12.3, 0),
         }
         predictions = {
             PatientId("p1"): torch.tensor([0.8]),
@@ -295,22 +299,24 @@ def test_mil_predict_generic(tmp_path: Path, task: Task) -> None:
             div_factor=25.0,
         )
 
-    # ---- Build tile-level feature file so batch = (bags, coords, bag_sizes, gt)
+    # Build tile-level feature file so batch = (bags, coords, bag_sizes, gt)
     if task == "classification":
         feature_file = make_old_feature_file(
             feats=torch.rand(23, dim_feats), coords=torch.rand(23, 2)
         )
-        gt = GroundTruth("foo")
+        gt = cast(GroundTruth, "foo")
     elif task == "regression":
         feature_file = make_old_feature_file(
             feats=torch.rand(30, dim_feats), coords=torch.rand(30, 2)
         )
-        gt = GroundTruth(42.5)  # numeric target wrapped for typing
+        gt = cast(GroundTruth, 42.5)  # numeric target wrapped for typing
     else:  # survival
         feature_file = make_old_feature_file(
             feats=torch.rand(40, dim_feats), coords=torch.rand(40, 2)
         )
-        gt = GroundTruth("12  0")  # (time, status)
+        gt = cast(
+            GroundTruth, (12.0, 0)
+        )  # (time, status) - use raw tuple (GroundTruth is a str alias)
 
     patient_to_data = {
         PatientId("pat_test"): PatientData(
@@ -319,7 +325,7 @@ def test_mil_predict_generic(tmp_path: Path, task: Task) -> None:
         )
     }
 
-    # ---- Use tile_bag_dataloader for ALL tasks (so batch has 4 elements)
+    # Use tile_bag_dataloader for ALL tasks (so batch has 4 elements)
     test_dl, _ = tile_bag_dataloader(
         task=task,  # "classification" | "regression" | "survival"
         patient_data=list(patient_to_data.values()),
@@ -341,12 +347,17 @@ def test_mil_predict_generic(tmp_path: Path, task: Task) -> None:
     assert len(predictions) == 1
     pred = list(predictions.values())[0]
     if task == "classification":
-        assert pred.shape == torch.Size([len(categories)])
+        pred_tensor = cast(torch.Tensor, pred)
+        assert pred_tensor.shape == torch.Size([len(categories)])
     elif task == "regression":
-        assert pred.shape == torch.Size([1])
+        pred_tensor = cast(torch.Tensor, pred)
+        assert pred_tensor.shape == torch.Size([1])
     else:  # survival
         # Cox model → scalar log-risk, KM → vector or matrix
-        assert pred.ndim in (0, 1, 2), f"unexpected survival output shape: {pred.shape}"
+        pred_tensor = cast(torch.Tensor, pred)
+        assert pred_tensor.ndim in (0, 1, 2), (
+            f"unexpected survival output shape: {pred_tensor.shape}"
+        )
 
     # Repeatability
     predictions2 = _predict(
@@ -356,4 +367,6 @@ def test_mil_predict_generic(tmp_path: Path, task: Task) -> None:
         accelerator="cpu",
     )
     for pid in predictions:
-        assert torch.allclose(predictions[pid], predictions2[pid])
+        assert torch.allclose(
+            cast(torch.Tensor, predictions[pid]), cast(torch.Tensor, predictions2[pid])
+        )

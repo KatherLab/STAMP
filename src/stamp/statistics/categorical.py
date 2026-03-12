@@ -21,6 +21,30 @@ _score_labels = [
 ]
 
 
+def _detect_targets_from_columns(columns: Sequence[str]) -> list[str]:
+    """Detect target columns from CSV column names.
+
+    Assumes multi-target format where each target has:
+    - A ground truth column (target name)
+    - A prediction column (pred_{target})
+    - Probability columns ({target}_{class1}, {target}_{class2}, ...)
+
+    Returns:
+        List of target names detected.
+    """
+    # Convert to list to handle pandas Index
+    columns = list(columns)
+    targets = []
+    for col in columns:
+        # Look for columns that start with "pred_"
+        if col.startswith("pred_"):
+            target_name = col[5:]  # Remove "pred_" prefix
+            # Verify the target column exists
+            if target_name in columns:
+                targets.append(target_name)
+    return sorted(targets)
+
+
 def _categorical(preds_df: pd.DataFrame, target_label: str) -> pd.DataFrame:
     """Calculates some stats for categorical prediction tables.
 
@@ -38,29 +62,29 @@ def _categorical(preds_df: pd.DataFrame, target_label: str) -> pd.DataFrame:
 
     # roc_auc
     stats_df["roc_auc_score"] = [
-        metrics.roc_auc_score(y_true == cat, y_pred[:, i])  # pyright: ignore[reportCallIssue,reportArgumentType]
+        metrics.roc_auc_score(y_true == cat, y_pred[:, i])
         for i, cat in enumerate(categories)
     ]
 
     # average_precision
     stats_df["average_precision_score"] = [
-        metrics.average_precision_score(y_true == cat, y_pred[:, i])  # pyright: ignore[reportCallIssue,reportArgumentType]
+        metrics.average_precision_score(y_true == cat, y_pred[:, i])
         for i, cat in enumerate(categories)
     ]
 
     # f1 score
     y_pred_labels = categories[y_pred.argmax(axis=1)]
     stats_df["f1_score"] = [
-        metrics.f1_score(y_true == cat, y_pred_labels == cat)  # pyright: ignore[reportCallIssue,reportArgumentType]
-        for cat in categories
+        metrics.f1_score(y_true == cat, y_pred_labels == cat) for cat in categories
     ]
 
     # p values
     p_values = []
     for i, cat in enumerate(categories):
-        pos_scores = y_pred[:, i][y_true == cat]  # pyright: ignore[reportCallIssue,reportArgumentType]
-        neg_scores = y_pred[:, i][y_true != cat]  # pyright: ignore[reportCallIssue,reportArgumentType]
-        p_values.append(st.ttest_ind(pos_scores, neg_scores).pvalue)  # pyright: ignore[reportGeneralTypeIssues, reportAttributeAccessIssue]
+        pos_scores = y_pred[:, i][y_true == cat]
+        neg_scores = y_pred[:, i][y_true != cat]
+        _, p_value = st.ttest_ind(pos_scores, neg_scores)
+        p_values.append(p_value)
     stats_df["p_value"] = p_values
 
     assert set(_score_labels) & set(stats_df.columns) == set(_score_labels)
@@ -110,3 +134,61 @@ def categorical_aggregated_(
     preds_df.to_csv(outpath / f"{ground_truth_label}_categorical-stats_individual.csv")
     stats_df = _aggregate_categorical_stats(preds_df.reset_index())
     stats_df.to_csv(outpath / f"{ground_truth_label}_categorical-stats_aggregated.csv")
+
+
+def categorical_aggregated_multitarget_(
+    *,
+    preds_csvs: Sequence[Path],
+    outpath: Path,
+    target_labels: Sequence[str],
+) -> None:
+    """Calculate statistics for multi-target categorical deployments.
+
+    Args:
+        preds_csvs:  CSV files containing predictions.
+        outpath:  Path to save the results to.
+        target_labels:  List of target labels to compute statistics for.
+
+    This will apply `_categorical` to each target in the multi-target setup,
+    calculate statistics per target, and save both individual and aggregated results.
+    """
+    outpath.mkdir(parents=True, exist_ok=True)
+
+    all_target_stats = {}
+
+    for target_label in target_labels:
+        # Process each target separately
+        preds_dfs = {}
+        for p in preds_csvs:
+            df = pd.read_csv(p, dtype=str)
+            # Drop rows where this target's ground truth is missing
+            df_clean = df.dropna(subset=[target_label])
+            if len(df_clean) > 0:
+                preds_dfs[Path(p).parent.name] = _categorical(df_clean, target_label)
+
+        if not preds_dfs:
+            continue
+
+        # Concatenate and save individual stats for this target
+        preds_df = pd.concat(preds_dfs).sort_index()
+        preds_df.to_csv(outpath / f"{target_label}_categorical-stats_individual.csv")
+
+        # Aggregate stats for this target
+        stats_df = _aggregate_categorical_stats(preds_df.reset_index())
+        stats_df.to_csv(outpath / f"{target_label}_categorical-stats_aggregated.csv")
+
+        # Store for summary
+        all_target_stats[target_label] = stats_df
+
+    # Create a combined summary across all targets
+    if all_target_stats:
+        summary_dfs = []
+        for target_name, stats_df in all_target_stats.items():
+            stats_copy = stats_df.copy()
+            stats_copy.index = pd.MultiIndex.from_product(
+                [[target_name], stats_copy.index], names=["target", "class"]
+            )
+            summary_dfs.append(stats_copy)
+
+        combined_summary = pd.concat(summary_dfs)
+        combined_summary.to_csv(outpath / "multitarget_categorical-stats_summary.csv")

@@ -2,7 +2,7 @@ import logging
 import shutil
 from collections.abc import Callable, Mapping, Sequence
 from pathlib import Path
-from typing import cast
+from typing import Any, cast
 
 import lightning
 import torch
@@ -17,14 +17,9 @@ from stamp.modeling.data import (
     BagDataset,
     PatientData,
     PatientFeatureDataset,
+    _parse_survival_status,
     create_dataloader,
-    detect_feature_type,
-    filter_complete_patient_data_,
-    load_patient_level_data,
-    log_patient_class_summary,
-    patient_to_ground_truth_from_clini_table_,
-    patient_to_survival_from_clini_table_,
-    slide_to_patient_from_slide_table_,
+    load_patient_data_,
 )
 from stamp.modeling.registry import ModelName, load_model_class
 from stamp.modeling.transforms import VaryPrecisionTransform
@@ -53,65 +48,24 @@ def train_categorical_model_(
     advanced: AdvancedConfig,
 ) -> None:
     """Trains a model based on the feature type."""
-    feature_type = detect_feature_type(config.feature_dir)
-    _logger.info(f"Detected feature type: {feature_type}")
-
-    if feature_type in ("tile", "slide"):
-        if config.slide_table is None:
-            raise ValueError("A slide table is required for modeling")
-        if config.task == "survival":
-            if config.time_label is None or config.status_label is None:
-                raise ValueError(
-                    "Both time_label and status_label is required for survival modeling"
-                )
-            patient_to_ground_truth = patient_to_survival_from_clini_table_(
-                clini_table_path=config.clini_table,
-                time_label=config.time_label,
-                status_label=config.status_label,
-                patient_label=config.patient_label,
-            )
-        else:
-            if config.ground_truth_label is None:
-                raise ValueError(
-                    "Ground truth label is required for tile-level modeling"
-                )
-            patient_to_ground_truth = patient_to_ground_truth_from_clini_table_(
-                clini_table_path=config.clini_table,
-                ground_truth_label=config.ground_truth_label,
-                patient_label=config.patient_label,
-            )
-        slide_to_patient = slide_to_patient_from_slide_table_(
-            slide_table_path=config.slide_table,
-            feature_dir=config.feature_dir,
-            patient_label=config.patient_label,
-            filename_label=config.filename_label,
-        )
-        patient_to_data = filter_complete_patient_data_(
-            patient_to_ground_truth=patient_to_ground_truth,
-            slide_to_patient=slide_to_patient,
-            drop_patients_with_missing_ground_truth=True,
-        )
-    elif feature_type == "patient":
-        # Patient-level: ignore slide_table
-        if config.slide_table is not None:
-            _logger.warning("slide_table is ignored for patient-level features.")
-
-        patient_to_data = load_patient_level_data(
-            task=config.task,
-            clini_table=config.clini_table,
-            feature_dir=config.feature_dir,
-            patient_label=config.patient_label,
-            ground_truth_label=config.ground_truth_label,
-            time_label=config.time_label,
-            status_label=config.status_label,
-        )
-    else:
-        raise RuntimeError(f"Unknown feature type: {feature_type}")
-
     if config.task is None:
         raise ValueError(
             "task must be set to 'classification' | 'regression' | 'survival'"
         )
+
+    patient_to_data, feature_type = load_patient_data_(
+        feature_dir=config.feature_dir,
+        clini_table=config.clini_table,
+        slide_table=config.slide_table,
+        task=config.task,
+        ground_truth_label=config.ground_truth_label,
+        time_label=config.time_label,
+        status_label=config.status_label,
+        patient_label=config.patient_label,
+        filename_label=config.filename_label,
+        drop_patients_with_missing_ground_truth=True,
+    )
+    _logger.info(f"Detected feature type: {feature_type}")
 
     # Train the model (the rest of the logic is unchanged)
     model, train_dl, valid_dl = setup_model_for_training(
@@ -145,14 +99,14 @@ def train_categorical_model_(
 
 def setup_model_for_training(
     *,
-    patient_to_data: Mapping[PatientId, PatientData[GroundTruth]],
+    patient_to_data: Mapping[PatientId, PatientData[GroundTruth | None | dict]],
     task: Task,
     categories: Sequence[Category] | None,
     train_transform: Callable[[torch.Tensor], torch.Tensor] | None,
     feature_type: str,
     advanced: AdvancedConfig,
     # Metadata, has no effect on model training
-    ground_truth_label: PandasLabel | None,
+    ground_truth_label: PandasLabel | Sequence[PandasLabel] | None,
     time_label: PandasLabel | None,
     status_label: PandasLabel | None,
     clini_table: Path,
@@ -193,16 +147,23 @@ def setup_model_for_training(
             feature_type=feature_type,
             train_categories=train_categories,
         )
-        log_patient_class_summary(
-            patient_to_data={pid: patient_to_data[pid] for pid in patient_to_data},
-            categories=categories,
-        )
 
     # 1. Default to a model if none is specified
     if advanced.model_name is None:
         advanced.model_name = ModelName.VIT if feature_type == "tile" else ModelName.MLP
         _logger.info(
             f"No model specified, defaulting to '{advanced.model_name.value}' for feature type '{feature_type}'"
+        )
+
+    # Prevent selecting `barspoon` for single-target classification
+    if (
+        task == "classification"
+        and isinstance(ground_truth_label, str)
+        and advanced.model_name == ModelName.BARSPOON
+    ):
+        raise ValueError(
+            "Model 'barspoon' requires multi-target classification. "
+            "For single-target classification set model_name to 'vit', 'trans_mil', or 'mlp'."
         )
 
     # 2. Instantiate the lightning wrapper (based on provided task, feature type) and model backbone dynamically
@@ -270,9 +231,127 @@ def setup_model_for_training(
     return model, train_dl, valid_dl
 
 
+def setup_model_from_dataloaders(
+    *,
+    train_dl: DataLoader,
+    valid_dl: DataLoader,
+    task: Task,
+    train_categories: Sequence[Category] | Mapping[str, Sequence[Category]],
+    dim_feats: int,
+    train_patients: Sequence[PatientId],
+    valid_patients: Sequence[PatientId],
+    feature_type: str,
+    advanced: AdvancedConfig,
+    # Metadata, has no effect on model training
+    ground_truth_label: PandasLabel | Sequence[PandasLabel] | None,
+    time_label: PandasLabel | None,
+    status_label: PandasLabel | None,
+    clini_table: Path,
+    slide_table: Path | None,
+    feature_dir: Path,
+) -> lightning.LightningModule:
+    """Creates a model from pre-built dataloaders (no internal split)."""
+
+    _logger.info(
+        "Training dataloaders: task=%s, feature_type=%s",
+        task,
+        feature_type,
+    )
+
+    category_weights: torch.Tensor | dict[str, torch.Tensor] | list = []
+    if task == "classification":
+        category_weights = _compute_class_weights_and_check_categories(
+            train_dl=train_dl,
+            feature_type=feature_type,
+            train_categories=train_categories,
+        )
+
+    # 1. Default to a model if none is specified
+    if advanced.model_name is None:
+        advanced.model_name = ModelName.VIT if feature_type == "tile" else ModelName.MLP
+        _logger.info(
+            f"No model specified, defaulting to '{advanced.model_name.value}' for feature type '{feature_type}'"
+        )
+
+    # Prevent selecting `barspoon` for single-target classification
+    if (
+        task == "classification"
+        and isinstance(ground_truth_label, str)
+        and advanced.model_name == ModelName.BARSPOON
+    ):
+        raise ValueError(
+            "Model 'barspoon' requires multi-target classification. "
+            "For single-target classification set model_name to 'vit', 'trans_mil', or 'mlp'."
+        )
+
+    # 2. Instantiate the lightning wrapper (based on provided task, feature type) and model backbone dynamically
+    LitModelClass, ModelClass = load_model_class(
+        task, feature_type, advanced.model_name
+    )
+
+    # 3. Validate that the chosen model supports the feature type
+    if feature_type not in LitModelClass.supported_features:
+        raise ValueError(
+            f"Model '{advanced.model_name.value}' does not support feature type '{feature_type}'. "
+            f"Supported types are: {LitModelClass.supported_features}"
+        )
+    elif (
+        feature_type in ("slide", "patient")
+        and advanced.model_name.value.lower() != "mlp"
+    ):
+        raise ValueError(
+            f"Feature type '{feature_type}' only supports MLP backbones. "
+            f"Got '{advanced.model_name.value}'. Please set model_name='mlp'."
+        )
+
+    # 4. Get model-specific hyperparameters
+    model_specific_params = (
+        advanced.model_params.model_dump().get(advanced.model_name.value) or {}
+    )
+
+    # 5. Calculate total steps for scheduler
+    steps_per_epoch = len(train_dl)
+    total_steps = steps_per_epoch * advanced.max_epochs
+
+    # 6. Prepare common parameters
+    common_params = {
+        "categories": train_categories,
+        "category_weights": category_weights,
+        "dim_input": dim_feats,
+        "total_steps": total_steps,
+        "max_lr": advanced.max_lr,
+        "div_factor": advanced.div_factor,
+        # Metadata, has no effect on model training
+        "model_name": advanced.model_name.value,
+        "ground_truth_label": ground_truth_label,
+        "time_label": time_label,
+        "status_label": status_label,
+        "train_patients": train_patients,
+        "valid_patients": valid_patients,
+        "clini_table": clini_table,
+        "slide_table": slide_table,
+        "feature_dir": feature_dir,
+    }
+
+    all_params = {**common_params, **model_specific_params}
+
+    _logger.info(
+        f"Instantiating model '{advanced.model_name.value}' with parameters: {model_specific_params}"
+    )
+    _logger.info(
+        "Other params: max_epochs=%s, patience=%s",
+        advanced.max_epochs,
+        advanced.patience,
+    )
+
+    model = LitModelClass(model_class=ModelClass, **all_params)
+
+    return model
+
+
 def setup_dataloaders_for_training(
     *,
-    patient_to_data: Mapping[PatientId, PatientData[GroundTruth]],
+    patient_to_data: Mapping[PatientId, PatientData[GroundTruth | None | dict]],
     task: Task,
     categories: Sequence[Category] | None,
     bag_size: int,
@@ -283,7 +362,7 @@ def setup_dataloaders_for_training(
 ) -> tuple[
     DataLoader,
     DataLoader,
-    Sequence[Category],
+    Sequence[Category] | Mapping[str, Sequence[Category]],
     int,
     Sequence[PatientId],
     Sequence[PatientId],
@@ -309,11 +388,52 @@ def setup_dataloaders_for_training(
             "patient_to_data must have a ground truth defined for all targets!"
         )
 
+    # Multi-target ground truths are only supported for classification
+    if task != "classification" and any(isinstance(gt, dict) for gt in ground_truths):
+        raise ValueError(
+            "Multi-target ground truths are only supported for classification tasks"
+        )
+
     if task == "classification":
-        stratify = ground_truths
+        # Handle both single and multi-target cases
+        if ground_truths and isinstance(ground_truths[0], dict):
+            # Multi-target: use first target for stratification
+            first_key = list(ground_truths[0].keys())[0]
+            stratify = [cast(dict, gt)[first_key] for gt in ground_truths]
+        else:
+            stratify = ground_truths
     elif task == "survival":
-        # Extract event indicator (status)
-        statuses = [int(gt.split()[1]) for gt in ground_truths]
+        # Extract event indicator (status). Accept either structured (time,event)
+        # or legacy string "time status" formats.
+        statuses: list[int] = []
+        for gt in ground_truths:
+            if isinstance(gt, dict):
+                raise ValueError(
+                    "Multi-target survival is not supported; provide a single survival time/status per patient"
+                )
+            if isinstance(gt, (tuple, list)) and len(gt) == 2:
+                status_val = gt[1]
+                if status_val is None:
+                    raise ValueError(
+                        "Missing survival status for a patient; cannot stratify"
+                    )
+                statuses.append(int(status_val))
+            else:
+                parts = str(gt).split()
+                if len(parts) >= 2:
+                    status_token = parts[1]
+                elif len(parts) == 1:
+                    status_token = parts[0]
+                else:
+                    raise ValueError(
+                        "Unrecognized survival ground-truth format for stratification"
+                    )
+                parsed_status = _parse_survival_status(status_token)
+                if parsed_status is None:
+                    raise ValueError(
+                        f"Unrecognized survival status token for stratification: {status_token!r}"
+                    )
+                statuses.append(int(parsed_status))
         stratify = statuses
     elif task == "regression":
         stratify = None
@@ -321,7 +441,10 @@ def setup_dataloaders_for_training(
     train_patients, valid_patients = cast(
         tuple[Sequence[PatientId], Sequence[PatientId]],
         train_test_split(
-            list(patient_to_data), stratify=stratify, shuffle=True, random_state=0
+            list(patient_to_data),
+            stratify=cast(Any, stratify),
+            shuffle=True,
+            random_state=0,
         ),
     )
 
@@ -441,28 +564,50 @@ def _compute_class_weights_and_check_categories(
     *,
     train_dl: DataLoader,
     feature_type: str,
-    train_categories: Sequence[str],
-) -> torch.Tensor:
+    train_categories: Sequence[str] | Mapping[str, Sequence[str]],
+) -> torch.Tensor | dict[str, torch.Tensor]:
     """
     Computes class weights and checks for category issues.
     Logs warnings if there are too few or underpopulated categories.
     Returns normalized category weights as a torch.Tensor.
     """
     if feature_type == "tile":
-        category_counts = cast(BagDataset, train_dl.dataset).ground_truths.sum(dim=0)
+        dataset = cast(BagDataset, train_dl.dataset)
+
+        if isinstance(dataset.ground_truths, list):
+            # Multi-target case: compute weights per target head
+            weights_per_target: dict[str, torch.Tensor] = {}
+
+            target_keys = dataset.ground_truths[0].keys()
+
+            for key in target_keys:
+                stacked = torch.stack([gt[key] for gt in dataset.ground_truths], dim=0)
+                counts = stacked.sum(dim=0)
+                w = counts.sum() / counts
+                weights_per_target[key] = w / w.sum()
+
+            return weights_per_target
+        else:
+            category_counts = dataset.ground_truths.sum(dim=0)
     else:
-        category_counts = cast(
-            PatientFeatureDataset, train_dl.dataset
-        ).ground_truths.sum(dim=0)
+        dataset = cast(PatientFeatureDataset, train_dl.dataset)
+        category_counts = dataset.ground_truths.sum(dim=0)
     cat_ratio_reciprocal = category_counts.sum() / category_counts
     category_weights = cat_ratio_reciprocal / cat_ratio_reciprocal.sum()
 
     if len(train_categories) <= 1:
         raise ValueError(f"not enough categories to train on: {train_categories}")
-    elif any(category_counts < 16):
+    elif (category_counts < 16).any():
+        category_counts_list = (
+            category_counts.tolist()
+            if category_counts.dim() > 0
+            else [category_counts.item()]
+        )
         underpopulated_categories = {
             category: int(count)
-            for category, count in zip(train_categories, category_counts, strict=True)
+            for category, count in zip(
+                train_categories, category_counts_list, strict=True
+            )
             if count < 16
         }
         _logger.warning(

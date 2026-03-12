@@ -8,9 +8,9 @@ import torch
 from torch import nn
 from torchvision import transforms
 
-from stamp.cache import STAMP_CACHE_DIR
 from stamp.preprocessing.config import ExtractorName
 from stamp.preprocessing.extractor import Extractor
+from stamp.utils.cache import STAMP_CACHE_DIR
 
 __author__ = "Marko van Treeck"
 __copyright__ = "Copyright (C) 2022-2025 Marko van Treeck"
