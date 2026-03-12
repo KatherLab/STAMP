@@ -78,12 +78,12 @@ class EncDecTransformer(nn.Module):
      2. Adding absolute positions to the feature vector, scaled down so the
         maximum value in the training dataset is 1.
 
-    Since neither reduced performance and the author percieves the first one to
+    Since neither reduced performance and the author perceives the first one to
     be more elegant (as the magnitude of the positional encodings is bounded),
     we opted to keep the positional encoding regardless in the hopes of it
     improving performance on future tasks.
 
-    The architecture _differs_ from the one descibed in [Attention Is All You
+    The architecture _differs_ from the one described in [Attention Is All You
     Need][1] as follows:
 
      1. There is an initial projection stage to reduce the dimension of the
@@ -223,7 +223,7 @@ class LitMilClassificationMixin(lightning.LightningModule):
         _ = hparams  # So we don't get unused parameter warnings
 
         # Check if version is compatible.
-        if stamp_version < Version("2.4.0"):
+        if stamp_version < Version("2.5.0"):
             # Update this as we change our model in incompatible ways!
             raise ValueError(
                 f"model has been built with stamp version {stamp_version} "
@@ -261,7 +261,7 @@ class LitMilClassificationMixin(lightning.LightningModule):
 
     def step(
         self,
-        batch: tuple[Bags, CoordinatesBatch, BagSizes, dict[str, torch.Tensor]],
+        batch: tuple[Bags, CoordinatesBatch, BagSizes, dict[str, torch.Tensor]] | list,
         step_name=None,
     ):
         """Process a batch with structure (feats, coords, bag_sizes, targets).

@@ -6,7 +6,6 @@ import numpy.typing as npt
 import scipy.stats as st
 from jaxtyping import Bool, Float
 from matplotlib.axes import Axes
-from scipy.interpolate import interp1d
 from sklearn.metrics import (
     auc,
     average_precision_score,
@@ -56,15 +55,9 @@ def _plot_bootstrapped_pr_curve(
             continue
 
         precision, recall, _ = precision_recall_curve(sample_y_true, sample_y_pred)
-        # Create an interpolation function with decreasing values
-        interp_func = interp1d(
-            recall[::-1],
-            precision[::-1],
-            kind="linear",
-            fill_value=np.nan,
-            bounds_error=False,
-        )
-        interp_prc = interp_func(interp_recall)
+        # np.interp requires increasing x; precision_recall_curve returns
+        # decreasing recall, so reverse both arrays.
+        interp_prc = np.interp(interp_recall, recall[::-1], precision[::-1])
         interp_prcs[i] = interp_prc
         bootstrapped_auprc = auc(interp_recall, interp_prc)
         bootstrap_auprcs.append(bootstrapped_auprc)

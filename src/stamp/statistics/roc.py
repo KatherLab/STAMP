@@ -180,9 +180,11 @@ def _plot_bootstrapped_roc_curve(
     # and then sample the bottom 0.025 / top 0.975 quantile point
     # for each sampled fpr-position
     rng = np.random.default_rng()
-    interp_rocs = []
     interp_fpr = np.linspace(0, 1, num=1000)
+    # Pre-allocate; rows that correspond to skipped samples stay NaN.
+    interp_rocs = np.full((n_bootstrap_samples, len(interp_fpr)), np.nan)
     bootstrap_aucs: list[float] = []
+    valid_row = 0
     for _ in trange(n_bootstrap_samples, desc="Bootstrapping ROC curves", leave=False):
         sample_idxs = rng.choice(len(y_true), len(y_true))
         sample_y_true = y_true[sample_idxs]
@@ -190,15 +192,17 @@ def _plot_bootstrapped_roc_curve(
         if len(np.unique(sample_y_true)) != 2:
             continue
         fpr, tpr, thresh = roc_curve(sample_y_true, sample_y_score)
-        interp_rocs.append(np.interp(interp_fpr, fpr, tpr))
+        interp_rocs[valid_row] = np.interp(interp_fpr, fpr, tpr)
+        valid_row += 1
         bootstrap_aucs.append(float(roc_auc_score(sample_y_true, sample_y_score)))
+    interp_rocs = interp_rocs[:valid_row]  # trim unused rows
 
     roc_lower, roc_upper = cast(
         tuple[
             Float[np.ndarray, "fpr"],  # noqa: F821
             Float[np.ndarray, "fpr"],  # noqa: F821
         ],
-        np.quantile(interp_rocs, [0.025, 0.975], axis=0),
+        np.nanquantile(interp_rocs, [0.025, 0.975], axis=0),
     )
     ax.fill_between(interp_fpr, roc_lower, roc_upper, alpha=0.5)
 

@@ -397,8 +397,10 @@ def _tiles_from_cache_file(cache_file_path: Path) -> Iterator[_Tile]:
             x_um, y_um = Microns(float(x_um_str)), Microns(float(y_um_str))
 
             with zip_fp.open(name, "r") as tile_fp:
+                img = Image.open(tile_fp)
+                img.load()  # force eager pixel decode while tile_fp is still open
                 yield _Tile(
-                    image=Image.open(tile_fp),
+                    image=img,
                     coordinates=_XYCoords(x_um, y_um),
                     size=tiler_params["tile_size_um"],
                 )

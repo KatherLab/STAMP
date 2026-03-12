@@ -85,16 +85,9 @@ class _TileDataset(IterableDataset):
         self.canny_cutoff = canny_cutoff
         self.default_slide_mpp = default_slide_mpp
 
-        # Already check if we can extract the MPP here.
-        # We don't want to kill our dataloader later,
-        # because that leads to _a lot_ of error messages which are difficult to read
-        if (
-            get_slide_mpp_(
-                openslide.open_slide(slide_path), default_mpp=default_slide_mpp
-            )
-            is None
-        ):
-            raise MPPExtractionError()
+        # MPP is validated by the caller (extract_()) before constructing this dataset,
+        # so we no longer open the slide here for a redundant MPP check.
+        # This removes one openslide.open_slide() call per WSI.
 
     def __iter__(self) -> Iterator[tuple[Tensor, Microns, Microns]]:
         return (
@@ -177,6 +170,11 @@ def extract_(
 
             extractor = dino_bloom()
 
+        case ExtractorName.RED_DINO:
+            from stamp.preprocessing.extractor.reddino import red_dino
+
+            extractor = red_dino()
+
         case ExtractorName.VIRCHOW:
             from stamp.preprocessing.extractor.virchow import virchow
 
@@ -222,6 +220,10 @@ def extract_(
 
             extractor = plip()
 
+        case ExtractorName.KEEP:
+            from stamp.preprocessing.extractor.keep import keep
+
+            extractor = keep()
         case ExtractorName.TICON:
             from stamp.preprocessing.extractor.ticon import ticon
 
@@ -286,6 +288,15 @@ def extract_(
         feature_output_path.parent.mkdir(parents=True, exist_ok=True)
 
         try:
+            # Validate MPP here once (avoids a second openslide.open_slide inside _TileDataset.__init__).
+            if (
+                get_slide_mpp_(
+                    openslide.open_slide(slide_path), default_mpp=default_slide_mpp
+                )
+                is None
+            ):
+                raise MPPExtractionError()
+
             ds = _TileDataset(
                 slide_path=slide_path,
                 cache_dir=cache_dir,
@@ -300,7 +311,15 @@ def extract_(
                 default_slide_mpp=default_slide_mpp,
             )
             # Parallelism is implemented in the dataset iterator already, so one worker is enough!
-            dl = DataLoader(ds, batch_size=64, num_workers=1, drop_last=False)
+            # pin_memory speeds up CPU→GPU DMA for tile batches.
+            # num_workers=1 is intentional: WSI read parallelism is inside _supertiles.
+            dl = DataLoader(
+                ds,
+                batch_size=64,
+                num_workers=1,
+                drop_last=False,
+                pin_memory=torch.cuda.is_available(),
+            )
 
             feats, xs_um, ys_um = [], [], []
             for tiles, xs, ys in tqdm(dl, leave=False):
@@ -384,8 +403,9 @@ def _get_rejection_thumb(
         dtype=bool,
     )
 
-    for y, x in np.floor(coords_um / tile_size_um).astype(np.uint32):
-        inclusion_map[y, x] = True
+    # Vectorized: set all tile positions at once instead of a Python loop.
+    tile_indices = np.floor(coords_um / tile_size_um).astype(np.uint32)
+    inclusion_map[tile_indices[:, 0], tile_indices[:, 1]] = True
 
     thumb = slide.get_thumbnail(size).convert("RGBA")
     discarded_im = Image.fromarray(

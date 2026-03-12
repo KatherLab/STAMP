@@ -336,7 +336,7 @@ def categorical_crossval_(
                     ).to_csv(split_dir / "patient-preds.csv", index=False)
             elif config.task == "regression":
                 if config.ground_truth_label is None:
-                    raise RuntimeError("Grounf truth label is required for regression")
+                    raise RuntimeError("Ground truth label is required for regression")
                 if isinstance(config.ground_truth_label, str):
                     _to_regression_prediction_df(
                         patient_to_ground_truth=cast(
@@ -353,7 +353,7 @@ def categorical_crossval_(
             else:
                 if config.ground_truth_label is None:
                     raise RuntimeError(
-                        "Grounf truth label is required for classification"
+                        "Ground truth label is required for classification"
                     )
                 _to_prediction_df(
                     categories=categories_for_export,
