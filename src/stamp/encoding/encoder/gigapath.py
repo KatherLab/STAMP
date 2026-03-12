@@ -31,7 +31,10 @@ class Gigapath(Encoder):
     def __init__(self) -> None:
         try:
             model = slide_encoder.create_model(
-                "hf_hub:prov-gigapath/prov-gigapath", "gigapath_slide_enc12l768d", 1536
+                "hf_hub:prov-gigapath/prov-gigapath",
+                "gigapath_slide_enc12l768d",
+                1536,
+                global_pool=True,
             )
         except AssertionError:
             raise ModuleNotFoundError(
@@ -51,20 +54,9 @@ class Gigapath(Encoder):
         if not coords:
             raise ValueError("Tile coords are required for encoding")
 
-        # Calculate slide dimensions
-        slide_width = max(coords.coords_um[:, 0]) + coords.tile_size_um
-        slide_height = max(coords.coords_um[:, 1]) + coords.tile_size_um
-
-        # Normalize coordinates to a [0, 1000] grid
-        n_grid = 1000
-        norm_coords = self._convert_coords(
-            coords.coords_um, slide_width, slide_height, n_grid, current_x_offset=0
-        )
+        coords_px = coords.coords_um / coords.mpp
         norm_coords = (
-            torch.tensor(norm_coords, dtype=torch.float32)
-            .unsqueeze(0)
-            .to(device)
-            .half()
+            torch.tensor(coords_px, dtype=torch.float32).unsqueeze(0).to(device).half()
         )
         feats = feats.unsqueeze(0).half().to(device)
 
@@ -119,8 +111,6 @@ class Gigapath(Encoder):
 
             all_feats_list = []
             all_coords_list = []
-            total_wsi_width = 0
-            max_wsi_height = 0
             slides_mpp = SlideMPP(-1)
 
             slide_info = []
@@ -151,31 +141,20 @@ class Gigapath(Encoder):
                     )
 
                 wsi_width = max(coords.coords_um[:, 0]) + coords.tile_size_um
-                wsi_height = max(coords.coords_um[:, 1]) + coords.tile_size_um
-
-                total_wsi_width += wsi_width  # Sum the widths of all slides
-                max_wsi_height = max(max_wsi_height, wsi_height)  # Track the max height
-
-                slide_info.append((wsi_width, wsi_height, feats, coords))
+                slide_info.append((wsi_width, feats, coords))
 
             current_x_offset = 0
 
-            for wsi_width, wsi_height, feats, coords in slide_info:
-                norm_coords = self._convert_coords(
-                    coords=coords.coords_um,
-                    total_wsi_width=total_wsi_width,
-                    max_wsi_height=max_wsi_height,
-                    n_grid=1000,
-                    current_x_offset=current_x_offset,
-                )
+            for wsi_width, feats, coords in slide_info:
+                offset_coords_um = coords.coords_um.copy()
+                offset_coords_um[:, 0] += current_x_offset
 
-                # Update x-coordinates by shifting them based on the current_x_offset
-                current_x_offset += (
-                    wsi_width  # Move the x_offset forward for the next slide
-                )
+                current_x_offset += wsi_width
+
+                coords_px = offset_coords_um / coords.mpp
 
                 norm_coords = (
-                    torch.tensor(norm_coords, dtype=torch.float32)
+                    torch.tensor(coords_px, dtype=torch.float32)
                     .unsqueeze(0)
                     .to(device)
                     .half()
@@ -211,26 +190,3 @@ class Gigapath(Encoder):
             patient_embedding = torch.cat(patient_embedding, dim=0)
 
         return patient_embedding.detach().squeeze().cpu().numpy()
-
-    def _convert_coords(
-        self,
-        coords,
-        total_wsi_width,
-        max_wsi_height,
-        n_grid,
-        current_x_offset,
-    ) -> np.ndarray:
-        """
-        Normalize the x and y coordinates relative to the total WSI width and max height, using the same grid [0, 1000].
-        Thanks Peter!
-        """
-        # Normalize x-coordinates based on total WSI width (taking into account the current x offset)
-        normalized_x = (coords[:, 0] + current_x_offset) / total_wsi_width * n_grid
-
-        # Normalize y-coordinates based on the maximum WSI height
-        normalized_y = coords[:, 1] / max_wsi_height * n_grid
-
-        # Stack normalized x and y coordinates
-        converted_coords = np.stack([normalized_x, normalized_y], axis=-1)
-
-        return np.array(converted_coords, dtype=np.float32)

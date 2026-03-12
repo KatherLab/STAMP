@@ -280,6 +280,22 @@ def deploy_categorical_model_(
         Sequence[Category] | Mapping[str, Sequence[Category]] | None
     ) = cast(Sequence[Category] | Mapping[str, Sequence[Category]] | None, None)
     for model_i, model in enumerate(models):
+        # Check for data leakage: if the deployment patient set overlaps with
+        # the patients used during model training/validation, log a critical
+        # message. This check is intentionally performed at the deploy level
+        # (not inside `_predict`) so prediction helpers can be reused without
+        # side-effects in other contexts (e.g., cross-validation).
+        patients_used_for_training: set[PatientId] = set(
+            getattr(model, "train_patients", [])
+        ) | set(getattr(model, "valid_patients", []))
+        if overlap := patients_used_for_training & set(patient_ids):
+            _logger.critical(
+                "DATA LEAKAGE DETECTED: %d patient(s) in deployment set were used "
+                "during training/validation. Overlapping IDs: %s",
+                len(overlap),
+                sorted(overlap),
+            )
+
         predictions = _predict(
             model=model,
             test_dl=test_dl,
@@ -374,17 +390,7 @@ def _predict(
     model = model.eval()
     torch.set_float32_matmul_precision("medium")
 
-    # Check for data leakage
-    patients_used_for_training: set[PatientId] = set(
-        getattr(model, "train_patients", [])
-    ) | set(getattr(model, "valid_patients", []))
-    if overlap := patients_used_for_training & set(patient_ids):
-        _logger.critical(
-            "DATA LEAKAGE DETECTED: %d patient(s) in deployment set were used "
-            "during training/validation. Overlapping IDs: %s",
-            len(overlap),
-            sorted(overlap),
-        )
+    # Note: data-leakage check intentionally performed at deploy level.
 
     trainer = lightning.Trainer(
         accelerator=accelerator,
@@ -659,21 +665,11 @@ def _to_survival_prediction_df(
         else:
             row["pred_score"] = pred.cpu().tolist()
 
-        # Ground truth: time + event
-        if gt is not None:
-            if isinstance(gt, str) and " " in gt:
-                time_str, status_str = gt.split(" ", 1)
-                row["time"] = float(time_str) if time_str.lower() != "nan" else None
-                if status_str.lower() in {"dead", "event", "1"}:
-                    row["event"] = 1
-                elif status_str.lower() in {"alive", "censored", "0"}:
-                    row["event"] = 0
-                else:
-                    row["event"] = None
-            elif isinstance(gt, (tuple, list)) and len(gt) == 2:
-                row["time"], row["event"] = gt
-            else:
-                row["time"], row["event"] = None, None
+        # Ground truth: prefer structured tuple/list (time, event). Do not
+        # call .split on ground-truth values — assume structured input. If
+        # the value is not a 2-tuple/list, treat both fields as unknown.
+        if isinstance(gt, (tuple, list)) and len(gt) == 2:
+            row["time"], row["event"] = gt
         else:
             row["time"], row["event"] = None, None
 

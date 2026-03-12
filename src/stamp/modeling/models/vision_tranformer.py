@@ -56,9 +56,7 @@ class _ALiBi(nn.Module):
                 Which query-key pairs to mask from ALiBi (i.e. don't apply ALiBi to).
         """
         weight_logits = torch.einsum("bqf,bkf->bqk", q, k) * (k.size(-1) ** -0.5)
-        distances = torch.linalg.norm(
-            coords_q.unsqueeze(2) - coords_k.unsqueeze(1), dim=-1
-        )
+        distances = torch.cdist(coords_q, coords_k)
         scaled_distances = self.scale_distance(distances) * self.bias_scale
 
         if alibi_mask is not None:

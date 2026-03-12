@@ -4,11 +4,11 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import lifelines.plotting as lifelines_plotting
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from lifelines import KaplanMeierFitter
-from lifelines.plotting import add_at_risk_counts
 from lifelines.statistics import logrank_test
 from lifelines.utils import concordance_index
 
@@ -24,7 +24,7 @@ def _comparable_pairs_count(times: np.ndarray, events: np.ndarray) -> int:
 def _cindex(
     time: np.ndarray,
     event: np.ndarray,
-    risk: np.ndarray,  # will be flipped in function
+    risk: np.ndarray,
 ) -> tuple[float, int]:
     """Compute C-index using Lifelines convention:
     higher risk → shorter survival (worse outcome).
@@ -40,7 +40,7 @@ def _survival_stats_for_csv(
     time_label: str,
     status_label: str,
     risk_label: str | None = None,
-    cut_off: float | None = None,  # will be flipped in function
+    cut_off: float | None = None,
 ) -> pd.Series:
     """Compute C-index and log-rank p for one CSV."""
     if risk_label is None:
@@ -136,7 +136,16 @@ def _plot_km(
         )
         kmf_high.plot_survival_function(ax=ax, ci_show=False, color="red")
 
-    add_at_risk_counts(kmf_low, kmf_high, ax=ax)
+    # add at-risk counts only for fitted curves
+    fitters = []
+    if len(low_df) > 0:
+        fitters.append(kmf_low)
+    if len(high_df) > 0:
+        fitters.append(kmf_high)
+
+    # add at-risk table for fitted curves
+    if len(fitters) > 0:
+        lifelines_plotting.add_at_risk_counts(*fitters, ax=ax)
 
     # log-rank and c-index
     res = logrank_test(

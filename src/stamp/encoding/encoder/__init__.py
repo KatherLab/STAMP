@@ -62,7 +62,8 @@ class Encoder(ABC):
         if self.precision == torch.float16:
             self.model.half()
 
-        for tile_feats_filename in (progress := tqdm(os.listdir(feat_dir))):
+        h5_files = sorted(f for f in os.listdir(feat_dir) if f.endswith(".h5"))
+        for tile_feats_filename in (progress := tqdm(h5_files)):
             h5_path = os.path.join(feat_dir, tile_feats_filename)
             slide_name: str = Path(tile_feats_filename).stem
             progress.set_description(slide_name)
@@ -185,7 +186,8 @@ class Encoder(ABC):
             raise ValueError(f"File is not of type .h5: {os.path.basename(h5_path)}")
         with h5py.File(h5_path, "r") as f:
             feats_ds = cast(h5py.Dataset, f["feats"])
-            feats: Tensor = torch.tensor(feats_ds[:], dtype=self.precision)
+            # torch.from_numpy avoids a redundant data copy vs torch.tensor(array)
+            feats: Tensor = torch.from_numpy(feats_ds[()]).to(dtype=self.precision)
             coords: CoordsInfo = get_coords(f)
             extractor: str = f.attrs.get("extractor", "")
             if extractor == "":

@@ -58,6 +58,9 @@ Stamp currently supports the following feature extractors:
   - [mSTAR][mstar]
   - [MUSK][musk]
   - [PLIP][plip]
+  - [KEEP][keep]
+  - [TICON][ticon]
+  - [RedDino][reddino]
 
 
 As some of the above require you to request access to the model on huggingface,
@@ -153,11 +156,14 @@ meaning ignored that it was ignored during feature extraction.
 [mstar]: https://huggingface.co/Wangyh/mSTAR
 [musk]: https://huggingface.co/xiangjx/musk
 [plip]: https://github.com/PathologyFoundation/plip
+[keep]: https://loiesun.github.io/keep/ "A Knowledge-enhanced Pathology Vision-language Foundation Model for Cancer Diagnosis"
 [TITAN]: https://huggingface.co/MahmoodLab/TITAN
 [COBRA2]: https://huggingface.co/KatherLab/COBRA
 [EAGLE]: https://github.com/KatherLab/EAGLE
 [MADELEINE]: https://huggingface.co/MahmoodLab/madeleine
 [PRISM]: https://huggingface.co/paige-ai/Prism
+[TICON]: https://cvlab-stonybrook.github.io/TICON/ "TICON: A Slide-Level Tile Contextualizer for Histopathology Representation Learning"
+[reddino]: https://github.com/Snarci/RedDino "RedDino: A Foundation Model for Red Blood Cell Analysis"
 
 
 
