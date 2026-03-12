@@ -330,7 +330,7 @@ def heatmaps_(
 
         # TODO: Update version when a newer model logic breaks heatmaps.
         stamp_version = str(getattr(model, "stamp_version", ""))
-        if Version(stamp_version) < Version("2.4.1"):
+        if Version(stamp_version) < Version("2.5.0"):
             raise ValueError(
                 f"model has been built with stamp version {stamp_version} "
                 f"which is incompatible with the current version."

@@ -223,7 +223,7 @@ class LitMilClassificationMixin(lightning.LightningModule):
         _ = hparams  # So we don't get unused parameter warnings
 
         # Check if version is compatible.
-        if stamp_version < Version("2.4.1"):
+        if stamp_version < Version("2.5.0"):
             # Update this as we change our model in incompatible ways!
             raise ValueError(
                 f"model has been built with stamp version {stamp_version} "
