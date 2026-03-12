@@ -40,6 +40,8 @@ def red_dino() -> Extractor[RedDinoClsOnly]:
     model = timm.create_model(
         "hf-hub:Snarcy/RedDino-large",
         pretrained=True,
+        num_classes=0,
+        pretrained_strict=False,
     )
 
     transform = cast(

@@ -634,6 +634,8 @@ class HOptimusTICON(nn.Module):
             pretrained=True,
             init_values=1e-5,
             dynamic_img_size=False,
+            num_classes=0,
+            pretrained_strict=False,
         )
 
         # ----------------------------
