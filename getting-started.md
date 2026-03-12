@@ -182,8 +182,12 @@ either in excel or `.csv` format,
 with contents as described below.
 Finally, `ground_truth_label` needs to contain the column name
 of the data we want to train our model on.
+For single-target classification, use one column name.
+For multi-target classification, use a list of column names and set
+`advanced_config.model_name: "barspoon"`.
 Stamp only can be used to train neural networks for categorical targets.
-We recommend explicitly setting the possible classes using the `categories` field.
+For single-target runs, we recommend explicitly setting the possible classes
+using the `categories` field.
 
 ```yaml
 # stamp-test-experiment/config.yaml
@@ -210,12 +214,15 @@ crossval:
 
   # Name of the column from the clini table to train on.
   ground_truth_label: "isMSIH"
+  # For multi-target classification with barspoon:
+  # ground_truth_label: ["subtype", "grade"]
 
   # Optional settings:
 
   # The categories occurring in the target label column of the clini table.
   # If unspecified, they will be inferred from the table itself.
   categories: ["yes", "no"]
+  # For multi-target classification, per-target categories are inferred.
 
   # Number of folds to split the data into for cross-validation
   #n_splits: 5
@@ -226,6 +233,7 @@ we can run it by invoking:
 ```sh
 stamp --config stamp-test-experiment/config.yaml crossval
 ```
+
 
 ## Generating Statistics
 
@@ -501,7 +509,7 @@ advanced_config:
   max_lr: 1e-4
   div_factor: 25. 
   # Select a model regardless of task
-  # Available models are: vit, trans_mil, mlp
+  # Available models are: vit, trans_mil, mlp, linear, barspoon
   model_name: "vit"
 
   model_params:
@@ -518,4 +526,5 @@ STAMP automatically adapts its **model architecture**, **loss function**, and **
  
 **Regression** tasks only require `ground_truth_label`.  
 **Survival analysis** tasks require `time_label` (follow-up time) and `status_label` (event indicator).  
+**Multi-target classification** requires `ground_truth_label` as a list and `advanced_config.model_name: "barspoon"`.
 These requirements apply consistently across cross-validation, training, deployment, and statistics.
