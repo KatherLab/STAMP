@@ -79,7 +79,7 @@ def test_predict_patient_level(
         model=model,
         test_dl=test_dl,
         patient_ids=patient_ids,
-        accelerator="cpu",
+        accelerator="gpu" if torch.cuda.is_available() else "cpu",
     )
 
     assert len(predictions) == len(patient_to_data)
@@ -120,7 +120,7 @@ def test_predict_patient_level(
         model=model,
         test_dl=more_test_dl,
         patient_ids=all_patient_ids,
-        accelerator="cpu",
+        accelerator="gpu" if torch.cuda.is_available() else "cpu",
     )
 
     assert len(more_predictions) == len(all_patient_ids)
@@ -163,7 +163,7 @@ def test_to_prediction_df(task: str) -> None:
         use_alibi=False,
         total_steps=1000,
         max_lr=1e-4,
-        div_factor=25,
+        div_factor=25.0,
     )
     if task == "classification":
         preds_df = _to_prediction_df(

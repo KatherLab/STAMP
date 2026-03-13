@@ -22,6 +22,7 @@ from typing import (
 
 import h5py
 import numpy as np
+import numpy.typing as npt
 import pandas as pd
 import torch
 
@@ -571,30 +572,52 @@ class BagDataset(Dataset[tuple[_Bag, _Coordinates, BagSize, _EncodedTarget]]):
         self._h5_handle_cache: OrderedDict[FeaturePath | _BinaryIOLike, h5py.File] = (
             OrderedDict()
         )
+        # Cache parsed CoordsInfo (full array) per file to avoid re-reading
+        # and re-parsing coordinates from HDF5 on every __getitem__ call.
+        self._coords_cache: dict[FeaturePath | _BinaryIOLike, CoordsInfo] = {}
 
     def __getstate__(self) -> dict:
         # h5py file handles cannot be pickled (required when DataLoader uses
-        # spawn-based multiprocessing). Drop the cache; each worker reopens
+        # spawn-based multiprocessing). Drop the caches; each worker reopens
         # files lazily on the first __getitem__ access.
         state = self.__dict__.copy()
         state["_h5_handle_cache"] = OrderedDict()
+        state["_coords_cache"] = {}
         return state
 
     def __len__(self) -> int:
         return len(self.bags)
 
+    @staticmethod
+    def _get_feature_dataset(feature_h5: h5py.File) -> h5py.Dataset:
+        if "feats" in feature_h5:
+            feats_obj = feature_h5["feats"]
+            if not isinstance(feats_obj, h5py.Dataset):
+                raise RuntimeError(
+                    f"expected 'feats' to be an HDF5 dataset but got {type(feats_obj)}"
+                )
+            return feats_obj
+
+        embeddings_obj = feature_h5["patch_embeddings"]
+        if not isinstance(embeddings_obj, h5py.Dataset):
+            raise RuntimeError(
+                f"expected 'patch_embeddings' to be an HDF5 dataset but got {type(embeddings_obj)}"
+            )
+        return embeddings_obj
+
     def __getitem__(
         self, index: int
     ) -> tuple[_Bag, _Coordinates, BagSize, _EncodedTarget]:
-        # Collect all the features
-        feats = []
-        coords_um = []
+        file_entries: list[tuple[h5py.File, h5py.Dataset, int]] = []
+        total_tiles = 0
+
         for bag_file in self.bags[index]:
             if bag_file not in self._h5_handle_cache:
                 # Limit open handles to avoid reaching OS ulimits
                 if len(self._h5_handle_cache) >= 128:
-                    _, h = self._h5_handle_cache.popitem(last=False)
+                    evicted_key, h = self._h5_handle_cache.popitem(last=False)
                     h.close()
+                    self._coords_cache.pop(evicted_key, None)
 
                 try:
                     # libver='latest' and swmr=True can provide better performance
@@ -610,26 +633,89 @@ class BagDataset(Dataset[tuple[_Bag, _Coordinates, BagSize, _EncodedTarget]]):
                 self._h5_handle_cache.move_to_end(bag_file)
 
             h5 = self._h5_handle_cache[bag_file]
+            feats_ds = self._get_feature_dataset(h5)
+            n_tiles_in_file = int(feats_ds.shape[0])
+            file_entries.append((h5, feats_ds, n_tiles_in_file))
+            total_tiles += n_tiles_in_file
 
-            if "feats" in h5:
-                feats_obj = h5["feats"]
-                if not isinstance(feats_obj, h5py.Dataset):
-                    raise RuntimeError(
-                        f"expected 'feats' to be an HDF5 dataset but got {type(feats_obj)}"
-                    )
-                arr = feats_obj[
-                    ()
-                ]  # uses [()] instead of [:] for clarity, both read entire dataset
+        if self.bag_size is not None and total_tiles > self.bag_size:
+            if self.deterministic:
+                sampled_global = (
+                    torch.linspace(0, total_tiles - 1, steps=self.bag_size)
+                    .round()
+                    .long()
+                    .numpy()
+                )
             else:
-                embeddings_obj = h5["patch_embeddings"]
-                if not isinstance(embeddings_obj, h5py.Dataset):
-                    raise RuntimeError(
-                        f"expected 'patch_embeddings' to be an HDF5 dataset but got {type(embeddings_obj)}"
-                    )
-                arr = embeddings_obj[()]  # your Kronos files
+                sampled_global = torch.randperm(total_tiles)[: self.bag_size].numpy()
 
-            feats.append(torch.from_numpy(arr))
-            coords_um.append(torch.from_numpy(get_coords(h5).coords_um))
+            sampled_feats: np.ndarray | None = None
+            sampled_coords: np.ndarray | None = None
+            global_offset = 0
+
+            for h5, feats_ds, n_tiles_in_file in file_entries:
+                mask = (sampled_global >= global_offset) & (
+                    sampled_global < global_offset + n_tiles_in_file
+                )
+                if not np.any(mask):
+                    global_offset += n_tiles_in_file
+                    continue
+
+                positions = np.flatnonzero(mask)
+                local_idxs = sampled_global[positions] - global_offset
+
+                unique_local_idxs, inverse = np.unique(local_idxs, return_inverse=True)
+                feats_np = feats_ds[unique_local_idxs][inverse]
+                coords_np = get_coords(h5, indices=unique_local_idxs).coords_um[inverse]
+
+                if sampled_feats is None:
+                    sampled_feats = np.empty(
+                        (self.bag_size, feats_np.shape[1]), dtype=feats_np.dtype
+                    )
+                    sampled_coords = np.empty(
+                        (self.bag_size, coords_np.shape[1]), dtype=coords_np.dtype
+                    )
+
+                if sampled_feats is not None and sampled_coords is not None:
+                    sampled_feats[positions] = feats_np
+                    sampled_coords[positions] = coords_np
+                global_offset += n_tiles_in_file
+
+            if sampled_feats is None or sampled_coords is None:
+                raise RuntimeError(
+                    "failed to sample tiles for fixed-size bag construction"
+                )
+
+            feats = torch.from_numpy(sampled_feats).float()
+            coords_um = torch.from_numpy(sampled_coords).float()
+
+            if self.transform is not None:
+                feats = self.transform(feats)
+
+            return (
+                feats,
+                coords_um,
+                self.bag_size,
+                self.ground_truths[index],
+            )
+
+        # Collect all features when using full bags or when bag_size exceeds bag length.
+        feats = [torch.from_numpy(feats_ds[()]) for _, feats_ds, _ in file_entries]
+        coords_um_list: list[torch.Tensor] = []
+        for h5, _, _ in file_entries:
+            # Use the FeaturePath key from bag_file for cache consistency.
+            # We find the matching key by looking up h5 in the handle cache.
+            cache_key = next(
+                (k for k, v in self._h5_handle_cache.items() if v is h5), None
+            )
+            if cache_key is not None and cache_key in self._coords_cache:
+                ci = self._coords_cache[cache_key]
+            else:
+                ci = get_coords(h5)
+                if cache_key is not None:
+                    self._coords_cache[cache_key] = ci
+            coords_um_list.append(torch.from_numpy(ci.coords_um))
+        coords_um = coords_um_list
 
         feats = torch.concat(feats).float()
         coords_um = torch.concat(coords_um).float()
@@ -740,7 +826,9 @@ class CoordsInfo:
         return SlideMPP(self.tile_size_um / self.tile_size_px)
 
 
-def get_coords(feature_h5: h5py.File) -> CoordsInfo:
+def get_coords(
+    feature_h5: h5py.File, indices: npt.NDArray[np.int64] | None = None
+) -> CoordsInfo:
     # NEW: handle missing coords - multiplex data bypass: no coords found; generated fake coords
     if "coords" not in feature_h5:
         feats_obj = feature_h5["patch_embeddings"]
@@ -750,9 +838,12 @@ def get_coords(feature_h5: h5py.File) -> CoordsInfo:
                 f"{feature_h5.filename}: expected 'feats' to be an HDF5 dataset but got {type(feats_obj)}"
             )
 
-        n = feats_obj.shape[0]
+        if indices is None:
+            idxs = np.arange(feats_obj.shape[0], dtype=np.float32)
+        else:
+            idxs = np.asarray(indices, dtype=np.float32)
 
-        coords_um = np.stack([np.arange(n), np.zeros(n)], axis=1).astype(np.float32)
+        coords_um = np.stack([idxs, np.zeros_like(idxs)], axis=1).astype(np.float32)
         tile_size_um = Microns(0.0)
         tile_size_px = TilePixels(0)
 
@@ -762,7 +853,18 @@ def get_coords(feature_h5: h5py.File) -> CoordsInfo:
         raise RuntimeError(
             f"{feature_h5.filename}: expected 'coords' to be an HDF5 dataset but got {type(coords_obj)}"
         )
-    coords: np.ndarray = coords_obj[:]
+    if indices is None:
+        coords: np.ndarray = coords_obj[:]
+    else:
+        idx_arr = np.asarray(indices, dtype=np.int64)
+        if idx_arr.size == 0:
+            coords = np.empty((0, 2), dtype=np.float32)
+        else:
+            sort_order = np.argsort(idx_arr)
+            sorted_idxs = idx_arr[sort_order]
+            coords_sorted = coords_obj[sorted_idxs]
+            restore_order = np.argsort(sort_order)
+            coords = coords_sorted[restore_order]
     tile_size_um: Microns | None = None
     tile_size_px: TilePixels | None = None
     coords_um: np.ndarray | None = None
@@ -776,21 +878,24 @@ def get_coords(feature_h5: h5py.File) -> CoordsInfo:
         # Newer STAMP format
         tile_size_um = Microns(float(tile_size))
         coords_um = coords
-    elif (
-        round(
-            feature_h5.attrs.get(
-                "tile_size", get_stride(torch.from_numpy(coords).float())
+    else:
+        if indices is None:
+            legacy_coords = coords
+        else:
+            legacy_coords = coords_obj[:]
+
+        legacy_tile_size = feature_h5.attrs.get(
+            "tile_size", get_stride(torch.from_numpy(legacy_coords).float())
+        )
+
+        if round(legacy_tile_size) == 224:
+            # Historic STAMP format
+            _logger.debug(
+                f"{feature_h5.filename}: tile stride is roughly 224, assuming coordinates have unit 256um/224px (historic STAMP format)"
             )
-        )
-        == 224
-    ):
-        # Historic STAMP format
-        _logger.debug(
-            f"{feature_h5.filename}: tile stride is roughly 224, assuming coordinates have unit 256um/224px (historic STAMP format)"
-        )
-        tile_size_um = Microns(256.0)
-        tile_size_px = TilePixels(224)
-        coords_um = coords / 224 * 256
+            tile_size_um = Microns(256.0)
+            tile_size_px = TilePixels(224)
+            coords_um = coords / 224 * 256
 
     if (version_str := feature_h5.attrs.get("stamp_version")) and (
         extraction_version := Version(version_str)

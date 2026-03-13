@@ -1,4 +1,5 @@
 import logging
+from contextlib import nullcontext
 from collections.abc import Callable, Iterator
 from pathlib import Path
 from tempfile import NamedTemporaryFile
@@ -241,6 +242,7 @@ def extract_(
             assert_never(unreachable)
 
     model = extractor.model.to(device).eval()
+    use_cuda_autocast = torch.device(device).type == "cuda"
 
     code_hash = get_processing_code_hash(Path(__file__))[:8]
 
@@ -287,14 +289,13 @@ def extract_(
 
         feature_output_path.parent.mkdir(parents=True, exist_ok=True)
 
+        slide: openslide.AbstractSlide | None = None
+        tmp_h5_path: Path | None = None
         try:
-            # Validate MPP here once (avoids a second openslide.open_slide inside _TileDataset.__init__).
-            if (
-                get_slide_mpp_(
-                    openslide.open_slide(slide_path), default_mpp=default_slide_mpp
-                )
-                is None
-            ):
+            # Open once per slide and reuse the handle for MPP validation + thumbnail.
+            slide = openslide.open_slide(str(slide_path))
+
+            if get_slide_mpp_(slide, default_mpp=default_slide_mpp) is None:
                 raise MPPExtractionError()
 
             ds = _TileDataset(
@@ -321,12 +322,93 @@ def extract_(
                 pin_memory=torch.cuda.is_available(),
             )
 
-            feats, xs_um, ys_um = [], [], []
-            for tiles, xs, ys in tqdm(dl, leave=False):
-                with torch.inference_mode():
-                    feats.append(model(tiles.to(device)).detach().half().cpu())
-                xs_um.append(xs.float())
-                ys_um.append(ys.float())
+            with NamedTemporaryFile(
+                dir=feature_output_path.parent, delete=False
+            ) as tmp_h5_file:
+                tmp_h5_path = Path(tmp_h5_file.name)
+
+            with h5py.File(tmp_h5_path, "w") as h5_fp:
+                coords_ds = h5_fp.create_dataset(
+                    "coords",
+                    shape=(0, 2),
+                    maxshape=(None, 2),
+                    dtype=np.float32,
+                    chunks=True,
+                )
+                feats_ds: h5py.Dataset | None = None
+                n_rows = 0
+
+                for tiles, xs, ys in tqdm(dl, leave=False):
+                    with torch.inference_mode():
+                        batch_tiles = tiles.to(device, non_blocking=True)
+                        if use_cuda_autocast:
+                            with torch.autocast(
+                                device_type="cuda", dtype=torch.float16
+                            ):
+                                batch_feats_t = model(batch_tiles)
+                        else:
+                            with nullcontext():
+                                batch_feats_t = model(batch_tiles)
+
+                    batch_feats = batch_feats_t.detach().half().cpu().numpy()
+                    if batch_feats.ndim != 2:
+                        raise RuntimeError(
+                            f"expected 2D features from extractor, got shape {batch_feats.shape}"
+                        )
+
+                    batch_coords = (
+                        torch.stack([xs.float(), ys.float()], dim=1)
+                        .cpu()
+                        .numpy()
+                        .astype(np.float32, copy=False)
+                    )
+
+                    if feats_ds is None:
+                        feats_ds = h5_fp.create_dataset(
+                            "feats",
+                            shape=(0, batch_feats.shape[1]),
+                            maxshape=(None, batch_feats.shape[1]),
+                            dtype=batch_feats.dtype,
+                            chunks=True,
+                        )
+
+                    next_rows = n_rows + batch_feats.shape[0]
+                    feats_ds.resize((next_rows, batch_feats.shape[1]))
+                    feats_ds[n_rows:next_rows] = batch_feats
+                    coords_ds.resize((next_rows, 2))
+                    coords_ds[n_rows:next_rows] = batch_coords
+                    n_rows = next_rows
+
+                if n_rows == 0:
+                    _logger.info(f"no tiles found in {slide_path}, skipping")
+                    continue
+
+                h5_fp.attrs["stamp_version"] = stamp.__version__
+                h5_fp.attrs["extractor"] = str(extractor.identifier)
+                h5_fp.attrs["unit"] = "um"
+                h5_fp.attrs["tile_size_um"] = tile_size_um  # changed in v2.1.0
+                h5_fp.attrs["tile_size_px"] = tile_size_px
+                h5_fp.attrs["code_hash"] = code_hash
+                h5_fp.attrs["feat_type"] = "tile"
+
+                coords_for_thumb = coords_ds[()]
+
+            tmp_h5_path.rename(feature_output_path)
+            tmp_h5_path = None
+            _logger.debug(f"saved features to {feature_output_path}")
+
+            # Save rejection thumbnail
+            thumbnail_path = feat_output_dir / slide_path.relative_to(
+                wsi_dir
+            ).with_suffix(".jpg")
+            thumbnail_path.parent.mkdir(exist_ok=True, parents=True)
+            _get_rejection_thumb(
+                slide,
+                size=(512, 512),
+                coords_um=coords_for_thumb,
+                tile_size_um=tile_size_um,
+                default_slide_mpp=default_slide_mpp,
+            ).convert("RGB").save(thumbnail_path)
         except MPPExtractionError:
             _logger.exception(
                 "failed to extract MPP from slide. "
@@ -336,50 +418,11 @@ def extract_(
         except Exception:
             _logger.exception(f"error while extracting features from {slide_path}")
             continue
-
-        if len(feats) == 0:
-            _logger.info(f"no tiles found in {slide_path}, skipping")
-            continue
-
-        coords = torch.stack([torch.concat(xs_um), torch.concat(ys_um)], dim=1).numpy()
-
-        # Save the file under an intermediate name to prevent half-written files
-        with (
-            NamedTemporaryFile(dir=output_dir, delete=False) as tmp_h5_file,
-            h5py.File(tmp_h5_file, "w") as h5_fp,
-        ):
-            try:
-                h5_fp["coords"] = coords
-                h5_fp["feats"] = torch.concat(feats).numpy()
-
-                h5_fp.attrs["stamp_version"] = stamp.__version__
-                h5_fp.attrs["extractor"] = str(extractor.identifier)
-                h5_fp.attrs["unit"] = "um"
-                h5_fp.attrs["tile_size_um"] = tile_size_um  # changed in v2.1.0
-                h5_fp.attrs["tile_size_px"] = tile_size_px
-                h5_fp.attrs["code_hash"] = code_hash
-                h5_fp.attrs["feat_type"] = "tile"
-            except Exception:
-                _logger.exception(f"error while writing {feature_output_path}")
-                if tmp_h5_file is not None:
-                    Path(tmp_h5_file.name).unlink(missing_ok=True)
-                continue
-
-            Path(tmp_h5_file.name).rename(feature_output_path)
-            _logger.debug(f"saved features to {feature_output_path}")
-
-        # Save rejection thumbnail
-        thumbnail_path = feat_output_dir / slide_path.relative_to(wsi_dir).with_suffix(
-            ".jpg"
-        )
-        thumbnail_path.parent.mkdir(exist_ok=True, parents=True)
-        _get_rejection_thumb(
-            openslide.open_slide(str(slide_path)),
-            size=(512, 512),
-            coords_um=coords,
-            tile_size_um=tile_size_um,
-            default_slide_mpp=default_slide_mpp,
-        ).convert("RGB").save(thumbnail_path)
+        finally:
+            if tmp_h5_path is not None:
+                tmp_h5_path.unlink(missing_ok=True)
+            if slide is not None:
+                slide.close()
 
 
 def _get_rejection_thumb(
