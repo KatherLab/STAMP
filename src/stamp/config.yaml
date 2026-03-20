@@ -94,9 +94,6 @@ crossval:
   # Number of folds to split the data into for cross-validation
   #n_splits: 5
 
-  # Path to a YAML file with advanced training parameters.
-  #params_path: "path/to/train_params.yaml"
-
   # Experimental features:
 
   # Change the precision of features during training
@@ -251,11 +248,13 @@ heatmaps:
   #slide_paths:
   #- slide1.svs
   #- slide2.mrxs
-  
 
   # The number of top- and bottom-scoring tiles to extract
   #topk: 5
   #bottomk: 5
+
+  # Manual magnification level to extract tiles from
+  #default_slide_mpp: 1.0
 
 
 slide_encoding:
