@@ -14,7 +14,7 @@ authors = [
 ]
 description = "A protocol for Solid Tumor Associative Modeling in Pathology"
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.13,<3.14"
 
 classifiers = [
     "Programming Language :: Python :: 3",
@@ -23,31 +23,32 @@ classifiers = [
 ]
 
 dependencies = [
-    "beartype>=0.21.0",
-    "einops>=0.8.1",
-    "h5py>=3.14.0",
-    "jaxtyping>=0.3.2",
-    "lightning>=2.5.2",
-    "matplotlib>=3.10.5",
-    "numpy>=2.2.2",
-    "opencv-python>=4.12.0.88",
-    "openpyxl>=3.1.5",
-    "openslide-bin>=4.0.0.8",
-    "openslide-python>=1.4.2",
-    "packaging>=25.0",
-    "pandas>=2.3.1",
-    "pillow>=11.3.0",
-    "pydantic>=2.11.7",
-    "pyyaml>=6.0.2",
-    "scikit-learn>=1.6.1",
-    "scipy>=1.16.1",
-    "torch>=2.7.1,<2.8.0",
-    "torchmetrics>=1.6.0",
-    "torchvision>=0.22.1",
-    "tqdm>=4.67.1",
-    "timm>=1.0.19",
-    "transformers>=4.55.0",
-    "lifelines>=0.28.0",
+    "beartype~=0.22.9",
+    "einops~=0.8.2",
+    "h5py~=3.16.0",
+    "jaxtyping~=0.3.9",
+    "lightning~=2.6.1",
+    "matplotlib~=3.10.8",
+    "numpy~=2.4.3",
+    "opencv-python~=4.13.0.92",
+    "openpyxl~=3.1.5",
+    "openslide-bin~=4.0.0.13",
+    "openslide-python~=1.4.3",
+    "packaging~=26.0",
+    "pandas~=2.3.3",
+    "pillow~=12.1.1",
+    "pydantic~=2.12.5",
+    "pyyaml~=6.0.3",
+    "scikit-learn~=1.8.0",
+    "scipy~=1.17.1",
+    "torch~=2.10.0",
+    "torchmetrics~=1.9.0",
+    "torchvision~=0.25.0",
+    "tqdm~=4.67.3",
+    "timm~=1.0.25",
+    "transformers~=4.57.6",
+    "lifelines~=0.30.3",
+    "huggingface-hub~=0.36.2"
 ]
 
 [project.optional-dependencies]
@@ -58,14 +59,13 @@ build = [
     "ninja"
 ]
 flash-attention = [
-    "flash-attn>=2.8.3",
+    "flash-attn==2.8.3",
     ]
 conch = [
     "huggingface-hub>=0.26.2",
     "conch @ git+https://github.com/KatherLab/CONCH",
 ]
 conch1_5_cpu = [
-    "transformers>=4.45.2",
     "einops-exts==0.0.4",
 ]
 conch1_5 = [
@@ -99,12 +99,15 @@ virchow2 = [
     "torch>=2.0.0",
 ]
 cobra = [
-    "stamp[flash-attention]",
-    "causal-conv1d>=1.5.3.post1",
-    "mamba-ssm>=2.2.6.post3",
+    "causal-conv1d @ https://github.com/Dao-AILab/causal-conv1d/releases/download/v1.6.1.post4/causal_conv1d-1.6.1+cu13torch2.10cxx11abiTRUE-cp313-cp313-linux_x86_64.whl ; sys_platform == 'linux' and platform_machine == 'x86_64' and python_version == '3.13'",
+    "causal-conv1d @ https://github.com/Dao-AILab/causal-conv1d/releases/download/v1.6.1.post4/causal_conv1d-1.6.1+cu13torch2.10cxx11abiTRUE-cp313-cp313-linux_aarch64.whl ; sys_platform == 'linux' and platform_machine == 'aarch64' and python_version == '3.13'",
+
+    "mamba-ssm @ https://github.com/state-spaces/mamba/releases/download/v2.3.1/mamba_ssm-2.3.1+cu13torch2.10cxx11abiTRUE-cp313-cp313-linux_x86_64.whl ; sys_platform == 'linux' and platform_machine == 'x86_64' and python_version == '3.13'",
+    "mamba-ssm @ https://github.com/state-spaces/mamba/releases/download/v2.3.1/mamba_ssm-2.3.1+cu13torch2.10cxx11abiTRUE-cp313-cp313-linux_aarch64.whl ; sys_platform == 'linux' and platform_machine == 'aarch64' and python_version == '3.13'",
+
     "cobra @ git+http://github.com/KatherLab/COBRA.git@49d231191db5a9c2ea37a2398dd922c8c9ee9cdb",
-    "jinja2>=3.1.4", 
-    "triton"
+    "jinja2>=3.1.4",
+    "triton",
 ]
 prism_cpu = [
     "sacremoses==0.1.1",
@@ -148,11 +151,11 @@ all = ["stamp[cpu]"]
 
 [dependency-groups]
 dev = [
-    "huggingface-hub>=0.34.3",
-    "ipykernel>=6.30.1",
-    "pyright>=1.1.403",
-    "pytest>=8.4.1",
-    "ruff>=0.12.7",
+    "huggingface-hub~=0.36.2",
+    "ipykernel~=7.2.0",
+    "pyright~=1.1.408",
+    "pytest~=9.0.2",
+    "ruff>=0.15.7",
 ]
 
 [build-system]
@@ -179,22 +182,22 @@ conflicts = [
     ]
 ]
 build-constraint-dependencies = [
-  "torch<2.8",
-  "torchvision<0.23",
+  "torch==2.10.0",
+  "torchvision==0.25.0",
 ]
 
 
 [tool.uv.sources]
 torch = [
-  { index = "pytorch-cu128", marker = "sys_platform != 'darwin'" }
+  { index = "pytorch-cu130", marker = "sys_platform == 'linux'" }
 ]
 torchvision = [
-  { index = "pytorch-cu128", marker = "sys_platform != 'darwin'" }
+  { index = "pytorch-cu130", marker = "sys_platform == 'linux'" }
 ]
 
 [[tool.uv.index]]
-name = "pytorch-cu128"
-url = "https://download.pytorch.org/whl/cu128"
+name = "pytorch-cu130"
+url = "https://download.pytorch.org/whl/cu130"
 explicit = true
 
 
@@ -210,7 +213,7 @@ requires-dist = [
     "scikit-learn",
     "tqdm",
     "transformers",
-    "xformers; sys_platform != 'darwin'"  # xformers is not supported on macOS
+    "xformers; (sys_platform == 'linux' and platform_machine == 'x86_64') or (sys_platform == 'win32' and platform_machine == 'AMD64')"
 ]
 
 
@@ -221,23 +224,7 @@ requires-dist = [
     "einops",
 ]
 
-
-[[tool.uv.dependency-metadata]]
-name = "mamba-ssm"
-requires-dist = [
-    "setuptools",
-]
-
-[[tool.uv.dependency-metadata]]
-name = "causal-conv1d"
-requires-dist = [
-    "setuptools",
-    "torch"
-]
-
 [tool.uv.extra-build-dependencies]
-cobra = [{ requirement = "torch", match-runtime = true }]
 flash-attn = [{ requirement = "torch", match-runtime = true }]
-mamba-ssm = [{ requirement = "torch", match-runtime = true }]
 gigapath = [{ requirement = "torch", match-runtime = true }]
 conch = [{ requirement = "torch", match-runtime = true }]

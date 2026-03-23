@@ -12,7 +12,7 @@ jobs:
     # needs: format_and_lint
     strategy:
       matrix:
-        python-version: ["3.11", "3.12"]
+        python-version: ["3.13"]
         extractor: [
           "ctranspath",
           "chief-ctranspath",
