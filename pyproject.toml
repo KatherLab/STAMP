@@ -41,9 +41,7 @@ dependencies = [
     "pyyaml~=6.0.3",
     "scikit-learn~=1.8.0",
     "scipy~=1.17.1",
-    "torch~=2.10.0",
     "torchmetrics~=1.9.0",
-    "torchvision~=0.25.0",
     "tqdm~=4.67.3",
     "timm~=1.0.25",
     "transformers~=4.57.6",
@@ -99,9 +97,8 @@ virchow2 = [
     "torch>=2.0.0",
 ]
 cobra = [
-    "causal-conv1d @ https://github.com/Dao-AILab/causal-conv1d/releases/download/v1.6.1.post4/causal_conv1d-1.6.1+cu13torch2.10cxx11abiTRUE-cp313-cp313-linux_x86_64.whl ; sys_platform == 'linux' and platform_machine == 'x86_64' and python_version == '3.13'",
-    "causal-conv1d @ https://github.com/Dao-AILab/causal-conv1d/releases/download/v1.6.1.post4/causal_conv1d-1.6.1+cu13torch2.10cxx11abiTRUE-cp313-cp313-linux_aarch64.whl ; sys_platform == 'linux' and platform_machine == 'aarch64' and python_version == '3.13'",
-
+    "causal-conv1d @ https://github.com/Dao-AILab/causal-conv1d/releases/download/v1.6.1.post4/causal_conv1d-1.6.1+cu13torch2.10cxx11abiTRUE-cp313-cp313-linux_x86_64.whl ; sys_platform == 'linux' and platform_machine == 'x86_64' and python_version == '3.13' and extra == 'cobra'",
+    "causal-conv1d @ https://github.com/Dao-AILab/causal-conv1d/releases/download/v1.6.1.post4/causal_conv1d-1.6.1+cu13torch2.10cxx11abiTRUE-cp313-cp313-linux_aarch64.whl ; sys_platform == 'linux' and platform_machine == 'aarch64' and python_version == '3.13' and extra == 'cobra'",
     "mamba-ssm @ https://github.com/state-spaces/mamba/releases/download/v2.3.1/mamba_ssm-2.3.1+cu13torch2.10cxx11abiTRUE-cp313-cp313-linux_x86_64.whl ; sys_platform == 'linux' and platform_machine == 'x86_64' and python_version == '3.13'",
     "mamba-ssm @ https://github.com/state-spaces/mamba/releases/download/v2.3.1/mamba_ssm-2.3.1+cu13torch2.10cxx11abiTRUE-cp313-cp313-linux_aarch64.whl ; sys_platform == 'linux' and platform_machine == 'aarch64' and python_version == '3.13'",
 
@@ -138,9 +135,21 @@ mcp = [
 
 
 # Blanket target
-cpu = ["stamp[conch,ctranspath,uni,virchow2,chief_ctranspath,conch1_5_cpu,prism_cpu,madeleine,musk_cpu,plip_cpu]"]
-gpu = ["stamp[conch,ctranspath,uni,virchow2,chief_ctranspath,conch1_5_cpu,prism,madeleine,plip,musk_cpu,cobra]"]
-gpu_all = ["stamp[conch,ctranspath,uni,virchow2,chief_ctranspath,musk,gigapath,conch1_5,prism,madeleine,plip,cobra]"]
+cpu = [
+    "torch~=2.10.0",
+    "torchvision~=0.25.0",
+    "stamp[conch,ctranspath,uni,virchow2,chief_ctranspath,conch1_5_cpu,prism_cpu,madeleine,musk_cpu,plip_cpu]"
+]
+gpu = [
+    "torch~=2.10.0",
+    "torchvision~=0.25.0",
+    "stamp[conch,ctranspath,uni,virchow2,chief_ctranspath,conch1_5_cpu,prism,madeleine,plip,musk_cpu,cobra]"
+]
+gpu_all = [
+    "torch~=2.10.0",
+    "torchvision~=0.25.0",
+    "stamp[conch,ctranspath,uni,virchow2,chief_ctranspath,musk,gigapath,conch1_5,prism,madeleine,plip,cobra]"
+]
 all = ["stamp[cpu]"]
 
 [project.scripts]
@@ -177,10 +186,14 @@ lint.ignore = ["F722"] # https://docs.kidger.site/jaxtyping/faq/#flake8-or-ruff-
 
 [tool.uv]
 conflicts = [
-    [
-        { extra = "cpu" },
-        { extra = "gpu" }
-    ]
+  [
+    { extra = "cpu" },
+    { extra = "gpu" },
+  ],
+  [
+    { extra = "cpu" },
+    { extra = "gpu_all" },
+  ],
 ]
 build-constraint-dependencies = [
   "torch==2.10.0",
@@ -190,11 +203,20 @@ build-constraint-dependencies = [
 
 [tool.uv.sources]
 torch = [
-  { index = "pytorch-cu130", marker = "sys_platform == 'linux'" }
+  { index = "pytorch-cpu", extra = "cpu" },
+  { index = "pytorch-cu130", extra = "gpu" },
+  { index = "pytorch-cu130", extra = "gpu_all" },
 ]
 torchvision = [
-  { index = "pytorch-cu130", marker = "sys_platform == 'linux'" }
+  { index = "pytorch-cpu", extra = "cpu" },
+  { index = "pytorch-cu130", extra = "gpu" },
+  { index = "pytorch-cu130", extra = "gpu_all" },
 ]
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
 
 [[tool.uv.index]]
 name = "pytorch-cu130"
