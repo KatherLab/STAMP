@@ -39,6 +39,12 @@ def _run_cli(args: argparse.Namespace) -> None:
         _create_config_file(args.config_file_path)
         return
 
+    if args.command == "workbench":
+        from stamp.workbench.server import serve
+
+        serve(host=args.host, port=args.port)
+        return
+
     # Deferred imports: only reached for real commands, not --help / init.
     from stamp.modeling.config import (
         AdvancedConfig,
@@ -316,6 +322,12 @@ def main() -> None:
     )
     commands.add_parser("config", help="Print the loaded configuration")
     commands.add_parser("heatmaps", help="Generate heatmaps for a trained model")
+    workbench_parser = commands.add_parser(
+        "workbench",
+        help="Launch the browser-based STAMP workbench",
+    )
+    workbench_parser.add_argument("--host", default="127.0.0.1")
+    workbench_parser.add_argument("--port", type=int, default=8010)
 
     args = parser.parse_args()
 
