@@ -557,7 +557,7 @@ def train_model_(
 
     # Reload the best model using the same class as the input model
     ModelClass = type(model)
-    return ModelClass.load_from_checkpoint(model_checkpoint.best_model_path)
+    return ModelClass.load_from_checkpoint(model_checkpoint.best_model_path, weights_only=False)
 
 
 def _compute_class_weights_and_check_categories(

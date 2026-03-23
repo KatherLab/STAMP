@@ -53,7 +53,7 @@ def load_model_from_ckpt(path: Union[str, Path]):
         hparams["task"], hparams["supported_features"], ModelName(hparams["model_name"])
     )
 
-    return LitModelClass.load_from_checkpoint(path, model_class=ModelClass)
+    return LitModelClass.load_from_checkpoint(path, model_class=ModelClass, weights_only=False)
 
 
 def deploy_categorical_model_(
