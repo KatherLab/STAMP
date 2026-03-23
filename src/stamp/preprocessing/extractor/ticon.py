@@ -35,6 +35,8 @@ class LayerScale(nn.Module):
         dim: int,
         init_values: float = 1e-5,
         inplace: bool = False,
+        device=None,
+        dtype=None,
     ) -> None:
         super().__init__()
         self.inplace = inplace
