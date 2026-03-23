@@ -40,7 +40,14 @@ def _run_cli(args: argparse.Namespace) -> None:
         return
 
     if args.command == "workbench":
-        from stamp.workbench.server import serve
+        try:
+            from stamp_workbench.server import serve
+        except ModuleNotFoundError as exc:
+            raise ModuleNotFoundError(
+                "STAMP workbench is not installed in this environment. "
+                "Install it with `uv pip install git+https://github.com/mducducd/STAMP-Workbench.git` "
+                "and then rerun `stamp workbench`."
+            ) from exc
 
         serve(host=args.host, port=args.port)
         return
