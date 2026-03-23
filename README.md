@@ -64,17 +64,39 @@ cd STAMP
 ```
 
 ```bash
-# GPU (CUDA) Installation (Using flash-attn on CUDA systems for gigapath and other models)
+# GPU (CUDA) Installation (excluding conchv1_5, gigapath and musk)
 
-# And then this for all models:
-uv sync --extra build --extra gpu
+uv sync --extra gpu
 source .venv/bin/activate
 ```
 
 ```bash
-# CPU-only Installation (excluding COBRA, Gigapath (and flash-attn))
+# CPU-only Installation (excluding conchv1_5, gigapath and musk)
 
 uv sync --extra cpu
+source .venv/bin/activate
+```
+
+> [!CAUTION]
+> In the next step we will build [flash-attn](https://github.com/dao-ailab/flash-attention), this might take an extended amount of time and consume a lot of RAM and CPU time!
+>
+> Please make sure you have [Nvidia CUDA Toolkit 13.0](https://developer.nvidia.com/cuda-13-0-2-download-archive) installed! You must use Nvidia Driver version 580 or newer!
+>
+> The `nvcc --version` command must indicate that 13.0 is installed and is currently in PATH: `Cuda compilation tools, release 13.0, V13.0.88`.
+>
+> If you get another version or `Command 'nvcc' not found`, add it to the PATH:
+> ```bash
+> export CUDA_HOME=/usr/local/cuda-13.0
+> export PATH="${CUDA_HOME}/bin:$PATH"
+> ```
+>
+> Run `nvcc --version` to ensure flash-attn will be built for CUDA 13.0
+
+
+```bash
+# GPU (CUDA) Installation - building flash-attn for supporting conchv1_5, gigapath and musk
+
+MAX_JOBS=2 uv sync --extra gpu_all # to speed up the build time increase max_jobs! This might use more RAM!
 source .venv/bin/activate
 ```
 

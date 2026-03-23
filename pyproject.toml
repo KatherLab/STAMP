@@ -114,7 +114,7 @@ prism_cpu = [
     "environs==11.0.0",
 ]
 prism = [
-    "stamp[prism_cpu, flash-attention]",
+    "stamp[prism_cpu]",
 ]
 madeleine = [
     "madeleine @ git+https://github.com/mahmoodlab/MADELEINE.git@de7c85acc2bdad352e6df8eee5694f8b6f288012"
@@ -130,7 +130,7 @@ plip_cpu = [
     "transformers>=4.45.2"
 ]
 plip = [
-    "stamp[plip_cpu, flash-attention]",
+    "stamp[plip_cpu]",
 ]
 mcp = [
     "fastmcp>=2.11.2",
@@ -139,7 +139,8 @@ mcp = [
 
 # Blanket target
 cpu = ["stamp[conch,ctranspath,uni,virchow2,chief_ctranspath,conch1_5_cpu,prism_cpu,madeleine,musk_cpu,plip_cpu]"]
-gpu = ["stamp[conch,ctranspath,uni,virchow2,chief_ctranspath,conch1_5,prism,madeleine,musk,plip,gigapath,cobra]"]
+gpu = ["stamp[conch,ctranspath,uni,virchow2,chief_ctranspath,conch1_5_cpu,prism,madeleine,plip,musk_cpu,cobra]"]
+gpu_all = ["stamp[conch,ctranspath,uni,virchow2,chief_ctranspath,musk,gigapath,conch1_5,prism,madeleine,plip,cobra]"]
 all = ["stamp[cpu]"]
 
 [project.scripts]
