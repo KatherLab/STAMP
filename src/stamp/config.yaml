@@ -148,9 +148,6 @@ training:
   # If unspecified, they will be inferred from the table itself.
   #categories: ["mutated", "wild type"]
 
-  # Path to a YAML file with advanced training parameters.
-  #params_path: "path/to/model_params.yaml"
-
   # Experimental features:
 
   # Change the precision of features during training
@@ -256,6 +253,10 @@ heatmaps:
   # The number of top- and bottom-scoring tiles to extract
   #topk: 5
   #bottomk: 5
+
+  # Fallback MPP to use when it cannot be read from the slide's metadata.
+  # Required for slides that lack MPP in their metadata (e.g. some TCGA .svs files).
+  #default_slide_mpp: 0.5
 
 
 slide_encoding:

@@ -39,6 +39,33 @@ def test_workbench_command_invokes_server(monkeypatch):
     assert captured == {"host": "0.0.0.0", "port": 9011, "root": None}
 
 
+def test_workbench_command_supports_legacy_server_signature(monkeypatch):
+    captured: dict[str, object] = {}
+
+    def fake_serve(*, host: str, port: int) -> None:
+        captured["host"] = host
+        captured["port"] = port
+
+    try:
+        import stamp_workbench.server  # noqa: F401
+    except ModuleNotFoundError:
+        mock_module = MagicMock()
+        mock_module.serve = fake_serve
+        sys.modules.setdefault("stamp_workbench", MagicMock())
+        sys.modules["stamp_workbench.server"] = mock_module
+
+    monkeypatch.setattr("stamp_workbench.server.serve", fake_serve)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        ["stamp", "workbench", "--host", "127.0.0.1", "--port", "8010"],
+    )
+
+    stamp.__main__.main()
+
+    assert captured == {"host": "127.0.0.1", "port": 8010}
+
+
 def test_workbench_missing_package_gives_helpful_error(monkeypatch):
     """stamp workbench should raise a descriptive error when stamp_workbench is not installed."""
     monkeypatch.setattr(sys, "argv", ["stamp", "workbench"])

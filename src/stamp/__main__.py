@@ -1,4 +1,5 @@
 import argparse
+import inspect
 import logging
 import shutil
 import sys
@@ -49,7 +50,11 @@ def _run_cli(args: argparse.Namespace) -> None:
                 "and then rerun `stamp workbench`."
             ) from exc
 
-        serve(host=args.host, port=args.port, root=args.root)
+        serve_parameters = inspect.signature(serve).parameters
+        if "root" in serve_parameters:
+            serve(host=args.host, port=args.port, root=args.root)
+        else:
+            serve(host=args.host, port=args.port)
         return
 
     # Deferred imports: only reached for real commands, not --help / init.
