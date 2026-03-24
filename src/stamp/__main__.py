@@ -49,7 +49,7 @@ def _run_cli(args: argparse.Namespace) -> None:
                 "and then rerun `stamp workbench`."
             ) from exc
 
-        serve(host=args.host, port=args.port)
+        serve(host=args.host, port=args.port, root=args.root)
         return
 
     # Deferred imports: only reached for real commands, not --help / init.
@@ -335,6 +335,11 @@ def main() -> None:
     )
     workbench_parser.add_argument("--host", default="127.0.0.1")
     workbench_parser.add_argument("--port", type=int, default=8010)
+    workbench_parser.add_argument(
+        "--root",
+        type=Path,
+        help="Path to the STAMP checkout root. Defaults to the current working directory.",
+    )
 
     args = parser.parse_args()
 

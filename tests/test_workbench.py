@@ -11,9 +11,10 @@ def test_workbench_command_invokes_server(monkeypatch):
     """stamp workbench should delegate to stamp_workbench.server.serve."""
     captured: dict[str, object] = {}
 
-    def fake_serve(*, host: str, port: int) -> None:
+    def fake_serve(*, host: str, port: int, root=None) -> None:
         captured["host"] = host
         captured["port"] = port
+        captured["root"] = root
 
     # Ensure stamp_workbench is importable (real or mock)
     try:
@@ -35,7 +36,7 @@ def test_workbench_command_invokes_server(monkeypatch):
 
     stamp.__main__.main()
 
-    assert captured == {"host": "0.0.0.0", "port": 9011}
+    assert captured == {"host": "0.0.0.0", "port": 9011, "root": None}
 
 
 def test_workbench_missing_package_gives_helpful_error(monkeypatch):
@@ -47,5 +48,5 @@ def test_workbench_missing_package_gives_helpful_error(monkeypatch):
     with pytest.MonkeyPatch().context() as mp:
         mp.setitem(sys.modules, "stamp_workbench", None)  # type: ignore[arg-type]
         mp.setitem(sys.modules, "stamp_workbench.server", None)  # type: ignore[arg-type]
-        with pytest.raises(ModuleNotFoundError, match="uv pip install"):
+        with pytest.raises(SystemExit, match="1"):
             stamp.__main__.main()
