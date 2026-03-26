@@ -433,7 +433,7 @@ def detect_feature_type(feature_dir: Path) -> str:
     feature_types = set()
     files_checked = 0
 
-    for file in feature_dir.glob("*.h5"):
+    for file in feature_dir.rglob("*.h5"):
         files_checked += 1
         with h5py.File(file, "r") as h5:
             feat_type = h5.attrs.get("feat_type")
