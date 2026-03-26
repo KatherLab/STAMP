@@ -48,16 +48,7 @@ class Titan(Encoder):
 
         coords_tensor = torch.tensor(coords.coords_um, dtype=self.precision)
 
-        # Convert coordinates from microns to pixels
-        xs = torch.unique(coords_tensor[:, 0])
-        ys = torch.unique(coords_tensor[:, 1])
-        patch_size_lvl0 = int(
-            min(
-                (xs[1:] - xs[:-1])[(xs[1:] - xs[:-1]) > 0].min(),
-                (ys[1:] - ys[:-1])[(ys[1:] - ys[:-1]) > 0].min(),
-            )
-        )
-
+        patch_size_lvl0 = int(coords.tile_size_px)
         coords_px = coords_tensor / coords.mpp  # Convert to pixels
         coords_px = coords_px.to(torch.int64).to(device)  # Convert to integer
 
