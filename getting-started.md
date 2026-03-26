@@ -7,6 +7,9 @@ you will need some WSIs,
 a table mapping each of these slides to a patient
 as well as some ground truth we will eventually train a neural network on.
 
+> [!NOTE]
+> Prefer a browser-based interface over the CLI? [`STAMP-Workbench`](https://github.com/mducducd/STAMP-Workbench) is a separate notebook-style web UI for composing, configuring, and monitoring STAMP pipelines. Install it into the same environment with `uv pip install git+https://github.com/mducducd/STAMP-Workbench.git`, then launch `stamp-workbench` from your STAMP checkout. The workbench repository contains the latest setup and usage instructions.
+
 ## Whole Slide Images
 
 The whole slide images have to be in any of the formats [supported by OpenSlide][openslide].
