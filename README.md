@@ -11,8 +11,6 @@ STAMP is an **end‑to‑end, weakly‑supervised deep‑learning pipeline** tha
 
 **Want to start now?** [Jump to Installation](#installation) or [walk through our Getting Started guide](getting-started.md) for a hands-on tutorial.
 
-
-
 ## **Why choose STAMP?**
 
 * 🚀 **Scalable**: Run locally or on HPC (SLURM) with the same CLI; built to handle multi‑center cohorts and large WSI collections.  
