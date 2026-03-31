@@ -8,7 +8,7 @@ a table mapping each of these slides to a patient
 as well as some ground truth we will eventually train a neural network on.
 
 > [!NOTE]
-> If you prefer a browser-based workflow, see [`STAMP-Workbench`](https://github.com/mducducd/STAMP-Workbench), a separate web UI for building and monitoring STAMP pipelines. You can install it into the same environment with `uv pip install git+https://github.com/mducducd/STAMP-Workbench.git` and launch it from your STAMP checkout with `stamp-workbench`.
+> If you prefer a browser-based workflow, see [`STAMP-Workbench`](https://github.com/mducducd/STAMP-Workbench), a separate web UI for building and monitoring STAMP pipelines. You can install it into the same environment with `uv pip install git+https://github.com/mducducd/STAMP-Workbench.git` and launch it from your STAMP checkout with `stamp workbench`.
 
 ## Whole Slide Images
 
