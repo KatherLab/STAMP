@@ -11,8 +11,6 @@ STAMP is an **end‑to‑end, weakly‑supervised deep‑learning pipeline** tha
 
 **Want to start now?** [Jump to Installation](#installation) or [walk through our Getting Started guide](getting-started.md) for a hands-on tutorial.
 
-
-
 ## **Why choose STAMP?**
 
 * 🚀 **Scalable**: Run locally or on HPC (SLURM) with the same CLI; built to handle multi‑center cohorts and large WSI collections.  
@@ -226,7 +224,6 @@ uv sync --extra build --extra gpu
 ```
 
 ## Reproducibility
-
-We use a central `Seed` utility to set seeds for PyTorch, NumPy, and Python’s `random`. This makes data loading and model initialization reproducible. Always call `Seed.set(seed)` once at startup.
-
-We do not enable [`torch.use_deterministic_algorithms()`](https://pytorch.org/docs/stable/notes/randomness.html#reproducibility) because it can cause large performance drops. Expect runs with the same seed to follow the same training trajectory, but not bit-for-bit identical low-level kernels.
+> [!NOTE]
+> We use a central `Seed` utility to set seeds for PyTorch, NumPy, and Python’s `random`. This makes data loading and model initialization reproducible. Always call `Seed.set(seed)` once at startup.
+> We do not enable [`torch.use_deterministic_algorithms()`](https://pytorch.org/docs/stable/notes/randomness.html#reproducibility) because it can cause large performance drops. Expect runs with the same seed to follow the same training trajectory, but not bit-for-bit identical low-level kernels.

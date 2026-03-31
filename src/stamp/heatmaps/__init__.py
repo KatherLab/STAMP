@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import os
 
 os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"
@@ -5,14 +7,13 @@ os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"
 import logging
 from collections.abc import Collection, Iterable
 from pathlib import Path
-from typing import cast
+from typing import List, Optional, Tuple, cast
 
 import h5py
 import matplotlib.pyplot as plt
 import numpy as np
 import openslide
 import torch
-from jaxtyping import Float, Integer
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 from matplotlib.patches import Patch
@@ -34,9 +35,9 @@ _SlideLike = openslide.OpenSlide | openslide.ImageSlide
 
 def _gradcam_per_category(
     model: torch.nn.Module,
-    feats: Float[Tensor, "tile feat"],
-    coords: Float[Tensor, "tile 2"],
-) -> Float[Tensor, "tile category"]:
+    feats: Tensor,
+    coords: Tensor,
+) -> Tensor:
     feat_dim = -1
 
     jac = cast(
@@ -57,9 +58,9 @@ def _gradcam_per_category(
 
 def _attention_rollout_single(
     model: torch.nn.Module,
-    feats: Float[Tensor, "tile feat"],
-    coords: Float[Tensor, "tile 2"],
-) -> Float[Tensor, "..."]:
+    feats: Tensor,
+    coords: Tensor,
+) -> Tensor:
     """
     Attention rollout for regression/survival models.
     Aggregates CLS→tile attention across all transformer layers.
@@ -76,7 +77,7 @@ def _attention_rollout_single(
     )
 
     # --- 2. Rollout computation ---
-    attn_rollout: torch.Tensor | None = None
+    attn_rollout: Optional[torch.Tensor] = None
     transformer = getattr(model, "transformer", None)
     if transformer is None:
         raise RuntimeError("Model does not have a transformer attribute")
@@ -113,9 +114,9 @@ def _attention_rollout_single(
 
 def _gradcam_single(
     model: torch.nn.Module,
-    feats: Float[Tensor, "tile feat"],
-    coords: Float[Tensor, "tile 2"],
-) -> Float[Tensor, "tile"]:  # noqa: F821
+    feats: Tensor,
+    coords: Tensor,
+) -> Tensor:
     """
     Grad-CAM-like relevance for regression/survival models using Jacobian-based
     mechanism (same math as classification but single-output case).
@@ -139,9 +140,9 @@ def _gradcam_single(
 
 
 def _vals_to_im(
-    scores: Float[Tensor, "tile ..."],
-    coords_norm: Integer[Tensor, "tile coord"],
-) -> Float[Tensor, "width height ..."]:
+    scores: Tensor,
+    coords_norm: Tensor,
+) -> Tensor:
     """Arranges scores in a 2d grid according to coordinates"""
     size = coords_norm.max(0).values.flip(0) + 1
     im = torch.zeros((*size.tolist(), *scores.shape[1:])).type_as(scores)
@@ -186,12 +187,63 @@ def _get_thumb_array(
     return thumb_crop
 
 
+def _export_ranked_tiles(
+    *,
+    slide: _SlideLike,
+    tiles_dir: Path,
+    stem: str,
+    label: str,
+    tile_scores: Tensor,
+    coords_tile_slide_px: Tensor,
+    tile_size_slide_px: TilePixels,
+    topk: int,
+    bottomk: int,
+) -> None:
+    """Save the highest- and lowest-scoring tiles for a slide."""
+    scores = tile_scores.detach().flatten().cpu()
+    if scores.numel() == 0:
+        return
+
+    def _save_tile(*, prefix: str, rank: int, tile_index: int, score: float) -> None:
+        slide.read_region(
+            tuple(coords_tile_slide_px[tile_index].tolist()),
+            0,
+            (tile_size_slide_px, tile_size_slide_px),
+        ).convert("RGB").save(
+            tiles_dir / f"{prefix}_{rank:02d}-{stem}-{label}={score:0.2f}.jpg"
+        )
+
+    top_count = min(topk, scores.numel())
+    if top_count > 0:
+        top_scores, top_indices = scores.topk(top_count)
+        for rank, (score, index) in enumerate(zip(top_scores, top_indices), start=1):
+            _save_tile(
+                prefix="top",
+                rank=rank,
+                tile_index=int(index.item()),
+                score=float(score.item()),
+            )
+
+    bottom_count = min(bottomk, scores.numel())
+    if bottom_count > 0:
+        bottom_scores, bottom_indices = (-scores).topk(bottom_count)
+        for rank, (score, index) in enumerate(
+            zip(bottom_scores, bottom_indices), start=1
+        ):
+            _save_tile(
+                prefix="bottom",
+                rank=rank,
+                tile_index=int(index.item()),
+                score=float((-score).item()),
+            )
+
+
 def _show_class_map(
     class_ax: Axes,
-    top_score_indices: Integer[Tensor, "width height"],
-    gradcam_2d: Float[Tensor, "width height category"],
+    top_score_indices: Tensor,
+    gradcam_2d: Tensor,
     categories: Collection[str],
-) -> tuple[np.ndarray, list[Patch]]:
+) -> Tuple[np.ndarray, List[Patch]]:
     """Returns the class map image and legend patches for saving separately"""
     cmap = plt.get_cmap("Pastel1")
     classes = cast(np.ndarray, cmap(top_score_indices.cpu().numpy()))
@@ -238,7 +290,7 @@ def _create_plotted_overlay(
     category: str,
     slide_score: float,
     alpha: float,
-) -> tuple[Figure, Axes]:
+) -> Tuple[Figure, Axes]:
     """Creates a plotted overlay with title and legend."""
     overlay = _create_overlay(thumb, score_im, alpha)
 
@@ -505,38 +557,17 @@ def heatmaps_(
 
                     # Only extract tiles for the highest probability class
                     if pos_idx == highest_prob_class_idx:
-                        # Top tiles
-                        for i, (score, index) in enumerate(
-                            zip(*category_score.topk(topk))
-                        ):
-                            (
-                                slide.read_region(
-                                    tuple(coords_tile_slide_px[index].tolist()),
-                                    0,
-                                    (tile_size_slide_px, tile_size_slide_px),
-                                )
-                                .convert("RGB")
-                                .save(
-                                    tiles_dir
-                                    / f"top_{i + 1:02d}-{h5_path.stem}-{category}={score:0.2f}.jpg"
-                                )
-                            )
-                        # Bottom tiles
-                        for i, (score, index) in enumerate(
-                            zip(*(-category_score).topk(bottomk))
-                        ):
-                            (
-                                slide.read_region(
-                                    tuple(coords_tile_slide_px[index].tolist()),
-                                    0,
-                                    (tile_size_slide_px, tile_size_slide_px),
-                                )
-                                .convert("RGB")
-                                .save(
-                                    tiles_dir
-                                    / f"bottom_{i + 1:02d}-{h5_path.stem}-{category}={-score:0.2f}.jpg"
-                                )
-                            )
+                        _export_ranked_tiles(
+                            slide=slide,
+                            tiles_dir=tiles_dir,
+                            stem=h5_path.stem,
+                            label=category,
+                            tile_scores=category_score,
+                            coords_tile_slide_px=coords_tile_slide_px,
+                            tile_size_slide_px=tile_size_slide_px,
+                            topk=topk,
+                            bottomk=bottomk,
+                        )
 
                 assert attention is not None, (
                     "attention should have been set in the for loop above"
@@ -559,6 +590,7 @@ def heatmaps_(
                 gradcam = _gradcam_single(
                     model=model.model, feats=feats, coords=coords_um
                 )
+                tile_relevance = gradcam / gradcam.max().clamp(min=1e-8)
                 gradcam_2d = _vals_to_im(gradcam, coords_norm).squeeze(-1).detach()
                 gradcam_2d = (gradcam_2d - gradcam_2d.min()) / (
                     gradcam_2d.max() - gradcam_2d.min() + 1e-8
@@ -621,6 +653,18 @@ def heatmaps_(
                 )
                 plt.close(fig)
 
+                _export_ranked_tiles(
+                    slide=slide,
+                    tiles_dir=tiles_dir,
+                    stem=h5_path.stem,
+                    label="regression",
+                    tile_scores=tile_relevance,
+                    coords_tile_slide_px=coords_tile_slide_px,
+                    tile_size_slide_px=tile_size_slide_px,
+                    topk=topk,
+                    bottomk=bottomk,
+                )
+
             case "survival":
                 slide_score = slide_score.item()
 
@@ -628,6 +672,7 @@ def heatmaps_(
                 gradcam = _gradcam_single(
                     model=model.model, feats=feats, coords=coords_um
                 )
+                tile_relevance = gradcam / gradcam.max().clamp(min=1e-8)
                 gradcam_2d = _vals_to_im(gradcam, coords_norm).squeeze(-1).detach()
                 gradcam_2d = (gradcam_2d - gradcam_2d.min()) / (
                     gradcam_2d.max() - gradcam_2d.min() + 1e-8
@@ -714,3 +759,15 @@ def heatmaps_(
                     bbox_inches="tight",
                 )
                 plt.close(fig)
+
+                _export_ranked_tiles(
+                    slide=slide,
+                    tiles_dir=tiles_dir,
+                    stem=h5_path.stem,
+                    label="survival",
+                    tile_scores=tile_relevance,
+                    coords_tile_slide_px=coords_tile_slide_px,
+                    tile_size_slide_px=tile_size_slide_px,
+                    topk=topk,
+                    bottomk=bottomk,
+                )

@@ -7,6 +7,9 @@ you will need some WSIs,
 a table mapping each of these slides to a patient
 as well as some ground truth we will eventually train a neural network on.
 
+> [!NOTE]
+> If you prefer a browser-based workflow, see [`STAMP-Workbench`](https://github.com/KatherLab/STAMP-Workbench), a separate web UI for building and monitoring STAMP pipelines. You can install it into the same environment with `uv pip install git+https://github.com/KatherLab/STAMP-Workbench` and launch it from your STAMP checkout with `stamp-workbench`.
+
 ## Whole Slide Images
 
 The whole slide images have to be in any of the formats [supported by OpenSlide][openslide].
@@ -410,7 +413,6 @@ The key differences for patient-level modeling are:
 You can then run statistics as done with tile-level features.
 
 ## Heatmaps and Top Tiles
-<img src="docs/overlay-heatmap.png" width="500px" align="center"></img>
 
 The `stamp heatmaps` command generates visualization outputs to help interpret model predictions and identify which regions of the slide contribute most to the classification decision. This command creates:
 
@@ -495,7 +497,7 @@ This section lets you control global training parameters, model type, and the ta
 
 advanced_config:
   seed: 42
-  task: "classification" # or regression/survial
+  task: "classification" # or regression/survival
   max_epochs: 32
   patience: 16
   batch_size: 64
@@ -522,9 +524,11 @@ advanced_config:
       use_alibi: false
 ```
 
-STAMP automatically adapts its **model architecture**, **loss function**, and **evaluation metrics** based on the task specified in the configuration file.
- 
-**Regression** tasks only require `ground_truth_label`.  
-**Survival analysis** tasks require `time_label` (follow-up time) and `status_label` (event indicator).  
-**Multi-target classification** requires `ground_truth_label` as a list and `advanced_config.model_name: "barspoon"`.
-These requirements apply consistently across cross-validation, training, deployment, and statistics.
+> [!NOTE]
+> STAMP automatically adapts its **model architecture**, **loss function**, and **evaluation metrics** based on the task specified in the configuration file.
+>
+> - **Regression**: requires only `ground_truth_label`.
+> - **Survival analysis**: requires `time_label` (follow-up time) and `status_label` (event indicator).
+> - **Multi-target classification**: requires `ground_truth_label` as a list and `advanced_config.model_name: "barspoon"`.
+>
+> These requirements apply consistently across cross-validation, training, deployment, and statistics.
