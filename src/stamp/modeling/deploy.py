@@ -342,6 +342,8 @@ def deploy_categorical_model_(
                 patient_label=patient_label,
                 ground_truth_label=ground_truth_label,
                 cut_off=cut_off,
+                time_label=time_label,
+                status_label=status_label,
             ).to_csv(output_dir / f"patient-preds-{model_i}.csv", index=False)
         else:
             df_builder(
@@ -351,6 +353,8 @@ def deploy_categorical_model_(
                 patient_label=patient_label,
                 ground_truth_label=ground_truth_label,
                 cut_off=cut_off,
+                time_label=time_label,
+                status_label=status_label,
             ).to_csv(output_dir / "patient-preds.csv", index=False)
 
     if task == "classification":
@@ -641,6 +645,8 @@ def _to_survival_prediction_df(
     ],
     predictions: Mapping[PatientId, torch.Tensor],
     patient_label: PandasLabel,
+    time_label: PandasLabel = "time",
+    status_label: PandasLabel = "event",
     cut_off: float | None = None,
     **kwargs,
 ) -> pd.DataFrame:
@@ -671,9 +677,9 @@ def _to_survival_prediction_df(
         # call .split on ground-truth values — assume structured input. If
         # the value is not a 2-tuple/list, treat both fields as unknown.
         if isinstance(gt, (tuple, list)) and len(gt) == 2:
-            row["time"], row["event"] = gt
+            row[time_label], row[status_label] = gt
         else:
-            row["time"], row["event"] = None, None
+            row[time_label], row[status_label] = None, None
 
         rows.append(row)
 

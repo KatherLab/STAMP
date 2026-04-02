@@ -311,14 +311,12 @@ def extract_(
                 default_slide_mpp=default_slide_mpp,
             )
             # Parallelism is implemented in the dataset iterator already, so one worker is enough!
-            # pin_memory speeds up CPU→GPU DMA for tile batches.
             # num_workers=1 is intentional: WSI read parallelism is inside _supertiles.
             dl = DataLoader(
                 ds,
                 batch_size=64,
                 num_workers=1,
                 drop_last=False,
-                pin_memory=torch.cuda.is_available(),
             )
 
             feats, xs_um, ys_um = [], [], []
