@@ -1,0 +1,114 @@
+preprocessing:
+  output_dir: "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_response_uni2"
+  wsi_dir: "/path/to/raw/wsi_dir"
+  extractor: "uni2"
+  device: "cuda"
+  cache_dir: "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_response_uni2/cache"
+  max_workers: 8
+  # Optional if slide metadata lacks resolution:
+  # default_slide_mpp: 1.0
+  # Optional: restrict preprocessing to a list of filenames
+  # wsi_list: "/path/to/slide_list.csv"
+
+crossval:
+  output_dir: "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_response_uni2/crossval"
+  clini_table: "/home/jeff/Projects/STAMP/tables/stamp_clini.csv"
+  feature_dir: "/mnt/nvme0n1p1/Jeff_projects/B01/features/uni2-0242c340"
+  slide_table: "/home/jeff/Projects/STAMP/tables/stamp_slide.csv"
+  task: "classification"
+  ground_truth_label: "RESPONSE_CR"
+  patient_label: "SAMPLE_ID"
+  filename_label: "FILENAME"
+  categories: ["yes", "no"]
+  # n_splits: 5
+
+training:
+  output_dir: "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_response_uni2/training"
+  clini_table: "/home/jeff/Projects/STAMP/tables/stamp_clini.csv"
+  feature_dir: "/mnt/nvme0n1p1/Jeff_projects/B01/features/uni2-0242c340"
+  slide_table: "/home/jeff/Projects/STAMP/tables/stamp_slide.csv"
+  task: "classification"
+  ground_truth_label: "RESPONSE_CR"
+  patient_label: "SAMPLE_ID"
+  filename_label: "FILENAME"
+  categories: ["yes", "no"]
+
+deployment:
+  output_dir: "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_response_uni2/deployment"
+  clini_table: "/home/jeff/Projects/STAMP/tables/stamp_clini.csv"
+  feature_dir: "/mnt/nvme0n1p1/Jeff_projects/B01/features/uni2-0242c340"
+  slide_table: "/home/jeff/Projects/STAMP/tables/stamp_slide.csv"
+  ground_truth_label: "RESPONSE_CR"
+  patient_label: "SAMPLE_ID"
+  filename_label: "FILENAME"
+  checkpoint_paths:
+    - "/path/to/model.ckpt"
+
+statistics:
+  output_dir: "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_response_uni2/statistics"
+  task: "classification"
+  ground_truth_label: "RESPONSE_CR"
+  true_class: "yes"
+  pred_csvs:
+    - "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_response_uni2/crossval/split-0/patient-preds.csv"
+    - "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_response_uni2/crossval/split-1/patient-preds.csv"
+    - "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_response_uni2/crossval/split-2/patient-preds.csv"
+    - "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_response_uni2/crossval/split-3/patient-preds.csv"
+    - "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_response_uni2/crossval/split-4/patient-preds.csv"
+
+heatmaps:
+  output_dir: "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_response_uni2/heatmaps"
+  feature_dir: "/mnt/nvme0n1p1/Jeff_projects/B01/features/uni2-0242c340"
+  wsi_dir: "/mnt/nvme0n1p1/Jeff_projects/B01/data/AG Janssen"
+  checkpoint_path: "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_response_uni2/crossval/split-0/model.ckpt"
+  device: "cuda"
+  # slide_paths:
+  #   - slide1.svs
+
+# Optional: only use this if you want patient-level embeddings before modeling.
+# Because your current feature_dir is UNI2 tile features, use COBRA here.
+# CHIEF slide/patient encoding expects CHIEF-CTRANSPATH tile features.
+patient_encoding:
+  encoder: "cobra"
+  output_dir: "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_response_uni2/patient_encoding"
+  feat_dir: "/mnt/nvme0n1p1/Jeff_projects/B01/features/uni2-0242c340"
+  slide_table: "/home/jeff/Projects/STAMP/tables/stamp_slide.csv"
+  device: "cuda"
+  patient_label: "SAMPLE_ID"
+  filename_label: "FILENAME"
+
+advanced_config:
+  seed: 42
+  max_epochs: 32
+  patience: 16
+  batch_size: 64
+  bag_size: 512
+  max_lr: 1e-4
+  div_factor: 25.0
+  model_name: "vit"
+
+  model_params:
+    vit:
+      dim_model: 512
+      dim_feedforward: 512
+      n_heads: 8
+      n_layers: 2
+      dropout: 0.25
+      use_alibi: false
+
+    trans_mil:
+      dim_hidden: 512
+
+    mlp:
+      dim_hidden: 512
+      num_layers: 2
+      dropout: 0.25
+
+    barspoon:
+      d_model: 512
+      num_encoder_heads: 8
+      num_decoder_heads: 8
+      num_encoder_layers: 2
+      num_decoder_layers: 2
+      dim_feedforward: 2048
+      positional_encoding: true
