@@ -132,7 +132,6 @@ def tile_bag_dataloader(
         collate_fn=collate_fn,
         worker_init_fn=Seed.get_loader_worker_init() if Seed._is_set() else None,
         persistent_workers=(num_workers > 0),
-        pin_memory=torch.cuda.is_available(),
     )
 
     return (
@@ -416,7 +415,6 @@ def create_dataloader(
             num_workers=num_workers,
             worker_init_fn=Seed.get_loader_worker_init() if Seed._is_set() else None,
             persistent_workers=(num_workers > 0),
-            pin_memory=torch.cuda.is_available(),
         )
         return dl, categories or []
     else:
