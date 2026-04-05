@@ -6,9 +6,16 @@ in that split's test set (avoiding data leakage). This ensures each heatmap
 uses a model that never saw that slide during training.
 
 Usage:
-    python scripts/run_heatmaps_per_split.py
+    python scripts/run_heatmaps_per_split.py --experiment <experiment_name>
+
+    experiment_name is one of:
+      - response        (RESPONSE_CR binary classification)
+      - blast_percent   (BLAST_PERCENT regression)
+      - blast_severity  (BLAST_SEVERITY 3-class classification)
+      - high_blast      (HIGH_BLAST binary classification)
 """
 
+import argparse
 import json
 import os
 import subprocess
@@ -18,10 +25,7 @@ from pathlib import Path
 import pandas as pd
 import yaml
 
-# === Configuration ===
-BASE_DIR = Path("/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_response_uni2")
-CROSSVAL_DIR = BASE_DIR / "crossval"
-HEATMAP_BASE_DIR = BASE_DIR / "heatmaps"
+# === Shared Configuration ===
 FEATURE_DIR = Path("/mnt/nvme0n1p1/Jeff_projects/B01/features/uni2-0242c340")
 WSI_DIR = Path("/mnt/nvme0n1p1/Jeff_projects/B01/data/AG Janssen")
 SLIDE_TABLE = Path("/home/jeff/Projects/STAMP/tables/stamp_slide.csv")
@@ -33,10 +37,52 @@ TOPK = 8
 BOTTOMK = 8
 OPACITY = 0.6
 
+# Experiment configurations
+EXPERIMENTS = {
+    "response": {
+        "base_dir": Path("/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_response_uni2"),
+    },
+    "blast_percent": {
+        "base_dir": Path("/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_blast_percent_uni2"),
+    },
+    "blast_severity": {
+        "base_dir": Path("/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_blast_severity_uni2"),
+    },
+    "high_blast": {
+        "base_dir": Path("/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_high_blast_uni2"),
+    },
+}
+
 
 def main():
+    parser = argparse.ArgumentParser(description="Run STAMP heatmaps per crossval split")
+    parser.add_argument(
+        "--experiment",
+        required=True,
+        choices=list(EXPERIMENTS.keys()),
+        help="Which experiment to generate heatmaps for",
+    )
+    parser.add_argument(
+        "--splits",
+        type=int,
+        nargs="*",
+        default=None,
+        help="Only run specific splits (e.g. --splits 0 2 4). Default: all splits.",
+    )
+    args = parser.parse_args()
+
+    exp = EXPERIMENTS[args.experiment]
+    base_dir = exp["base_dir"]
+    crossval_dir = base_dir / "crossval"
+    heatmap_base_dir = base_dir / "heatmaps"
+
+    print(f"=== Experiment: {args.experiment} ===")
+    print(f"  Base dir: {base_dir}")
+    print(f"  Crossval dir: {crossval_dir}")
+    print(f"  Heatmap dir: {heatmap_base_dir}")
+
     # Load splits
-    with open(CROSSVAL_DIR / "splits.json") as f:
+    with open(crossval_dir / "splits.json") as f:
         splits_data = json.load(f)
 
     # Load slide table to map SAMPLE_ID -> FILENAME
@@ -51,8 +97,15 @@ def main():
     available_wsis = {p.stem: p.name for p in WSI_DIR.glob("*.ndpi")}
     print(f"Found {len(available_wsis)} available WSI files")
 
-    for split_i, split in enumerate(splits_data["splits"]):
-        checkpoint = CROSSVAL_DIR / f"split-{split_i}" / "model.ckpt"
+    splits_to_run = args.splits if args.splits is not None else range(len(splits_data["splits"]))
+
+    for split_i in splits_to_run:
+        if split_i >= len(splits_data["splits"]):
+            print(f"[SKIP] Split {split_i}: does not exist")
+            continue
+
+        split = splits_data["splits"][split_i]
+        checkpoint = crossval_dir / f"split-{split_i}" / "model.ckpt"
         if not checkpoint.exists():
             print(f"[SKIP] Split {split_i}: no model.ckpt found")
             continue
@@ -77,7 +130,7 @@ def main():
             print(f"  - {sp}")
 
         # Create per-split output directory
-        split_heatmap_dir = HEATMAP_BASE_DIR / f"split-{split_i}"
+        split_heatmap_dir = heatmap_base_dir / f"split-{split_i}"
 
         # Build a temporary YAML config for this split
         config = {
@@ -119,10 +172,10 @@ def main():
         finally:
             os.unlink(tmp_path)
 
-    print("\n=== All heatmap generation complete ===")
+    print(f"\n=== Heatmap generation complete for {args.experiment} ===")
     # Summarize what was generated
     total = 0
-    for split_dir in sorted(HEATMAP_BASE_DIR.glob("split-*")):
+    for split_dir in sorted(heatmap_base_dir.glob("split-*")):
         slide_dirs = [d for d in split_dir.iterdir() if d.is_dir()]
         total += len(slide_dirs)
         print(f"  {split_dir.name}: {len(slide_dirs)} slides")
