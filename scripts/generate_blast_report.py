@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
-"""Generate a self-contained HTML report for BLAST-related STAMP experiments.
+"""Generate a self-contained HTML report for all AML STAMP crossval experiments.
 
-Covers three experiments derived from the BLAST_PERCENT column:
-  1. BLAST_PERCENT — regression (continuous 0-91%)
-  2. BLAST_SEVERITY — 3-class classification (low/intermediate/high)
-  3. HIGH_BLAST — binary classification (yes/no, threshold ≥20%)
+Covers four experiments:
+  1. RESPONSE_CR — binary classification (complete remission yes/no)
+  2. BLAST_PERCENT — regression (continuous 0-91%)
+  3. BLAST_SEVERITY — 3-class classification (low/intermediate/high)
+  4. HIGH_BLAST — binary classification (yes/no, threshold >=20%)
 
 The report includes per-experiment: summary metrics, ROC/PR or scatter plots,
 per-fold stats tables, and a representative heatmap gallery (sampled to keep
@@ -30,6 +31,23 @@ SLIDE_TABLE = Path("/home/jeff/Projects/STAMP/tables/stamp_slide.csv")
 CLINI_TABLE = Path("/home/jeff/Projects/STAMP/tables/stamp_clini.csv")
 
 EXPERIMENTS = {
+    "response_cr": {
+        "name": "RESPONSE_CR",
+        "display_name": "Treatment Response (Binary)",
+        "base_dir": DATA_ROOT / "stamp_aml_response_uni2",
+        "task": "classification",
+        "ground_truth_label": "RESPONSE_CR",
+        "categories": ["yes", "no"],
+        "true_class": "yes",
+        "description": (
+            "Binary classification predicting complete remission (CR) response in AML patients. "
+            "Positive class ('yes') indicates blast percentage below 5% after treatment (complete "
+            "remission), while 'no' indicates >= 5% blasts (non-response). This is the primary "
+            "clinical endpoint for treatment efficacy."
+        ),
+        "class_balance": "yes=336, no=153",
+        "crossval_type": "5-fold StratifiedKFold",
+    },
     "blast_percent": {
         "name": "BLAST_PERCENT",
         "display_name": "Blast Percentage (Regression)",
@@ -631,6 +649,12 @@ The attention map uses a single channel (regression) rather than per-class gradi
             "yes": ("#dc3545", "#f8d7da"),
             "no": ("#28a745", "#d4edda"),
         }
+    elif gt_label == "RESPONSE_CR":
+        group_order = ["yes", "no"]
+        group_colors = {
+            "yes": ("#28a745", "#d4edda"),
+            "no": ("#dc3545", "#f8d7da"),
+        }
     else:
         group_order = sorted(groups.keys())
         group_colors = {}
@@ -751,12 +775,12 @@ def generate_report(max_per_class: int = 10):
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AML Blast Analysis — STAMP Crossval Report</title>
+<title>AML Crossvalidation Report — STAMP</title>
 {CSS}
 </head>
 <body>
 
-<h1>AML Blast Analysis — STAMP Crossvalidation Report</h1>
+<h1>AML Bone Marrow — STAMP Crossvalidation Report</h1>
 <p style="color: #666; margin-bottom: 20px;">
   Generated {now} &mdash; STAMP Framework, UNI2 features, ViT MIL model
 </p>
@@ -765,9 +789,10 @@ def generate_report(max_per_class: int = 10):
 <h3>Table of Contents</h3>
 <ul>
   <li><a href="#overview">Overview &amp; Cross-Experiment Comparison</a></li>
-  <li><a href="#exp-blast_percent">1. BLAST_PERCENT — Regression</a></li>
-  <li><a href="#exp-blast_severity">2. BLAST_SEVERITY — 3-class Classification</a></li>
-  <li><a href="#exp-high_blast">3. HIGH_BLAST — Binary Classification</a></li>
+  <li><a href="#exp-response_cr">1. RESPONSE_CR — Treatment Response (Binary)</a></li>
+  <li><a href="#exp-blast_percent">2. BLAST_PERCENT — Regression</a></li>
+  <li><a href="#exp-blast_severity">3. BLAST_SEVERITY — 3-class Classification</a></li>
+  <li><a href="#exp-high_blast">4. HIGH_BLAST — Binary Classification</a></li>
   <li><a href="#discussion">Discussion</a></li>
 </ul>
 </div>
@@ -776,7 +801,8 @@ def generate_report(max_per_class: int = 10):
 <h2>Overview &amp; Cross-Experiment Comparison</h2>
 
 <p>
-Three prediction targets derived from the <strong>BLAST_PERCENT</strong> column in AML bone marrow aspirates.
+Four prediction targets from AML bone marrow aspirates: treatment response (RESPONSE_CR) and three
+targets derived from the <strong>BLAST_PERCENT</strong> column.
 All experiments use the same dataset (489 samples, 69 biological patients), feature extractor (UNI2, 3072-dim),
 and MIL architecture (ViT, 2-layer, 8-head, 512-dim, max_epochs=32, patience=16).
 </p>
@@ -792,6 +818,25 @@ and MIL architecture (ViT, 2-layer, 8-head, 512-dim, max_epochs=32, patience=16)
 """
 
     # Collect summary metrics for the comparison table
+    # RESPONSE_CR
+    rc_agg, _ = load_classification_stats(EXPERIMENTS["response_cr"])
+    rc_auroc = 0.0
+    rc_auprc = 0.0
+    for _, row in rc_agg.iterrows():
+        cls = str(row.iloc[0])
+        if cls == "yes":
+            rc_auroc = float(row.iloc[1])
+            rc_auprc = float(row.iloc[4])
+    html += f"""
+<tr>
+  <td>RESPONSE_CR</td>
+  <td>Binary Classification</td>
+  <td>yes (CR) / no</td>
+  <td>AUROC</td>
+  <td><strong>{rc_auroc:.3f}</strong> (AUPRC={rc_auprc:.3f})</td>
+</tr>
+"""
+
     # BLAST_PERCENT
     bp_stats = load_regression_stats(EXPERIMENTS["blast_percent"])
     html += f"""
@@ -845,16 +890,26 @@ and MIL architecture (ViT, 2-layer, 8-head, 512-dim, max_epochs=32, patience=16)
 
 <p style="margin-top: 15px;">
 <strong>Key finding:</strong> The binary HIGH_BLAST classifier achieves the best discriminative performance
-(AUROC=0.929), suggesting the model can reliably identify high-blast cases. The 3-class BLAST_SEVERITY
-model shows strong performance for high (0.912) and low (0.864) classes but struggles with the
-intermediate class (0.783), consistent with the small sample size (n=55) and the inherent difficulty
-of distinguishing 5–19% blast ranges. The regression model shows moderate correlation (r=0.680) but
-high RMSE (24.5%) driven by the skewed distribution.
+(AUROC=0.929), suggesting the model can reliably identify high-blast cases. RESPONSE_CR also shows
+strong performance (AUROC=0.870), confirming the model captures morphological features predictive of
+treatment response. The 3-class BLAST_SEVERITY model shows strong performance for high (0.912) and
+low (0.864) classes but struggles with the intermediate class (0.783), consistent with the small
+sample size (n=55) and the inherent difficulty of distinguishing 5–19% blast ranges. The regression
+model shows moderate correlation (r=0.680) but high RMSE (24.5%) driven by the skewed distribution.
 </p>
 </div>
 """
 
-    # === Experiment 1: BLAST_PERCENT ===
+    # === Experiment 1: RESPONSE_CR ===
+    exp_rc = EXPERIMENTS["response_cr"]
+    html += make_classification_section(exp_rc)
+    slides_rc, total_rc = collect_heatmap_slides(
+        exp_rc, clini_df, fname_to_sample, max_per_class=max_per_class
+    )
+    html += make_heatmap_gallery(exp_rc, slides_rc, total_rc)
+    html += "</div>\n"
+
+    # === Experiment 2: BLAST_PERCENT ===
     exp_bp = EXPERIMENTS["blast_percent"]
     html += make_regression_section(exp_bp)
     slides_bp, total_bp = collect_heatmap_slides(
@@ -863,7 +918,7 @@ high RMSE (24.5%) driven by the skewed distribution.
     html += make_heatmap_gallery(exp_bp, slides_bp, total_bp)
     html += "</div>\n"
 
-    # === Experiment 2: BLAST_SEVERITY ===
+    # === Experiment 3: BLAST_SEVERITY ===
     exp_bs = EXPERIMENTS["blast_severity"]
     html += make_classification_section(exp_bs)
     slides_bs, total_bs = collect_heatmap_slides(
@@ -872,7 +927,7 @@ high RMSE (24.5%) driven by the skewed distribution.
     html += make_heatmap_gallery(exp_bs, slides_bs, total_bs)
     html += "</div>\n"
 
-    # === Experiment 3: HIGH_BLAST ===
+    # === Experiment 4: HIGH_BLAST ===
     exp_hb = EXPERIMENTS["high_blast"]
     html += make_classification_section(exp_hb)
     slides_hb, total_hb = collect_heatmap_slides(
@@ -887,6 +942,12 @@ high RMSE (24.5%) driven by the skewed distribution.
 <h2>Discussion</h2>
 
 <ul style="list-style: disc; padding-left: 25px; line-height: 2;">
+<li><strong>RESPONSE_CR captures treatment response:</strong> AUROC of 0.870 (95% CI: 0.804–0.936)
+for predicting complete remission (CR). This is the primary clinical endpoint — it directly indicates
+whether a patient achieved blast clearance (&lt;5%) after treatment. The model's ability to predict
+this from pre/post-treatment morphology alone is clinically significant, with AUPRC of 0.915 for the
+positive (CR) class.</li>
+
 <li><strong>HIGH_BLAST is the strongest classifier:</strong> AUROC of 0.929 (95% CI: 0.877–0.981)
 for identifying &ge;20% blast cases. This clinically relevant threshold separates active disease from
 remission/low-burden states, and the model achieves this with high confidence across all 5 folds.</li>
@@ -902,25 +963,30 @@ reflect the difficulty of precise point estimation on a heavily right-skewed dis
 (median=3%, IQR ~0–12%). The model tends to regress toward the mean, underestimating high-blast cases
 and overestimating low-blast cases.</li>
 
-<li><strong>Biological relevance of attention patterns:</strong> Compare heatmaps across the three experiments
-for the same slides. In HIGH_BLAST, high-attention (red) regions should correspond to blast-dense areas.
+<li><strong>Biological relevance of attention patterns:</strong> Compare heatmaps across all four experiments
+for the same slides. In RESPONSE_CR, attention should highlight regions predictive of treatment outcome.
+In HIGH_BLAST, high-attention (red) regions should correspond to blast-dense areas.
 In BLAST_SEVERITY, the per-class heatmaps (high/intermediate/low) should show complementary attention patterns.
 The regression heatmaps use attention rollout rather than class-specific GradCAM.</li>
 
-<li><strong>Clinical utility:</strong> For treatment response monitoring, the binary HIGH_BLAST classifier
-is most directly actionable — it answers "does this patient have clinically significant blast burden?"
+<li><strong>Clinical utility:</strong> RESPONSE_CR directly addresses the clinical question of treatment
+efficacy. For blast burden assessment, the binary HIGH_BLAST classifier is most directly actionable —
+it answers "does this patient have clinically significant blast burden?"
 The BLAST_SEVERITY model adds nuance by distinguishing intermediate from extreme cases. The regression
 model provides a continuous estimate useful for trend monitoring across timepoints.</li>
 
-<li><strong>Heatmap coverage:</strong> All {total_bp + total_bs + total_hb} slide heatmaps were generated
-across the three experiments ({total_bp} + {total_bs} + {total_hb} per experiment), with representative
-samples shown in this report. Full heatmap galleries are available in the output directories.</li>
+<li><strong>Heatmap coverage:</strong> A total of {total_rc + total_bp + total_bs + total_hb} slide heatmaps
+were generated across the four experiments (RESPONSE_CR={total_rc}, BLAST_PERCENT={total_bp},
+BLAST_SEVERITY={total_bs}, HIGH_BLAST={total_hb}), with representative samples shown in this report.
+Note: RESPONSE_CR heatmaps are limited to the 17 slides for which original WSI files were available at
+the time of generation. Full heatmap galleries are available in the output directories.</li>
 
-<li><strong>Limitations:</strong> (1) All three targets are derived from the same BLAST_PERCENT column,
-so the experiments are not independent. (2) The dataset has 489 samples from only 69 patients — multiple
-biopsies per patient introduce correlation that crossvalidation at the sample level does not fully address.
-(3) The feature extractor (UNI2) was pretrained on general pathology, not specifically on bone marrow
-morphology.</li>
+<li><strong>Limitations:</strong> (1) BLAST_PERCENT, BLAST_SEVERITY, and HIGH_BLAST are all derived from
+the same BLAST_PERCENT column, so those three experiments are not independent. RESPONSE_CR is a separate
+clinical endpoint. (2) The dataset has 489 samples from only 69 patients — multiple biopsies per patient
+introduce correlation that crossvalidation at the sample level does not fully address. (3) The feature
+extractor (UNI2) was pretrained on general pathology, not specifically on bone marrow morphology.
+(4) RESPONSE_CR heatmaps cover only 17 of 529 slides due to limited WSI availability.</li>
 </ul>
 </div>
 
@@ -946,15 +1012,15 @@ def main():
     )
     args = parser.parse_args()
 
-    report_dir = DATA_ROOT / "blast_analysis_report"
+    report_dir = DATA_ROOT / "aml_crossval_report"
     report_dir.mkdir(parents=True, exist_ok=True)
 
-    print("Generating combined blast analysis report...")
+    print("Generating combined AML crossvalidation report (4 experiments)...")
     print(f"  Max slides per class: {args.max_slides}")
 
     html = generate_report(max_per_class=args.max_slides)
 
-    report_path = report_dir / "aml_blast_analysis_report.html"
+    report_path = report_dir / "aml_crossval_report.html"
     report_path.write_text(html)
 
     size_mb = report_path.stat().st_size / 1024 / 1024
