@@ -62,14 +62,17 @@ class Encoder(ABC):
         if self.precision == torch.float16:
             self.model.half()
 
-        h5_files = sorted(f for f in os.listdir(feat_dir) if f.endswith(".h5"))
-        for tile_feats_filename in (progress := tqdm(h5_files)):
-            h5_path = os.path.join(feat_dir, tile_feats_filename)
-            slide_name: str = Path(tile_feats_filename).stem
+        # Recursively collect all .h5 files in feat_dir
+        h5_files = [p for p in feat_dir.glob("**/*.h5")]
+        for h5_path in (progress := tqdm(h5_files)):
+            slide_name: str = h5_path.stem
             progress.set_description(slide_name)
 
-            # skip patient in case feature file already exists
-            output_path = (encode_dir / slide_name).with_suffix(".h5")
+            # Maintain the relative folder structure in the output directory
+            relative_path = h5_path.relative_to(feat_dir)
+            output_path = (encode_dir / relative_path).with_suffix(".h5")
+
+            # Skip processing if the output file already exists
             if output_path.exists():
                 _logger.info(
                     f"skipping {str(slide_name)} because {output_path} already exists"
@@ -77,7 +80,7 @@ class Encoder(ABC):
                 continue
 
             try:
-                feats, coords = self._validate_and_read_features(h5_path)
+                feats, coords = self._validate_and_read_features(str(h5_path))
             except ValueError as e:
                 tqdm.write(s=str(e))
                 continue
@@ -200,6 +203,9 @@ class Encoder(ABC):
     def _save_features_(
         self, output_path: Path, feats: np.ndarray, feat_type: str
     ) -> None:
+        # Ensure the parent directory exists before creating the temporary file
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+
         with (
             NamedTemporaryFile(dir=output_path.parent, delete=False) as tmp_h5_file,
             h5py.File(tmp_h5_file, "w") as f,
