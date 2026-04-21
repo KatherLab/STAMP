@@ -63,7 +63,7 @@ class Encoder(ABC):
             self.model.half()
 
         # Recursively collect all .h5 files in feat_dir
-        h5_files = [p for p in feat_dir.rglob("**/*.h5")]
+        h5_files = [p for p in feat_dir.rglob("*.h5")]
         for h5_path in (progress := tqdm(h5_files)):
             slide_name: str = h5_path.stem
             progress.set_description(slide_name)
