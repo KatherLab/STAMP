@@ -16,7 +16,6 @@ from matplotlib import pyplot as plt
 from pydantic import BaseModel, ConfigDict, Field
 
 from stamp.statistics.categorical import (
-    _drop_missing_ground_truth_rows,
     categorical_aggregated_,
     categorical_aggregated_multitarget_,
 )
@@ -95,7 +94,7 @@ def _compute_multitarget_classification_stats(
         for p in pred_csvs:
             df = _read_table(p, dtype=str)
             # Only keep rows where this target has ground truth
-            df_clean = _drop_missing_ground_truth_rows(df, target_label)
+            df_clean = df.dropna(subset=[target_label])
             if len(df_clean) > 0:
                 preds_dfs.append(df_clean)
 
@@ -233,20 +232,18 @@ def compute_stats_(
                     df
                     for p in pred_csvs
                     if len(
-                        df := _drop_missing_ground_truth_rows(
-                            _read_table(
-                                p,
-                                usecols=[
-                                    ground_truth_label,
-                                    f"{ground_truth_label}_{true_class}",
-                                ],
-                                dtype={
-                                    ground_truth_label: str,
-                                    f"{ground_truth_label}_{true_class}": float,
-                                },
-                            ),
-                            ground_truth_label,
+                        df := _read_table(
+                            p,
+                            usecols=[
+                                ground_truth_label,
+                                f"{ground_truth_label}_{true_class}",
+                            ],
+                            dtype={
+                                ground_truth_label: str,
+                                f"{ground_truth_label}_{true_class}": float,
+                            },
                         )
+                        .dropna(subset=[ground_truth_label])
                     )
                     > 0
                 ]

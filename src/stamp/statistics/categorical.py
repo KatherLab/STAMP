@@ -20,21 +20,6 @@ _score_labels = [
     "count",
 ]
 
-_missing_ground_truth_tokens = frozenset(
-    {"", "na", "nan", "none", "null", "n/a", "#n/a", "#na", "?", "-", "--"}
-)
-
-
-def _drop_missing_ground_truth_rows(
-    preds_df: pd.DataFrame, target_label: str
-) -> pd.DataFrame:
-    """Remove rows whose ground truth is missing or encoded as a missing token."""
-    normalized_ground_truth = preds_df[target_label].astype("string").str.strip()
-    missing_ground_truth = normalized_ground_truth.isna() | (
-        normalized_ground_truth.str.lower().isin(_missing_ground_truth_tokens)
-    )
-    return preds_df.loc[~missing_ground_truth].copy()
-
 
 def _detect_targets_from_columns(columns: Sequence[str]) -> list[str]:
     """Detect target columns from CSV column names.
@@ -142,9 +127,7 @@ def categorical_aggregated_(
     """
     preds_dfs = {}
     for p in preds_csvs:
-        df = _drop_missing_ground_truth_rows(
-            pd.read_csv(p, dtype=str), ground_truth_label
-        )
+        df = pd.read_csv(p, dtype=str).dropna(subset=[ground_truth_label])
         if len(df) > 0:
             preds_dfs[Path(p).parent.name] = _categorical(df, ground_truth_label)
 
@@ -189,7 +172,7 @@ def categorical_aggregated_multitarget_(
         preds_dfs = {}
         for fold_name, df in csv_cache.items():
             # Drop rows where this target's ground truth is missing
-            df_clean = _drop_missing_ground_truth_rows(df, target_label)
+            df_clean = df.dropna(subset=[target_label])
             if len(df_clean) > 0:
                 preds_dfs[fold_name] = _categorical(df_clean, target_label)
 
