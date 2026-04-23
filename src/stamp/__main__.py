@@ -183,6 +183,9 @@ def _run_cli(args: argparse.Namespace) -> None:
                 feature_dir=config.deployment.feature_dir,
                 patient_label=config.deployment.patient_label,
                 filename_label=config.deployment.filename_label,
+                drop_patients_with_missing_ground_truth=(
+                    config.deployment.drop_patients_with_missing_ground_truth
+                ),
                 num_workers=config.deployment.num_workers,
                 accelerator=config.deployment.accelerator,
                 ground_truth_label=config.deployment.ground_truth_label,

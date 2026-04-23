@@ -8,6 +8,11 @@ from pydantic import BaseModel, ConfigDict, Field
 from stamp.modeling.registry import ModelName
 from stamp.types import Category, PandasLabel, Task
 
+_DROP_PATIENTS_WITH_MISSING_GROUND_TRUTH_DESCRIPTION = (
+    "If true, only patients present in the clinical table are included. "
+    "Set to false to keep patients without ground truth when the task supports it."
+)
+
 
 class TrainConfig(BaseModel):
     model_config = ConfigDict(extra="forbid")
@@ -35,6 +40,10 @@ class TrainConfig(BaseModel):
     time_label: PandasLabel | None = Field(
         default=None,
         description="Column in the clinical table indicating follow-up or survival time (e.g. days).",
+    )
+    drop_patients_with_missing_ground_truth: bool = Field(
+        default=True,
+        description=_DROP_PATIENTS_WITH_MISSING_GROUND_TRUTH_DESCRIPTION,
     )
 
     patient_label: PandasLabel = "PATIENT"
@@ -71,6 +80,10 @@ class DeploymentConfig(BaseModel):
     # For survival prediction
     status_label: PandasLabel | None = None
     time_label: PandasLabel | None = None
+    drop_patients_with_missing_ground_truth: bool = Field(
+        default=True,
+        description=_DROP_PATIENTS_WITH_MISSING_GROUND_TRUTH_DESCRIPTION,
+    )
 
     num_workers: int = min(os.cpu_count() or 1, 16)
     accelerator: str = "gpu" if torch.cuda.is_available() else "cpu"

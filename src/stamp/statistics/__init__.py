@@ -16,6 +16,7 @@ from matplotlib import pyplot as plt
 from pydantic import BaseModel, ConfigDict, Field
 
 from stamp.statistics.categorical import (
+    _drop_missing_ground_truth_rows,
     categorical_aggregated_,
     categorical_aggregated_multitarget_,
 )
@@ -94,7 +95,7 @@ def _compute_multitarget_classification_stats(
         for p in pred_csvs:
             df = _read_table(p, dtype=str)
             # Only keep rows where this target has ground truth
-            df_clean = df.dropna(subset=[target_label])
+            df_clean = _drop_missing_ground_truth_rows(df, target_label)
             if len(df_clean) > 0:
                 preds_dfs.append(df_clean)
 
@@ -229,19 +230,30 @@ def compute_stats_(
                     )
 
                 preds_dfs = [
-                    _read_table(
-                        p,
-                        usecols=[
-                            ground_truth_label,
-                            f"{ground_truth_label}_{true_class}",
-                        ],
-                        dtype={
-                            ground_truth_label: str,
-                            f"{ground_truth_label}_{true_class}": float,
-                        },
-                    )
+                    df
                     for p in pred_csvs
+                    if len(
+                        df := _drop_missing_ground_truth_rows(
+                            _read_table(
+                                p,
+                                usecols=[
+                                    ground_truth_label,
+                                    f"{ground_truth_label}_{true_class}",
+                                ],
+                                dtype={
+                                    ground_truth_label: str,
+                                    f"{ground_truth_label}_{true_class}": float,
+                                },
+                            ),
+                            ground_truth_label,
+                        )
+                    )
+                    > 0
                 ]
+                if not preds_dfs:
+                    raise ValueError(
+                        "No classification rows with ground truth available for plotting."
+                    )
 
                 y_trues = [
                     np.array(df[ground_truth_label] == true_class) for df in preds_dfs

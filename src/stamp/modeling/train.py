@@ -63,7 +63,9 @@ def train_categorical_model_(
         status_label=config.status_label,
         patient_label=config.patient_label,
         filename_label=config.filename_label,
-        drop_patients_with_missing_ground_truth=True,
+        drop_patients_with_missing_ground_truth=(
+            config.drop_patients_with_missing_ground_truth
+        ),
     )
     _logger.info(f"Detected feature type: {feature_type}")
 
