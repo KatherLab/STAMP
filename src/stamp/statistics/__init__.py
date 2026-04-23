@@ -242,8 +242,7 @@ def compute_stats_(
                                 ground_truth_label: str,
                                 f"{ground_truth_label}_{true_class}": float,
                             },
-                        )
-                        .dropna(subset=[ground_truth_label])
+                        ).dropna(subset=[ground_truth_label])
                     )
                     > 0
                 ]
