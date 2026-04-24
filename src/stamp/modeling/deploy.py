@@ -72,6 +72,7 @@ def deploy_categorical_model_(
     filename_label: PandasLabel,
     num_workers: int,
     accelerator: str | Accelerator,
+    drop_patients_with_missing_ground_truth: bool = True,
 ) -> None:
     """Deploy categorical model(s) and save predictions.
 
@@ -230,7 +231,7 @@ def deploy_categorical_model_(
                 patient_to_ground_truth,
             ),
             slide_to_patient=slide_to_patient,
-            drop_patients_with_missing_ground_truth=False,
+            drop_patients_with_missing_ground_truth=drop_patients_with_missing_ground_truth,
         )
 
         patient_ids = list(patient_to_data.keys())

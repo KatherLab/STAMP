@@ -125,13 +125,17 @@ def categorical_aggregated_(
     calculate the mean and 95% confidence interval for all the scores as
     well as sum the total instane count for each class.
     """
-    preds_dfs = {
-        Path(p).parent.name: _categorical(
-            pd.read_csv(p, dtype=str).dropna(subset=[ground_truth_label]),
-            ground_truth_label,
+    preds_dfs = {}
+    for p in preds_csvs:
+        df = pd.read_csv(p, dtype=str).dropna(subset=[ground_truth_label])
+        if len(df) > 0:
+            preds_dfs[Path(p).parent.name] = _categorical(df, ground_truth_label)
+
+    if not preds_dfs:
+        raise ValueError(
+            "No classification rows with ground truth available for statistics."
         )
-        for p in preds_csvs
-    }
+
     preds_df = pd.concat(preds_dfs).sort_index()
     preds_df.to_csv(outpath / f"{ground_truth_label}_categorical-stats_individual.csv")
     stats_df = _aggregate_categorical_stats(preds_df.reset_index())

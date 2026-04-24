@@ -79,6 +79,8 @@ crossval:
   # For multi-target classification you may specify a list of columns,
   # e.g. ground_truth_label: ["KRAS", "BRAF", "NRAS"]
 
+  # drop_patients_with_missing_ground_truth: true
+
   # For survival (should be status and follow-up days columns in clini table)
   # status_label: "event"
   # time_label: "time"
@@ -135,6 +137,8 @@ training:
   # For multi-target classification you may specify a list of columns,
   # e.g. ground_truth_label: ["KRAS", "BRAF", "NRAS"]
 
+  # drop_patients_with_missing_ground_truth: true
+
   # For survival (should be status and follow-up days columns in clini table)
   # status_label: "event"
   # time_label: "time"
@@ -178,6 +182,8 @@ deployment:
   ground_truth_label: "KRAS"
   # For multi-target classification you may specify a list of columns,
   # e.g. ground_truth_label: ["KRAS", "BRAF", "NRAS"]
+
+  # drop_patients_with_missing_ground_truth: true
 
   # For survival (should be status and follow-up days columns in clini table)
   # status_label: "event"

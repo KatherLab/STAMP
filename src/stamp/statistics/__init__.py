@@ -229,19 +229,27 @@ def compute_stats_(
                     )
 
                 preds_dfs = [
-                    _read_table(
-                        p,
-                        usecols=[
-                            ground_truth_label,
-                            f"{ground_truth_label}_{true_class}",
-                        ],
-                        dtype={
-                            ground_truth_label: str,
-                            f"{ground_truth_label}_{true_class}": float,
-                        },
-                    )
+                    df
                     for p in pred_csvs
+                    if len(
+                        df := _read_table(
+                            p,
+                            usecols=[
+                                ground_truth_label,
+                                f"{ground_truth_label}_{true_class}",
+                            ],
+                            dtype={
+                                ground_truth_label: str,
+                                f"{ground_truth_label}_{true_class}": float,
+                            },
+                        ).dropna(subset=[ground_truth_label])
+                    )
+                    > 0
                 ]
+                if not preds_dfs:
+                    raise ValueError(
+                        "No classification rows with ground truth available for plotting."
+                    )
 
                 y_trues = [
                     np.array(df[ground_truth_label] == true_class) for df in preds_dfs
