@@ -50,7 +50,7 @@ jobs:
       run: uv build
         
     - name: Run tests for extractor ${{ matrix.extractor }}
-      run: uv run pytest -s tests/test_feature_extractors.py -k "${{ matrix.extractor }}" --verbose
+      run: uv run --extra cpu pytest -s tests/test_feature_extractors.py -k "${{ matrix.extractor }}" --verbose
       env:
         HF_TOKEN: ${{ secrets.HF_TOKEN }}
 
@@ -83,7 +83,7 @@ jobs:
       run: uv build
         
     - name: Run other tests
-      run: uv run pytest -s tests/ -k "not test_feature_extractors.py" --verbose
+      run: uv run --extra cpu pytest -s tests/ -k "not test_feature_extractors.py" --verbose
       env:
         HF_TOKEN: ${{ secrets.HF_TOKEN }}
   
