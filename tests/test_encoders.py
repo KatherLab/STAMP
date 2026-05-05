@@ -43,14 +43,6 @@ used_extractor = {
 }
 
 
-def _is_gated_repo_error(error: BaseException) -> bool:
-    while error is not None:
-        if isinstance(error, GatedRepoError) or "gated repo" in str(error):
-            return True
-        error = error.__cause__ or error.__context__
-    return False
-
-
 @pytest.mark.slow
 @pytest.mark.parametrize("encoder", EncoderName)
 @pytest.mark.filterwarnings("ignore:Importing from timm.models.layers is deprecated")
@@ -185,8 +177,8 @@ def test_if_encoding_crashes(*, tmp_path: Path, encoder: EncoderName):
         pytest.skip(f"dependencies for {encoder} not installed")
     except GatedRepoError:
         pytest.skip(f"cannot access gated repo for {encoder}")
-    except (OSError, ValueError) as e:
-        if _is_gated_repo_error(e):
+    except OSError as e:
+        if "gated repo" in str(e):
             pytest.skip(f"cannot access gated repo for {encoder}")
         raise
 
