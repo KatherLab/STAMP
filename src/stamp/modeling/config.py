@@ -149,6 +149,7 @@ class ModelParams(BaseModel):
 class AdvancedConfig(BaseModel):
     model_config = ConfigDict(extra="forbid")
     bag_size: int = 512
+    prefetch_bag_size: int | None = None
     num_workers: int = min(os.cpu_count() or 1, 16)
     batch_size: int = 64
     max_epochs: int = 32
