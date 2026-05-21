@@ -152,8 +152,7 @@ def _compute_multitarget_classification_stats(
 
             fig.tight_layout()
             fig.savefig(
-                output_dir
-                / f"roc-curve_{path_safe(target_label)}={true_class}.svg"
+                output_dir / f"roc-curve_{path_safe(target_label)}={true_class}.svg"
             )
             plt.close(fig)
 
