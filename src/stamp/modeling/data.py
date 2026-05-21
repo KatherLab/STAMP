@@ -1104,11 +1104,9 @@ def filter_complete_patient_data_(
         )
     }
 
-    _logger.info(
-        f"Total patients in clinical table: {len(patient_to_ground_truth)}\n"
-        f"Patients appearing in slide table: {len(patient_to_slides)}\n"
-        f"Final usable patients (complete data): {len(patients)}\n"
-    )
+    _logger.info("Total patients in clinical table: %d", len(patient_to_ground_truth))
+    _logger.info("Patients appearing in slide table: %d", len(patient_to_slides))
+    _logger.info("Final usable patients (complete data): %d", len(patients))
     return patients
 
 

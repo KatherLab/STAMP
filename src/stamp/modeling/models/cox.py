@@ -4,7 +4,6 @@ In parts from https://github.com/Novartis/torchsurv/blob/main/src/torchsurv/loss
 # pylint: disable=C0103
 # pylint: disable=C0301
 
-import sys
 import warnings
 
 import torch
@@ -268,15 +267,3 @@ def neg_partial_log_likelihood(
             )
         )
     return loss
-
-
-if __name__ == "__main__":
-    import doctest
-
-    # Run doctest
-    results = doctest.testmod()
-    if results.failed == 0:
-        print("All tests passed.")
-    else:
-        print("Some doctests failed.")
-        sys.exit(1)
