@@ -6,7 +6,6 @@ to the task-specific statistic implementations found in the submodules.
 
 from __future__ import annotations
 
-import re
 from collections.abc import Sequence
 from pathlib import Path
 from typing import NewType
@@ -35,17 +34,9 @@ from stamp.types import PandasLabel, Task
 __all__ = ["StatsConfig", "compute_stats_", "path_safe"]
 
 
-_PATH_SEP_RE = re.compile(r"[/\\]+")
-
-
 def path_safe(label: str) -> str:
-    """Make a label safe to embed in a filename.
-
-    Replaces path separators with ``_`` so labels like
-    ``"Parameter(0=mod/well,1=poor)"`` don't get interpreted as a
-    subdirectory when passed to ``pathlib.Path``.
-    """
-    return _PATH_SEP_RE.sub("_", label)
+    """Replace '/' (and '\\') with '_' so labels are safe as filename parts."""
+    return label.replace("/", "_").replace("\\", "_")
 
 
 __author__ = "Marko van Treeck, Minh Duc Nguyen"
@@ -160,8 +151,10 @@ def _compute_multitarget_classification_stats(
                 )
 
             fig.tight_layout()
-            safe_target = path_safe(target_label)
-            fig.savefig(output_dir / f"roc-curve_{safe_target}={true_class}.svg")
+            fig.savefig(
+                output_dir
+                / f"roc-curve_{path_safe(target_label)}={true_class}.svg"
+            )
             plt.close(fig)
 
             # Plot PRC curve
@@ -187,7 +180,9 @@ def _compute_multitarget_classification_stats(
                 )
 
             fig.tight_layout()
-            fig.savefig(output_dir / f"pr-curve_{safe_target}={true_class}.svg")
+            fig.savefig(
+                output_dir / f"pr-curve_{path_safe(target_label)}={true_class}.svg"
+            )
             plt.close(fig)
 
     # Compute aggregated statistics for all targets
@@ -306,8 +301,10 @@ def compute_stats_(
 
                 fig.tight_layout()
                 output_dir.mkdir(parents=True, exist_ok=True)
-                safe_label = path_safe(ground_truth_label)
-                fig.savefig(output_dir / f"roc-curve_{safe_label}={true_class}.svg")
+                fig.savefig(
+                    output_dir
+                    / f"roc-curve_{path_safe(ground_truth_label)}={true_class}.svg"
+                )
                 plt.close(fig)
 
                 fig, ax = plt.subplots(
@@ -334,7 +331,10 @@ def compute_stats_(
                     )
 
                 fig.tight_layout()
-                fig.savefig(output_dir / f"pr-curve_{safe_label}={true_class}.svg")
+                fig.savefig(
+                    output_dir
+                    / f"pr-curve_{path_safe(ground_truth_label)}={true_class}.svg"
+                )
                 plt.close(fig)
 
                 categorical_aggregated_(

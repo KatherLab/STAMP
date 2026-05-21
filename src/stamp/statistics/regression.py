@@ -109,11 +109,14 @@ def regression_aggregated_(
 
     # Save individual stats and aggregate
     stats_df = pd.DataFrame(stats).transpose()
-    safe_label = path_safe(ground_truth_label)
-    stats_df.to_csv(outpath / f"{safe_label}_regression-stats_individual.csv")
+    stats_df.to_csv(
+        outpath / f"{path_safe(ground_truth_label)}_regression-stats_individual.csv"
+    )
 
     mean = stats_df.mean(numeric_only=True)
     sem = stats_df.sem(numeric_only=True)
     lower, upper = st.t.interval(0.95, len(stats_df) - 1, loc=mean, scale=sem)
     agg = pd.DataFrame({"mean": mean, "95%_low": lower, "95%_high": upper})
-    agg.to_csv(outpath / f"{safe_label}_regression-stats_aggregated.csv")
+    agg.to_csv(
+        outpath / f"{path_safe(ground_truth_label)}_regression-stats_aggregated.csv"
+    )

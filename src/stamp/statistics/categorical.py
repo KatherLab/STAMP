@@ -139,10 +139,13 @@ def categorical_aggregated_(
         )
 
     preds_df = pd.concat(preds_dfs).sort_index()
-    safe_label = path_safe(ground_truth_label)
-    preds_df.to_csv(outpath / f"{safe_label}_categorical-stats_individual.csv")
+    preds_df.to_csv(
+        outpath / f"{path_safe(ground_truth_label)}_categorical-stats_individual.csv"
+    )
     stats_df = _aggregate_categorical_stats(preds_df.reset_index())
-    stats_df.to_csv(outpath / f"{safe_label}_categorical-stats_aggregated.csv")
+    stats_df.to_csv(
+        outpath / f"{path_safe(ground_truth_label)}_categorical-stats_aggregated.csv"
+    )
 
 
 def categorical_aggregated_multitarget_(
@@ -184,12 +187,15 @@ def categorical_aggregated_multitarget_(
 
         # Concatenate and save individual stats for this target
         preds_df = pd.concat(preds_dfs).sort_index()
-        safe_target = path_safe(target_label)
-        preds_df.to_csv(outpath / f"{safe_target}_categorical-stats_individual.csv")
+        preds_df.to_csv(
+            outpath / f"{path_safe(target_label)}_categorical-stats_individual.csv"
+        )
 
         # Aggregate stats for this target
         stats_df = _aggregate_categorical_stats(preds_df.reset_index())
-        stats_df.to_csv(outpath / f"{safe_target}_categorical-stats_aggregated.csv")
+        stats_df.to_csv(
+            outpath / f"{path_safe(target_label)}_categorical-stats_aggregated.csv"
+        )
 
         # Store for summary
         all_target_stats[target_label] = stats_df
