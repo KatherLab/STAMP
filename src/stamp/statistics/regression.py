@@ -10,7 +10,7 @@ import pandas as pd
 import scipy.stats as st
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 
-from stamp.statistics import path_safe
+from stamp.utils.path import path_safe
 
 
 def _regression(preds_df: pd.DataFrame, target_label: str) -> pd.Series:

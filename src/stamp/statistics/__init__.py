@@ -30,13 +30,9 @@ from stamp.statistics.roc import (
 )
 from stamp.statistics.survival import _plot_km, _survival_stats_for_csv
 from stamp.types import PandasLabel, Task
+from stamp.utils.path import path_safe
 
 __all__ = ["StatsConfig", "compute_stats_", "path_safe"]
-
-
-def path_safe(label: str) -> str:
-    """Replace '/' (and '\\') with '_' so labels are safe as filename parts."""
-    return label.replace("/", "_").replace("\\", "_")
 
 
 __author__ = "Marko van Treeck, Minh Duc Nguyen"

@@ -7,7 +7,7 @@ import pandas as pd
 import scipy.stats as st
 from sklearn import metrics
 
-from stamp.statistics import path_safe
+from stamp.utils.path import path_safe
 
 __author__ = "Marko van Treeck"
 __copyright__ = "Copyright (C) 2022-2025 Marko van Treeck"
