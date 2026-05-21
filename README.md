@@ -91,9 +91,20 @@ source .venv/bin/activate
 > Run `nvcc --version` to ensure flash-attn will be built for CUDA 13.0
 
 
+For the full GPU stack (`conchv1_5`, `gigapath`, `musk`), pick **one** of the two options below:
+
+**Option A — Prebuilt flash-attn wheel (fast, no compile).** Recommended if your environment matches: Linux x86_64, Linux aarch64, or Windows x86_64, with Python 3.13, CUDA 13.0, and torch 2.10. Wheels are hosted on the [STAMP releases](https://github.com/KatherLab/STAMP/releases) page.
+
+```bash
+# GPU (CUDA) Installation - prebuilt flash-attn wheel, no compile
+uv sync --extra gpu_prebuilt
+source .venv/bin/activate
+```
+
+**Option B — Build flash-attn from source.** Use this on macOS, or whenever the prebuilt wheel markers do not match your platform. The `nvcc` build can take a long time and use a lot of RAM.
+
 ```bash
 # GPU (CUDA) Installation - building flash-attn for supporting conchv1_5, gigapath and musk
-
 MAX_JOBS=2 uv sync --extra gpu_all # to speed up the build time increase max_jobs! This might use more RAM!
 source .venv/bin/activate
 ```

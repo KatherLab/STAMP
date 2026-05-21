@@ -57,9 +57,8 @@ build = [
     "ninja"
 ]
 flash-attention = [
-    "flash-attn @ https://github.com/KatherLab/STAMP/releases/download/2.5.0/flash_attn-2.8.3+cu130torch2.10-cp313-cp313-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl ; sys_platform == 'linux' and platform_machine == 'x86_64' and python_version == '3.13'",
-    "flash-attn @ https://github.com/KatherLab/STAMP/releases/download/2.5.0/flash_attn-2.8.3+cu130torch2.10-cp313-cp313-manylinux_2_34_aarch64.whl ; sys_platform == 'linux' and platform_machine == 'aarch64' and python_version == '3.13'",
-    ]
+    "flash-attn==2.8.3",
+]
 conch = [
     "huggingface-hub>=0.26.2",
     "conch @ git+https://github.com/KatherLab/CONCH",
@@ -151,6 +150,14 @@ gpu_all = [
     "torchvision~=0.25.0",
     "stamp[conch,ctranspath,uni,virchow2,chief_ctranspath,musk,gigapath,conch1_5,prism,madeleine,plip,cobra]"
 ]
+gpu_prebuilt = [
+    "torch~=2.10.0",
+    "torchvision~=0.25.0",
+    "stamp[conch,ctranspath,uni,virchow2,chief_ctranspath,musk,gigapath,conch1_5,prism,madeleine,plip,cobra]",
+    "flash-attn @ https://github.com/KatherLab/STAMP/releases/download/2.5.0/flash_attn-2.8.3+cu130torch2.10-cp313-cp313-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl ; sys_platform == 'linux' and platform_machine == 'x86_64' and python_version == '3.13'",
+    "flash-attn @ https://github.com/KatherLab/STAMP/releases/download/2.5.0/flash_attn-2.8.3+cu130torch2.10-cp313-cp313-manylinux_2_34_aarch64.whl ; sys_platform == 'linux' and platform_machine == 'aarch64' and python_version == '3.13'",
+    "flash-attn @ https://github.com/KatherLab/STAMP/releases/download/2.5.0/flash_attn-2.8.3+cu130torch2.10-cp313-cp313-win_amd64.whl ; sys_platform == 'win32' and platform_machine == 'AMD64' and python_version == '3.13'",
+]
 all = ["stamp[cpu]"]
 
 [project.scripts]
@@ -195,6 +202,10 @@ conflicts = [
     { extra = "cpu" },
     { extra = "gpu_all" },
   ],
+  [
+    { extra = "cpu" },
+    { extra = "gpu_prebuilt" },
+  ],
 ]
 build-constraint-dependencies = [
   "torch==2.10.0",
@@ -207,11 +218,13 @@ torch = [
   { index = "pytorch-cpu", extra = "cpu" },
   { index = "pytorch-cu130", extra = "gpu" },
   { index = "pytorch-cu130", extra = "gpu_all" },
+  { index = "pytorch-cu130", extra = "gpu_prebuilt" },
 ]
 torchvision = [
   { index = "pytorch-cpu", extra = "cpu" },
   { index = "pytorch-cu130", extra = "gpu" },
   { index = "pytorch-cu130", extra = "gpu_all" },
+  { index = "pytorch-cu130", extra = "gpu_prebuilt" },
 ]
 
 [[tool.uv.index]]
@@ -249,6 +262,6 @@ requires-dist = [
 ]
 
 [tool.uv.extra-build-dependencies]
-flash-attn = ["torch"]
-gigapath = ["torch"]
-conch = ["torch"]
+flash-attn = [{ requirement = "torch", match-runtime = true }]
+gigapath = [{ requirement = "torch", match-runtime = true }]
+conch = [{ requirement = "torch", match-runtime = true }]

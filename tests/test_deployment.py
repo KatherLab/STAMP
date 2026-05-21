@@ -163,7 +163,7 @@ def test_to_prediction_df(task: str) -> None:
         use_alibi=False,
         total_steps=1000,
         max_lr=1e-4,
-        div_factor=25,
+        div_factor=25.0,
     )
     if task == "classification":
         preds_df = _to_prediction_df(

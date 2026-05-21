@@ -7,13 +7,14 @@ os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"
 import logging
 from collections.abc import Collection, Iterable
 from pathlib import Path
-from typing import List, Optional, Tuple, cast
+from typing import cast
 
 import h5py
 import matplotlib.pyplot as plt
 import numpy as np
 import openslide
 import torch
+from beartype.typing import List, Optional, Tuple
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 from matplotlib.patches import Patch

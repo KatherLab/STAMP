@@ -314,7 +314,13 @@ def patient_feature_dataloader(
     )
     one_hot = torch.tensor(raw_ground_truths.reshape(-1, 1) == categories)
     ds = PatientFeatureDataset(feature_files, one_hot, transform=transform)
-    dl = DataLoader(ds, batch_size=batch_size, shuffle=shuffle, num_workers=num_workers)
+    dl = DataLoader(
+        ds,
+        batch_size=batch_size,
+        shuffle=shuffle,
+        num_workers=num_workers,
+        persistent_workers=(num_workers > 0),
+    )
     return dl, categories
 
 
