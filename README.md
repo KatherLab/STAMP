@@ -83,7 +83,7 @@ uv sync --extra gpu_prebuilt
 source .venv/bin/activate
 ```
 
-If you encounter errors during installation please read Installation Troubleshooting [below](#installation-troubleshooting). If the prebuilt wheel doesn't fit your platform or you need a different flash-attn version, see [Advanced: Build flash-attn from source](#advanced-build-flash-attn-from-source).
+If you encounter errors during installation please read Installation Troubleshooting [below](#installation-troubleshooting). If the prebuilt wheel doesn not fit your platform or you need a different flash-attn version, see [Advanced: Build flash-attn from source](#advanced-build-flash-attn-from-source).
 
 ### Additional Dependencies
 
@@ -102,8 +102,6 @@ If you encounter errors during installation please read Installation Troubleshoo
 > ```
 
 ### Advanced: Build flash-attn from source
-
-Building from source is useful if the prebuilt wheel does not match your platform, you hit runtime errors importing `flash_attn`, or you need a different flash-attn version.
 
 > [!CAUTION]
 > Building flash-attn can take an extended amount of time and consume a lot of RAM and CPU time!
