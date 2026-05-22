@@ -101,7 +101,7 @@ uv sync --extra gpu_prebuilt
 source .venv/bin/activate
 ```
 
-**Option B — Build flash-attn from source.** Use this on macOS, or whenever the prebuilt wheel markers do not match your platform. The `nvcc` build can take a long time and use a lot of RAM.
+**Option B — Self-built flash-attn from source.** Use this whenever the prebuilt wheel markers do not match your platform. The `nvcc` build can take a long time and use a lot of RAM.
 
 ```bash
 # GPU (CUDA) Installation - building flash-attn for supporting conchv1_5, gigapath and musk
