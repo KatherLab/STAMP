@@ -178,8 +178,8 @@ def plot_multiple_decorated_precision_recall_curves(
         )
 
     # limit conf bounds to [0,1] in case of low sample numbers
-    lower = max(0, lower)
-    upper = min(1, upper)
+    lower = float(max(0.0, lower))
+    upper = float(min(1.0, upper))
 
     auc_str = f"PRC = {np.mean(aucs):0.2f} [{lower:0.2f}-{upper:0.2f}]"
 

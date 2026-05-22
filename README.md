@@ -75,25 +75,7 @@ uv sync --extra cpu
 source .venv/bin/activate
 ```
 
-> [!CAUTION]
-> In the next step we will build [flash-attn](https://github.com/dao-ailab/flash-attention), this might take an extended amount of time and consume a lot of RAM and CPU time!
->
-> Please make sure you have [Nvidia CUDA Toolkit 13.0](https://developer.nvidia.com/cuda-13-0-2-download-archive) installed! You must use Nvidia Driver version 580 or newer!
->
-> The `nvcc --version` command must indicate that 13.0 is installed and is currently in PATH: `Cuda compilation tools, release 13.0, V13.0.88`.
->
-> If you get another version or `Command 'nvcc' not found`, add it to the PATH:
-> ```bash
-> export CUDA_HOME=/usr/local/cuda-13.0
-> export PATH="${CUDA_HOME}/bin:$PATH"
-> ```
->
-> Run `nvcc --version` to ensure flash-attn will be built for CUDA 13.0
-
-
-For the full GPU stack (`conchv1_5`, `gigapath`, `musk`), pick **one** of the two options below:
-
-**Option A — Prebuilt flash-attn wheel (fast, no compile).** Recommended if your environment matches: Linux x86_64, Linux aarch64, or Windows x86_64, with Python 3.13, CUDA 13.0, and torch 2.10. Wheels are hosted on the [STAMP releases](https://github.com/KatherLab/STAMP/releases) page.
+For the full GPU stack (`conchv1_5`, `gigapath`, `musk`), install with the prebuilt flash-attn wheel — no compile required. Supported on Linux x86_64, Linux aarch64, or Windows x86_64, with Python 3.13, CUDA 13.0, and torch 2.10. Wheels are hosted on the [STAMP releases](https://github.com/KatherLab/STAMP/releases) page.
 
 ```bash
 # GPU (CUDA) Installation - prebuilt flash-attn wheel, no compile
@@ -101,15 +83,7 @@ uv sync --extra gpu_prebuilt
 source .venv/bin/activate
 ```
 
-**Option B — Self-built flash-attn from source.** Use this whenever the prebuilt wheel markers do not match your platform. The `nvcc` build can take a long time and use a lot of RAM.
-
-```bash
-# GPU (CUDA) Installation - building flash-attn for supporting conchv1_5, gigapath and musk
-MAX_JOBS=2 uv sync --extra gpu_all # to speed up the build time increase max_jobs! This might use more RAM!
-source .venv/bin/activate
-```
-
-If you encounter errors during installation please read Installation Troubleshooting [below](#installation-troubleshooting).
+If you encounter errors during installation please read Installation Troubleshooting [below](#installation-troubleshooting). If the prebuilt wheel doesn't fit your platform or you need a different flash-attn version, see [Advanced: Build flash-attn from source](#advanced-build-flash-attn-from-source).
 
 ### Additional Dependencies
 
@@ -126,6 +100,31 @@ If you encounter errors during installation please read Installation Troubleshoo
 > ```bash
 > apt update && apt install -y libgl1 libglx-mesa0 libglib2.0-0
 > ```
+
+### Advanced: Build flash-attn from source
+
+Most users do **not** need this — the prebuilt wheel above already covers Linux x86_64 / aarch64 and Windows x86_64 on Python 3.13 + CUDA 13.0 + torch 2.10. Only build from source if the prebuilt wheel does not match your platform, you hit runtime errors importing `flash_attn`, or you need a different flash-attn version.
+
+> [!CAUTION]
+> Building flash-attn can take an extended amount of time and consume a lot of RAM and CPU time!
+>
+> You must have [Nvidia CUDA Toolkit 13.0](https://developer.nvidia.com/cuda-13-0-2-download-archive) installed and Nvidia Driver version 580 or newer.
+>
+> The `nvcc --version` command must indicate that 13.0 is installed and is currently in PATH: `Cuda compilation tools, release 13.0, V13.0.88`.
+>
+> If you get another version or `Command 'nvcc' not found`, add it to the PATH:
+> ```bash
+> export CUDA_HOME=/usr/local/cuda-13.0
+> export PATH="${CUDA_HOME}/bin:$PATH"
+> ```
+>
+> Run `nvcc --version` to ensure flash-attn will be built for CUDA 13.0.
+
+```bash
+# GPU (CUDA) Installation - building flash-attn for supporting conchv1_5, gigapath and musk
+MAX_JOBS=2 uv sync --extra gpu_all # to speed up the build time increase max_jobs! This might use more RAM!
+source .venv/bin/activate
+```
 
 ## Basic Usage
 
