@@ -1,0 +1,406 @@
+<!doctype html>
+<html><head><meta charset='utf-8'>
+<title>STAMP Cell-Resolution Pilot</title>
+
+<style>
+body { font-family: Arial, sans-serif; margin: 24px; color: #1f2933; }
+h1 { margin-bottom: 0; }
+.summary { color: #52606d; margin: 6px 0 24px; }
+.slide { border-top: 2px solid #d9e2ec; padding: 22px 0 30px; }
+.meta { border-collapse: collapse; margin: 8px 0 14px; }
+.meta td { border: 1px solid #d9e2ec; padding: 5px 8px; }
+.questions { background: #f5f7fa; padding: 10px 14px; margin: 10px 0 14px; }
+.contact { max-width: 980px; width: 100%; border: 1px solid #d9e2ec; }
+.grid { display: grid; grid-template-columns: repeat(4, minmax(120px, 1fr)); gap: 8px; max-width: 980px; }
+.tile img { width: 100%; border: 1px solid #d9e2ec; display: block; }
+.tile span { font-size: 12px; color: #52606d; }
+</style>
+
+</head><body>
+<h1>STAMP Cell-Resolution Pilot</h1>
+<p class='summary'>Review top/bottom attended native tiles and centered zoom crops. Fill answers in review_answers_template.csv.</p>
+<section class='slide'>
+<h2>failure: SAMPLE_396_803_19_B</h2>
+<table class='meta'>
+<tr><td>stem</td><td>S_803 19 B Score 100 - 10 Fokuspunkte - entfettet - 2026-03-04 19.18.04</td></tr>
+<tr><td>experiment</td><td>blast_percent</td></tr>
+<tr><td>split</td><td>split-2</td></tr>
+<tr><td>blast_percent_gt</td><td>81.00</td></tr>
+<tr><td>high_blast_gt</td><td>yes</td></tr>
+<tr><td>blast_percent_pred</td><td>0.12</td></tr>
+<tr><td>blast_percent_abs_err</td><td>80.88</td></tr>
+<tr><td>high_blast_yes</td><td></td></tr>
+</table>
+<div class='questions'><b>Pathologist questions:</b> 1. Can individual cells be identified? yes / sometimes / no. 2. Estimate blast percentage in the top-attended grid. 3. Note artifacts, wrong tissue, focus problems, or uninterpretable regions.</div>
+<a href='failure/SAMPLE_396_803_19_B/contact_sheet.jpg'><img class='contact' src='failure/SAMPLE_396_803_19_B/contact_sheet.jpg' alt='contact sheet'></a>
+<h3>Zoom crops</h3><div class='grid'>
+<div class='tile'><a href='failure/SAMPLE_396_803_19_B/native/top_01_native.jpg'><img src='failure/SAMPLE_396_803_19_B/zoom/top_01_zoom.jpg' alt='top 01'></a><span>top 01</span></div>
+<div class='tile'><a href='failure/SAMPLE_396_803_19_B/native/top_02_native.jpg'><img src='failure/SAMPLE_396_803_19_B/zoom/top_02_zoom.jpg' alt='top 02'></a><span>top 02</span></div>
+<div class='tile'><a href='failure/SAMPLE_396_803_19_B/native/top_03_native.jpg'><img src='failure/SAMPLE_396_803_19_B/zoom/top_03_zoom.jpg' alt='top 03'></a><span>top 03</span></div>
+<div class='tile'><a href='failure/SAMPLE_396_803_19_B/native/top_04_native.jpg'><img src='failure/SAMPLE_396_803_19_B/zoom/top_04_zoom.jpg' alt='top 04'></a><span>top 04</span></div>
+<div class='tile'><a href='failure/SAMPLE_396_803_19_B/native/top_05_native.jpg'><img src='failure/SAMPLE_396_803_19_B/zoom/top_05_zoom.jpg' alt='top 05'></a><span>top 05</span></div>
+<div class='tile'><a href='failure/SAMPLE_396_803_19_B/native/top_06_native.jpg'><img src='failure/SAMPLE_396_803_19_B/zoom/top_06_zoom.jpg' alt='top 06'></a><span>top 06</span></div>
+<div class='tile'><a href='failure/SAMPLE_396_803_19_B/native/top_07_native.jpg'><img src='failure/SAMPLE_396_803_19_B/zoom/top_07_zoom.jpg' alt='top 07'></a><span>top 07</span></div>
+<div class='tile'><a href='failure/SAMPLE_396_803_19_B/native/top_08_native.jpg'><img src='failure/SAMPLE_396_803_19_B/zoom/top_08_zoom.jpg' alt='top 08'></a><span>top 08</span></div>
+<div class='tile'><a href='failure/SAMPLE_396_803_19_B/native/bottom_01_native.jpg'><img src='failure/SAMPLE_396_803_19_B/zoom/bottom_01_zoom.jpg' alt='bottom 01'></a><span>bottom 01</span></div>
+<div class='tile'><a href='failure/SAMPLE_396_803_19_B/native/bottom_02_native.jpg'><img src='failure/SAMPLE_396_803_19_B/zoom/bottom_02_zoom.jpg' alt='bottom 02'></a><span>bottom 02</span></div>
+<div class='tile'><a href='failure/SAMPLE_396_803_19_B/native/bottom_03_native.jpg'><img src='failure/SAMPLE_396_803_19_B/zoom/bottom_03_zoom.jpg' alt='bottom 03'></a><span>bottom 03</span></div>
+<div class='tile'><a href='failure/SAMPLE_396_803_19_B/native/bottom_04_native.jpg'><img src='failure/SAMPLE_396_803_19_B/zoom/bottom_04_zoom.jpg' alt='bottom 04'></a><span>bottom 04</span></div>
+<div class='tile'><a href='failure/SAMPLE_396_803_19_B/native/bottom_05_native.jpg'><img src='failure/SAMPLE_396_803_19_B/zoom/bottom_05_zoom.jpg' alt='bottom 05'></a><span>bottom 05</span></div>
+<div class='tile'><a href='failure/SAMPLE_396_803_19_B/native/bottom_06_native.jpg'><img src='failure/SAMPLE_396_803_19_B/zoom/bottom_06_zoom.jpg' alt='bottom 06'></a><span>bottom 06</span></div>
+<div class='tile'><a href='failure/SAMPLE_396_803_19_B/native/bottom_07_native.jpg'><img src='failure/SAMPLE_396_803_19_B/zoom/bottom_07_zoom.jpg' alt='bottom 07'></a><span>bottom 07</span></div>
+<div class='tile'><a href='failure/SAMPLE_396_803_19_B/native/bottom_08_native.jpg'><img src='failure/SAMPLE_396_803_19_B/zoom/bottom_08_zoom.jpg' alt='bottom 08'></a><span>bottom 08</span></div>
+</div></section>
+<section class='slide'>
+<h2>failure: SAMPLE_396_803_19_A</h2>
+<table class='meta'>
+<tr><td>stem</td><td>803 19 A Score 99 - 10 Fokuspunkte - entfettet - 2026-03-04 19.12.50</td></tr>
+<tr><td>experiment</td><td>blast_percent</td></tr>
+<tr><td>split</td><td>split-2</td></tr>
+<tr><td>blast_percent_gt</td><td>81.00</td></tr>
+<tr><td>high_blast_gt</td><td>yes</td></tr>
+<tr><td>blast_percent_pred</td><td>1.23</td></tr>
+<tr><td>blast_percent_abs_err</td><td>79.77</td></tr>
+<tr><td>high_blast_yes</td><td></td></tr>
+</table>
+<div class='questions'><b>Pathologist questions:</b> 1. Can individual cells be identified? yes / sometimes / no. 2. Estimate blast percentage in the top-attended grid. 3. Note artifacts, wrong tissue, focus problems, or uninterpretable regions.</div>
+<a href='failure/SAMPLE_396_803_19_A/contact_sheet.jpg'><img class='contact' src='failure/SAMPLE_396_803_19_A/contact_sheet.jpg' alt='contact sheet'></a>
+<h3>Zoom crops</h3><div class='grid'>
+<div class='tile'><a href='failure/SAMPLE_396_803_19_A/native/top_01_native.jpg'><img src='failure/SAMPLE_396_803_19_A/zoom/top_01_zoom.jpg' alt='top 01'></a><span>top 01</span></div>
+<div class='tile'><a href='failure/SAMPLE_396_803_19_A/native/top_02_native.jpg'><img src='failure/SAMPLE_396_803_19_A/zoom/top_02_zoom.jpg' alt='top 02'></a><span>top 02</span></div>
+<div class='tile'><a href='failure/SAMPLE_396_803_19_A/native/top_03_native.jpg'><img src='failure/SAMPLE_396_803_19_A/zoom/top_03_zoom.jpg' alt='top 03'></a><span>top 03</span></div>
+<div class='tile'><a href='failure/SAMPLE_396_803_19_A/native/top_04_native.jpg'><img src='failure/SAMPLE_396_803_19_A/zoom/top_04_zoom.jpg' alt='top 04'></a><span>top 04</span></div>
+<div class='tile'><a href='failure/SAMPLE_396_803_19_A/native/top_05_native.jpg'><img src='failure/SAMPLE_396_803_19_A/zoom/top_05_zoom.jpg' alt='top 05'></a><span>top 05</span></div>
+<div class='tile'><a href='failure/SAMPLE_396_803_19_A/native/top_06_native.jpg'><img src='failure/SAMPLE_396_803_19_A/zoom/top_06_zoom.jpg' alt='top 06'></a><span>top 06</span></div>
+<div class='tile'><a href='failure/SAMPLE_396_803_19_A/native/top_07_native.jpg'><img src='failure/SAMPLE_396_803_19_A/zoom/top_07_zoom.jpg' alt='top 07'></a><span>top 07</span></div>
+<div class='tile'><a href='failure/SAMPLE_396_803_19_A/native/top_08_native.jpg'><img src='failure/SAMPLE_396_803_19_A/zoom/top_08_zoom.jpg' alt='top 08'></a><span>top 08</span></div>
+<div class='tile'><a href='failure/SAMPLE_396_803_19_A/native/bottom_01_native.jpg'><img src='failure/SAMPLE_396_803_19_A/zoom/bottom_01_zoom.jpg' alt='bottom 01'></a><span>bottom 01</span></div>
+<div class='tile'><a href='failure/SAMPLE_396_803_19_A/native/bottom_02_native.jpg'><img src='failure/SAMPLE_396_803_19_A/zoom/bottom_02_zoom.jpg' alt='bottom 02'></a><span>bottom 02</span></div>
+<div class='tile'><a href='failure/SAMPLE_396_803_19_A/native/bottom_03_native.jpg'><img src='failure/SAMPLE_396_803_19_A/zoom/bottom_03_zoom.jpg' alt='bottom 03'></a><span>bottom 03</span></div>
+<div class='tile'><a href='failure/SAMPLE_396_803_19_A/native/bottom_04_native.jpg'><img src='failure/SAMPLE_396_803_19_A/zoom/bottom_04_zoom.jpg' alt='bottom 04'></a><span>bottom 04</span></div>
+<div class='tile'><a href='failure/SAMPLE_396_803_19_A/native/bottom_05_native.jpg'><img src='failure/SAMPLE_396_803_19_A/zoom/bottom_05_zoom.jpg' alt='bottom 05'></a><span>bottom 05</span></div>
+<div class='tile'><a href='failure/SAMPLE_396_803_19_A/native/bottom_06_native.jpg'><img src='failure/SAMPLE_396_803_19_A/zoom/bottom_06_zoom.jpg' alt='bottom 06'></a><span>bottom 06</span></div>
+<div class='tile'><a href='failure/SAMPLE_396_803_19_A/native/bottom_07_native.jpg'><img src='failure/SAMPLE_396_803_19_A/zoom/bottom_07_zoom.jpg' alt='bottom 07'></a><span>bottom 07</span></div>
+<div class='tile'><a href='failure/SAMPLE_396_803_19_A/native/bottom_08_native.jpg'><img src='failure/SAMPLE_396_803_19_A/zoom/bottom_08_zoom.jpg' alt='bottom 08'></a><span>bottom 08</span></div>
+</div></section>
+<section class='slide'>
+<h2>failure: SAMPLE_408_1411_19_A</h2>
+<table class='meta'>
+<tr><td>stem</td><td>S_1411 19 A Score 92 - 10 Fokuspunkte - 2026-03-08 14.01.06</td></tr>
+<tr><td>experiment</td><td>blast_percent</td></tr>
+<tr><td>split</td><td>split-2</td></tr>
+<tr><td>blast_percent_gt</td><td>91.00</td></tr>
+<tr><td>high_blast_gt</td><td>yes</td></tr>
+<tr><td>blast_percent_pred</td><td>11.91</td></tr>
+<tr><td>blast_percent_abs_err</td><td>79.09</td></tr>
+<tr><td>high_blast_yes</td><td></td></tr>
+</table>
+<div class='questions'><b>Pathologist questions:</b> 1. Can individual cells be identified? yes / sometimes / no. 2. Estimate blast percentage in the top-attended grid. 3. Note artifacts, wrong tissue, focus problems, or uninterpretable regions.</div>
+<a href='failure/SAMPLE_408_1411_19_A/contact_sheet.jpg'><img class='contact' src='failure/SAMPLE_408_1411_19_A/contact_sheet.jpg' alt='contact sheet'></a>
+<h3>Zoom crops</h3><div class='grid'>
+<div class='tile'><a href='failure/SAMPLE_408_1411_19_A/native/top_01_native.jpg'><img src='failure/SAMPLE_408_1411_19_A/zoom/top_01_zoom.jpg' alt='top 01'></a><span>top 01</span></div>
+<div class='tile'><a href='failure/SAMPLE_408_1411_19_A/native/top_02_native.jpg'><img src='failure/SAMPLE_408_1411_19_A/zoom/top_02_zoom.jpg' alt='top 02'></a><span>top 02</span></div>
+<div class='tile'><a href='failure/SAMPLE_408_1411_19_A/native/top_03_native.jpg'><img src='failure/SAMPLE_408_1411_19_A/zoom/top_03_zoom.jpg' alt='top 03'></a><span>top 03</span></div>
+<div class='tile'><a href='failure/SAMPLE_408_1411_19_A/native/top_04_native.jpg'><img src='failure/SAMPLE_408_1411_19_A/zoom/top_04_zoom.jpg' alt='top 04'></a><span>top 04</span></div>
+<div class='tile'><a href='failure/SAMPLE_408_1411_19_A/native/top_05_native.jpg'><img src='failure/SAMPLE_408_1411_19_A/zoom/top_05_zoom.jpg' alt='top 05'></a><span>top 05</span></div>
+<div class='tile'><a href='failure/SAMPLE_408_1411_19_A/native/top_06_native.jpg'><img src='failure/SAMPLE_408_1411_19_A/zoom/top_06_zoom.jpg' alt='top 06'></a><span>top 06</span></div>
+<div class='tile'><a href='failure/SAMPLE_408_1411_19_A/native/top_07_native.jpg'><img src='failure/SAMPLE_408_1411_19_A/zoom/top_07_zoom.jpg' alt='top 07'></a><span>top 07</span></div>
+<div class='tile'><a href='failure/SAMPLE_408_1411_19_A/native/top_08_native.jpg'><img src='failure/SAMPLE_408_1411_19_A/zoom/top_08_zoom.jpg' alt='top 08'></a><span>top 08</span></div>
+<div class='tile'><a href='failure/SAMPLE_408_1411_19_A/native/bottom_01_native.jpg'><img src='failure/SAMPLE_408_1411_19_A/zoom/bottom_01_zoom.jpg' alt='bottom 01'></a><span>bottom 01</span></div>
+<div class='tile'><a href='failure/SAMPLE_408_1411_19_A/native/bottom_02_native.jpg'><img src='failure/SAMPLE_408_1411_19_A/zoom/bottom_02_zoom.jpg' alt='bottom 02'></a><span>bottom 02</span></div>
+<div class='tile'><a href='failure/SAMPLE_408_1411_19_A/native/bottom_03_native.jpg'><img src='failure/SAMPLE_408_1411_19_A/zoom/bottom_03_zoom.jpg' alt='bottom 03'></a><span>bottom 03</span></div>
+<div class='tile'><a href='failure/SAMPLE_408_1411_19_A/native/bottom_04_native.jpg'><img src='failure/SAMPLE_408_1411_19_A/zoom/bottom_04_zoom.jpg' alt='bottom 04'></a><span>bottom 04</span></div>
+<div class='tile'><a href='failure/SAMPLE_408_1411_19_A/native/bottom_05_native.jpg'><img src='failure/SAMPLE_408_1411_19_A/zoom/bottom_05_zoom.jpg' alt='bottom 05'></a><span>bottom 05</span></div>
+<div class='tile'><a href='failure/SAMPLE_408_1411_19_A/native/bottom_06_native.jpg'><img src='failure/SAMPLE_408_1411_19_A/zoom/bottom_06_zoom.jpg' alt='bottom 06'></a><span>bottom 06</span></div>
+<div class='tile'><a href='failure/SAMPLE_408_1411_19_A/native/bottom_07_native.jpg'><img src='failure/SAMPLE_408_1411_19_A/zoom/bottom_07_zoom.jpg' alt='bottom 07'></a><span>bottom 07</span></div>
+<div class='tile'><a href='failure/SAMPLE_408_1411_19_A/native/bottom_08_native.jpg'><img src='failure/SAMPLE_408_1411_19_A/zoom/bottom_08_zoom.jpg' alt='bottom 08'></a><span>bottom 08</span></div>
+</div></section>
+<section class='slide'>
+<h2>failure: SAMPLE_404_1261_19_C</h2>
+<table class='meta'>
+<tr><td>stem</td><td>1261 19 C Score 76 -10 Fokuspunkte - 2026-03-07 12.33.11</td></tr>
+<tr><td>experiment</td><td>blast_percent</td></tr>
+<tr><td>split</td><td>split-4</td></tr>
+<tr><td>blast_percent_gt</td><td>90.00</td></tr>
+<tr><td>high_blast_gt</td><td>yes</td></tr>
+<tr><td>blast_percent_pred</td><td>11.34</td></tr>
+<tr><td>blast_percent_abs_err</td><td>78.66</td></tr>
+<tr><td>high_blast_yes</td><td></td></tr>
+</table>
+<div class='questions'><b>Pathologist questions:</b> 1. Can individual cells be identified? yes / sometimes / no. 2. Estimate blast percentage in the top-attended grid. 3. Note artifacts, wrong tissue, focus problems, or uninterpretable regions.</div>
+<a href='failure/SAMPLE_404_1261_19_C/contact_sheet.jpg'><img class='contact' src='failure/SAMPLE_404_1261_19_C/contact_sheet.jpg' alt='contact sheet'></a>
+<h3>Zoom crops</h3><div class='grid'>
+<div class='tile'><a href='failure/SAMPLE_404_1261_19_C/native/top_01_native.jpg'><img src='failure/SAMPLE_404_1261_19_C/zoom/top_01_zoom.jpg' alt='top 01'></a><span>top 01</span></div>
+<div class='tile'><a href='failure/SAMPLE_404_1261_19_C/native/top_02_native.jpg'><img src='failure/SAMPLE_404_1261_19_C/zoom/top_02_zoom.jpg' alt='top 02'></a><span>top 02</span></div>
+<div class='tile'><a href='failure/SAMPLE_404_1261_19_C/native/top_03_native.jpg'><img src='failure/SAMPLE_404_1261_19_C/zoom/top_03_zoom.jpg' alt='top 03'></a><span>top 03</span></div>
+<div class='tile'><a href='failure/SAMPLE_404_1261_19_C/native/top_04_native.jpg'><img src='failure/SAMPLE_404_1261_19_C/zoom/top_04_zoom.jpg' alt='top 04'></a><span>top 04</span></div>
+<div class='tile'><a href='failure/SAMPLE_404_1261_19_C/native/top_05_native.jpg'><img src='failure/SAMPLE_404_1261_19_C/zoom/top_05_zoom.jpg' alt='top 05'></a><span>top 05</span></div>
+<div class='tile'><a href='failure/SAMPLE_404_1261_19_C/native/top_06_native.jpg'><img src='failure/SAMPLE_404_1261_19_C/zoom/top_06_zoom.jpg' alt='top 06'></a><span>top 06</span></div>
+<div class='tile'><a href='failure/SAMPLE_404_1261_19_C/native/top_07_native.jpg'><img src='failure/SAMPLE_404_1261_19_C/zoom/top_07_zoom.jpg' alt='top 07'></a><span>top 07</span></div>
+<div class='tile'><a href='failure/SAMPLE_404_1261_19_C/native/top_08_native.jpg'><img src='failure/SAMPLE_404_1261_19_C/zoom/top_08_zoom.jpg' alt='top 08'></a><span>top 08</span></div>
+<div class='tile'><a href='failure/SAMPLE_404_1261_19_C/native/bottom_01_native.jpg'><img src='failure/SAMPLE_404_1261_19_C/zoom/bottom_01_zoom.jpg' alt='bottom 01'></a><span>bottom 01</span></div>
+<div class='tile'><a href='failure/SAMPLE_404_1261_19_C/native/bottom_02_native.jpg'><img src='failure/SAMPLE_404_1261_19_C/zoom/bottom_02_zoom.jpg' alt='bottom 02'></a><span>bottom 02</span></div>
+<div class='tile'><a href='failure/SAMPLE_404_1261_19_C/native/bottom_03_native.jpg'><img src='failure/SAMPLE_404_1261_19_C/zoom/bottom_03_zoom.jpg' alt='bottom 03'></a><span>bottom 03</span></div>
+<div class='tile'><a href='failure/SAMPLE_404_1261_19_C/native/bottom_04_native.jpg'><img src='failure/SAMPLE_404_1261_19_C/zoom/bottom_04_zoom.jpg' alt='bottom 04'></a><span>bottom 04</span></div>
+<div class='tile'><a href='failure/SAMPLE_404_1261_19_C/native/bottom_05_native.jpg'><img src='failure/SAMPLE_404_1261_19_C/zoom/bottom_05_zoom.jpg' alt='bottom 05'></a><span>bottom 05</span></div>
+<div class='tile'><a href='failure/SAMPLE_404_1261_19_C/native/bottom_06_native.jpg'><img src='failure/SAMPLE_404_1261_19_C/zoom/bottom_06_zoom.jpg' alt='bottom 06'></a><span>bottom 06</span></div>
+<div class='tile'><a href='failure/SAMPLE_404_1261_19_C/native/bottom_07_native.jpg'><img src='failure/SAMPLE_404_1261_19_C/zoom/bottom_07_zoom.jpg' alt='bottom 07'></a><span>bottom 07</span></div>
+<div class='tile'><a href='failure/SAMPLE_404_1261_19_C/native/bottom_08_native.jpg'><img src='failure/SAMPLE_404_1261_19_C/zoom/bottom_08_zoom.jpg' alt='bottom 08'></a><span>bottom 08</span></div>
+</div></section>
+<section class='slide'>
+<h2>failure: SAMPLE_408_1411_19_C</h2>
+<table class='meta'>
+<tr><td>stem</td><td>1411 19 C Score 88 - 10 Fokuspunkte - 2026-03-08 14.08.49</td></tr>
+<tr><td>experiment</td><td>blast_percent</td></tr>
+<tr><td>split</td><td>split-1</td></tr>
+<tr><td>blast_percent_gt</td><td>91.00</td></tr>
+<tr><td>high_blast_gt</td><td>yes</td></tr>
+<tr><td>blast_percent_pred</td><td>12.75</td></tr>
+<tr><td>blast_percent_abs_err</td><td>78.25</td></tr>
+<tr><td>high_blast_yes</td><td></td></tr>
+</table>
+<div class='questions'><b>Pathologist questions:</b> 1. Can individual cells be identified? yes / sometimes / no. 2. Estimate blast percentage in the top-attended grid. 3. Note artifacts, wrong tissue, focus problems, or uninterpretable regions.</div>
+<a href='failure/SAMPLE_408_1411_19_C/contact_sheet.jpg'><img class='contact' src='failure/SAMPLE_408_1411_19_C/contact_sheet.jpg' alt='contact sheet'></a>
+<h3>Zoom crops</h3><div class='grid'>
+<div class='tile'><a href='failure/SAMPLE_408_1411_19_C/native/top_01_native.jpg'><img src='failure/SAMPLE_408_1411_19_C/zoom/top_01_zoom.jpg' alt='top 01'></a><span>top 01</span></div>
+<div class='tile'><a href='failure/SAMPLE_408_1411_19_C/native/top_02_native.jpg'><img src='failure/SAMPLE_408_1411_19_C/zoom/top_02_zoom.jpg' alt='top 02'></a><span>top 02</span></div>
+<div class='tile'><a href='failure/SAMPLE_408_1411_19_C/native/top_03_native.jpg'><img src='failure/SAMPLE_408_1411_19_C/zoom/top_03_zoom.jpg' alt='top 03'></a><span>top 03</span></div>
+<div class='tile'><a href='failure/SAMPLE_408_1411_19_C/native/top_04_native.jpg'><img src='failure/SAMPLE_408_1411_19_C/zoom/top_04_zoom.jpg' alt='top 04'></a><span>top 04</span></div>
+<div class='tile'><a href='failure/SAMPLE_408_1411_19_C/native/top_05_native.jpg'><img src='failure/SAMPLE_408_1411_19_C/zoom/top_05_zoom.jpg' alt='top 05'></a><span>top 05</span></div>
+<div class='tile'><a href='failure/SAMPLE_408_1411_19_C/native/top_06_native.jpg'><img src='failure/SAMPLE_408_1411_19_C/zoom/top_06_zoom.jpg' alt='top 06'></a><span>top 06</span></div>
+<div class='tile'><a href='failure/SAMPLE_408_1411_19_C/native/top_07_native.jpg'><img src='failure/SAMPLE_408_1411_19_C/zoom/top_07_zoom.jpg' alt='top 07'></a><span>top 07</span></div>
+<div class='tile'><a href='failure/SAMPLE_408_1411_19_C/native/top_08_native.jpg'><img src='failure/SAMPLE_408_1411_19_C/zoom/top_08_zoom.jpg' alt='top 08'></a><span>top 08</span></div>
+<div class='tile'><a href='failure/SAMPLE_408_1411_19_C/native/bottom_01_native.jpg'><img src='failure/SAMPLE_408_1411_19_C/zoom/bottom_01_zoom.jpg' alt='bottom 01'></a><span>bottom 01</span></div>
+<div class='tile'><a href='failure/SAMPLE_408_1411_19_C/native/bottom_02_native.jpg'><img src='failure/SAMPLE_408_1411_19_C/zoom/bottom_02_zoom.jpg' alt='bottom 02'></a><span>bottom 02</span></div>
+<div class='tile'><a href='failure/SAMPLE_408_1411_19_C/native/bottom_03_native.jpg'><img src='failure/SAMPLE_408_1411_19_C/zoom/bottom_03_zoom.jpg' alt='bottom 03'></a><span>bottom 03</span></div>
+<div class='tile'><a href='failure/SAMPLE_408_1411_19_C/native/bottom_04_native.jpg'><img src='failure/SAMPLE_408_1411_19_C/zoom/bottom_04_zoom.jpg' alt='bottom 04'></a><span>bottom 04</span></div>
+<div class='tile'><a href='failure/SAMPLE_408_1411_19_C/native/bottom_05_native.jpg'><img src='failure/SAMPLE_408_1411_19_C/zoom/bottom_05_zoom.jpg' alt='bottom 05'></a><span>bottom 05</span></div>
+<div class='tile'><a href='failure/SAMPLE_408_1411_19_C/native/bottom_06_native.jpg'><img src='failure/SAMPLE_408_1411_19_C/zoom/bottom_06_zoom.jpg' alt='bottom 06'></a><span>bottom 06</span></div>
+<div class='tile'><a href='failure/SAMPLE_408_1411_19_C/native/bottom_07_native.jpg'><img src='failure/SAMPLE_408_1411_19_C/zoom/bottom_07_zoom.jpg' alt='bottom 07'></a><span>bottom 07</span></div>
+<div class='tile'><a href='failure/SAMPLE_408_1411_19_C/native/bottom_08_native.jpg'><img src='failure/SAMPLE_408_1411_19_C/zoom/bottom_08_zoom.jpg' alt='bottom 08'></a><span>bottom 08</span></div>
+</div></section>
+<section class='slide'>
+<h2>positive: SAMPLE_392_585_19_C</h2>
+<table class='meta'>
+<tr><td>stem</td><td>S_585 19 C Score 85 - 10 Fokuspunkte - entfettet - 2026-03-03 22.19.48</td></tr>
+<tr><td>experiment</td><td>high_blast</td></tr>
+<tr><td>split</td><td>split-1</td></tr>
+<tr><td>blast_percent_gt</td><td>88.00</td></tr>
+<tr><td>high_blast_gt</td><td>yes</td></tr>
+<tr><td>blast_percent_pred</td><td></td></tr>
+<tr><td>blast_percent_abs_err</td><td></td></tr>
+<tr><td>high_blast_yes</td><td>0.9999</td></tr>
+</table>
+<div class='questions'><b>Pathologist questions:</b> 1. Can individual cells be identified? yes / sometimes / no. 2. Estimate blast percentage in the top-attended grid. 3. Note artifacts, wrong tissue, focus problems, or uninterpretable regions.</div>
+<a href='positive/SAMPLE_392_585_19_C/contact_sheet.jpg'><img class='contact' src='positive/SAMPLE_392_585_19_C/contact_sheet.jpg' alt='contact sheet'></a>
+<h3>Zoom crops</h3><div class='grid'>
+<div class='tile'><a href='positive/SAMPLE_392_585_19_C/native/top_01_native.jpg'><img src='positive/SAMPLE_392_585_19_C/zoom/top_01_zoom.jpg' alt='top 01'></a><span>top 01</span></div>
+<div class='tile'><a href='positive/SAMPLE_392_585_19_C/native/top_02_native.jpg'><img src='positive/SAMPLE_392_585_19_C/zoom/top_02_zoom.jpg' alt='top 02'></a><span>top 02</span></div>
+<div class='tile'><a href='positive/SAMPLE_392_585_19_C/native/top_03_native.jpg'><img src='positive/SAMPLE_392_585_19_C/zoom/top_03_zoom.jpg' alt='top 03'></a><span>top 03</span></div>
+<div class='tile'><a href='positive/SAMPLE_392_585_19_C/native/top_04_native.jpg'><img src='positive/SAMPLE_392_585_19_C/zoom/top_04_zoom.jpg' alt='top 04'></a><span>top 04</span></div>
+<div class='tile'><a href='positive/SAMPLE_392_585_19_C/native/top_05_native.jpg'><img src='positive/SAMPLE_392_585_19_C/zoom/top_05_zoom.jpg' alt='top 05'></a><span>top 05</span></div>
+<div class='tile'><a href='positive/SAMPLE_392_585_19_C/native/top_06_native.jpg'><img src='positive/SAMPLE_392_585_19_C/zoom/top_06_zoom.jpg' alt='top 06'></a><span>top 06</span></div>
+<div class='tile'><a href='positive/SAMPLE_392_585_19_C/native/top_07_native.jpg'><img src='positive/SAMPLE_392_585_19_C/zoom/top_07_zoom.jpg' alt='top 07'></a><span>top 07</span></div>
+<div class='tile'><a href='positive/SAMPLE_392_585_19_C/native/top_08_native.jpg'><img src='positive/SAMPLE_392_585_19_C/zoom/top_08_zoom.jpg' alt='top 08'></a><span>top 08</span></div>
+<div class='tile'><a href='positive/SAMPLE_392_585_19_C/native/bottom_01_native.jpg'><img src='positive/SAMPLE_392_585_19_C/zoom/bottom_01_zoom.jpg' alt='bottom 01'></a><span>bottom 01</span></div>
+<div class='tile'><a href='positive/SAMPLE_392_585_19_C/native/bottom_02_native.jpg'><img src='positive/SAMPLE_392_585_19_C/zoom/bottom_02_zoom.jpg' alt='bottom 02'></a><span>bottom 02</span></div>
+<div class='tile'><a href='positive/SAMPLE_392_585_19_C/native/bottom_03_native.jpg'><img src='positive/SAMPLE_392_585_19_C/zoom/bottom_03_zoom.jpg' alt='bottom 03'></a><span>bottom 03</span></div>
+<div class='tile'><a href='positive/SAMPLE_392_585_19_C/native/bottom_04_native.jpg'><img src='positive/SAMPLE_392_585_19_C/zoom/bottom_04_zoom.jpg' alt='bottom 04'></a><span>bottom 04</span></div>
+<div class='tile'><a href='positive/SAMPLE_392_585_19_C/native/bottom_05_native.jpg'><img src='positive/SAMPLE_392_585_19_C/zoom/bottom_05_zoom.jpg' alt='bottom 05'></a><span>bottom 05</span></div>
+<div class='tile'><a href='positive/SAMPLE_392_585_19_C/native/bottom_06_native.jpg'><img src='positive/SAMPLE_392_585_19_C/zoom/bottom_06_zoom.jpg' alt='bottom 06'></a><span>bottom 06</span></div>
+<div class='tile'><a href='positive/SAMPLE_392_585_19_C/native/bottom_07_native.jpg'><img src='positive/SAMPLE_392_585_19_C/zoom/bottom_07_zoom.jpg' alt='bottom 07'></a><span>bottom 07</span></div>
+<div class='tile'><a href='positive/SAMPLE_392_585_19_C/native/bottom_08_native.jpg'><img src='positive/SAMPLE_392_585_19_C/zoom/bottom_08_zoom.jpg' alt='bottom 08'></a><span>bottom 08</span></div>
+</div></section>
+<section class='slide'>
+<h2>positive: SAMPLE_406_1309_19_C</h2>
+<table class='meta'>
+<tr><td>stem</td><td>S_1309 19 C Score 83 -10 Fokuspunkte - 2026-03-07 14.38.43</td></tr>
+<tr><td>experiment</td><td>high_blast</td></tr>
+<tr><td>split</td><td>split-1</td></tr>
+<tr><td>blast_percent_gt</td><td>79.00</td></tr>
+<tr><td>high_blast_gt</td><td>yes</td></tr>
+<tr><td>blast_percent_pred</td><td></td></tr>
+<tr><td>blast_percent_abs_err</td><td></td></tr>
+<tr><td>high_blast_yes</td><td>0.9999</td></tr>
+</table>
+<div class='questions'><b>Pathologist questions:</b> 1. Can individual cells be identified? yes / sometimes / no. 2. Estimate blast percentage in the top-attended grid. 3. Note artifacts, wrong tissue, focus problems, or uninterpretable regions.</div>
+<a href='positive/SAMPLE_406_1309_19_C/contact_sheet.jpg'><img class='contact' src='positive/SAMPLE_406_1309_19_C/contact_sheet.jpg' alt='contact sheet'></a>
+<h3>Zoom crops</h3><div class='grid'>
+<div class='tile'><a href='positive/SAMPLE_406_1309_19_C/native/top_01_native.jpg'><img src='positive/SAMPLE_406_1309_19_C/zoom/top_01_zoom.jpg' alt='top 01'></a><span>top 01</span></div>
+<div class='tile'><a href='positive/SAMPLE_406_1309_19_C/native/top_02_native.jpg'><img src='positive/SAMPLE_406_1309_19_C/zoom/top_02_zoom.jpg' alt='top 02'></a><span>top 02</span></div>
+<div class='tile'><a href='positive/SAMPLE_406_1309_19_C/native/top_03_native.jpg'><img src='positive/SAMPLE_406_1309_19_C/zoom/top_03_zoom.jpg' alt='top 03'></a><span>top 03</span></div>
+<div class='tile'><a href='positive/SAMPLE_406_1309_19_C/native/top_04_native.jpg'><img src='positive/SAMPLE_406_1309_19_C/zoom/top_04_zoom.jpg' alt='top 04'></a><span>top 04</span></div>
+<div class='tile'><a href='positive/SAMPLE_406_1309_19_C/native/top_05_native.jpg'><img src='positive/SAMPLE_406_1309_19_C/zoom/top_05_zoom.jpg' alt='top 05'></a><span>top 05</span></div>
+<div class='tile'><a href='positive/SAMPLE_406_1309_19_C/native/top_06_native.jpg'><img src='positive/SAMPLE_406_1309_19_C/zoom/top_06_zoom.jpg' alt='top 06'></a><span>top 06</span></div>
+<div class='tile'><a href='positive/SAMPLE_406_1309_19_C/native/top_07_native.jpg'><img src='positive/SAMPLE_406_1309_19_C/zoom/top_07_zoom.jpg' alt='top 07'></a><span>top 07</span></div>
+<div class='tile'><a href='positive/SAMPLE_406_1309_19_C/native/top_08_native.jpg'><img src='positive/SAMPLE_406_1309_19_C/zoom/top_08_zoom.jpg' alt='top 08'></a><span>top 08</span></div>
+<div class='tile'><a href='positive/SAMPLE_406_1309_19_C/native/bottom_01_native.jpg'><img src='positive/SAMPLE_406_1309_19_C/zoom/bottom_01_zoom.jpg' alt='bottom 01'></a><span>bottom 01</span></div>
+<div class='tile'><a href='positive/SAMPLE_406_1309_19_C/native/bottom_02_native.jpg'><img src='positive/SAMPLE_406_1309_19_C/zoom/bottom_02_zoom.jpg' alt='bottom 02'></a><span>bottom 02</span></div>
+<div class='tile'><a href='positive/SAMPLE_406_1309_19_C/native/bottom_03_native.jpg'><img src='positive/SAMPLE_406_1309_19_C/zoom/bottom_03_zoom.jpg' alt='bottom 03'></a><span>bottom 03</span></div>
+<div class='tile'><a href='positive/SAMPLE_406_1309_19_C/native/bottom_04_native.jpg'><img src='positive/SAMPLE_406_1309_19_C/zoom/bottom_04_zoom.jpg' alt='bottom 04'></a><span>bottom 04</span></div>
+<div class='tile'><a href='positive/SAMPLE_406_1309_19_C/native/bottom_05_native.jpg'><img src='positive/SAMPLE_406_1309_19_C/zoom/bottom_05_zoom.jpg' alt='bottom 05'></a><span>bottom 05</span></div>
+<div class='tile'><a href='positive/SAMPLE_406_1309_19_C/native/bottom_06_native.jpg'><img src='positive/SAMPLE_406_1309_19_C/zoom/bottom_06_zoom.jpg' alt='bottom 06'></a><span>bottom 06</span></div>
+<div class='tile'><a href='positive/SAMPLE_406_1309_19_C/native/bottom_07_native.jpg'><img src='positive/SAMPLE_406_1309_19_C/zoom/bottom_07_zoom.jpg' alt='bottom 07'></a><span>bottom 07</span></div>
+<div class='tile'><a href='positive/SAMPLE_406_1309_19_C/native/bottom_08_native.jpg'><img src='positive/SAMPLE_406_1309_19_C/zoom/bottom_08_zoom.jpg' alt='bottom 08'></a><span>bottom 08</span></div>
+</div></section>
+<section class='slide'>
+<h2>positive: SAMPLE_414_968_19_C</h2>
+<table class='meta'>
+<tr><td>stem</td><td>968 19 C Score 77 - 10 Fokuspunkte- 2026-03-05 18.40.04</td></tr>
+<tr><td>experiment</td><td>high_blast</td></tr>
+<tr><td>split</td><td>split-1</td></tr>
+<tr><td>blast_percent_gt</td><td>34.00</td></tr>
+<tr><td>high_blast_gt</td><td>yes</td></tr>
+<tr><td>blast_percent_pred</td><td></td></tr>
+<tr><td>blast_percent_abs_err</td><td></td></tr>
+<tr><td>high_blast_yes</td><td>0.9998</td></tr>
+</table>
+<div class='questions'><b>Pathologist questions:</b> 1. Can individual cells be identified? yes / sometimes / no. 2. Estimate blast percentage in the top-attended grid. 3. Note artifacts, wrong tissue, focus problems, or uninterpretable regions.</div>
+<a href='positive/SAMPLE_414_968_19_C/contact_sheet.jpg'><img class='contact' src='positive/SAMPLE_414_968_19_C/contact_sheet.jpg' alt='contact sheet'></a>
+<h3>Zoom crops</h3><div class='grid'>
+<div class='tile'><a href='positive/SAMPLE_414_968_19_C/native/top_01_native.jpg'><img src='positive/SAMPLE_414_968_19_C/zoom/top_01_zoom.jpg' alt='top 01'></a><span>top 01</span></div>
+<div class='tile'><a href='positive/SAMPLE_414_968_19_C/native/top_02_native.jpg'><img src='positive/SAMPLE_414_968_19_C/zoom/top_02_zoom.jpg' alt='top 02'></a><span>top 02</span></div>
+<div class='tile'><a href='positive/SAMPLE_414_968_19_C/native/top_03_native.jpg'><img src='positive/SAMPLE_414_968_19_C/zoom/top_03_zoom.jpg' alt='top 03'></a><span>top 03</span></div>
+<div class='tile'><a href='positive/SAMPLE_414_968_19_C/native/top_04_native.jpg'><img src='positive/SAMPLE_414_968_19_C/zoom/top_04_zoom.jpg' alt='top 04'></a><span>top 04</span></div>
+<div class='tile'><a href='positive/SAMPLE_414_968_19_C/native/top_05_native.jpg'><img src='positive/SAMPLE_414_968_19_C/zoom/top_05_zoom.jpg' alt='top 05'></a><span>top 05</span></div>
+<div class='tile'><a href='positive/SAMPLE_414_968_19_C/native/top_06_native.jpg'><img src='positive/SAMPLE_414_968_19_C/zoom/top_06_zoom.jpg' alt='top 06'></a><span>top 06</span></div>
+<div class='tile'><a href='positive/SAMPLE_414_968_19_C/native/top_07_native.jpg'><img src='positive/SAMPLE_414_968_19_C/zoom/top_07_zoom.jpg' alt='top 07'></a><span>top 07</span></div>
+<div class='tile'><a href='positive/SAMPLE_414_968_19_C/native/top_08_native.jpg'><img src='positive/SAMPLE_414_968_19_C/zoom/top_08_zoom.jpg' alt='top 08'></a><span>top 08</span></div>
+<div class='tile'><a href='positive/SAMPLE_414_968_19_C/native/bottom_01_native.jpg'><img src='positive/SAMPLE_414_968_19_C/zoom/bottom_01_zoom.jpg' alt='bottom 01'></a><span>bottom 01</span></div>
+<div class='tile'><a href='positive/SAMPLE_414_968_19_C/native/bottom_02_native.jpg'><img src='positive/SAMPLE_414_968_19_C/zoom/bottom_02_zoom.jpg' alt='bottom 02'></a><span>bottom 02</span></div>
+<div class='tile'><a href='positive/SAMPLE_414_968_19_C/native/bottom_03_native.jpg'><img src='positive/SAMPLE_414_968_19_C/zoom/bottom_03_zoom.jpg' alt='bottom 03'></a><span>bottom 03</span></div>
+<div class='tile'><a href='positive/SAMPLE_414_968_19_C/native/bottom_04_native.jpg'><img src='positive/SAMPLE_414_968_19_C/zoom/bottom_04_zoom.jpg' alt='bottom 04'></a><span>bottom 04</span></div>
+<div class='tile'><a href='positive/SAMPLE_414_968_19_C/native/bottom_05_native.jpg'><img src='positive/SAMPLE_414_968_19_C/zoom/bottom_05_zoom.jpg' alt='bottom 05'></a><span>bottom 05</span></div>
+<div class='tile'><a href='positive/SAMPLE_414_968_19_C/native/bottom_06_native.jpg'><img src='positive/SAMPLE_414_968_19_C/zoom/bottom_06_zoom.jpg' alt='bottom 06'></a><span>bottom 06</span></div>
+<div class='tile'><a href='positive/SAMPLE_414_968_19_C/native/bottom_07_native.jpg'><img src='positive/SAMPLE_414_968_19_C/zoom/bottom_07_zoom.jpg' alt='bottom 07'></a><span>bottom 07</span></div>
+<div class='tile'><a href='positive/SAMPLE_414_968_19_C/native/bottom_08_native.jpg'><img src='positive/SAMPLE_414_968_19_C/zoom/bottom_08_zoom.jpg' alt='bottom 08'></a><span>bottom 08</span></div>
+</div></section>
+<section class='slide'>
+<h2>positive: SAMPLE_395_486_19_A</h2>
+<table class='meta'>
+<tr><td>stem</td><td>S_486 19 A Score 91 - 5 Fokuspunkte - entfettet - 2026-03-03 19.59.27</td></tr>
+<tr><td>experiment</td><td>high_blast</td></tr>
+<tr><td>split</td><td>split-4</td></tr>
+<tr><td>blast_percent_gt</td><td>61.00</td></tr>
+<tr><td>high_blast_gt</td><td>yes</td></tr>
+<tr><td>blast_percent_pred</td><td></td></tr>
+<tr><td>blast_percent_abs_err</td><td></td></tr>
+<tr><td>high_blast_yes</td><td>0.9998</td></tr>
+</table>
+<div class='questions'><b>Pathologist questions:</b> 1. Can individual cells be identified? yes / sometimes / no. 2. Estimate blast percentage in the top-attended grid. 3. Note artifacts, wrong tissue, focus problems, or uninterpretable regions.</div>
+<a href='positive/SAMPLE_395_486_19_A/contact_sheet.jpg'><img class='contact' src='positive/SAMPLE_395_486_19_A/contact_sheet.jpg' alt='contact sheet'></a>
+<h3>Zoom crops</h3><div class='grid'>
+<div class='tile'><a href='positive/SAMPLE_395_486_19_A/native/top_01_native.jpg'><img src='positive/SAMPLE_395_486_19_A/zoom/top_01_zoom.jpg' alt='top 01'></a><span>top 01</span></div>
+<div class='tile'><a href='positive/SAMPLE_395_486_19_A/native/top_02_native.jpg'><img src='positive/SAMPLE_395_486_19_A/zoom/top_02_zoom.jpg' alt='top 02'></a><span>top 02</span></div>
+<div class='tile'><a href='positive/SAMPLE_395_486_19_A/native/top_03_native.jpg'><img src='positive/SAMPLE_395_486_19_A/zoom/top_03_zoom.jpg' alt='top 03'></a><span>top 03</span></div>
+<div class='tile'><a href='positive/SAMPLE_395_486_19_A/native/top_04_native.jpg'><img src='positive/SAMPLE_395_486_19_A/zoom/top_04_zoom.jpg' alt='top 04'></a><span>top 04</span></div>
+<div class='tile'><a href='positive/SAMPLE_395_486_19_A/native/top_05_native.jpg'><img src='positive/SAMPLE_395_486_19_A/zoom/top_05_zoom.jpg' alt='top 05'></a><span>top 05</span></div>
+<div class='tile'><a href='positive/SAMPLE_395_486_19_A/native/top_06_native.jpg'><img src='positive/SAMPLE_395_486_19_A/zoom/top_06_zoom.jpg' alt='top 06'></a><span>top 06</span></div>
+<div class='tile'><a href='positive/SAMPLE_395_486_19_A/native/top_07_native.jpg'><img src='positive/SAMPLE_395_486_19_A/zoom/top_07_zoom.jpg' alt='top 07'></a><span>top 07</span></div>
+<div class='tile'><a href='positive/SAMPLE_395_486_19_A/native/top_08_native.jpg'><img src='positive/SAMPLE_395_486_19_A/zoom/top_08_zoom.jpg' alt='top 08'></a><span>top 08</span></div>
+<div class='tile'><a href='positive/SAMPLE_395_486_19_A/native/bottom_01_native.jpg'><img src='positive/SAMPLE_395_486_19_A/zoom/bottom_01_zoom.jpg' alt='bottom 01'></a><span>bottom 01</span></div>
+<div class='tile'><a href='positive/SAMPLE_395_486_19_A/native/bottom_02_native.jpg'><img src='positive/SAMPLE_395_486_19_A/zoom/bottom_02_zoom.jpg' alt='bottom 02'></a><span>bottom 02</span></div>
+<div class='tile'><a href='positive/SAMPLE_395_486_19_A/native/bottom_03_native.jpg'><img src='positive/SAMPLE_395_486_19_A/zoom/bottom_03_zoom.jpg' alt='bottom 03'></a><span>bottom 03</span></div>
+<div class='tile'><a href='positive/SAMPLE_395_486_19_A/native/bottom_04_native.jpg'><img src='positive/SAMPLE_395_486_19_A/zoom/bottom_04_zoom.jpg' alt='bottom 04'></a><span>bottom 04</span></div>
+<div class='tile'><a href='positive/SAMPLE_395_486_19_A/native/bottom_05_native.jpg'><img src='positive/SAMPLE_395_486_19_A/zoom/bottom_05_zoom.jpg' alt='bottom 05'></a><span>bottom 05</span></div>
+<div class='tile'><a href='positive/SAMPLE_395_486_19_A/native/bottom_06_native.jpg'><img src='positive/SAMPLE_395_486_19_A/zoom/bottom_06_zoom.jpg' alt='bottom 06'></a><span>bottom 06</span></div>
+<div class='tile'><a href='positive/SAMPLE_395_486_19_A/native/bottom_07_native.jpg'><img src='positive/SAMPLE_395_486_19_A/zoom/bottom_07_zoom.jpg' alt='bottom 07'></a><span>bottom 07</span></div>
+<div class='tile'><a href='positive/SAMPLE_395_486_19_A/native/bottom_08_native.jpg'><img src='positive/SAMPLE_395_486_19_A/zoom/bottom_08_zoom.jpg' alt='bottom 08'></a><span>bottom 08</span></div>
+</div></section>
+<section class='slide'>
+<h2>negative: SAMPLE_309_665_19_C</h2>
+<table class='meta'>
+<tr><td>stem</td><td>S_665 19 C Score 95 - 10 Fokuspunkte - entfettet - 2026-03-03 23.38.50</td></tr>
+<tr><td>experiment</td><td>high_blast</td></tr>
+<tr><td>split</td><td>split-0</td></tr>
+<tr><td>blast_percent_gt</td><td>1.00</td></tr>
+<tr><td>high_blast_gt</td><td>no</td></tr>
+<tr><td>blast_percent_pred</td><td></td></tr>
+<tr><td>blast_percent_abs_err</td><td></td></tr>
+<tr><td>high_blast_yes</td><td>0.0003</td></tr>
+</table>
+<div class='questions'><b>Pathologist questions:</b> 1. Can individual cells be identified? yes / sometimes / no. 2. Estimate blast percentage in the top-attended grid. 3. Note artifacts, wrong tissue, focus problems, or uninterpretable regions.</div>
+<a href='negative/SAMPLE_309_665_19_C/contact_sheet.jpg'><img class='contact' src='negative/SAMPLE_309_665_19_C/contact_sheet.jpg' alt='contact sheet'></a>
+<h3>Zoom crops</h3><div class='grid'>
+<div class='tile'><a href='negative/SAMPLE_309_665_19_C/native/top_01_native.jpg'><img src='negative/SAMPLE_309_665_19_C/zoom/top_01_zoom.jpg' alt='top 01'></a><span>top 01</span></div>
+<div class='tile'><a href='negative/SAMPLE_309_665_19_C/native/top_02_native.jpg'><img src='negative/SAMPLE_309_665_19_C/zoom/top_02_zoom.jpg' alt='top 02'></a><span>top 02</span></div>
+<div class='tile'><a href='negative/SAMPLE_309_665_19_C/native/top_03_native.jpg'><img src='negative/SAMPLE_309_665_19_C/zoom/top_03_zoom.jpg' alt='top 03'></a><span>top 03</span></div>
+<div class='tile'><a href='negative/SAMPLE_309_665_19_C/native/top_04_native.jpg'><img src='negative/SAMPLE_309_665_19_C/zoom/top_04_zoom.jpg' alt='top 04'></a><span>top 04</span></div>
+<div class='tile'><a href='negative/SAMPLE_309_665_19_C/native/top_05_native.jpg'><img src='negative/SAMPLE_309_665_19_C/zoom/top_05_zoom.jpg' alt='top 05'></a><span>top 05</span></div>
+<div class='tile'><a href='negative/SAMPLE_309_665_19_C/native/top_06_native.jpg'><img src='negative/SAMPLE_309_665_19_C/zoom/top_06_zoom.jpg' alt='top 06'></a><span>top 06</span></div>
+<div class='tile'><a href='negative/SAMPLE_309_665_19_C/native/top_07_native.jpg'><img src='negative/SAMPLE_309_665_19_C/zoom/top_07_zoom.jpg' alt='top 07'></a><span>top 07</span></div>
+<div class='tile'><a href='negative/SAMPLE_309_665_19_C/native/top_08_native.jpg'><img src='negative/SAMPLE_309_665_19_C/zoom/top_08_zoom.jpg' alt='top 08'></a><span>top 08</span></div>
+<div class='tile'><a href='negative/SAMPLE_309_665_19_C/native/bottom_01_native.jpg'><img src='negative/SAMPLE_309_665_19_C/zoom/bottom_01_zoom.jpg' alt='bottom 01'></a><span>bottom 01</span></div>
+<div class='tile'><a href='negative/SAMPLE_309_665_19_C/native/bottom_02_native.jpg'><img src='negative/SAMPLE_309_665_19_C/zoom/bottom_02_zoom.jpg' alt='bottom 02'></a><span>bottom 02</span></div>
+<div class='tile'><a href='negative/SAMPLE_309_665_19_C/native/bottom_03_native.jpg'><img src='negative/SAMPLE_309_665_19_C/zoom/bottom_03_zoom.jpg' alt='bottom 03'></a><span>bottom 03</span></div>
+<div class='tile'><a href='negative/SAMPLE_309_665_19_C/native/bottom_04_native.jpg'><img src='negative/SAMPLE_309_665_19_C/zoom/bottom_04_zoom.jpg' alt='bottom 04'></a><span>bottom 04</span></div>
+<div class='tile'><a href='negative/SAMPLE_309_665_19_C/native/bottom_05_native.jpg'><img src='negative/SAMPLE_309_665_19_C/zoom/bottom_05_zoom.jpg' alt='bottom 05'></a><span>bottom 05</span></div>
+<div class='tile'><a href='negative/SAMPLE_309_665_19_C/native/bottom_06_native.jpg'><img src='negative/SAMPLE_309_665_19_C/zoom/bottom_06_zoom.jpg' alt='bottom 06'></a><span>bottom 06</span></div>
+<div class='tile'><a href='negative/SAMPLE_309_665_19_C/native/bottom_07_native.jpg'><img src='negative/SAMPLE_309_665_19_C/zoom/bottom_07_zoom.jpg' alt='bottom 07'></a><span>bottom 07</span></div>
+<div class='tile'><a href='negative/SAMPLE_309_665_19_C/native/bottom_08_native.jpg'><img src='negative/SAMPLE_309_665_19_C/zoom/bottom_08_zoom.jpg' alt='bottom 08'></a><span>bottom 08</span></div>
+</div></section>
+<section class='slide'>
+<h2>negative: SAMPLE_379_1373_19_A</h2>
+<table class='meta'>
+<tr><td>stem</td><td>1373 19 A Score 87 - 10 Fokuspunkte - 2026-03-08 13.07.36</td></tr>
+<tr><td>experiment</td><td>high_blast</td></tr>
+<tr><td>split</td><td>split-0</td></tr>
+<tr><td>blast_percent_gt</td><td>4.00</td></tr>
+<tr><td>high_blast_gt</td><td>no</td></tr>
+<tr><td>blast_percent_pred</td><td></td></tr>
+<tr><td>blast_percent_abs_err</td><td></td></tr>
+<tr><td>high_blast_yes</td><td>0.0003</td></tr>
+</table>
+<div class='questions'><b>Pathologist questions:</b> 1. Can individual cells be identified? yes / sometimes / no. 2. Estimate blast percentage in the top-attended grid. 3. Note artifacts, wrong tissue, focus problems, or uninterpretable regions.</div>
+<a href='negative/SAMPLE_379_1373_19_A/contact_sheet.jpg'><img class='contact' src='negative/SAMPLE_379_1373_19_A/contact_sheet.jpg' alt='contact sheet'></a>
+<h3>Zoom crops</h3><div class='grid'>
+<div class='tile'><a href='negative/SAMPLE_379_1373_19_A/native/top_01_native.jpg'><img src='negative/SAMPLE_379_1373_19_A/zoom/top_01_zoom.jpg' alt='top 01'></a><span>top 01</span></div>
+<div class='tile'><a href='negative/SAMPLE_379_1373_19_A/native/top_02_native.jpg'><img src='negative/SAMPLE_379_1373_19_A/zoom/top_02_zoom.jpg' alt='top 02'></a><span>top 02</span></div>
+<div class='tile'><a href='negative/SAMPLE_379_1373_19_A/native/top_03_native.jpg'><img src='negative/SAMPLE_379_1373_19_A/zoom/top_03_zoom.jpg' alt='top 03'></a><span>top 03</span></div>
+<div class='tile'><a href='negative/SAMPLE_379_1373_19_A/native/top_04_native.jpg'><img src='negative/SAMPLE_379_1373_19_A/zoom/top_04_zoom.jpg' alt='top 04'></a><span>top 04</span></div>
+<div class='tile'><a href='negative/SAMPLE_379_1373_19_A/native/top_05_native.jpg'><img src='negative/SAMPLE_379_1373_19_A/zoom/top_05_zoom.jpg' alt='top 05'></a><span>top 05</span></div>
+<div class='tile'><a href='negative/SAMPLE_379_1373_19_A/native/top_06_native.jpg'><img src='negative/SAMPLE_379_1373_19_A/zoom/top_06_zoom.jpg' alt='top 06'></a><span>top 06</span></div>
+<div class='tile'><a href='negative/SAMPLE_379_1373_19_A/native/top_07_native.jpg'><img src='negative/SAMPLE_379_1373_19_A/zoom/top_07_zoom.jpg' alt='top 07'></a><span>top 07</span></div>
+<div class='tile'><a href='negative/SAMPLE_379_1373_19_A/native/top_08_native.jpg'><img src='negative/SAMPLE_379_1373_19_A/zoom/top_08_zoom.jpg' alt='top 08'></a><span>top 08</span></div>
+<div class='tile'><a href='negative/SAMPLE_379_1373_19_A/native/bottom_01_native.jpg'><img src='negative/SAMPLE_379_1373_19_A/zoom/bottom_01_zoom.jpg' alt='bottom 01'></a><span>bottom 01</span></div>
+<div class='tile'><a href='negative/SAMPLE_379_1373_19_A/native/bottom_02_native.jpg'><img src='negative/SAMPLE_379_1373_19_A/zoom/bottom_02_zoom.jpg' alt='bottom 02'></a><span>bottom 02</span></div>
+<div class='tile'><a href='negative/SAMPLE_379_1373_19_A/native/bottom_03_native.jpg'><img src='negative/SAMPLE_379_1373_19_A/zoom/bottom_03_zoom.jpg' alt='bottom 03'></a><span>bottom 03</span></div>
+<div class='tile'><a href='negative/SAMPLE_379_1373_19_A/native/bottom_04_native.jpg'><img src='negative/SAMPLE_379_1373_19_A/zoom/bottom_04_zoom.jpg' alt='bottom 04'></a><span>bottom 04</span></div>
+<div class='tile'><a href='negative/SAMPLE_379_1373_19_A/native/bottom_05_native.jpg'><img src='negative/SAMPLE_379_1373_19_A/zoom/bottom_05_zoom.jpg' alt='bottom 05'></a><span>bottom 05</span></div>
+<div class='tile'><a href='negative/SAMPLE_379_1373_19_A/native/bottom_06_native.jpg'><img src='negative/SAMPLE_379_1373_19_A/zoom/bottom_06_zoom.jpg' alt='bottom 06'></a><span>bottom 06</span></div>
+<div class='tile'><a href='negative/SAMPLE_379_1373_19_A/native/bottom_07_native.jpg'><img src='negative/SAMPLE_379_1373_19_A/zoom/bottom_07_zoom.jpg' alt='bottom 07'></a><span>bottom 07</span></div>
+<div class='tile'><a href='negative/SAMPLE_379_1373_19_A/native/bottom_08_native.jpg'><img src='negative/SAMPLE_379_1373_19_A/zoom/bottom_08_zoom.jpg' alt='bottom 08'></a><span>bottom 08</span></div>
+</div></section>
+<section class='slide'>
+<h2>negative: SAMPLE_368_755_19_A</h2>
+<table class='meta'>
+<tr><td>stem</td><td>755 19 A Score 66 - 10 Fokuspunkte - entfettet - 2026-03-04 18.12.30</td></tr>
+<tr><td>experiment</td><td>high_blast</td></tr>
+<tr><td>split</td><td>split-0</td></tr>
+<tr><td>blast_percent_gt</td><td>2.00</td></tr>
+<tr><td>high_blast_gt</td><td>no</td></tr>
+<tr><td>blast_percent_pred</td><td></td></tr>
+<tr><td>blast_percent_abs_err</td><td></td></tr>
+<tr><td>high_blast_yes</td><td>0.0004</td></tr>
+</table>
+<div class='questions'><b>Pathologist questions:</b> 1. Can individual cells be identified? yes / sometimes / no. 2. Estimate blast percentage in the top-attended grid. 3. Note artifacts, wrong tissue, focus problems, or uninterpretable regions.</div>
+<a href='negative/SAMPLE_368_755_19_A/contact_sheet.jpg'><img class='contact' src='negative/SAMPLE_368_755_19_A/contact_sheet.jpg' alt='contact sheet'></a>
+<h3>Zoom crops</h3><div class='grid'>
+<div class='tile'><a href='negative/SAMPLE_368_755_19_A/native/top_01_native.jpg'><img src='negative/SAMPLE_368_755_19_A/zoom/top_01_zoom.jpg' alt='top 01'></a><span>top 01</span></div>
+<div class='tile'><a href='negative/SAMPLE_368_755_19_A/native/top_02_native.jpg'><img src='negative/SAMPLE_368_755_19_A/zoom/top_02_zoom.jpg' alt='top 02'></a><span>top 02</span></div>
+<div class='tile'><a href='negative/SAMPLE_368_755_19_A/native/top_03_native.jpg'><img src='negative/SAMPLE_368_755_19_A/zoom/top_03_zoom.jpg' alt='top 03'></a><span>top 03</span></div>
+<div class='tile'><a href='negative/SAMPLE_368_755_19_A/native/top_04_native.jpg'><img src='negative/SAMPLE_368_755_19_A/zoom/top_04_zoom.jpg' alt='top 04'></a><span>top 04</span></div>
+<div class='tile'><a href='negative/SAMPLE_368_755_19_A/native/top_05_native.jpg'><img src='negative/SAMPLE_368_755_19_A/zoom/top_05_zoom.jpg' alt='top 05'></a><span>top 05</span></div>
+<div class='tile'><a href='negative/SAMPLE_368_755_19_A/native/top_06_native.jpg'><img src='negative/SAMPLE_368_755_19_A/zoom/top_06_zoom.jpg' alt='top 06'></a><span>top 06</span></div>
+<div class='tile'><a href='negative/SAMPLE_368_755_19_A/native/top_07_native.jpg'><img src='negative/SAMPLE_368_755_19_A/zoom/top_07_zoom.jpg' alt='top 07'></a><span>top 07</span></div>
+<div class='tile'><a href='negative/SAMPLE_368_755_19_A/native/top_08_native.jpg'><img src='negative/SAMPLE_368_755_19_A/zoom/top_08_zoom.jpg' alt='top 08'></a><span>top 08</span></div>
+<div class='tile'><a href='negative/SAMPLE_368_755_19_A/native/bottom_01_native.jpg'><img src='negative/SAMPLE_368_755_19_A/zoom/bottom_01_zoom.jpg' alt='bottom 01'></a><span>bottom 01</span></div>
+<div class='tile'><a href='negative/SAMPLE_368_755_19_A/native/bottom_02_native.jpg'><img src='negative/SAMPLE_368_755_19_A/zoom/bottom_02_zoom.jpg' alt='bottom 02'></a><span>bottom 02</span></div>
+<div class='tile'><a href='negative/SAMPLE_368_755_19_A/native/bottom_03_native.jpg'><img src='negative/SAMPLE_368_755_19_A/zoom/bottom_03_zoom.jpg' alt='bottom 03'></a><span>bottom 03</span></div>
+<div class='tile'><a href='negative/SAMPLE_368_755_19_A/native/bottom_04_native.jpg'><img src='negative/SAMPLE_368_755_19_A/zoom/bottom_04_zoom.jpg' alt='bottom 04'></a><span>bottom 04</span></div>
+<div class='tile'><a href='negative/SAMPLE_368_755_19_A/native/bottom_05_native.jpg'><img src='negative/SAMPLE_368_755_19_A/zoom/bottom_05_zoom.jpg' alt='bottom 05'></a><span>bottom 05</span></div>
+<div class='tile'><a href='negative/SAMPLE_368_755_19_A/native/bottom_06_native.jpg'><img src='negative/SAMPLE_368_755_19_A/zoom/bottom_06_zoom.jpg' alt='bottom 06'></a><span>bottom 06</span></div>
+<div class='tile'><a href='negative/SAMPLE_368_755_19_A/native/bottom_07_native.jpg'><img src='negative/SAMPLE_368_755_19_A/zoom/bottom_07_zoom.jpg' alt='bottom 07'></a><span>bottom 07</span></div>
+<div class='tile'><a href='negative/SAMPLE_368_755_19_A/native/bottom_08_native.jpg'><img src='negative/SAMPLE_368_755_19_A/zoom/bottom_08_zoom.jpg' alt='bottom 08'></a><span>bottom 08</span></div>
+</div></section>
+</body></html>

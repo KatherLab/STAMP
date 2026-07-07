@@ -1,0 +1,18 @@
+{
+  "generated_at": "2026-05-13T09:44:10.529329+00:00",
+  "input_manifest": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/pilot_manifest.json",
+  "total_slides": 12,
+  "total_tiles": 192,
+  "thresholds": {
+    "low_focus_laplacian_p25": 29.3703798690824,
+    "low_candidate_count_p25": 6.25,
+    "high_background_fraction_p75": 0.007689416408538818
+  },
+  "outputs": {
+    "tile_metrics": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_qc/tile_metrics.csv",
+    "slide_summary": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_qc/slide_summary.csv",
+    "group_summary": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_qc/group_summary.csv",
+    "html": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_qc/index.html"
+  },
+  "warning": "Cell-like candidates are conservative image objects, not validated cells, not blasts, and not diagnostic output."
+}

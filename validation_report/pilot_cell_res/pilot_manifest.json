@@ -1,0 +1,1789 @@
+{
+  "generated_at": "2026-05-13T08:50:20.694316+00:00",
+  "parameters": {
+    "top_k": 8,
+    "bottom_k": 8,
+    "zoom_px": 512,
+    "groups": [
+      "failure",
+      "positive",
+      "negative"
+    ]
+  },
+  "inputs": {
+    "candidates": "/home/jeff/Projects/STAMP/validation_report/annotation_candidates/candidates.json",
+    "clinical": "/home/jeff/Projects/STAMP/tables/stamp_clini.csv",
+    "experiments": {
+      "blast_percent": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_blast_percent_uni2",
+      "high_blast": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_high_blast_uni2"
+    }
+  },
+  "total_slides": 12,
+  "total_source_tiles": 192,
+  "slides": [
+    {
+      "metadata": {
+        "group": "failure",
+        "sample_id": "SAMPLE_396_803_19_B",
+        "stem": "S_803 19 B Score 100 - 10 Fokuspunkte - entfettet - 2026-03-04 19.18.04",
+        "experiment": "blast_percent",
+        "split": "split-2",
+        "blast_percent_gt": "81.00",
+        "high_blast_gt": "yes",
+        "blast_percent_pred": "0.12",
+        "blast_percent_abs_err": "80.88",
+        "high_blast_yes": ""
+      },
+      "source_tile_dir": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_blast_percent_uni2/heatmaps/split-2/S_803 19 B Score 100 - 10 Fokuspunkte - entfettet - 2026-03-04 19.18.04/tiles",
+      "output_dir": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_396_803_19_B",
+      "contact_sheet_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_396_803_19_B/contact_sheet.jpg",
+      "tiles": [
+        {
+          "kind": "top",
+          "rank": 1,
+          "score": 1.0,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_blast_percent_uni2/heatmaps/split-2/S_803 19 B Score 100 - 10 Fokuspunkte - entfettet - 2026-03-04 19.18.04/tiles/top_01-S_803 19 B Score 100 - 10 Fokuspunkte - entfettet - 2026-03-04 19.18.04-regression=1.00.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_396_803_19_B/native/top_01_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_396_803_19_B/zoom/top_01_zoom.jpg"
+        },
+        {
+          "kind": "top",
+          "rank": 2,
+          "score": 0.79,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_blast_percent_uni2/heatmaps/split-2/S_803 19 B Score 100 - 10 Fokuspunkte - entfettet - 2026-03-04 19.18.04/tiles/top_02-S_803 19 B Score 100 - 10 Fokuspunkte - entfettet - 2026-03-04 19.18.04-regression=0.79.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_396_803_19_B/native/top_02_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_396_803_19_B/zoom/top_02_zoom.jpg"
+        },
+        {
+          "kind": "top",
+          "rank": 3,
+          "score": 0.63,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_blast_percent_uni2/heatmaps/split-2/S_803 19 B Score 100 - 10 Fokuspunkte - entfettet - 2026-03-04 19.18.04/tiles/top_03-S_803 19 B Score 100 - 10 Fokuspunkte - entfettet - 2026-03-04 19.18.04-regression=0.63.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_396_803_19_B/native/top_03_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_396_803_19_B/zoom/top_03_zoom.jpg"
+        },
+        {
+          "kind": "top",
+          "rank": 4,
+          "score": 0.58,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_blast_percent_uni2/heatmaps/split-2/S_803 19 B Score 100 - 10 Fokuspunkte - entfettet - 2026-03-04 19.18.04/tiles/top_04-S_803 19 B Score 100 - 10 Fokuspunkte - entfettet - 2026-03-04 19.18.04-regression=0.58.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_396_803_19_B/native/top_04_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_396_803_19_B/zoom/top_04_zoom.jpg"
+        },
+        {
+          "kind": "top",
+          "rank": 5,
+          "score": 0.52,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_blast_percent_uni2/heatmaps/split-2/S_803 19 B Score 100 - 10 Fokuspunkte - entfettet - 2026-03-04 19.18.04/tiles/top_05-S_803 19 B Score 100 - 10 Fokuspunkte - entfettet - 2026-03-04 19.18.04-regression=0.52.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_396_803_19_B/native/top_05_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_396_803_19_B/zoom/top_05_zoom.jpg"
+        },
+        {
+          "kind": "top",
+          "rank": 6,
+          "score": 0.51,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_blast_percent_uni2/heatmaps/split-2/S_803 19 B Score 100 - 10 Fokuspunkte - entfettet - 2026-03-04 19.18.04/tiles/top_06-S_803 19 B Score 100 - 10 Fokuspunkte - entfettet - 2026-03-04 19.18.04-regression=0.51.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_396_803_19_B/native/top_06_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_396_803_19_B/zoom/top_06_zoom.jpg"
+        },
+        {
+          "kind": "top",
+          "rank": 7,
+          "score": 0.51,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_blast_percent_uni2/heatmaps/split-2/S_803 19 B Score 100 - 10 Fokuspunkte - entfettet - 2026-03-04 19.18.04/tiles/top_07-S_803 19 B Score 100 - 10 Fokuspunkte - entfettet - 2026-03-04 19.18.04-regression=0.51.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_396_803_19_B/native/top_07_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_396_803_19_B/zoom/top_07_zoom.jpg"
+        },
+        {
+          "kind": "top",
+          "rank": 8,
+          "score": 0.49,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_blast_percent_uni2/heatmaps/split-2/S_803 19 B Score 100 - 10 Fokuspunkte - entfettet - 2026-03-04 19.18.04/tiles/top_08-S_803 19 B Score 100 - 10 Fokuspunkte - entfettet - 2026-03-04 19.18.04-regression=0.49.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_396_803_19_B/native/top_08_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_396_803_19_B/zoom/top_08_zoom.jpg"
+        },
+        {
+          "kind": "bottom",
+          "rank": 1,
+          "score": 0.0,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_blast_percent_uni2/heatmaps/split-2/S_803 19 B Score 100 - 10 Fokuspunkte - entfettet - 2026-03-04 19.18.04/tiles/bottom_01-S_803 19 B Score 100 - 10 Fokuspunkte - entfettet - 2026-03-04 19.18.04-regression=0.00.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_396_803_19_B/native/bottom_01_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_396_803_19_B/zoom/bottom_01_zoom.jpg"
+        },
+        {
+          "kind": "bottom",
+          "rank": 2,
+          "score": 0.0,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_blast_percent_uni2/heatmaps/split-2/S_803 19 B Score 100 - 10 Fokuspunkte - entfettet - 2026-03-04 19.18.04/tiles/bottom_02-S_803 19 B Score 100 - 10 Fokuspunkte - entfettet - 2026-03-04 19.18.04-regression=0.00.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_396_803_19_B/native/bottom_02_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_396_803_19_B/zoom/bottom_02_zoom.jpg"
+        },
+        {
+          "kind": "bottom",
+          "rank": 3,
+          "score": 0.0,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_blast_percent_uni2/heatmaps/split-2/S_803 19 B Score 100 - 10 Fokuspunkte - entfettet - 2026-03-04 19.18.04/tiles/bottom_03-S_803 19 B Score 100 - 10 Fokuspunkte - entfettet - 2026-03-04 19.18.04-regression=0.00.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_396_803_19_B/native/bottom_03_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_396_803_19_B/zoom/bottom_03_zoom.jpg"
+        },
+        {
+          "kind": "bottom",
+          "rank": 4,
+          "score": 0.0,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_blast_percent_uni2/heatmaps/split-2/S_803 19 B Score 100 - 10 Fokuspunkte - entfettet - 2026-03-04 19.18.04/tiles/bottom_04-S_803 19 B Score 100 - 10 Fokuspunkte - entfettet - 2026-03-04 19.18.04-regression=0.00.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_396_803_19_B/native/bottom_04_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_396_803_19_B/zoom/bottom_04_zoom.jpg"
+        },
+        {
+          "kind": "bottom",
+          "rank": 5,
+          "score": 0.0,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_blast_percent_uni2/heatmaps/split-2/S_803 19 B Score 100 - 10 Fokuspunkte - entfettet - 2026-03-04 19.18.04/tiles/bottom_05-S_803 19 B Score 100 - 10 Fokuspunkte - entfettet - 2026-03-04 19.18.04-regression=0.00.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_396_803_19_B/native/bottom_05_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_396_803_19_B/zoom/bottom_05_zoom.jpg"
+        },
+        {
+          "kind": "bottom",
+          "rank": 6,
+          "score": 0.0,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_blast_percent_uni2/heatmaps/split-2/S_803 19 B Score 100 - 10 Fokuspunkte - entfettet - 2026-03-04 19.18.04/tiles/bottom_06-S_803 19 B Score 100 - 10 Fokuspunkte - entfettet - 2026-03-04 19.18.04-regression=0.00.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_396_803_19_B/native/bottom_06_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_396_803_19_B/zoom/bottom_06_zoom.jpg"
+        },
+        {
+          "kind": "bottom",
+          "rank": 7,
+          "score": 0.0,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_blast_percent_uni2/heatmaps/split-2/S_803 19 B Score 100 - 10 Fokuspunkte - entfettet - 2026-03-04 19.18.04/tiles/bottom_07-S_803 19 B Score 100 - 10 Fokuspunkte - entfettet - 2026-03-04 19.18.04-regression=0.00.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_396_803_19_B/native/bottom_07_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_396_803_19_B/zoom/bottom_07_zoom.jpg"
+        },
+        {
+          "kind": "bottom",
+          "rank": 8,
+          "score": 0.0,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_blast_percent_uni2/heatmaps/split-2/S_803 19 B Score 100 - 10 Fokuspunkte - entfettet - 2026-03-04 19.18.04/tiles/bottom_08-S_803 19 B Score 100 - 10 Fokuspunkte - entfettet - 2026-03-04 19.18.04-regression=0.00.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_396_803_19_B/native/bottom_08_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_396_803_19_B/zoom/bottom_08_zoom.jpg"
+        }
+      ]
+    },
+    {
+      "metadata": {
+        "group": "failure",
+        "sample_id": "SAMPLE_396_803_19_A",
+        "stem": "803 19 A Score 99 - 10 Fokuspunkte - entfettet - 2026-03-04 19.12.50",
+        "experiment": "blast_percent",
+        "split": "split-2",
+        "blast_percent_gt": "81.00",
+        "high_blast_gt": "yes",
+        "blast_percent_pred": "1.23",
+        "blast_percent_abs_err": "79.77",
+        "high_blast_yes": ""
+      },
+      "source_tile_dir": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_blast_percent_uni2/heatmaps/split-2/803 19 A Score 99 - 10 Fokuspunkte - entfettet - 2026-03-04 19.12.50/tiles",
+      "output_dir": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_396_803_19_A",
+      "contact_sheet_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_396_803_19_A/contact_sheet.jpg",
+      "tiles": [
+        {
+          "kind": "top",
+          "rank": 1,
+          "score": 1.0,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_blast_percent_uni2/heatmaps/split-2/803 19 A Score 99 - 10 Fokuspunkte - entfettet - 2026-03-04 19.12.50/tiles/top_01-803 19 A Score 99 - 10 Fokuspunkte - entfettet - 2026-03-04 19.12.50-regression=1.00.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_396_803_19_A/native/top_01_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_396_803_19_A/zoom/top_01_zoom.jpg"
+        },
+        {
+          "kind": "top",
+          "rank": 2,
+          "score": 0.87,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_blast_percent_uni2/heatmaps/split-2/803 19 A Score 99 - 10 Fokuspunkte - entfettet - 2026-03-04 19.12.50/tiles/top_02-803 19 A Score 99 - 10 Fokuspunkte - entfettet - 2026-03-04 19.12.50-regression=0.87.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_396_803_19_A/native/top_02_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_396_803_19_A/zoom/top_02_zoom.jpg"
+        },
+        {
+          "kind": "top",
+          "rank": 3,
+          "score": 0.76,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_blast_percent_uni2/heatmaps/split-2/803 19 A Score 99 - 10 Fokuspunkte - entfettet - 2026-03-04 19.12.50/tiles/top_03-803 19 A Score 99 - 10 Fokuspunkte - entfettet - 2026-03-04 19.12.50-regression=0.76.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_396_803_19_A/native/top_03_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_396_803_19_A/zoom/top_03_zoom.jpg"
+        },
+        {
+          "kind": "top",
+          "rank": 4,
+          "score": 0.71,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_blast_percent_uni2/heatmaps/split-2/803 19 A Score 99 - 10 Fokuspunkte - entfettet - 2026-03-04 19.12.50/tiles/top_04-803 19 A Score 99 - 10 Fokuspunkte - entfettet - 2026-03-04 19.12.50-regression=0.71.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_396_803_19_A/native/top_04_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_396_803_19_A/zoom/top_04_zoom.jpg"
+        },
+        {
+          "kind": "top",
+          "rank": 5,
+          "score": 0.7,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_blast_percent_uni2/heatmaps/split-2/803 19 A Score 99 - 10 Fokuspunkte - entfettet - 2026-03-04 19.12.50/tiles/top_05-803 19 A Score 99 - 10 Fokuspunkte - entfettet - 2026-03-04 19.12.50-regression=0.70.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_396_803_19_A/native/top_05_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_396_803_19_A/zoom/top_05_zoom.jpg"
+        },
+        {
+          "kind": "top",
+          "rank": 6,
+          "score": 0.69,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_blast_percent_uni2/heatmaps/split-2/803 19 A Score 99 - 10 Fokuspunkte - entfettet - 2026-03-04 19.12.50/tiles/top_06-803 19 A Score 99 - 10 Fokuspunkte - entfettet - 2026-03-04 19.12.50-regression=0.69.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_396_803_19_A/native/top_06_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_396_803_19_A/zoom/top_06_zoom.jpg"
+        },
+        {
+          "kind": "top",
+          "rank": 7,
+          "score": 0.69,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_blast_percent_uni2/heatmaps/split-2/803 19 A Score 99 - 10 Fokuspunkte - entfettet - 2026-03-04 19.12.50/tiles/top_07-803 19 A Score 99 - 10 Fokuspunkte - entfettet - 2026-03-04 19.12.50-regression=0.69.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_396_803_19_A/native/top_07_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_396_803_19_A/zoom/top_07_zoom.jpg"
+        },
+        {
+          "kind": "top",
+          "rank": 8,
+          "score": 0.67,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_blast_percent_uni2/heatmaps/split-2/803 19 A Score 99 - 10 Fokuspunkte - entfettet - 2026-03-04 19.12.50/tiles/top_08-803 19 A Score 99 - 10 Fokuspunkte - entfettet - 2026-03-04 19.12.50-regression=0.67.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_396_803_19_A/native/top_08_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_396_803_19_A/zoom/top_08_zoom.jpg"
+        },
+        {
+          "kind": "bottom",
+          "rank": 1,
+          "score": 0.0,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_blast_percent_uni2/heatmaps/split-2/803 19 A Score 99 - 10 Fokuspunkte - entfettet - 2026-03-04 19.12.50/tiles/bottom_01-803 19 A Score 99 - 10 Fokuspunkte - entfettet - 2026-03-04 19.12.50-regression=0.00.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_396_803_19_A/native/bottom_01_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_396_803_19_A/zoom/bottom_01_zoom.jpg"
+        },
+        {
+          "kind": "bottom",
+          "rank": 2,
+          "score": 0.0,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_blast_percent_uni2/heatmaps/split-2/803 19 A Score 99 - 10 Fokuspunkte - entfettet - 2026-03-04 19.12.50/tiles/bottom_02-803 19 A Score 99 - 10 Fokuspunkte - entfettet - 2026-03-04 19.12.50-regression=0.00.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_396_803_19_A/native/bottom_02_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_396_803_19_A/zoom/bottom_02_zoom.jpg"
+        },
+        {
+          "kind": "bottom",
+          "rank": 3,
+          "score": 0.0,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_blast_percent_uni2/heatmaps/split-2/803 19 A Score 99 - 10 Fokuspunkte - entfettet - 2026-03-04 19.12.50/tiles/bottom_03-803 19 A Score 99 - 10 Fokuspunkte - entfettet - 2026-03-04 19.12.50-regression=0.00.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_396_803_19_A/native/bottom_03_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_396_803_19_A/zoom/bottom_03_zoom.jpg"
+        },
+        {
+          "kind": "bottom",
+          "rank": 4,
+          "score": 0.0,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_blast_percent_uni2/heatmaps/split-2/803 19 A Score 99 - 10 Fokuspunkte - entfettet - 2026-03-04 19.12.50/tiles/bottom_04-803 19 A Score 99 - 10 Fokuspunkte - entfettet - 2026-03-04 19.12.50-regression=0.00.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_396_803_19_A/native/bottom_04_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_396_803_19_A/zoom/bottom_04_zoom.jpg"
+        },
+        {
+          "kind": "bottom",
+          "rank": 5,
+          "score": 0.0,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_blast_percent_uni2/heatmaps/split-2/803 19 A Score 99 - 10 Fokuspunkte - entfettet - 2026-03-04 19.12.50/tiles/bottom_05-803 19 A Score 99 - 10 Fokuspunkte - entfettet - 2026-03-04 19.12.50-regression=0.00.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_396_803_19_A/native/bottom_05_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_396_803_19_A/zoom/bottom_05_zoom.jpg"
+        },
+        {
+          "kind": "bottom",
+          "rank": 6,
+          "score": 0.0,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_blast_percent_uni2/heatmaps/split-2/803 19 A Score 99 - 10 Fokuspunkte - entfettet - 2026-03-04 19.12.50/tiles/bottom_06-803 19 A Score 99 - 10 Fokuspunkte - entfettet - 2026-03-04 19.12.50-regression=0.00.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_396_803_19_A/native/bottom_06_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_396_803_19_A/zoom/bottom_06_zoom.jpg"
+        },
+        {
+          "kind": "bottom",
+          "rank": 7,
+          "score": 0.0,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_blast_percent_uni2/heatmaps/split-2/803 19 A Score 99 - 10 Fokuspunkte - entfettet - 2026-03-04 19.12.50/tiles/bottom_07-803 19 A Score 99 - 10 Fokuspunkte - entfettet - 2026-03-04 19.12.50-regression=0.00.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_396_803_19_A/native/bottom_07_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_396_803_19_A/zoom/bottom_07_zoom.jpg"
+        },
+        {
+          "kind": "bottom",
+          "rank": 8,
+          "score": 0.0,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_blast_percent_uni2/heatmaps/split-2/803 19 A Score 99 - 10 Fokuspunkte - entfettet - 2026-03-04 19.12.50/tiles/bottom_08-803 19 A Score 99 - 10 Fokuspunkte - entfettet - 2026-03-04 19.12.50-regression=0.00.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_396_803_19_A/native/bottom_08_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_396_803_19_A/zoom/bottom_08_zoom.jpg"
+        }
+      ]
+    },
+    {
+      "metadata": {
+        "group": "failure",
+        "sample_id": "SAMPLE_408_1411_19_A",
+        "stem": "S_1411 19 A Score 92 - 10 Fokuspunkte - 2026-03-08 14.01.06",
+        "experiment": "blast_percent",
+        "split": "split-2",
+        "blast_percent_gt": "91.00",
+        "high_blast_gt": "yes",
+        "blast_percent_pred": "11.91",
+        "blast_percent_abs_err": "79.09",
+        "high_blast_yes": ""
+      },
+      "source_tile_dir": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_blast_percent_uni2/heatmaps/split-2/S_1411 19 A Score 92 - 10 Fokuspunkte - 2026-03-08 14.01.06/tiles",
+      "output_dir": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_408_1411_19_A",
+      "contact_sheet_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_408_1411_19_A/contact_sheet.jpg",
+      "tiles": [
+        {
+          "kind": "top",
+          "rank": 1,
+          "score": 1.0,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_blast_percent_uni2/heatmaps/split-2/S_1411 19 A Score 92 - 10 Fokuspunkte - 2026-03-08 14.01.06/tiles/top_01-S_1411 19 A Score 92 - 10 Fokuspunkte - 2026-03-08 14.01.06-regression=1.00.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_408_1411_19_A/native/top_01_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_408_1411_19_A/zoom/top_01_zoom.jpg"
+        },
+        {
+          "kind": "top",
+          "rank": 2,
+          "score": 0.92,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_blast_percent_uni2/heatmaps/split-2/S_1411 19 A Score 92 - 10 Fokuspunkte - 2026-03-08 14.01.06/tiles/top_02-S_1411 19 A Score 92 - 10 Fokuspunkte - 2026-03-08 14.01.06-regression=0.92.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_408_1411_19_A/native/top_02_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_408_1411_19_A/zoom/top_02_zoom.jpg"
+        },
+        {
+          "kind": "top",
+          "rank": 3,
+          "score": 0.88,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_blast_percent_uni2/heatmaps/split-2/S_1411 19 A Score 92 - 10 Fokuspunkte - 2026-03-08 14.01.06/tiles/top_03-S_1411 19 A Score 92 - 10 Fokuspunkte - 2026-03-08 14.01.06-regression=0.88.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_408_1411_19_A/native/top_03_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_408_1411_19_A/zoom/top_03_zoom.jpg"
+        },
+        {
+          "kind": "top",
+          "rank": 4,
+          "score": 0.8,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_blast_percent_uni2/heatmaps/split-2/S_1411 19 A Score 92 - 10 Fokuspunkte - 2026-03-08 14.01.06/tiles/top_04-S_1411 19 A Score 92 - 10 Fokuspunkte - 2026-03-08 14.01.06-regression=0.80.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_408_1411_19_A/native/top_04_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_408_1411_19_A/zoom/top_04_zoom.jpg"
+        },
+        {
+          "kind": "top",
+          "rank": 5,
+          "score": 0.79,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_blast_percent_uni2/heatmaps/split-2/S_1411 19 A Score 92 - 10 Fokuspunkte - 2026-03-08 14.01.06/tiles/top_05-S_1411 19 A Score 92 - 10 Fokuspunkte - 2026-03-08 14.01.06-regression=0.79.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_408_1411_19_A/native/top_05_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_408_1411_19_A/zoom/top_05_zoom.jpg"
+        },
+        {
+          "kind": "top",
+          "rank": 6,
+          "score": 0.76,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_blast_percent_uni2/heatmaps/split-2/S_1411 19 A Score 92 - 10 Fokuspunkte - 2026-03-08 14.01.06/tiles/top_06-S_1411 19 A Score 92 - 10 Fokuspunkte - 2026-03-08 14.01.06-regression=0.76.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_408_1411_19_A/native/top_06_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_408_1411_19_A/zoom/top_06_zoom.jpg"
+        },
+        {
+          "kind": "top",
+          "rank": 7,
+          "score": 0.76,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_blast_percent_uni2/heatmaps/split-2/S_1411 19 A Score 92 - 10 Fokuspunkte - 2026-03-08 14.01.06/tiles/top_07-S_1411 19 A Score 92 - 10 Fokuspunkte - 2026-03-08 14.01.06-regression=0.76.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_408_1411_19_A/native/top_07_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_408_1411_19_A/zoom/top_07_zoom.jpg"
+        },
+        {
+          "kind": "top",
+          "rank": 8,
+          "score": 0.75,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_blast_percent_uni2/heatmaps/split-2/S_1411 19 A Score 92 - 10 Fokuspunkte - 2026-03-08 14.01.06/tiles/top_08-S_1411 19 A Score 92 - 10 Fokuspunkte - 2026-03-08 14.01.06-regression=0.75.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_408_1411_19_A/native/top_08_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_408_1411_19_A/zoom/top_08_zoom.jpg"
+        },
+        {
+          "kind": "bottom",
+          "rank": 1,
+          "score": 0.0,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_blast_percent_uni2/heatmaps/split-2/S_1411 19 A Score 92 - 10 Fokuspunkte - 2026-03-08 14.01.06/tiles/bottom_01-S_1411 19 A Score 92 - 10 Fokuspunkte - 2026-03-08 14.01.06-regression=0.00.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_408_1411_19_A/native/bottom_01_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_408_1411_19_A/zoom/bottom_01_zoom.jpg"
+        },
+        {
+          "kind": "bottom",
+          "rank": 2,
+          "score": 0.0,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_blast_percent_uni2/heatmaps/split-2/S_1411 19 A Score 92 - 10 Fokuspunkte - 2026-03-08 14.01.06/tiles/bottom_02-S_1411 19 A Score 92 - 10 Fokuspunkte - 2026-03-08 14.01.06-regression=0.00.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_408_1411_19_A/native/bottom_02_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_408_1411_19_A/zoom/bottom_02_zoom.jpg"
+        },
+        {
+          "kind": "bottom",
+          "rank": 3,
+          "score": 0.0,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_blast_percent_uni2/heatmaps/split-2/S_1411 19 A Score 92 - 10 Fokuspunkte - 2026-03-08 14.01.06/tiles/bottom_03-S_1411 19 A Score 92 - 10 Fokuspunkte - 2026-03-08 14.01.06-regression=0.00.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_408_1411_19_A/native/bottom_03_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_408_1411_19_A/zoom/bottom_03_zoom.jpg"
+        },
+        {
+          "kind": "bottom",
+          "rank": 4,
+          "score": 0.0,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_blast_percent_uni2/heatmaps/split-2/S_1411 19 A Score 92 - 10 Fokuspunkte - 2026-03-08 14.01.06/tiles/bottom_04-S_1411 19 A Score 92 - 10 Fokuspunkte - 2026-03-08 14.01.06-regression=0.00.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_408_1411_19_A/native/bottom_04_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_408_1411_19_A/zoom/bottom_04_zoom.jpg"
+        },
+        {
+          "kind": "bottom",
+          "rank": 5,
+          "score": 0.0,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_blast_percent_uni2/heatmaps/split-2/S_1411 19 A Score 92 - 10 Fokuspunkte - 2026-03-08 14.01.06/tiles/bottom_05-S_1411 19 A Score 92 - 10 Fokuspunkte - 2026-03-08 14.01.06-regression=0.00.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_408_1411_19_A/native/bottom_05_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_408_1411_19_A/zoom/bottom_05_zoom.jpg"
+        },
+        {
+          "kind": "bottom",
+          "rank": 6,
+          "score": 0.0,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_blast_percent_uni2/heatmaps/split-2/S_1411 19 A Score 92 - 10 Fokuspunkte - 2026-03-08 14.01.06/tiles/bottom_06-S_1411 19 A Score 92 - 10 Fokuspunkte - 2026-03-08 14.01.06-regression=0.00.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_408_1411_19_A/native/bottom_06_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_408_1411_19_A/zoom/bottom_06_zoom.jpg"
+        },
+        {
+          "kind": "bottom",
+          "rank": 7,
+          "score": 0.0,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_blast_percent_uni2/heatmaps/split-2/S_1411 19 A Score 92 - 10 Fokuspunkte - 2026-03-08 14.01.06/tiles/bottom_07-S_1411 19 A Score 92 - 10 Fokuspunkte - 2026-03-08 14.01.06-regression=0.00.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_408_1411_19_A/native/bottom_07_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_408_1411_19_A/zoom/bottom_07_zoom.jpg"
+        },
+        {
+          "kind": "bottom",
+          "rank": 8,
+          "score": 0.0,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_blast_percent_uni2/heatmaps/split-2/S_1411 19 A Score 92 - 10 Fokuspunkte - 2026-03-08 14.01.06/tiles/bottom_08-S_1411 19 A Score 92 - 10 Fokuspunkte - 2026-03-08 14.01.06-regression=0.00.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_408_1411_19_A/native/bottom_08_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_408_1411_19_A/zoom/bottom_08_zoom.jpg"
+        }
+      ]
+    },
+    {
+      "metadata": {
+        "group": "failure",
+        "sample_id": "SAMPLE_404_1261_19_C",
+        "stem": "1261 19 C Score 76 -10 Fokuspunkte - 2026-03-07 12.33.11",
+        "experiment": "blast_percent",
+        "split": "split-4",
+        "blast_percent_gt": "90.00",
+        "high_blast_gt": "yes",
+        "blast_percent_pred": "11.34",
+        "blast_percent_abs_err": "78.66",
+        "high_blast_yes": ""
+      },
+      "source_tile_dir": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_blast_percent_uni2/heatmaps/split-4/1261 19 C Score 76 -10 Fokuspunkte - 2026-03-07 12.33.11/tiles",
+      "output_dir": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_404_1261_19_C",
+      "contact_sheet_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_404_1261_19_C/contact_sheet.jpg",
+      "tiles": [
+        {
+          "kind": "top",
+          "rank": 1,
+          "score": 1.0,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_blast_percent_uni2/heatmaps/split-4/1261 19 C Score 76 -10 Fokuspunkte - 2026-03-07 12.33.11/tiles/top_01-1261 19 C Score 76 -10 Fokuspunkte - 2026-03-07 12.33.11-regression=1.00.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_404_1261_19_C/native/top_01_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_404_1261_19_C/zoom/top_01_zoom.jpg"
+        },
+        {
+          "kind": "top",
+          "rank": 2,
+          "score": 0.7,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_blast_percent_uni2/heatmaps/split-4/1261 19 C Score 76 -10 Fokuspunkte - 2026-03-07 12.33.11/tiles/top_02-1261 19 C Score 76 -10 Fokuspunkte - 2026-03-07 12.33.11-regression=0.70.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_404_1261_19_C/native/top_02_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_404_1261_19_C/zoom/top_02_zoom.jpg"
+        },
+        {
+          "kind": "top",
+          "rank": 3,
+          "score": 0.69,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_blast_percent_uni2/heatmaps/split-4/1261 19 C Score 76 -10 Fokuspunkte - 2026-03-07 12.33.11/tiles/top_03-1261 19 C Score 76 -10 Fokuspunkte - 2026-03-07 12.33.11-regression=0.69.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_404_1261_19_C/native/top_03_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_404_1261_19_C/zoom/top_03_zoom.jpg"
+        },
+        {
+          "kind": "top",
+          "rank": 4,
+          "score": 0.68,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_blast_percent_uni2/heatmaps/split-4/1261 19 C Score 76 -10 Fokuspunkte - 2026-03-07 12.33.11/tiles/top_04-1261 19 C Score 76 -10 Fokuspunkte - 2026-03-07 12.33.11-regression=0.68.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_404_1261_19_C/native/top_04_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_404_1261_19_C/zoom/top_04_zoom.jpg"
+        },
+        {
+          "kind": "top",
+          "rank": 5,
+          "score": 0.63,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_blast_percent_uni2/heatmaps/split-4/1261 19 C Score 76 -10 Fokuspunkte - 2026-03-07 12.33.11/tiles/top_05-1261 19 C Score 76 -10 Fokuspunkte - 2026-03-07 12.33.11-regression=0.63.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_404_1261_19_C/native/top_05_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_404_1261_19_C/zoom/top_05_zoom.jpg"
+        },
+        {
+          "kind": "top",
+          "rank": 6,
+          "score": 0.62,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_blast_percent_uni2/heatmaps/split-4/1261 19 C Score 76 -10 Fokuspunkte - 2026-03-07 12.33.11/tiles/top_06-1261 19 C Score 76 -10 Fokuspunkte - 2026-03-07 12.33.11-regression=0.62.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_404_1261_19_C/native/top_06_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_404_1261_19_C/zoom/top_06_zoom.jpg"
+        },
+        {
+          "kind": "top",
+          "rank": 7,
+          "score": 0.6,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_blast_percent_uni2/heatmaps/split-4/1261 19 C Score 76 -10 Fokuspunkte - 2026-03-07 12.33.11/tiles/top_07-1261 19 C Score 76 -10 Fokuspunkte - 2026-03-07 12.33.11-regression=0.60.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_404_1261_19_C/native/top_07_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_404_1261_19_C/zoom/top_07_zoom.jpg"
+        },
+        {
+          "kind": "top",
+          "rank": 8,
+          "score": 0.59,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_blast_percent_uni2/heatmaps/split-4/1261 19 C Score 76 -10 Fokuspunkte - 2026-03-07 12.33.11/tiles/top_08-1261 19 C Score 76 -10 Fokuspunkte - 2026-03-07 12.33.11-regression=0.59.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_404_1261_19_C/native/top_08_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_404_1261_19_C/zoom/top_08_zoom.jpg"
+        },
+        {
+          "kind": "bottom",
+          "rank": 1,
+          "score": 0.0,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_blast_percent_uni2/heatmaps/split-4/1261 19 C Score 76 -10 Fokuspunkte - 2026-03-07 12.33.11/tiles/bottom_01-1261 19 C Score 76 -10 Fokuspunkte - 2026-03-07 12.33.11-regression=0.00.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_404_1261_19_C/native/bottom_01_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_404_1261_19_C/zoom/bottom_01_zoom.jpg"
+        },
+        {
+          "kind": "bottom",
+          "rank": 2,
+          "score": 0.0,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_blast_percent_uni2/heatmaps/split-4/1261 19 C Score 76 -10 Fokuspunkte - 2026-03-07 12.33.11/tiles/bottom_02-1261 19 C Score 76 -10 Fokuspunkte - 2026-03-07 12.33.11-regression=0.00.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_404_1261_19_C/native/bottom_02_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_404_1261_19_C/zoom/bottom_02_zoom.jpg"
+        },
+        {
+          "kind": "bottom",
+          "rank": 3,
+          "score": 0.0,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_blast_percent_uni2/heatmaps/split-4/1261 19 C Score 76 -10 Fokuspunkte - 2026-03-07 12.33.11/tiles/bottom_03-1261 19 C Score 76 -10 Fokuspunkte - 2026-03-07 12.33.11-regression=0.00.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_404_1261_19_C/native/bottom_03_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_404_1261_19_C/zoom/bottom_03_zoom.jpg"
+        },
+        {
+          "kind": "bottom",
+          "rank": 4,
+          "score": 0.0,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_blast_percent_uni2/heatmaps/split-4/1261 19 C Score 76 -10 Fokuspunkte - 2026-03-07 12.33.11/tiles/bottom_04-1261 19 C Score 76 -10 Fokuspunkte - 2026-03-07 12.33.11-regression=0.00.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_404_1261_19_C/native/bottom_04_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_404_1261_19_C/zoom/bottom_04_zoom.jpg"
+        },
+        {
+          "kind": "bottom",
+          "rank": 5,
+          "score": 0.0,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_blast_percent_uni2/heatmaps/split-4/1261 19 C Score 76 -10 Fokuspunkte - 2026-03-07 12.33.11/tiles/bottom_05-1261 19 C Score 76 -10 Fokuspunkte - 2026-03-07 12.33.11-regression=0.00.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_404_1261_19_C/native/bottom_05_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_404_1261_19_C/zoom/bottom_05_zoom.jpg"
+        },
+        {
+          "kind": "bottom",
+          "rank": 6,
+          "score": 0.0,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_blast_percent_uni2/heatmaps/split-4/1261 19 C Score 76 -10 Fokuspunkte - 2026-03-07 12.33.11/tiles/bottom_06-1261 19 C Score 76 -10 Fokuspunkte - 2026-03-07 12.33.11-regression=0.00.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_404_1261_19_C/native/bottom_06_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_404_1261_19_C/zoom/bottom_06_zoom.jpg"
+        },
+        {
+          "kind": "bottom",
+          "rank": 7,
+          "score": 0.0,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_blast_percent_uni2/heatmaps/split-4/1261 19 C Score 76 -10 Fokuspunkte - 2026-03-07 12.33.11/tiles/bottom_07-1261 19 C Score 76 -10 Fokuspunkte - 2026-03-07 12.33.11-regression=0.00.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_404_1261_19_C/native/bottom_07_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_404_1261_19_C/zoom/bottom_07_zoom.jpg"
+        },
+        {
+          "kind": "bottom",
+          "rank": 8,
+          "score": 0.0,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_blast_percent_uni2/heatmaps/split-4/1261 19 C Score 76 -10 Fokuspunkte - 2026-03-07 12.33.11/tiles/bottom_08-1261 19 C Score 76 -10 Fokuspunkte - 2026-03-07 12.33.11-regression=0.00.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_404_1261_19_C/native/bottom_08_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_404_1261_19_C/zoom/bottom_08_zoom.jpg"
+        }
+      ]
+    },
+    {
+      "metadata": {
+        "group": "failure",
+        "sample_id": "SAMPLE_408_1411_19_C",
+        "stem": "1411 19 C Score 88 - 10 Fokuspunkte - 2026-03-08 14.08.49",
+        "experiment": "blast_percent",
+        "split": "split-1",
+        "blast_percent_gt": "91.00",
+        "high_blast_gt": "yes",
+        "blast_percent_pred": "12.75",
+        "blast_percent_abs_err": "78.25",
+        "high_blast_yes": ""
+      },
+      "source_tile_dir": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_blast_percent_uni2/heatmaps/split-1/1411 19 C Score 88 - 10 Fokuspunkte - 2026-03-08 14.08.49/tiles",
+      "output_dir": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_408_1411_19_C",
+      "contact_sheet_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_408_1411_19_C/contact_sheet.jpg",
+      "tiles": [
+        {
+          "kind": "top",
+          "rank": 1,
+          "score": 1.0,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_blast_percent_uni2/heatmaps/split-1/1411 19 C Score 88 - 10 Fokuspunkte - 2026-03-08 14.08.49/tiles/top_01-1411 19 C Score 88 - 10 Fokuspunkte - 2026-03-08 14.08.49-regression=1.00.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_408_1411_19_C/native/top_01_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_408_1411_19_C/zoom/top_01_zoom.jpg"
+        },
+        {
+          "kind": "top",
+          "rank": 2,
+          "score": 0.76,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_blast_percent_uni2/heatmaps/split-1/1411 19 C Score 88 - 10 Fokuspunkte - 2026-03-08 14.08.49/tiles/top_02-1411 19 C Score 88 - 10 Fokuspunkte - 2026-03-08 14.08.49-regression=0.76.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_408_1411_19_C/native/top_02_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_408_1411_19_C/zoom/top_02_zoom.jpg"
+        },
+        {
+          "kind": "top",
+          "rank": 3,
+          "score": 0.66,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_blast_percent_uni2/heatmaps/split-1/1411 19 C Score 88 - 10 Fokuspunkte - 2026-03-08 14.08.49/tiles/top_03-1411 19 C Score 88 - 10 Fokuspunkte - 2026-03-08 14.08.49-regression=0.66.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_408_1411_19_C/native/top_03_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_408_1411_19_C/zoom/top_03_zoom.jpg"
+        },
+        {
+          "kind": "top",
+          "rank": 4,
+          "score": 0.65,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_blast_percent_uni2/heatmaps/split-1/1411 19 C Score 88 - 10 Fokuspunkte - 2026-03-08 14.08.49/tiles/top_04-1411 19 C Score 88 - 10 Fokuspunkte - 2026-03-08 14.08.49-regression=0.65.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_408_1411_19_C/native/top_04_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_408_1411_19_C/zoom/top_04_zoom.jpg"
+        },
+        {
+          "kind": "top",
+          "rank": 5,
+          "score": 0.64,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_blast_percent_uni2/heatmaps/split-1/1411 19 C Score 88 - 10 Fokuspunkte - 2026-03-08 14.08.49/tiles/top_05-1411 19 C Score 88 - 10 Fokuspunkte - 2026-03-08 14.08.49-regression=0.64.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_408_1411_19_C/native/top_05_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_408_1411_19_C/zoom/top_05_zoom.jpg"
+        },
+        {
+          "kind": "top",
+          "rank": 6,
+          "score": 0.64,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_blast_percent_uni2/heatmaps/split-1/1411 19 C Score 88 - 10 Fokuspunkte - 2026-03-08 14.08.49/tiles/top_06-1411 19 C Score 88 - 10 Fokuspunkte - 2026-03-08 14.08.49-regression=0.64.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_408_1411_19_C/native/top_06_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_408_1411_19_C/zoom/top_06_zoom.jpg"
+        },
+        {
+          "kind": "top",
+          "rank": 7,
+          "score": 0.63,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_blast_percent_uni2/heatmaps/split-1/1411 19 C Score 88 - 10 Fokuspunkte - 2026-03-08 14.08.49/tiles/top_07-1411 19 C Score 88 - 10 Fokuspunkte - 2026-03-08 14.08.49-regression=0.63.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_408_1411_19_C/native/top_07_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_408_1411_19_C/zoom/top_07_zoom.jpg"
+        },
+        {
+          "kind": "top",
+          "rank": 8,
+          "score": 0.62,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_blast_percent_uni2/heatmaps/split-1/1411 19 C Score 88 - 10 Fokuspunkte - 2026-03-08 14.08.49/tiles/top_08-1411 19 C Score 88 - 10 Fokuspunkte - 2026-03-08 14.08.49-regression=0.62.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_408_1411_19_C/native/top_08_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_408_1411_19_C/zoom/top_08_zoom.jpg"
+        },
+        {
+          "kind": "bottom",
+          "rank": 1,
+          "score": 0.0,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_blast_percent_uni2/heatmaps/split-1/1411 19 C Score 88 - 10 Fokuspunkte - 2026-03-08 14.08.49/tiles/bottom_01-1411 19 C Score 88 - 10 Fokuspunkte - 2026-03-08 14.08.49-regression=0.00.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_408_1411_19_C/native/bottom_01_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_408_1411_19_C/zoom/bottom_01_zoom.jpg"
+        },
+        {
+          "kind": "bottom",
+          "rank": 2,
+          "score": 0.0,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_blast_percent_uni2/heatmaps/split-1/1411 19 C Score 88 - 10 Fokuspunkte - 2026-03-08 14.08.49/tiles/bottom_02-1411 19 C Score 88 - 10 Fokuspunkte - 2026-03-08 14.08.49-regression=0.00.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_408_1411_19_C/native/bottom_02_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_408_1411_19_C/zoom/bottom_02_zoom.jpg"
+        },
+        {
+          "kind": "bottom",
+          "rank": 3,
+          "score": 0.0,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_blast_percent_uni2/heatmaps/split-1/1411 19 C Score 88 - 10 Fokuspunkte - 2026-03-08 14.08.49/tiles/bottom_03-1411 19 C Score 88 - 10 Fokuspunkte - 2026-03-08 14.08.49-regression=0.00.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_408_1411_19_C/native/bottom_03_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_408_1411_19_C/zoom/bottom_03_zoom.jpg"
+        },
+        {
+          "kind": "bottom",
+          "rank": 4,
+          "score": 0.0,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_blast_percent_uni2/heatmaps/split-1/1411 19 C Score 88 - 10 Fokuspunkte - 2026-03-08 14.08.49/tiles/bottom_04-1411 19 C Score 88 - 10 Fokuspunkte - 2026-03-08 14.08.49-regression=0.00.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_408_1411_19_C/native/bottom_04_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_408_1411_19_C/zoom/bottom_04_zoom.jpg"
+        },
+        {
+          "kind": "bottom",
+          "rank": 5,
+          "score": 0.0,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_blast_percent_uni2/heatmaps/split-1/1411 19 C Score 88 - 10 Fokuspunkte - 2026-03-08 14.08.49/tiles/bottom_05-1411 19 C Score 88 - 10 Fokuspunkte - 2026-03-08 14.08.49-regression=0.00.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_408_1411_19_C/native/bottom_05_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_408_1411_19_C/zoom/bottom_05_zoom.jpg"
+        },
+        {
+          "kind": "bottom",
+          "rank": 6,
+          "score": 0.0,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_blast_percent_uni2/heatmaps/split-1/1411 19 C Score 88 - 10 Fokuspunkte - 2026-03-08 14.08.49/tiles/bottom_06-1411 19 C Score 88 - 10 Fokuspunkte - 2026-03-08 14.08.49-regression=0.00.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_408_1411_19_C/native/bottom_06_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_408_1411_19_C/zoom/bottom_06_zoom.jpg"
+        },
+        {
+          "kind": "bottom",
+          "rank": 7,
+          "score": 0.0,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_blast_percent_uni2/heatmaps/split-1/1411 19 C Score 88 - 10 Fokuspunkte - 2026-03-08 14.08.49/tiles/bottom_07-1411 19 C Score 88 - 10 Fokuspunkte - 2026-03-08 14.08.49-regression=0.00.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_408_1411_19_C/native/bottom_07_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_408_1411_19_C/zoom/bottom_07_zoom.jpg"
+        },
+        {
+          "kind": "bottom",
+          "rank": 8,
+          "score": 0.0,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_blast_percent_uni2/heatmaps/split-1/1411 19 C Score 88 - 10 Fokuspunkte - 2026-03-08 14.08.49/tiles/bottom_08-1411 19 C Score 88 - 10 Fokuspunkte - 2026-03-08 14.08.49-regression=0.00.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_408_1411_19_C/native/bottom_08_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/failure/SAMPLE_408_1411_19_C/zoom/bottom_08_zoom.jpg"
+        }
+      ]
+    },
+    {
+      "metadata": {
+        "group": "positive",
+        "sample_id": "SAMPLE_392_585_19_C",
+        "stem": "S_585 19 C Score 85 - 10 Fokuspunkte - entfettet - 2026-03-03 22.19.48",
+        "experiment": "high_blast",
+        "split": "split-1",
+        "blast_percent_gt": "88.00",
+        "high_blast_gt": "yes",
+        "blast_percent_pred": "",
+        "blast_percent_abs_err": "",
+        "high_blast_yes": "0.9999"
+      },
+      "source_tile_dir": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_high_blast_uni2/heatmaps/split-1/S_585 19 C Score 85 - 10 Fokuspunkte - entfettet - 2026-03-03 22.19.48/tiles",
+      "output_dir": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/positive/SAMPLE_392_585_19_C",
+      "contact_sheet_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/positive/SAMPLE_392_585_19_C/contact_sheet.jpg",
+      "tiles": [
+        {
+          "kind": "top",
+          "rank": 1,
+          "score": 1.0,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_high_blast_uni2/heatmaps/split-1/S_585 19 C Score 85 - 10 Fokuspunkte - entfettet - 2026-03-03 22.19.48/tiles/top_01-S_585 19 C Score 85 - 10 Fokuspunkte - entfettet - 2026-03-03 22.19.48-yes=1.00.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/positive/SAMPLE_392_585_19_C/native/top_01_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/positive/SAMPLE_392_585_19_C/zoom/top_01_zoom.jpg"
+        },
+        {
+          "kind": "top",
+          "rank": 2,
+          "score": 1.0,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_high_blast_uni2/heatmaps/split-1/S_585 19 C Score 85 - 10 Fokuspunkte - entfettet - 2026-03-03 22.19.48/tiles/top_02-S_585 19 C Score 85 - 10 Fokuspunkte - entfettet - 2026-03-03 22.19.48-yes=1.00.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/positive/SAMPLE_392_585_19_C/native/top_02_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/positive/SAMPLE_392_585_19_C/zoom/top_02_zoom.jpg"
+        },
+        {
+          "kind": "top",
+          "rank": 3,
+          "score": 1.0,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_high_blast_uni2/heatmaps/split-1/S_585 19 C Score 85 - 10 Fokuspunkte - entfettet - 2026-03-03 22.19.48/tiles/top_03-S_585 19 C Score 85 - 10 Fokuspunkte - entfettet - 2026-03-03 22.19.48-yes=1.00.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/positive/SAMPLE_392_585_19_C/native/top_03_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/positive/SAMPLE_392_585_19_C/zoom/top_03_zoom.jpg"
+        },
+        {
+          "kind": "top",
+          "rank": 4,
+          "score": 1.0,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_high_blast_uni2/heatmaps/split-1/S_585 19 C Score 85 - 10 Fokuspunkte - entfettet - 2026-03-03 22.19.48/tiles/top_04-S_585 19 C Score 85 - 10 Fokuspunkte - entfettet - 2026-03-03 22.19.48-yes=1.00.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/positive/SAMPLE_392_585_19_C/native/top_04_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/positive/SAMPLE_392_585_19_C/zoom/top_04_zoom.jpg"
+        },
+        {
+          "kind": "top",
+          "rank": 5,
+          "score": 1.0,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_high_blast_uni2/heatmaps/split-1/S_585 19 C Score 85 - 10 Fokuspunkte - entfettet - 2026-03-03 22.19.48/tiles/top_05-S_585 19 C Score 85 - 10 Fokuspunkte - entfettet - 2026-03-03 22.19.48-yes=1.00.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/positive/SAMPLE_392_585_19_C/native/top_05_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/positive/SAMPLE_392_585_19_C/zoom/top_05_zoom.jpg"
+        },
+        {
+          "kind": "top",
+          "rank": 6,
+          "score": 1.0,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_high_blast_uni2/heatmaps/split-1/S_585 19 C Score 85 - 10 Fokuspunkte - entfettet - 2026-03-03 22.19.48/tiles/top_06-S_585 19 C Score 85 - 10 Fokuspunkte - entfettet - 2026-03-03 22.19.48-yes=1.00.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/positive/SAMPLE_392_585_19_C/native/top_06_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/positive/SAMPLE_392_585_19_C/zoom/top_06_zoom.jpg"
+        },
+        {
+          "kind": "top",
+          "rank": 7,
+          "score": 1.0,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_high_blast_uni2/heatmaps/split-1/S_585 19 C Score 85 - 10 Fokuspunkte - entfettet - 2026-03-03 22.19.48/tiles/top_07-S_585 19 C Score 85 - 10 Fokuspunkte - entfettet - 2026-03-03 22.19.48-yes=1.00.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/positive/SAMPLE_392_585_19_C/native/top_07_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/positive/SAMPLE_392_585_19_C/zoom/top_07_zoom.jpg"
+        },
+        {
+          "kind": "top",
+          "rank": 8,
+          "score": 1.0,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_high_blast_uni2/heatmaps/split-1/S_585 19 C Score 85 - 10 Fokuspunkte - entfettet - 2026-03-03 22.19.48/tiles/top_08-S_585 19 C Score 85 - 10 Fokuspunkte - entfettet - 2026-03-03 22.19.48-yes=1.00.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/positive/SAMPLE_392_585_19_C/native/top_08_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/positive/SAMPLE_392_585_19_C/zoom/top_08_zoom.jpg"
+        },
+        {
+          "kind": "bottom",
+          "rank": 1,
+          "score": -0.7,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_high_blast_uni2/heatmaps/split-1/S_585 19 C Score 85 - 10 Fokuspunkte - entfettet - 2026-03-03 22.19.48/tiles/bottom_01-S_585 19 C Score 85 - 10 Fokuspunkte - entfettet - 2026-03-03 22.19.48-yes=-0.70.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/positive/SAMPLE_392_585_19_C/native/bottom_01_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/positive/SAMPLE_392_585_19_C/zoom/bottom_01_zoom.jpg"
+        },
+        {
+          "kind": "bottom",
+          "rank": 2,
+          "score": -0.59,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_high_blast_uni2/heatmaps/split-1/S_585 19 C Score 85 - 10 Fokuspunkte - entfettet - 2026-03-03 22.19.48/tiles/bottom_02-S_585 19 C Score 85 - 10 Fokuspunkte - entfettet - 2026-03-03 22.19.48-yes=-0.59.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/positive/SAMPLE_392_585_19_C/native/bottom_02_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/positive/SAMPLE_392_585_19_C/zoom/bottom_02_zoom.jpg"
+        },
+        {
+          "kind": "bottom",
+          "rank": 3,
+          "score": -0.55,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_high_blast_uni2/heatmaps/split-1/S_585 19 C Score 85 - 10 Fokuspunkte - entfettet - 2026-03-03 22.19.48/tiles/bottom_03-S_585 19 C Score 85 - 10 Fokuspunkte - entfettet - 2026-03-03 22.19.48-yes=-0.55.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/positive/SAMPLE_392_585_19_C/native/bottom_03_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/positive/SAMPLE_392_585_19_C/zoom/bottom_03_zoom.jpg"
+        },
+        {
+          "kind": "bottom",
+          "rank": 4,
+          "score": -0.52,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_high_blast_uni2/heatmaps/split-1/S_585 19 C Score 85 - 10 Fokuspunkte - entfettet - 2026-03-03 22.19.48/tiles/bottom_04-S_585 19 C Score 85 - 10 Fokuspunkte - entfettet - 2026-03-03 22.19.48-yes=-0.52.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/positive/SAMPLE_392_585_19_C/native/bottom_04_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/positive/SAMPLE_392_585_19_C/zoom/bottom_04_zoom.jpg"
+        },
+        {
+          "kind": "bottom",
+          "rank": 5,
+          "score": -0.51,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_high_blast_uni2/heatmaps/split-1/S_585 19 C Score 85 - 10 Fokuspunkte - entfettet - 2026-03-03 22.19.48/tiles/bottom_05-S_585 19 C Score 85 - 10 Fokuspunkte - entfettet - 2026-03-03 22.19.48-yes=-0.51.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/positive/SAMPLE_392_585_19_C/native/bottom_05_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/positive/SAMPLE_392_585_19_C/zoom/bottom_05_zoom.jpg"
+        },
+        {
+          "kind": "bottom",
+          "rank": 6,
+          "score": -0.51,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_high_blast_uni2/heatmaps/split-1/S_585 19 C Score 85 - 10 Fokuspunkte - entfettet - 2026-03-03 22.19.48/tiles/bottom_06-S_585 19 C Score 85 - 10 Fokuspunkte - entfettet - 2026-03-03 22.19.48-yes=-0.51.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/positive/SAMPLE_392_585_19_C/native/bottom_06_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/positive/SAMPLE_392_585_19_C/zoom/bottom_06_zoom.jpg"
+        },
+        {
+          "kind": "bottom",
+          "rank": 7,
+          "score": -0.44,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_high_blast_uni2/heatmaps/split-1/S_585 19 C Score 85 - 10 Fokuspunkte - entfettet - 2026-03-03 22.19.48/tiles/bottom_07-S_585 19 C Score 85 - 10 Fokuspunkte - entfettet - 2026-03-03 22.19.48-yes=-0.44.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/positive/SAMPLE_392_585_19_C/native/bottom_07_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/positive/SAMPLE_392_585_19_C/zoom/bottom_07_zoom.jpg"
+        },
+        {
+          "kind": "bottom",
+          "rank": 8,
+          "score": -0.41,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_high_blast_uni2/heatmaps/split-1/S_585 19 C Score 85 - 10 Fokuspunkte - entfettet - 2026-03-03 22.19.48/tiles/bottom_08-S_585 19 C Score 85 - 10 Fokuspunkte - entfettet - 2026-03-03 22.19.48-yes=-0.41.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/positive/SAMPLE_392_585_19_C/native/bottom_08_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/positive/SAMPLE_392_585_19_C/zoom/bottom_08_zoom.jpg"
+        }
+      ]
+    },
+    {
+      "metadata": {
+        "group": "positive",
+        "sample_id": "SAMPLE_406_1309_19_C",
+        "stem": "S_1309 19 C Score 83 -10 Fokuspunkte - 2026-03-07 14.38.43",
+        "experiment": "high_blast",
+        "split": "split-1",
+        "blast_percent_gt": "79.00",
+        "high_blast_gt": "yes",
+        "blast_percent_pred": "",
+        "blast_percent_abs_err": "",
+        "high_blast_yes": "0.9999"
+      },
+      "source_tile_dir": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_high_blast_uni2/heatmaps/split-1/S_1309 19 C Score 83 -10 Fokuspunkte - 2026-03-07 14.38.43/tiles",
+      "output_dir": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/positive/SAMPLE_406_1309_19_C",
+      "contact_sheet_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/positive/SAMPLE_406_1309_19_C/contact_sheet.jpg",
+      "tiles": [
+        {
+          "kind": "top",
+          "rank": 1,
+          "score": 1.0,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_high_blast_uni2/heatmaps/split-1/S_1309 19 C Score 83 -10 Fokuspunkte - 2026-03-07 14.38.43/tiles/top_01-S_1309 19 C Score 83 -10 Fokuspunkte - 2026-03-07 14.38.43-yes=1.00.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/positive/SAMPLE_406_1309_19_C/native/top_01_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/positive/SAMPLE_406_1309_19_C/zoom/top_01_zoom.jpg"
+        },
+        {
+          "kind": "top",
+          "rank": 2,
+          "score": 1.0,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_high_blast_uni2/heatmaps/split-1/S_1309 19 C Score 83 -10 Fokuspunkte - 2026-03-07 14.38.43/tiles/top_02-S_1309 19 C Score 83 -10 Fokuspunkte - 2026-03-07 14.38.43-yes=1.00.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/positive/SAMPLE_406_1309_19_C/native/top_02_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/positive/SAMPLE_406_1309_19_C/zoom/top_02_zoom.jpg"
+        },
+        {
+          "kind": "top",
+          "rank": 3,
+          "score": 1.0,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_high_blast_uni2/heatmaps/split-1/S_1309 19 C Score 83 -10 Fokuspunkte - 2026-03-07 14.38.43/tiles/top_03-S_1309 19 C Score 83 -10 Fokuspunkte - 2026-03-07 14.38.43-yes=1.00.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/positive/SAMPLE_406_1309_19_C/native/top_03_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/positive/SAMPLE_406_1309_19_C/zoom/top_03_zoom.jpg"
+        },
+        {
+          "kind": "top",
+          "rank": 4,
+          "score": 1.0,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_high_blast_uni2/heatmaps/split-1/S_1309 19 C Score 83 -10 Fokuspunkte - 2026-03-07 14.38.43/tiles/top_04-S_1309 19 C Score 83 -10 Fokuspunkte - 2026-03-07 14.38.43-yes=1.00.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/positive/SAMPLE_406_1309_19_C/native/top_04_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/positive/SAMPLE_406_1309_19_C/zoom/top_04_zoom.jpg"
+        },
+        {
+          "kind": "top",
+          "rank": 5,
+          "score": 1.0,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_high_blast_uni2/heatmaps/split-1/S_1309 19 C Score 83 -10 Fokuspunkte - 2026-03-07 14.38.43/tiles/top_05-S_1309 19 C Score 83 -10 Fokuspunkte - 2026-03-07 14.38.43-yes=1.00.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/positive/SAMPLE_406_1309_19_C/native/top_05_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/positive/SAMPLE_406_1309_19_C/zoom/top_05_zoom.jpg"
+        },
+        {
+          "kind": "top",
+          "rank": 6,
+          "score": 1.0,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_high_blast_uni2/heatmaps/split-1/S_1309 19 C Score 83 -10 Fokuspunkte - 2026-03-07 14.38.43/tiles/top_06-S_1309 19 C Score 83 -10 Fokuspunkte - 2026-03-07 14.38.43-yes=1.00.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/positive/SAMPLE_406_1309_19_C/native/top_06_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/positive/SAMPLE_406_1309_19_C/zoom/top_06_zoom.jpg"
+        },
+        {
+          "kind": "top",
+          "rank": 7,
+          "score": 1.0,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_high_blast_uni2/heatmaps/split-1/S_1309 19 C Score 83 -10 Fokuspunkte - 2026-03-07 14.38.43/tiles/top_07-S_1309 19 C Score 83 -10 Fokuspunkte - 2026-03-07 14.38.43-yes=1.00.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/positive/SAMPLE_406_1309_19_C/native/top_07_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/positive/SAMPLE_406_1309_19_C/zoom/top_07_zoom.jpg"
+        },
+        {
+          "kind": "top",
+          "rank": 8,
+          "score": 1.0,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_high_blast_uni2/heatmaps/split-1/S_1309 19 C Score 83 -10 Fokuspunkte - 2026-03-07 14.38.43/tiles/top_08-S_1309 19 C Score 83 -10 Fokuspunkte - 2026-03-07 14.38.43-yes=1.00.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/positive/SAMPLE_406_1309_19_C/native/top_08_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/positive/SAMPLE_406_1309_19_C/zoom/top_08_zoom.jpg"
+        },
+        {
+          "kind": "bottom",
+          "rank": 1,
+          "score": -0.77,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_high_blast_uni2/heatmaps/split-1/S_1309 19 C Score 83 -10 Fokuspunkte - 2026-03-07 14.38.43/tiles/bottom_01-S_1309 19 C Score 83 -10 Fokuspunkte - 2026-03-07 14.38.43-yes=-0.77.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/positive/SAMPLE_406_1309_19_C/native/bottom_01_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/positive/SAMPLE_406_1309_19_C/zoom/bottom_01_zoom.jpg"
+        },
+        {
+          "kind": "bottom",
+          "rank": 2,
+          "score": -0.65,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_high_blast_uni2/heatmaps/split-1/S_1309 19 C Score 83 -10 Fokuspunkte - 2026-03-07 14.38.43/tiles/bottom_02-S_1309 19 C Score 83 -10 Fokuspunkte - 2026-03-07 14.38.43-yes=-0.65.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/positive/SAMPLE_406_1309_19_C/native/bottom_02_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/positive/SAMPLE_406_1309_19_C/zoom/bottom_02_zoom.jpg"
+        },
+        {
+          "kind": "bottom",
+          "rank": 3,
+          "score": -0.37,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_high_blast_uni2/heatmaps/split-1/S_1309 19 C Score 83 -10 Fokuspunkte - 2026-03-07 14.38.43/tiles/bottom_03-S_1309 19 C Score 83 -10 Fokuspunkte - 2026-03-07 14.38.43-yes=-0.37.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/positive/SAMPLE_406_1309_19_C/native/bottom_03_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/positive/SAMPLE_406_1309_19_C/zoom/bottom_03_zoom.jpg"
+        },
+        {
+          "kind": "bottom",
+          "rank": 4,
+          "score": -0.08,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_high_blast_uni2/heatmaps/split-1/S_1309 19 C Score 83 -10 Fokuspunkte - 2026-03-07 14.38.43/tiles/bottom_04-S_1309 19 C Score 83 -10 Fokuspunkte - 2026-03-07 14.38.43-yes=-0.08.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/positive/SAMPLE_406_1309_19_C/native/bottom_04_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/positive/SAMPLE_406_1309_19_C/zoom/bottom_04_zoom.jpg"
+        },
+        {
+          "kind": "bottom",
+          "rank": 5,
+          "score": 0.0,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_high_blast_uni2/heatmaps/split-1/S_1309 19 C Score 83 -10 Fokuspunkte - 2026-03-07 14.38.43/tiles/bottom_05-S_1309 19 C Score 83 -10 Fokuspunkte - 2026-03-07 14.38.43-yes=0.00.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/positive/SAMPLE_406_1309_19_C/native/bottom_05_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/positive/SAMPLE_406_1309_19_C/zoom/bottom_05_zoom.jpg"
+        },
+        {
+          "kind": "bottom",
+          "rank": 6,
+          "score": 0.01,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_high_blast_uni2/heatmaps/split-1/S_1309 19 C Score 83 -10 Fokuspunkte - 2026-03-07 14.38.43/tiles/bottom_06-S_1309 19 C Score 83 -10 Fokuspunkte - 2026-03-07 14.38.43-yes=0.01.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/positive/SAMPLE_406_1309_19_C/native/bottom_06_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/positive/SAMPLE_406_1309_19_C/zoom/bottom_06_zoom.jpg"
+        },
+        {
+          "kind": "bottom",
+          "rank": 7,
+          "score": 0.03,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_high_blast_uni2/heatmaps/split-1/S_1309 19 C Score 83 -10 Fokuspunkte - 2026-03-07 14.38.43/tiles/bottom_07-S_1309 19 C Score 83 -10 Fokuspunkte - 2026-03-07 14.38.43-yes=0.03.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/positive/SAMPLE_406_1309_19_C/native/bottom_07_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/positive/SAMPLE_406_1309_19_C/zoom/bottom_07_zoom.jpg"
+        },
+        {
+          "kind": "bottom",
+          "rank": 8,
+          "score": 0.08,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_high_blast_uni2/heatmaps/split-1/S_1309 19 C Score 83 -10 Fokuspunkte - 2026-03-07 14.38.43/tiles/bottom_08-S_1309 19 C Score 83 -10 Fokuspunkte - 2026-03-07 14.38.43-yes=0.08.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/positive/SAMPLE_406_1309_19_C/native/bottom_08_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/positive/SAMPLE_406_1309_19_C/zoom/bottom_08_zoom.jpg"
+        }
+      ]
+    },
+    {
+      "metadata": {
+        "group": "positive",
+        "sample_id": "SAMPLE_414_968_19_C",
+        "stem": "968 19 C Score 77 - 10 Fokuspunkte- 2026-03-05 18.40.04",
+        "experiment": "high_blast",
+        "split": "split-1",
+        "blast_percent_gt": "34.00",
+        "high_blast_gt": "yes",
+        "blast_percent_pred": "",
+        "blast_percent_abs_err": "",
+        "high_blast_yes": "0.9998"
+      },
+      "source_tile_dir": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_high_blast_uni2/heatmaps/split-1/968 19 C Score 77 - 10 Fokuspunkte- 2026-03-05 18.40.04/tiles",
+      "output_dir": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/positive/SAMPLE_414_968_19_C",
+      "contact_sheet_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/positive/SAMPLE_414_968_19_C/contact_sheet.jpg",
+      "tiles": [
+        {
+          "kind": "top",
+          "rank": 1,
+          "score": 1.0,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_high_blast_uni2/heatmaps/split-1/968 19 C Score 77 - 10 Fokuspunkte- 2026-03-05 18.40.04/tiles/top_01-968 19 C Score 77 - 10 Fokuspunkte- 2026-03-05 18.40.04-yes=1.00.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/positive/SAMPLE_414_968_19_C/native/top_01_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/positive/SAMPLE_414_968_19_C/zoom/top_01_zoom.jpg"
+        },
+        {
+          "kind": "top",
+          "rank": 2,
+          "score": 1.0,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_high_blast_uni2/heatmaps/split-1/968 19 C Score 77 - 10 Fokuspunkte- 2026-03-05 18.40.04/tiles/top_02-968 19 C Score 77 - 10 Fokuspunkte- 2026-03-05 18.40.04-yes=1.00.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/positive/SAMPLE_414_968_19_C/native/top_02_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/positive/SAMPLE_414_968_19_C/zoom/top_02_zoom.jpg"
+        },
+        {
+          "kind": "top",
+          "rank": 3,
+          "score": 1.0,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_high_blast_uni2/heatmaps/split-1/968 19 C Score 77 - 10 Fokuspunkte- 2026-03-05 18.40.04/tiles/top_03-968 19 C Score 77 - 10 Fokuspunkte- 2026-03-05 18.40.04-yes=1.00.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/positive/SAMPLE_414_968_19_C/native/top_03_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/positive/SAMPLE_414_968_19_C/zoom/top_03_zoom.jpg"
+        },
+        {
+          "kind": "top",
+          "rank": 4,
+          "score": 1.0,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_high_blast_uni2/heatmaps/split-1/968 19 C Score 77 - 10 Fokuspunkte- 2026-03-05 18.40.04/tiles/top_04-968 19 C Score 77 - 10 Fokuspunkte- 2026-03-05 18.40.04-yes=1.00.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/positive/SAMPLE_414_968_19_C/native/top_04_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/positive/SAMPLE_414_968_19_C/zoom/top_04_zoom.jpg"
+        },
+        {
+          "kind": "top",
+          "rank": 5,
+          "score": 1.0,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_high_blast_uni2/heatmaps/split-1/968 19 C Score 77 - 10 Fokuspunkte- 2026-03-05 18.40.04/tiles/top_05-968 19 C Score 77 - 10 Fokuspunkte- 2026-03-05 18.40.04-yes=1.00.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/positive/SAMPLE_414_968_19_C/native/top_05_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/positive/SAMPLE_414_968_19_C/zoom/top_05_zoom.jpg"
+        },
+        {
+          "kind": "top",
+          "rank": 6,
+          "score": 1.0,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_high_blast_uni2/heatmaps/split-1/968 19 C Score 77 - 10 Fokuspunkte- 2026-03-05 18.40.04/tiles/top_06-968 19 C Score 77 - 10 Fokuspunkte- 2026-03-05 18.40.04-yes=1.00.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/positive/SAMPLE_414_968_19_C/native/top_06_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/positive/SAMPLE_414_968_19_C/zoom/top_06_zoom.jpg"
+        },
+        {
+          "kind": "top",
+          "rank": 7,
+          "score": 1.0,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_high_blast_uni2/heatmaps/split-1/968 19 C Score 77 - 10 Fokuspunkte- 2026-03-05 18.40.04/tiles/top_07-968 19 C Score 77 - 10 Fokuspunkte- 2026-03-05 18.40.04-yes=1.00.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/positive/SAMPLE_414_968_19_C/native/top_07_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/positive/SAMPLE_414_968_19_C/zoom/top_07_zoom.jpg"
+        },
+        {
+          "kind": "top",
+          "rank": 8,
+          "score": 1.0,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_high_blast_uni2/heatmaps/split-1/968 19 C Score 77 - 10 Fokuspunkte- 2026-03-05 18.40.04/tiles/top_08-968 19 C Score 77 - 10 Fokuspunkte- 2026-03-05 18.40.04-yes=1.00.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/positive/SAMPLE_414_968_19_C/native/top_08_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/positive/SAMPLE_414_968_19_C/zoom/top_08_zoom.jpg"
+        },
+        {
+          "kind": "bottom",
+          "rank": 1,
+          "score": -0.9,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_high_blast_uni2/heatmaps/split-1/968 19 C Score 77 - 10 Fokuspunkte- 2026-03-05 18.40.04/tiles/bottom_01-968 19 C Score 77 - 10 Fokuspunkte- 2026-03-05 18.40.04-yes=-0.90.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/positive/SAMPLE_414_968_19_C/native/bottom_01_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/positive/SAMPLE_414_968_19_C/zoom/bottom_01_zoom.jpg"
+        },
+        {
+          "kind": "bottom",
+          "rank": 2,
+          "score": -0.83,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_high_blast_uni2/heatmaps/split-1/968 19 C Score 77 - 10 Fokuspunkte- 2026-03-05 18.40.04/tiles/bottom_02-968 19 C Score 77 - 10 Fokuspunkte- 2026-03-05 18.40.04-yes=-0.83.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/positive/SAMPLE_414_968_19_C/native/bottom_02_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/positive/SAMPLE_414_968_19_C/zoom/bottom_02_zoom.jpg"
+        },
+        {
+          "kind": "bottom",
+          "rank": 3,
+          "score": -0.81,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_high_blast_uni2/heatmaps/split-1/968 19 C Score 77 - 10 Fokuspunkte- 2026-03-05 18.40.04/tiles/bottom_03-968 19 C Score 77 - 10 Fokuspunkte- 2026-03-05 18.40.04-yes=-0.81.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/positive/SAMPLE_414_968_19_C/native/bottom_03_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/positive/SAMPLE_414_968_19_C/zoom/bottom_03_zoom.jpg"
+        },
+        {
+          "kind": "bottom",
+          "rank": 4,
+          "score": -0.78,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_high_blast_uni2/heatmaps/split-1/968 19 C Score 77 - 10 Fokuspunkte- 2026-03-05 18.40.04/tiles/bottom_04-968 19 C Score 77 - 10 Fokuspunkte- 2026-03-05 18.40.04-yes=-0.78.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/positive/SAMPLE_414_968_19_C/native/bottom_04_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/positive/SAMPLE_414_968_19_C/zoom/bottom_04_zoom.jpg"
+        },
+        {
+          "kind": "bottom",
+          "rank": 5,
+          "score": -0.7,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_high_blast_uni2/heatmaps/split-1/968 19 C Score 77 - 10 Fokuspunkte- 2026-03-05 18.40.04/tiles/bottom_05-968 19 C Score 77 - 10 Fokuspunkte- 2026-03-05 18.40.04-yes=-0.70.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/positive/SAMPLE_414_968_19_C/native/bottom_05_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/positive/SAMPLE_414_968_19_C/zoom/bottom_05_zoom.jpg"
+        },
+        {
+          "kind": "bottom",
+          "rank": 6,
+          "score": -0.63,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_high_blast_uni2/heatmaps/split-1/968 19 C Score 77 - 10 Fokuspunkte- 2026-03-05 18.40.04/tiles/bottom_06-968 19 C Score 77 - 10 Fokuspunkte- 2026-03-05 18.40.04-yes=-0.63.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/positive/SAMPLE_414_968_19_C/native/bottom_06_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/positive/SAMPLE_414_968_19_C/zoom/bottom_06_zoom.jpg"
+        },
+        {
+          "kind": "bottom",
+          "rank": 7,
+          "score": -0.63,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_high_blast_uni2/heatmaps/split-1/968 19 C Score 77 - 10 Fokuspunkte- 2026-03-05 18.40.04/tiles/bottom_07-968 19 C Score 77 - 10 Fokuspunkte- 2026-03-05 18.40.04-yes=-0.63.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/positive/SAMPLE_414_968_19_C/native/bottom_07_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/positive/SAMPLE_414_968_19_C/zoom/bottom_07_zoom.jpg"
+        },
+        {
+          "kind": "bottom",
+          "rank": 8,
+          "score": -0.6,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_high_blast_uni2/heatmaps/split-1/968 19 C Score 77 - 10 Fokuspunkte- 2026-03-05 18.40.04/tiles/bottom_08-968 19 C Score 77 - 10 Fokuspunkte- 2026-03-05 18.40.04-yes=-0.60.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/positive/SAMPLE_414_968_19_C/native/bottom_08_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/positive/SAMPLE_414_968_19_C/zoom/bottom_08_zoom.jpg"
+        }
+      ]
+    },
+    {
+      "metadata": {
+        "group": "positive",
+        "sample_id": "SAMPLE_395_486_19_A",
+        "stem": "S_486 19 A Score 91 - 5 Fokuspunkte - entfettet - 2026-03-03 19.59.27",
+        "experiment": "high_blast",
+        "split": "split-4",
+        "blast_percent_gt": "61.00",
+        "high_blast_gt": "yes",
+        "blast_percent_pred": "",
+        "blast_percent_abs_err": "",
+        "high_blast_yes": "0.9998"
+      },
+      "source_tile_dir": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_high_blast_uni2/heatmaps/split-4/S_486 19 A Score 91 - 5 Fokuspunkte - entfettet - 2026-03-03 19.59.27/tiles",
+      "output_dir": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/positive/SAMPLE_395_486_19_A",
+      "contact_sheet_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/positive/SAMPLE_395_486_19_A/contact_sheet.jpg",
+      "tiles": [
+        {
+          "kind": "top",
+          "rank": 1,
+          "score": 1.0,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_high_blast_uni2/heatmaps/split-4/S_486 19 A Score 91 - 5 Fokuspunkte - entfettet - 2026-03-03 19.59.27/tiles/top_01-S_486 19 A Score 91 - 5 Fokuspunkte - entfettet - 2026-03-03 19.59.27-yes=1.00.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/positive/SAMPLE_395_486_19_A/native/top_01_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/positive/SAMPLE_395_486_19_A/zoom/top_01_zoom.jpg"
+        },
+        {
+          "kind": "top",
+          "rank": 2,
+          "score": 1.0,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_high_blast_uni2/heatmaps/split-4/S_486 19 A Score 91 - 5 Fokuspunkte - entfettet - 2026-03-03 19.59.27/tiles/top_02-S_486 19 A Score 91 - 5 Fokuspunkte - entfettet - 2026-03-03 19.59.27-yes=1.00.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/positive/SAMPLE_395_486_19_A/native/top_02_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/positive/SAMPLE_395_486_19_A/zoom/top_02_zoom.jpg"
+        },
+        {
+          "kind": "top",
+          "rank": 3,
+          "score": 1.0,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_high_blast_uni2/heatmaps/split-4/S_486 19 A Score 91 - 5 Fokuspunkte - entfettet - 2026-03-03 19.59.27/tiles/top_03-S_486 19 A Score 91 - 5 Fokuspunkte - entfettet - 2026-03-03 19.59.27-yes=1.00.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/positive/SAMPLE_395_486_19_A/native/top_03_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/positive/SAMPLE_395_486_19_A/zoom/top_03_zoom.jpg"
+        },
+        {
+          "kind": "top",
+          "rank": 4,
+          "score": 1.0,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_high_blast_uni2/heatmaps/split-4/S_486 19 A Score 91 - 5 Fokuspunkte - entfettet - 2026-03-03 19.59.27/tiles/top_04-S_486 19 A Score 91 - 5 Fokuspunkte - entfettet - 2026-03-03 19.59.27-yes=1.00.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/positive/SAMPLE_395_486_19_A/native/top_04_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/positive/SAMPLE_395_486_19_A/zoom/top_04_zoom.jpg"
+        },
+        {
+          "kind": "top",
+          "rank": 5,
+          "score": 1.0,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_high_blast_uni2/heatmaps/split-4/S_486 19 A Score 91 - 5 Fokuspunkte - entfettet - 2026-03-03 19.59.27/tiles/top_05-S_486 19 A Score 91 - 5 Fokuspunkte - entfettet - 2026-03-03 19.59.27-yes=1.00.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/positive/SAMPLE_395_486_19_A/native/top_05_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/positive/SAMPLE_395_486_19_A/zoom/top_05_zoom.jpg"
+        },
+        {
+          "kind": "top",
+          "rank": 6,
+          "score": 1.0,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_high_blast_uni2/heatmaps/split-4/S_486 19 A Score 91 - 5 Fokuspunkte - entfettet - 2026-03-03 19.59.27/tiles/top_06-S_486 19 A Score 91 - 5 Fokuspunkte - entfettet - 2026-03-03 19.59.27-yes=1.00.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/positive/SAMPLE_395_486_19_A/native/top_06_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/positive/SAMPLE_395_486_19_A/zoom/top_06_zoom.jpg"
+        },
+        {
+          "kind": "top",
+          "rank": 7,
+          "score": 1.0,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_high_blast_uni2/heatmaps/split-4/S_486 19 A Score 91 - 5 Fokuspunkte - entfettet - 2026-03-03 19.59.27/tiles/top_07-S_486 19 A Score 91 - 5 Fokuspunkte - entfettet - 2026-03-03 19.59.27-yes=1.00.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/positive/SAMPLE_395_486_19_A/native/top_07_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/positive/SAMPLE_395_486_19_A/zoom/top_07_zoom.jpg"
+        },
+        {
+          "kind": "top",
+          "rank": 8,
+          "score": 1.0,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_high_blast_uni2/heatmaps/split-4/S_486 19 A Score 91 - 5 Fokuspunkte - entfettet - 2026-03-03 19.59.27/tiles/top_08-S_486 19 A Score 91 - 5 Fokuspunkte - entfettet - 2026-03-03 19.59.27-yes=1.00.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/positive/SAMPLE_395_486_19_A/native/top_08_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/positive/SAMPLE_395_486_19_A/zoom/top_08_zoom.jpg"
+        },
+        {
+          "kind": "bottom",
+          "rank": 1,
+          "score": -0.94,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_high_blast_uni2/heatmaps/split-4/S_486 19 A Score 91 - 5 Fokuspunkte - entfettet - 2026-03-03 19.59.27/tiles/bottom_01-S_486 19 A Score 91 - 5 Fokuspunkte - entfettet - 2026-03-03 19.59.27-yes=-0.94.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/positive/SAMPLE_395_486_19_A/native/bottom_01_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/positive/SAMPLE_395_486_19_A/zoom/bottom_01_zoom.jpg"
+        },
+        {
+          "kind": "bottom",
+          "rank": 2,
+          "score": -0.93,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_high_blast_uni2/heatmaps/split-4/S_486 19 A Score 91 - 5 Fokuspunkte - entfettet - 2026-03-03 19.59.27/tiles/bottom_02-S_486 19 A Score 91 - 5 Fokuspunkte - entfettet - 2026-03-03 19.59.27-yes=-0.93.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/positive/SAMPLE_395_486_19_A/native/bottom_02_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/positive/SAMPLE_395_486_19_A/zoom/bottom_02_zoom.jpg"
+        },
+        {
+          "kind": "bottom",
+          "rank": 3,
+          "score": -0.92,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_high_blast_uni2/heatmaps/split-4/S_486 19 A Score 91 - 5 Fokuspunkte - entfettet - 2026-03-03 19.59.27/tiles/bottom_03-S_486 19 A Score 91 - 5 Fokuspunkte - entfettet - 2026-03-03 19.59.27-yes=-0.92.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/positive/SAMPLE_395_486_19_A/native/bottom_03_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/positive/SAMPLE_395_486_19_A/zoom/bottom_03_zoom.jpg"
+        },
+        {
+          "kind": "bottom",
+          "rank": 4,
+          "score": -0.87,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_high_blast_uni2/heatmaps/split-4/S_486 19 A Score 91 - 5 Fokuspunkte - entfettet - 2026-03-03 19.59.27/tiles/bottom_04-S_486 19 A Score 91 - 5 Fokuspunkte - entfettet - 2026-03-03 19.59.27-yes=-0.87.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/positive/SAMPLE_395_486_19_A/native/bottom_04_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/positive/SAMPLE_395_486_19_A/zoom/bottom_04_zoom.jpg"
+        },
+        {
+          "kind": "bottom",
+          "rank": 5,
+          "score": -0.85,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_high_blast_uni2/heatmaps/split-4/S_486 19 A Score 91 - 5 Fokuspunkte - entfettet - 2026-03-03 19.59.27/tiles/bottom_05-S_486 19 A Score 91 - 5 Fokuspunkte - entfettet - 2026-03-03 19.59.27-yes=-0.85.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/positive/SAMPLE_395_486_19_A/native/bottom_05_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/positive/SAMPLE_395_486_19_A/zoom/bottom_05_zoom.jpg"
+        },
+        {
+          "kind": "bottom",
+          "rank": 6,
+          "score": -0.77,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_high_blast_uni2/heatmaps/split-4/S_486 19 A Score 91 - 5 Fokuspunkte - entfettet - 2026-03-03 19.59.27/tiles/bottom_06-S_486 19 A Score 91 - 5 Fokuspunkte - entfettet - 2026-03-03 19.59.27-yes=-0.77.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/positive/SAMPLE_395_486_19_A/native/bottom_06_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/positive/SAMPLE_395_486_19_A/zoom/bottom_06_zoom.jpg"
+        },
+        {
+          "kind": "bottom",
+          "rank": 7,
+          "score": -0.76,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_high_blast_uni2/heatmaps/split-4/S_486 19 A Score 91 - 5 Fokuspunkte - entfettet - 2026-03-03 19.59.27/tiles/bottom_07-S_486 19 A Score 91 - 5 Fokuspunkte - entfettet - 2026-03-03 19.59.27-yes=-0.76.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/positive/SAMPLE_395_486_19_A/native/bottom_07_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/positive/SAMPLE_395_486_19_A/zoom/bottom_07_zoom.jpg"
+        },
+        {
+          "kind": "bottom",
+          "rank": 8,
+          "score": -0.7,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_high_blast_uni2/heatmaps/split-4/S_486 19 A Score 91 - 5 Fokuspunkte - entfettet - 2026-03-03 19.59.27/tiles/bottom_08-S_486 19 A Score 91 - 5 Fokuspunkte - entfettet - 2026-03-03 19.59.27-yes=-0.70.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/positive/SAMPLE_395_486_19_A/native/bottom_08_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/positive/SAMPLE_395_486_19_A/zoom/bottom_08_zoom.jpg"
+        }
+      ]
+    },
+    {
+      "metadata": {
+        "group": "negative",
+        "sample_id": "SAMPLE_309_665_19_C",
+        "stem": "S_665 19 C Score 95 - 10 Fokuspunkte - entfettet - 2026-03-03 23.38.50",
+        "experiment": "high_blast",
+        "split": "split-0",
+        "blast_percent_gt": "1.00",
+        "high_blast_gt": "no",
+        "blast_percent_pred": "",
+        "blast_percent_abs_err": "",
+        "high_blast_yes": "0.0003"
+      },
+      "source_tile_dir": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_high_blast_uni2/heatmaps/split-0/S_665 19 C Score 95 - 10 Fokuspunkte - entfettet - 2026-03-03 23.38.50/tiles",
+      "output_dir": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/negative/SAMPLE_309_665_19_C",
+      "contact_sheet_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/negative/SAMPLE_309_665_19_C/contact_sheet.jpg",
+      "tiles": [
+        {
+          "kind": "top",
+          "rank": 1,
+          "score": 1.0,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_high_blast_uni2/heatmaps/split-0/S_665 19 C Score 95 - 10 Fokuspunkte - entfettet - 2026-03-03 23.38.50/tiles/top_01-S_665 19 C Score 95 - 10 Fokuspunkte - entfettet - 2026-03-03 23.38.50-no=1.00.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/negative/SAMPLE_309_665_19_C/native/top_01_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/negative/SAMPLE_309_665_19_C/zoom/top_01_zoom.jpg"
+        },
+        {
+          "kind": "top",
+          "rank": 2,
+          "score": 1.0,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_high_blast_uni2/heatmaps/split-0/S_665 19 C Score 95 - 10 Fokuspunkte - entfettet - 2026-03-03 23.38.50/tiles/top_02-S_665 19 C Score 95 - 10 Fokuspunkte - entfettet - 2026-03-03 23.38.50-no=1.00.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/negative/SAMPLE_309_665_19_C/native/top_02_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/negative/SAMPLE_309_665_19_C/zoom/top_02_zoom.jpg"
+        },
+        {
+          "kind": "top",
+          "rank": 3,
+          "score": 1.0,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_high_blast_uni2/heatmaps/split-0/S_665 19 C Score 95 - 10 Fokuspunkte - entfettet - 2026-03-03 23.38.50/tiles/top_03-S_665 19 C Score 95 - 10 Fokuspunkte - entfettet - 2026-03-03 23.38.50-no=1.00.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/negative/SAMPLE_309_665_19_C/native/top_03_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/negative/SAMPLE_309_665_19_C/zoom/top_03_zoom.jpg"
+        },
+        {
+          "kind": "top",
+          "rank": 4,
+          "score": 1.0,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_high_blast_uni2/heatmaps/split-0/S_665 19 C Score 95 - 10 Fokuspunkte - entfettet - 2026-03-03 23.38.50/tiles/top_04-S_665 19 C Score 95 - 10 Fokuspunkte - entfettet - 2026-03-03 23.38.50-no=1.00.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/negative/SAMPLE_309_665_19_C/native/top_04_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/negative/SAMPLE_309_665_19_C/zoom/top_04_zoom.jpg"
+        },
+        {
+          "kind": "top",
+          "rank": 5,
+          "score": 1.0,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_high_blast_uni2/heatmaps/split-0/S_665 19 C Score 95 - 10 Fokuspunkte - entfettet - 2026-03-03 23.38.50/tiles/top_05-S_665 19 C Score 95 - 10 Fokuspunkte - entfettet - 2026-03-03 23.38.50-no=1.00.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/negative/SAMPLE_309_665_19_C/native/top_05_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/negative/SAMPLE_309_665_19_C/zoom/top_05_zoom.jpg"
+        },
+        {
+          "kind": "top",
+          "rank": 6,
+          "score": 1.0,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_high_blast_uni2/heatmaps/split-0/S_665 19 C Score 95 - 10 Fokuspunkte - entfettet - 2026-03-03 23.38.50/tiles/top_06-S_665 19 C Score 95 - 10 Fokuspunkte - entfettet - 2026-03-03 23.38.50-no=1.00.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/negative/SAMPLE_309_665_19_C/native/top_06_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/negative/SAMPLE_309_665_19_C/zoom/top_06_zoom.jpg"
+        },
+        {
+          "kind": "top",
+          "rank": 7,
+          "score": 1.0,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_high_blast_uni2/heatmaps/split-0/S_665 19 C Score 95 - 10 Fokuspunkte - entfettet - 2026-03-03 23.38.50/tiles/top_07-S_665 19 C Score 95 - 10 Fokuspunkte - entfettet - 2026-03-03 23.38.50-no=1.00.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/negative/SAMPLE_309_665_19_C/native/top_07_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/negative/SAMPLE_309_665_19_C/zoom/top_07_zoom.jpg"
+        },
+        {
+          "kind": "top",
+          "rank": 8,
+          "score": 1.0,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_high_blast_uni2/heatmaps/split-0/S_665 19 C Score 95 - 10 Fokuspunkte - entfettet - 2026-03-03 23.38.50/tiles/top_08-S_665 19 C Score 95 - 10 Fokuspunkte - entfettet - 2026-03-03 23.38.50-no=1.00.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/negative/SAMPLE_309_665_19_C/native/top_08_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/negative/SAMPLE_309_665_19_C/zoom/top_08_zoom.jpg"
+        },
+        {
+          "kind": "bottom",
+          "rank": 1,
+          "score": -0.89,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_high_blast_uni2/heatmaps/split-0/S_665 19 C Score 95 - 10 Fokuspunkte - entfettet - 2026-03-03 23.38.50/tiles/bottom_01-S_665 19 C Score 95 - 10 Fokuspunkte - entfettet - 2026-03-03 23.38.50-no=-0.89.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/negative/SAMPLE_309_665_19_C/native/bottom_01_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/negative/SAMPLE_309_665_19_C/zoom/bottom_01_zoom.jpg"
+        },
+        {
+          "kind": "bottom",
+          "rank": 2,
+          "score": -0.89,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_high_blast_uni2/heatmaps/split-0/S_665 19 C Score 95 - 10 Fokuspunkte - entfettet - 2026-03-03 23.38.50/tiles/bottom_02-S_665 19 C Score 95 - 10 Fokuspunkte - entfettet - 2026-03-03 23.38.50-no=-0.89.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/negative/SAMPLE_309_665_19_C/native/bottom_02_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/negative/SAMPLE_309_665_19_C/zoom/bottom_02_zoom.jpg"
+        },
+        {
+          "kind": "bottom",
+          "rank": 3,
+          "score": -0.88,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_high_blast_uni2/heatmaps/split-0/S_665 19 C Score 95 - 10 Fokuspunkte - entfettet - 2026-03-03 23.38.50/tiles/bottom_03-S_665 19 C Score 95 - 10 Fokuspunkte - entfettet - 2026-03-03 23.38.50-no=-0.88.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/negative/SAMPLE_309_665_19_C/native/bottom_03_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/negative/SAMPLE_309_665_19_C/zoom/bottom_03_zoom.jpg"
+        },
+        {
+          "kind": "bottom",
+          "rank": 4,
+          "score": -0.87,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_high_blast_uni2/heatmaps/split-0/S_665 19 C Score 95 - 10 Fokuspunkte - entfettet - 2026-03-03 23.38.50/tiles/bottom_04-S_665 19 C Score 95 - 10 Fokuspunkte - entfettet - 2026-03-03 23.38.50-no=-0.87.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/negative/SAMPLE_309_665_19_C/native/bottom_04_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/negative/SAMPLE_309_665_19_C/zoom/bottom_04_zoom.jpg"
+        },
+        {
+          "kind": "bottom",
+          "rank": 5,
+          "score": -0.86,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_high_blast_uni2/heatmaps/split-0/S_665 19 C Score 95 - 10 Fokuspunkte - entfettet - 2026-03-03 23.38.50/tiles/bottom_05-S_665 19 C Score 95 - 10 Fokuspunkte - entfettet - 2026-03-03 23.38.50-no=-0.86.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/negative/SAMPLE_309_665_19_C/native/bottom_05_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/negative/SAMPLE_309_665_19_C/zoom/bottom_05_zoom.jpg"
+        },
+        {
+          "kind": "bottom",
+          "rank": 6,
+          "score": -0.84,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_high_blast_uni2/heatmaps/split-0/S_665 19 C Score 95 - 10 Fokuspunkte - entfettet - 2026-03-03 23.38.50/tiles/bottom_06-S_665 19 C Score 95 - 10 Fokuspunkte - entfettet - 2026-03-03 23.38.50-no=-0.84.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/negative/SAMPLE_309_665_19_C/native/bottom_06_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/negative/SAMPLE_309_665_19_C/zoom/bottom_06_zoom.jpg"
+        },
+        {
+          "kind": "bottom",
+          "rank": 7,
+          "score": -0.84,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_high_blast_uni2/heatmaps/split-0/S_665 19 C Score 95 - 10 Fokuspunkte - entfettet - 2026-03-03 23.38.50/tiles/bottom_07-S_665 19 C Score 95 - 10 Fokuspunkte - entfettet - 2026-03-03 23.38.50-no=-0.84.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/negative/SAMPLE_309_665_19_C/native/bottom_07_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/negative/SAMPLE_309_665_19_C/zoom/bottom_07_zoom.jpg"
+        },
+        {
+          "kind": "bottom",
+          "rank": 8,
+          "score": -0.82,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_high_blast_uni2/heatmaps/split-0/S_665 19 C Score 95 - 10 Fokuspunkte - entfettet - 2026-03-03 23.38.50/tiles/bottom_08-S_665 19 C Score 95 - 10 Fokuspunkte - entfettet - 2026-03-03 23.38.50-no=-0.82.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/negative/SAMPLE_309_665_19_C/native/bottom_08_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/negative/SAMPLE_309_665_19_C/zoom/bottom_08_zoom.jpg"
+        }
+      ]
+    },
+    {
+      "metadata": {
+        "group": "negative",
+        "sample_id": "SAMPLE_379_1373_19_A",
+        "stem": "1373 19 A Score 87 - 10 Fokuspunkte - 2026-03-08 13.07.36",
+        "experiment": "high_blast",
+        "split": "split-0",
+        "blast_percent_gt": "4.00",
+        "high_blast_gt": "no",
+        "blast_percent_pred": "",
+        "blast_percent_abs_err": "",
+        "high_blast_yes": "0.0003"
+      },
+      "source_tile_dir": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_high_blast_uni2/heatmaps/split-0/1373 19 A Score 87 - 10 Fokuspunkte - 2026-03-08 13.07.36/tiles",
+      "output_dir": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/negative/SAMPLE_379_1373_19_A",
+      "contact_sheet_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/negative/SAMPLE_379_1373_19_A/contact_sheet.jpg",
+      "tiles": [
+        {
+          "kind": "top",
+          "rank": 1,
+          "score": 1.0,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_high_blast_uni2/heatmaps/split-0/1373 19 A Score 87 - 10 Fokuspunkte - 2026-03-08 13.07.36/tiles/top_01-1373 19 A Score 87 - 10 Fokuspunkte - 2026-03-08 13.07.36-no=1.00.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/negative/SAMPLE_379_1373_19_A/native/top_01_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/negative/SAMPLE_379_1373_19_A/zoom/top_01_zoom.jpg"
+        },
+        {
+          "kind": "top",
+          "rank": 2,
+          "score": 1.0,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_high_blast_uni2/heatmaps/split-0/1373 19 A Score 87 - 10 Fokuspunkte - 2026-03-08 13.07.36/tiles/top_02-1373 19 A Score 87 - 10 Fokuspunkte - 2026-03-08 13.07.36-no=1.00.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/negative/SAMPLE_379_1373_19_A/native/top_02_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/negative/SAMPLE_379_1373_19_A/zoom/top_02_zoom.jpg"
+        },
+        {
+          "kind": "top",
+          "rank": 3,
+          "score": 1.0,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_high_blast_uni2/heatmaps/split-0/1373 19 A Score 87 - 10 Fokuspunkte - 2026-03-08 13.07.36/tiles/top_03-1373 19 A Score 87 - 10 Fokuspunkte - 2026-03-08 13.07.36-no=1.00.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/negative/SAMPLE_379_1373_19_A/native/top_03_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/negative/SAMPLE_379_1373_19_A/zoom/top_03_zoom.jpg"
+        },
+        {
+          "kind": "top",
+          "rank": 4,
+          "score": 1.0,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_high_blast_uni2/heatmaps/split-0/1373 19 A Score 87 - 10 Fokuspunkte - 2026-03-08 13.07.36/tiles/top_04-1373 19 A Score 87 - 10 Fokuspunkte - 2026-03-08 13.07.36-no=1.00.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/negative/SAMPLE_379_1373_19_A/native/top_04_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/negative/SAMPLE_379_1373_19_A/zoom/top_04_zoom.jpg"
+        },
+        {
+          "kind": "top",
+          "rank": 5,
+          "score": 1.0,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_high_blast_uni2/heatmaps/split-0/1373 19 A Score 87 - 10 Fokuspunkte - 2026-03-08 13.07.36/tiles/top_05-1373 19 A Score 87 - 10 Fokuspunkte - 2026-03-08 13.07.36-no=1.00.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/negative/SAMPLE_379_1373_19_A/native/top_05_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/negative/SAMPLE_379_1373_19_A/zoom/top_05_zoom.jpg"
+        },
+        {
+          "kind": "top",
+          "rank": 6,
+          "score": 1.0,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_high_blast_uni2/heatmaps/split-0/1373 19 A Score 87 - 10 Fokuspunkte - 2026-03-08 13.07.36/tiles/top_06-1373 19 A Score 87 - 10 Fokuspunkte - 2026-03-08 13.07.36-no=1.00.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/negative/SAMPLE_379_1373_19_A/native/top_06_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/negative/SAMPLE_379_1373_19_A/zoom/top_06_zoom.jpg"
+        },
+        {
+          "kind": "top",
+          "rank": 7,
+          "score": 1.0,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_high_blast_uni2/heatmaps/split-0/1373 19 A Score 87 - 10 Fokuspunkte - 2026-03-08 13.07.36/tiles/top_07-1373 19 A Score 87 - 10 Fokuspunkte - 2026-03-08 13.07.36-no=1.00.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/negative/SAMPLE_379_1373_19_A/native/top_07_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/negative/SAMPLE_379_1373_19_A/zoom/top_07_zoom.jpg"
+        },
+        {
+          "kind": "top",
+          "rank": 8,
+          "score": 1.0,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_high_blast_uni2/heatmaps/split-0/1373 19 A Score 87 - 10 Fokuspunkte - 2026-03-08 13.07.36/tiles/top_08-1373 19 A Score 87 - 10 Fokuspunkte - 2026-03-08 13.07.36-no=1.00.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/negative/SAMPLE_379_1373_19_A/native/top_08_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/negative/SAMPLE_379_1373_19_A/zoom/top_08_zoom.jpg"
+        },
+        {
+          "kind": "bottom",
+          "rank": 1,
+          "score": -0.94,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_high_blast_uni2/heatmaps/split-0/1373 19 A Score 87 - 10 Fokuspunkte - 2026-03-08 13.07.36/tiles/bottom_01-1373 19 A Score 87 - 10 Fokuspunkte - 2026-03-08 13.07.36-no=-0.94.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/negative/SAMPLE_379_1373_19_A/native/bottom_01_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/negative/SAMPLE_379_1373_19_A/zoom/bottom_01_zoom.jpg"
+        },
+        {
+          "kind": "bottom",
+          "rank": 2,
+          "score": -0.92,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_high_blast_uni2/heatmaps/split-0/1373 19 A Score 87 - 10 Fokuspunkte - 2026-03-08 13.07.36/tiles/bottom_02-1373 19 A Score 87 - 10 Fokuspunkte - 2026-03-08 13.07.36-no=-0.92.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/negative/SAMPLE_379_1373_19_A/native/bottom_02_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/negative/SAMPLE_379_1373_19_A/zoom/bottom_02_zoom.jpg"
+        },
+        {
+          "kind": "bottom",
+          "rank": 3,
+          "score": -0.92,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_high_blast_uni2/heatmaps/split-0/1373 19 A Score 87 - 10 Fokuspunkte - 2026-03-08 13.07.36/tiles/bottom_03-1373 19 A Score 87 - 10 Fokuspunkte - 2026-03-08 13.07.36-no=-0.92.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/negative/SAMPLE_379_1373_19_A/native/bottom_03_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/negative/SAMPLE_379_1373_19_A/zoom/bottom_03_zoom.jpg"
+        },
+        {
+          "kind": "bottom",
+          "rank": 4,
+          "score": -0.9,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_high_blast_uni2/heatmaps/split-0/1373 19 A Score 87 - 10 Fokuspunkte - 2026-03-08 13.07.36/tiles/bottom_04-1373 19 A Score 87 - 10 Fokuspunkte - 2026-03-08 13.07.36-no=-0.90.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/negative/SAMPLE_379_1373_19_A/native/bottom_04_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/negative/SAMPLE_379_1373_19_A/zoom/bottom_04_zoom.jpg"
+        },
+        {
+          "kind": "bottom",
+          "rank": 5,
+          "score": -0.9,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_high_blast_uni2/heatmaps/split-0/1373 19 A Score 87 - 10 Fokuspunkte - 2026-03-08 13.07.36/tiles/bottom_05-1373 19 A Score 87 - 10 Fokuspunkte - 2026-03-08 13.07.36-no=-0.90.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/negative/SAMPLE_379_1373_19_A/native/bottom_05_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/negative/SAMPLE_379_1373_19_A/zoom/bottom_05_zoom.jpg"
+        },
+        {
+          "kind": "bottom",
+          "rank": 6,
+          "score": -0.89,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_high_blast_uni2/heatmaps/split-0/1373 19 A Score 87 - 10 Fokuspunkte - 2026-03-08 13.07.36/tiles/bottom_06-1373 19 A Score 87 - 10 Fokuspunkte - 2026-03-08 13.07.36-no=-0.89.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/negative/SAMPLE_379_1373_19_A/native/bottom_06_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/negative/SAMPLE_379_1373_19_A/zoom/bottom_06_zoom.jpg"
+        },
+        {
+          "kind": "bottom",
+          "rank": 7,
+          "score": -0.89,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_high_blast_uni2/heatmaps/split-0/1373 19 A Score 87 - 10 Fokuspunkte - 2026-03-08 13.07.36/tiles/bottom_07-1373 19 A Score 87 - 10 Fokuspunkte - 2026-03-08 13.07.36-no=-0.89.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/negative/SAMPLE_379_1373_19_A/native/bottom_07_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/negative/SAMPLE_379_1373_19_A/zoom/bottom_07_zoom.jpg"
+        },
+        {
+          "kind": "bottom",
+          "rank": 8,
+          "score": -0.88,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_high_blast_uni2/heatmaps/split-0/1373 19 A Score 87 - 10 Fokuspunkte - 2026-03-08 13.07.36/tiles/bottom_08-1373 19 A Score 87 - 10 Fokuspunkte - 2026-03-08 13.07.36-no=-0.88.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/negative/SAMPLE_379_1373_19_A/native/bottom_08_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/negative/SAMPLE_379_1373_19_A/zoom/bottom_08_zoom.jpg"
+        }
+      ]
+    },
+    {
+      "metadata": {
+        "group": "negative",
+        "sample_id": "SAMPLE_368_755_19_A",
+        "stem": "755 19 A Score 66 - 10 Fokuspunkte - entfettet - 2026-03-04 18.12.30",
+        "experiment": "high_blast",
+        "split": "split-0",
+        "blast_percent_gt": "2.00",
+        "high_blast_gt": "no",
+        "blast_percent_pred": "",
+        "blast_percent_abs_err": "",
+        "high_blast_yes": "0.0004"
+      },
+      "source_tile_dir": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_high_blast_uni2/heatmaps/split-0/755 19 A Score 66 - 10 Fokuspunkte - entfettet - 2026-03-04 18.12.30/tiles",
+      "output_dir": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/negative/SAMPLE_368_755_19_A",
+      "contact_sheet_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/negative/SAMPLE_368_755_19_A/contact_sheet.jpg",
+      "tiles": [
+        {
+          "kind": "top",
+          "rank": 1,
+          "score": 1.0,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_high_blast_uni2/heatmaps/split-0/755 19 A Score 66 - 10 Fokuspunkte - entfettet - 2026-03-04 18.12.30/tiles/top_01-755 19 A Score 66 - 10 Fokuspunkte - entfettet - 2026-03-04 18.12.30-no=1.00.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/negative/SAMPLE_368_755_19_A/native/top_01_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/negative/SAMPLE_368_755_19_A/zoom/top_01_zoom.jpg"
+        },
+        {
+          "kind": "top",
+          "rank": 2,
+          "score": 1.0,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_high_blast_uni2/heatmaps/split-0/755 19 A Score 66 - 10 Fokuspunkte - entfettet - 2026-03-04 18.12.30/tiles/top_02-755 19 A Score 66 - 10 Fokuspunkte - entfettet - 2026-03-04 18.12.30-no=1.00.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/negative/SAMPLE_368_755_19_A/native/top_02_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/negative/SAMPLE_368_755_19_A/zoom/top_02_zoom.jpg"
+        },
+        {
+          "kind": "top",
+          "rank": 3,
+          "score": 1.0,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_high_blast_uni2/heatmaps/split-0/755 19 A Score 66 - 10 Fokuspunkte - entfettet - 2026-03-04 18.12.30/tiles/top_03-755 19 A Score 66 - 10 Fokuspunkte - entfettet - 2026-03-04 18.12.30-no=1.00.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/negative/SAMPLE_368_755_19_A/native/top_03_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/negative/SAMPLE_368_755_19_A/zoom/top_03_zoom.jpg"
+        },
+        {
+          "kind": "top",
+          "rank": 4,
+          "score": 1.0,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_high_blast_uni2/heatmaps/split-0/755 19 A Score 66 - 10 Fokuspunkte - entfettet - 2026-03-04 18.12.30/tiles/top_04-755 19 A Score 66 - 10 Fokuspunkte - entfettet - 2026-03-04 18.12.30-no=1.00.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/negative/SAMPLE_368_755_19_A/native/top_04_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/negative/SAMPLE_368_755_19_A/zoom/top_04_zoom.jpg"
+        },
+        {
+          "kind": "top",
+          "rank": 5,
+          "score": 1.0,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_high_blast_uni2/heatmaps/split-0/755 19 A Score 66 - 10 Fokuspunkte - entfettet - 2026-03-04 18.12.30/tiles/top_05-755 19 A Score 66 - 10 Fokuspunkte - entfettet - 2026-03-04 18.12.30-no=1.00.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/negative/SAMPLE_368_755_19_A/native/top_05_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/negative/SAMPLE_368_755_19_A/zoom/top_05_zoom.jpg"
+        },
+        {
+          "kind": "top",
+          "rank": 6,
+          "score": 1.0,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_high_blast_uni2/heatmaps/split-0/755 19 A Score 66 - 10 Fokuspunkte - entfettet - 2026-03-04 18.12.30/tiles/top_06-755 19 A Score 66 - 10 Fokuspunkte - entfettet - 2026-03-04 18.12.30-no=1.00.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/negative/SAMPLE_368_755_19_A/native/top_06_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/negative/SAMPLE_368_755_19_A/zoom/top_06_zoom.jpg"
+        },
+        {
+          "kind": "top",
+          "rank": 7,
+          "score": 1.0,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_high_blast_uni2/heatmaps/split-0/755 19 A Score 66 - 10 Fokuspunkte - entfettet - 2026-03-04 18.12.30/tiles/top_07-755 19 A Score 66 - 10 Fokuspunkte - entfettet - 2026-03-04 18.12.30-no=1.00.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/negative/SAMPLE_368_755_19_A/native/top_07_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/negative/SAMPLE_368_755_19_A/zoom/top_07_zoom.jpg"
+        },
+        {
+          "kind": "top",
+          "rank": 8,
+          "score": 1.0,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_high_blast_uni2/heatmaps/split-0/755 19 A Score 66 - 10 Fokuspunkte - entfettet - 2026-03-04 18.12.30/tiles/top_08-755 19 A Score 66 - 10 Fokuspunkte - entfettet - 2026-03-04 18.12.30-no=1.00.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/negative/SAMPLE_368_755_19_A/native/top_08_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/negative/SAMPLE_368_755_19_A/zoom/top_08_zoom.jpg"
+        },
+        {
+          "kind": "bottom",
+          "rank": 1,
+          "score": -0.77,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_high_blast_uni2/heatmaps/split-0/755 19 A Score 66 - 10 Fokuspunkte - entfettet - 2026-03-04 18.12.30/tiles/bottom_01-755 19 A Score 66 - 10 Fokuspunkte - entfettet - 2026-03-04 18.12.30-no=-0.77.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/negative/SAMPLE_368_755_19_A/native/bottom_01_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/negative/SAMPLE_368_755_19_A/zoom/bottom_01_zoom.jpg"
+        },
+        {
+          "kind": "bottom",
+          "rank": 2,
+          "score": -0.7,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_high_blast_uni2/heatmaps/split-0/755 19 A Score 66 - 10 Fokuspunkte - entfettet - 2026-03-04 18.12.30/tiles/bottom_02-755 19 A Score 66 - 10 Fokuspunkte - entfettet - 2026-03-04 18.12.30-no=-0.70.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/negative/SAMPLE_368_755_19_A/native/bottom_02_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/negative/SAMPLE_368_755_19_A/zoom/bottom_02_zoom.jpg"
+        },
+        {
+          "kind": "bottom",
+          "rank": 3,
+          "score": -0.68,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_high_blast_uni2/heatmaps/split-0/755 19 A Score 66 - 10 Fokuspunkte - entfettet - 2026-03-04 18.12.30/tiles/bottom_03-755 19 A Score 66 - 10 Fokuspunkte - entfettet - 2026-03-04 18.12.30-no=-0.68.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/negative/SAMPLE_368_755_19_A/native/bottom_03_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/negative/SAMPLE_368_755_19_A/zoom/bottom_03_zoom.jpg"
+        },
+        {
+          "kind": "bottom",
+          "rank": 4,
+          "score": -0.67,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_high_blast_uni2/heatmaps/split-0/755 19 A Score 66 - 10 Fokuspunkte - entfettet - 2026-03-04 18.12.30/tiles/bottom_04-755 19 A Score 66 - 10 Fokuspunkte - entfettet - 2026-03-04 18.12.30-no=-0.67.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/negative/SAMPLE_368_755_19_A/native/bottom_04_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/negative/SAMPLE_368_755_19_A/zoom/bottom_04_zoom.jpg"
+        },
+        {
+          "kind": "bottom",
+          "rank": 5,
+          "score": -0.58,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_high_blast_uni2/heatmaps/split-0/755 19 A Score 66 - 10 Fokuspunkte - entfettet - 2026-03-04 18.12.30/tiles/bottom_05-755 19 A Score 66 - 10 Fokuspunkte - entfettet - 2026-03-04 18.12.30-no=-0.58.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/negative/SAMPLE_368_755_19_A/native/bottom_05_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/negative/SAMPLE_368_755_19_A/zoom/bottom_05_zoom.jpg"
+        },
+        {
+          "kind": "bottom",
+          "rank": 6,
+          "score": -0.57,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_high_blast_uni2/heatmaps/split-0/755 19 A Score 66 - 10 Fokuspunkte - entfettet - 2026-03-04 18.12.30/tiles/bottom_06-755 19 A Score 66 - 10 Fokuspunkte - entfettet - 2026-03-04 18.12.30-no=-0.57.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/negative/SAMPLE_368_755_19_A/native/bottom_06_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/negative/SAMPLE_368_755_19_A/zoom/bottom_06_zoom.jpg"
+        },
+        {
+          "kind": "bottom",
+          "rank": 7,
+          "score": -0.55,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_high_blast_uni2/heatmaps/split-0/755 19 A Score 66 - 10 Fokuspunkte - entfettet - 2026-03-04 18.12.30/tiles/bottom_07-755 19 A Score 66 - 10 Fokuspunkte - entfettet - 2026-03-04 18.12.30-no=-0.55.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/negative/SAMPLE_368_755_19_A/native/bottom_07_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/negative/SAMPLE_368_755_19_A/zoom/bottom_07_zoom.jpg"
+        },
+        {
+          "kind": "bottom",
+          "rank": 8,
+          "score": -0.54,
+          "source_path": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_high_blast_uni2/heatmaps/split-0/755 19 A Score 66 - 10 Fokuspunkte - entfettet - 2026-03-04 18.12.30/tiles/bottom_08-755 19 A Score 66 - 10 Fokuspunkte - entfettet - 2026-03-04 18.12.30-no=-0.54.jpg",
+          "native_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/negative/SAMPLE_368_755_19_A/native/bottom_08_native.jpg",
+          "zoom_path": "/home/jeff/Projects/STAMP/validation_report/pilot_cell_res/negative/SAMPLE_368_755_19_A/zoom/bottom_08_zoom.jpg"
+        }
+      ]
+    }
+  ]
+}

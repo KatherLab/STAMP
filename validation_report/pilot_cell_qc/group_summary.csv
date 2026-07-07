@@ -1,0 +1,4 @@
+group,slide_count,candidate_count_mean,top_candidate_count_mean,bottom_candidate_count_mean,zoom_laplacian_var_mean,background_fraction_mean,technical_concern_score_mean,slides_with_any_concern
+failure,5,8.8875,5.7,12.075,70.71959895818254,0.008653211593627929,0.4,2
+negative,3,10.645833333333334,11.833333333333334,9.458333333333334,35.5512718674075,0.005489746729532878,0.6666666666666666,2
+positive,4,5.546875,3.84375,7.25,30.849475095068556,0.006501257419586182,1.25,3

@@ -1,0 +1,13 @@
+group,sample_id,stem,experiment,split,blast_percent_gt,high_blast_gt,blast_percent_pred,blast_percent_abs_err,high_blast_yes,cells_identifiable,top_grid_blast_percent_estimate,artifact_wrong_tissue_focus_notes,reviewer,review_date
+failure,SAMPLE_396_803_19_B,S_803 19 B Score 100 - 10 Fokuspunkte - entfettet - 2026-03-04 19.18.04,blast_percent,split-2,81.00,yes,0.12,80.88,,,,,,
+failure,SAMPLE_396_803_19_A,803 19 A Score 99 - 10 Fokuspunkte - entfettet - 2026-03-04 19.12.50,blast_percent,split-2,81.00,yes,1.23,79.77,,,,,,
+failure,SAMPLE_408_1411_19_A,S_1411 19 A Score 92 - 10 Fokuspunkte - 2026-03-08 14.01.06,blast_percent,split-2,91.00,yes,11.91,79.09,,,,,,
+failure,SAMPLE_404_1261_19_C,1261 19 C Score 76 -10 Fokuspunkte - 2026-03-07 12.33.11,blast_percent,split-4,90.00,yes,11.34,78.66,,,,,,
+failure,SAMPLE_408_1411_19_C,1411 19 C Score 88 - 10 Fokuspunkte - 2026-03-08 14.08.49,blast_percent,split-1,91.00,yes,12.75,78.25,,,,,,
+positive,SAMPLE_392_585_19_C,S_585 19 C Score 85 - 10 Fokuspunkte - entfettet - 2026-03-03 22.19.48,high_blast,split-1,88.00,yes,,,0.9999,,,,,
+positive,SAMPLE_406_1309_19_C,S_1309 19 C Score 83 -10 Fokuspunkte - 2026-03-07 14.38.43,high_blast,split-1,79.00,yes,,,0.9999,,,,,
+positive,SAMPLE_414_968_19_C,968 19 C Score 77 - 10 Fokuspunkte- 2026-03-05 18.40.04,high_blast,split-1,34.00,yes,,,0.9998,,,,,
+positive,SAMPLE_395_486_19_A,S_486 19 A Score 91 - 5 Fokuspunkte - entfettet - 2026-03-03 19.59.27,high_blast,split-4,61.00,yes,,,0.9998,,,,,
+negative,SAMPLE_309_665_19_C,S_665 19 C Score 95 - 10 Fokuspunkte - entfettet - 2026-03-03 23.38.50,high_blast,split-0,1.00,no,,,0.0003,,,,,
+negative,SAMPLE_379_1373_19_A,1373 19 A Score 87 - 10 Fokuspunkte - 2026-03-08 13.07.36,high_blast,split-0,4.00,no,,,0.0003,,,,,
+negative,SAMPLE_368_755_19_A,755 19 A Score 66 - 10 Fokuspunkte - entfettet - 2026-03-04 18.12.30,high_blast,split-0,2.00,no,,,0.0004,,,,,

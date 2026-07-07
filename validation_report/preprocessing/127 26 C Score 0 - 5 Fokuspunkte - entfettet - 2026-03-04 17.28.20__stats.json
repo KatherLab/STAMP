@@ -1,0 +1,25 @@
+{
+  "stem": "127 26 C Score 0 - 5 Fokuspunkte - entfettet - 2026-03-04 17.28.20",
+  "dims": [
+    96768,
+    43008
+  ],
+  "mpp_x": 0.22076029846792353,
+  "tile_size_um": 256.0,
+  "tile_slide_px": 1160,
+  "grid": [
+    83,
+    37
+  ],
+  "theoretical_tiles": 3071,
+  "kept_tiles": 143,
+  "retention_pct": 4.656463692608271,
+  "rejected_sampled": 300,
+  "rejection_reasons_sampled": {
+    "brightness": 0,
+    "canny": 299,
+    "unknown": 1
+  },
+  "inferred_fraction_brightness": 0.0,
+  "inferred_fraction_canny": 0.9966666666666667
+}

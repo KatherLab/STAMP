@@ -1,0 +1,18 @@
+{
+  "response": {
+    "config": "/mnt/nvme0n1p1/scratch/jeff/Projects/STAMP/src/stamp/stamp_aml_response_uni2_patientcv_config.yaml",
+    "crossval_dir": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_response_uni2_patientcv/crossval"
+  },
+  "high_blast": {
+    "config": "/mnt/nvme0n1p1/scratch/jeff/Projects/STAMP/src/stamp/stamp_aml_high_blast_uni2_patientcv_config.yaml",
+    "crossval_dir": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_high_blast_uni2_patientcv/crossval"
+  },
+  "blast_severity": {
+    "config": "/mnt/nvme0n1p1/scratch/jeff/Projects/STAMP/src/stamp/stamp_aml_blast_severity_uni2_patientcv_config.yaml",
+    "crossval_dir": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_blast_severity_uni2_patientcv/crossval"
+  },
+  "blast_percent": {
+    "config": "/mnt/nvme0n1p1/scratch/jeff/Projects/STAMP/src/stamp/stamp_aml_blast_percent_uni2_patientcv_config.yaml",
+    "crossval_dir": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_blast_percent_uni2_patientcv/crossval"
+  }
+}

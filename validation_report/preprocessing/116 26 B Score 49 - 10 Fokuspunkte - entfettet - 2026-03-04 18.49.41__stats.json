@@ -1,0 +1,25 @@
+{
+  "stem": "116 26 B Score 49 - 10 Fokuspunkte - entfettet - 2026-03-04 18.49.41",
+  "dims": [
+    57344,
+    37632
+  ],
+  "mpp_x": 0.22076029846792353,
+  "tile_size_um": 256.0,
+  "tile_slide_px": 1160,
+  "grid": [
+    49,
+    32
+  ],
+  "theoretical_tiles": 1568,
+  "kept_tiles": 1206,
+  "retention_pct": 76.91326530612245,
+  "rejected_sampled": 300,
+  "rejection_reasons_sampled": {
+    "brightness": 0,
+    "canny": 281,
+    "unknown": 19
+  },
+  "inferred_fraction_brightness": 0.0,
+  "inferred_fraction_canny": 0.9366666666666666
+}

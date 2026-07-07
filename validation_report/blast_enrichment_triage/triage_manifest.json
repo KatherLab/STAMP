@@ -1,0 +1,375 @@
+{
+  "generated_at": "2026-05-28T09:11:58.672225+00:00",
+  "warning": "This is non-diagnostic blast-enrichment triage, not validated blast detection. Cell-like candidates are not blast calls.",
+  "arguments": {
+    "experiments": [
+      "blast_percent",
+      "high_blast"
+    ],
+    "top_k": 8,
+    "bottom_k": 8,
+    "zoom_px": 512,
+    "overlay_slides": 30,
+    "limit_slides": null,
+    "write_all_overlays": false
+  },
+  "inputs": {
+    "slide_table": "/home/jeff/Projects/STAMP/tables/stamp_slide.csv",
+    "clinical_table": "/home/jeff/Projects/STAMP/tables/stamp_clini.csv",
+    "experiment_dirs": {
+      "blast_percent": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_blast_percent_uni2",
+      "high_blast": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_high_blast_uni2"
+    }
+  },
+  "counts": {
+    "slide_records": 1020,
+    "unique_samples": 488,
+    "tile_records": 16320,
+    "skipped_heatmap_slide_dirs": 2,
+    "overlay_contact_sheets": 30
+  },
+  "dry_run_counts": {
+    "blast_percent": {
+      "heatmap_slide_dirs": 511,
+      "complete_slide_dirs": 510,
+      "selected_slide_dirs": 510,
+      "skipped_slide_dirs": 1,
+      "selected_source_tiles": 8160,
+      "prediction_rows": 489
+    },
+    "high_blast": {
+      "heatmap_slide_dirs": 511,
+      "complete_slide_dirs": 510,
+      "selected_slide_dirs": 510,
+      "skipped_slide_dirs": 1,
+      "selected_source_tiles": 8160,
+      "prediction_rows": 489
+    }
+  },
+  "thresholds": {
+    "low_focus_laplacian_p25": 35.35629033985333,
+    "low_candidate_count_p25": 6.75,
+    "high_background_fraction_p75": 0.010951697826385498
+  },
+  "outputs": {
+    "tile_metrics": "/home/jeff/Projects/STAMP/validation_report/blast_enrichment_triage/tile_metrics.csv",
+    "slide_summary": "/home/jeff/Projects/STAMP/validation_report/blast_enrichment_triage/slide_summary.csv",
+    "group_summary": "/home/jeff/Projects/STAMP/validation_report/blast_enrichment_triage/group_summary.csv",
+    "experiment_summary": "/home/jeff/Projects/STAMP/validation_report/blast_enrichment_triage/experiment_summary.csv",
+    "findings_summary": "/home/jeff/Projects/STAMP/validation_report/blast_enrichment_triage/findings_summary.md",
+    "email_draft": "/home/jeff/Projects/STAMP/validation_report/blast_enrichment_triage/email_draft.md",
+    "html": "/home/jeff/Projects/STAMP/validation_report/blast_enrichment_triage/index.html"
+  },
+  "summary": {
+    "methods": [
+      "Analyzed 1020 experiment-slide records from 488 unique sample IDs using 16320 existing heatmap-selected tile JPGs.",
+      "For each complete slide/experiment pair, the script used the existing top_01..top_08 and bottom_01..bottom_08 heatmap tiles, without rereading raw WSIs or rerunning preprocessing.",
+      "Each tile was center-cropped to 512 x 512 px and scored for focus, background, tissue fraction, edge content, and conservative cell-like candidate visibility.",
+      "The blast-enrichment proxy combines positive-class STAMP attention with cellular visibility. It is a triage signal only, not a blast detector."
+    ],
+    "key_findings": [
+      "Data coverage was strong: 1020 slide records and 16320 tile records were analyzed; 2 incomplete heatmap folders were skipped.",
+      "The HIGH_BLAST heatmap signal aligned with clinical blast burden: Spearman rho for clinical BLAST_PERCENT vs top enrichment was 0.345 (p=1.02e-15), and HIGH_BLAST AUROC using top enrichment was 0.862.",
+      "The BLAST_PERCENT regression heatmap signal did not align with clinical blast burden: Spearman rho was -0.040, and HIGH_BLAST AUROC from that proxy was 0.424.",
+      "In HIGH_BLAST, high-blast slides had higher top enrichment than low-blast slides (0.301 vs 0.048); confident HIGH_BLAST positives were also much higher than confident negatives (0.321 vs 0.002).",
+      "In BLAST_PERCENT, high-blast slides were not enriched above low-blast slides by this proxy (0.316 vs 0.356), which points away from using the regression heatmaps as the main interim visual triage signal.",
+      "The top 10 BLAST_PERCENT failure slides had very high clinical blast burden (mean GT 87.800%) but low regression predictions (mean 9.436%, mean absolute error 78.364%). Their mean top enrichment proxy was 0.279, not clearly elevated compared with the overall BLAST_PERCENT run.",
+      "The report includes 30 selected overlay contact sheets for technical concerns, BLAST_PERCENT failures, and HIGH_BLAST confidence controls. These overlays are intended for pathologist review and visual sanity checking only."
+    ],
+    "limitations": [
+      "The analysis does not classify individual cells and does not identify blasts.",
+      "Green contours are conservative cell-like/foreground candidates, not validated cell detections.",
+      "Clinical BLAST_PERCENT is slide-level metadata; it is not a cell-level or tile-level annotation.",
+      "DeepHeme-style inference is not currently feasible because public DeepHeme assets do not provide a ready pretrained detector/classifier for these STAMP tiles.",
+      "The enrichment proxy can be biased by focus, staining, background, RBC-rich areas, and where STAMP attention lands."
+    ],
+    "next_steps": [
+      "Use HIGH_BLAST heatmap tiles, not BLAST_PERCENT regression heatmaps, as the primary interim source for blast-rich candidate regions.",
+      "Ask pathologists to review the selected overlay/contact-sheet examples plus the existing 12-slide pilot deck, with emphasis on whether top-attended regions are cell-rich, blast-rich, or technically misleading.",
+      "Create a small annotation set from high-blast controls, low-blast controls, and BLAST_PERCENT failure slides. Minimum useful labels: interpretable/uninterpretable region, cell-rich yes/no, blast-rich estimate, and artifact/focus notes.",
+      "After pathologist feedback, compare their top-tile blast estimates against the HIGH_BLAST enrichment proxy and clinical BLAST_PERCENT to decide whether to scale annotation.",
+      "If annotations confirm visible blast enrichment, train or calibrate a lightweight cell/region classifier on local annotations. Keep DeepHeme as a reference method unless usable pretrained weights or compatible annotations become available.",
+      "Keep technical QC gates in later analyses: low focus, high background, low candidate density, and top/bottom candidate shifts should be flagged before interpreting model attention."
+    ],
+    "email_subject": "Interim STAMP blast-enrichment triage findings"
+  },
+  "skipped": [
+    {
+      "experiment": "blast_percent",
+      "split": "split-3",
+      "stem": "1017 19 A Score 0 - 10 Fokuspunkte- 2026-03-05 20.32.36",
+      "sample_id": "SAMPLE_373_1017_19_A",
+      "reason": "incomplete heatmap tile ranks",
+      "missing_top": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8
+      ],
+      "missing_bottom": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8
+      ]
+    },
+    {
+      "experiment": "high_blast",
+      "split": "split-3",
+      "stem": "1017 19 A Score 0 - 10 Fokuspunkte- 2026-03-05 20.32.36",
+      "sample_id": "SAMPLE_373_1017_19_A",
+      "reason": "incomplete heatmap tile ranks",
+      "missing_top": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8
+      ],
+      "missing_bottom": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8
+      ]
+    }
+  ],
+  "overlays": [
+    {
+      "slide_key": "high_blast|split-0|632 19 B Score 88 - 10 Fokuspunkte - entfettet - 2026-03-03 23.09.06",
+      "experiment": "high_blast",
+      "sample_id": "SAMPLE_368_632_19_B",
+      "contact_sheet": "/home/jeff/Projects/STAMP/validation_report/blast_enrichment_triage/overlays/high_blast/SAMPLE_368_632_19_B__632_19_B_Score_88_-_10_Fokuspunkte_-_entfettet_-_2026-03-03_23.09.06/overlay_contact_sheet.jpg",
+      "tile_overlay_count": 16
+    },
+    {
+      "slide_key": "blast_percent|split-1|1411 19 C Score 88 - 10 Fokuspunkte - 2026-03-08 14.08.49",
+      "experiment": "blast_percent",
+      "sample_id": "SAMPLE_408_1411_19_C",
+      "contact_sheet": "/home/jeff/Projects/STAMP/validation_report/blast_enrichment_triage/overlays/blast_percent/SAMPLE_408_1411_19_C__1411_19_C_Score_88_-_10_Fokuspunkte_-_2026-03-08_14.08.49/overlay_contact_sheet.jpg",
+      "tile_overlay_count": 16
+    },
+    {
+      "slide_key": "blast_percent|split-3|S_1261 19 B Score 93 -10 Fokuspunkte - 2026-03-07 12.30.11",
+      "experiment": "blast_percent",
+      "sample_id": "SAMPLE_404_1261_19_B",
+      "contact_sheet": "/home/jeff/Projects/STAMP/validation_report/blast_enrichment_triage/overlays/blast_percent/SAMPLE_404_1261_19_B__S_1261_19_B_Score_93_-10_Fokuspunkte_-_2026-03-07_12.30.11/overlay_contact_sheet.jpg",
+      "tile_overlay_count": 16
+    },
+    {
+      "slide_key": "blast_percent|split-2|1261 19 A Score 75 -10 Fokuspunkte - 2026-03-07 12.27.22",
+      "experiment": "blast_percent",
+      "sample_id": "SAMPLE_404_1261_19_A",
+      "contact_sheet": "/home/jeff/Projects/STAMP/validation_report/blast_enrichment_triage/overlays/blast_percent/SAMPLE_404_1261_19_A__1261_19_A_Score_75_-10_Fokuspunkte_-_2026-03-07_12.27.22/overlay_contact_sheet.jpg",
+      "tile_overlay_count": 16
+    },
+    {
+      "slide_key": "high_blast|split-0|755 19 A Score 66 - 10 Fokuspunkte - entfettet - 2026-03-04 18.12.30",
+      "experiment": "high_blast",
+      "sample_id": "SAMPLE_368_755_19_A",
+      "contact_sheet": "/home/jeff/Projects/STAMP/validation_report/blast_enrichment_triage/overlays/high_blast/SAMPLE_368_755_19_A__755_19_A_Score_66_-_10_Fokuspunkte_-_entfettet_-_2026-03-04_18.12.30/overlay_contact_sheet.jpg",
+      "tile_overlay_count": 16
+    },
+    {
+      "slide_key": "high_blast|split-1|S_1411 19 A Score 92 - 10 Fokuspunkte - 2026-03-08 14.01.06",
+      "experiment": "high_blast",
+      "sample_id": "SAMPLE_408_1411_19_A",
+      "contact_sheet": "/home/jeff/Projects/STAMP/validation_report/blast_enrichment_triage/overlays/high_blast/SAMPLE_408_1411_19_A__S_1411_19_A_Score_92_-_10_Fokuspunkte_-_2026-03-08_14.01.06/overlay_contact_sheet.jpg",
+      "tile_overlay_count": 16
+    },
+    {
+      "slide_key": "high_blast|split-0|251 19 B Score 98 - 5 Fokuspunkte - entfettet 2026-02-26 17.54.54",
+      "experiment": "high_blast",
+      "sample_id": "SAMPLE_306_251_19_B",
+      "contact_sheet": "/home/jeff/Projects/STAMP/validation_report/blast_enrichment_triage/overlays/high_blast/SAMPLE_306_251_19_B__251_19_B_Score_98_-_5_Fokuspunkte_-_entfettet_2026-02-26_17.54.54/overlay_contact_sheet.jpg",
+      "tile_overlay_count": 16
+    },
+    {
+      "slide_key": "high_blast|split-0|1261 19 C Score 76 -10 Fokuspunkte - 2026-03-07 12.33.11",
+      "experiment": "high_blast",
+      "sample_id": "SAMPLE_404_1261_19_C",
+      "contact_sheet": "/home/jeff/Projects/STAMP/validation_report/blast_enrichment_triage/overlays/high_blast/SAMPLE_404_1261_19_C__1261_19_C_Score_76_-10_Fokuspunkte_-_2026-03-07_12.33.11/overlay_contact_sheet.jpg",
+      "tile_overlay_count": 16
+    },
+    {
+      "slide_key": "high_blast|split-0|S_454 19 C Score 97 - 5 Fokuspunkte - entfettet - 2026-03-03 19.54.42",
+      "experiment": "high_blast",
+      "sample_id": "SAMPLE_325_454_19_C",
+      "contact_sheet": "/home/jeff/Projects/STAMP/validation_report/blast_enrichment_triage/overlays/high_blast/SAMPLE_325_454_19_C__S_454_19_C_Score_97_-_5_Fokuspunkte_-_entfettet_-_2026-03-03_19.54.42/overlay_contact_sheet.jpg",
+      "tile_overlay_count": 16
+    },
+    {
+      "slide_key": "blast_percent|split-4|S_229 19 A Score 99 - 5 Fokuspunkte - entfettet 2026-02-26 17.37.02",
+      "experiment": "blast_percent",
+      "sample_id": "SAMPLE_392_229_19_A",
+      "contact_sheet": "/home/jeff/Projects/STAMP/validation_report/blast_enrichment_triage/overlays/blast_percent/SAMPLE_392_229_19_A__S_229_19_A_Score_99_-_5_Fokuspunkte_-_entfettet_2026-02-26_17.37.02/overlay_contact_sheet.jpg",
+      "tile_overlay_count": 16
+    },
+    {
+      "slide_key": "blast_percent|split-4|585 19 B Score 68 - 10 Fokuspunkte - entfettet - 2026-03-03 22.16.47",
+      "experiment": "blast_percent",
+      "sample_id": "SAMPLE_392_585_19_B",
+      "contact_sheet": "/home/jeff/Projects/STAMP/validation_report/blast_enrichment_triage/overlays/blast_percent/SAMPLE_392_585_19_B__585_19_B_Score_68_-_10_Fokuspunkte_-_entfettet_-_2026-03-03_22.16.47/overlay_contact_sheet.jpg",
+      "tile_overlay_count": 16
+    },
+    {
+      "slide_key": "blast_percent|split-3|880 19 A Score 99 - 10 Fokuspunkte - entfettet - 2026-03-04 20.02.18",
+      "experiment": "blast_percent",
+      "sample_id": "SAMPLE_415_880_19_A",
+      "contact_sheet": "/home/jeff/Projects/STAMP/validation_report/blast_enrichment_triage/overlays/blast_percent/SAMPLE_415_880_19_A__880_19_A_Score_99_-_10_Fokuspunkte_-_entfettet_-_2026-03-04_20.02.18/overlay_contact_sheet.jpg",
+      "tile_overlay_count": 16
+    },
+    {
+      "slide_key": "blast_percent|split-4|585 19 A Score 75 - 10 Fokuspunkte - entfettet - 2026-03-03 22.13.38",
+      "experiment": "blast_percent",
+      "sample_id": "SAMPLE_392_585_19_A",
+      "contact_sheet": "/home/jeff/Projects/STAMP/validation_report/blast_enrichment_triage/overlays/blast_percent/SAMPLE_392_585_19_A__585_19_A_Score_75_-_10_Fokuspunkte_-_entfettet_-_2026-03-03_22.13.38/overlay_contact_sheet.jpg",
+      "tile_overlay_count": 16
+    },
+    {
+      "slide_key": "blast_percent|split-1|104 19 A Score 86 - 5 Fokuspunkte - entfettet 2026-02-26 17.22.22",
+      "experiment": "blast_percent",
+      "sample_id": "SAMPLE_389_104_19_A",
+      "contact_sheet": "/home/jeff/Projects/STAMP/validation_report/blast_enrichment_triage/overlays/blast_percent/SAMPLE_389_104_19_A__104_19_A_Score_86_-_5_Fokuspunkte_-_entfettet_2026-02-26_17.22.22/overlay_contact_sheet.jpg",
+      "tile_overlay_count": 16
+    },
+    {
+      "slide_key": "blast_percent|split-2|803 19 A Score 99 - 10 Fokuspunkte - entfettet - 2026-03-04 19.12.50",
+      "experiment": "blast_percent",
+      "sample_id": "SAMPLE_396_803_19_A",
+      "contact_sheet": "/home/jeff/Projects/STAMP/validation_report/blast_enrichment_triage/overlays/blast_percent/SAMPLE_396_803_19_A__803_19_A_Score_99_-_10_Fokuspunkte_-_entfettet_-_2026-03-04_19.12.50/overlay_contact_sheet.jpg",
+      "tile_overlay_count": 16
+    },
+    {
+      "slide_key": "high_blast|split-1|S_585 19 C Score 85 - 10 Fokuspunkte - entfettet - 2026-03-03 22.19.48",
+      "experiment": "high_blast",
+      "sample_id": "SAMPLE_392_585_19_C",
+      "contact_sheet": "/home/jeff/Projects/STAMP/validation_report/blast_enrichment_triage/overlays/high_blast/SAMPLE_392_585_19_C__S_585_19_C_Score_85_-_10_Fokuspunkte_-_entfettet_-_2026-03-03_22.19.48/overlay_contact_sheet.jpg",
+      "tile_overlay_count": 16
+    },
+    {
+      "slide_key": "high_blast|split-3|104-19 C Score 49 - 10 Fokuspunkte - nicht entfettet",
+      "experiment": "high_blast",
+      "sample_id": "SAMPLE_389_104_19_C",
+      "contact_sheet": "/home/jeff/Projects/STAMP/validation_report/blast_enrichment_triage/overlays/high_blast/SAMPLE_389_104_19_C__104-19_C_Score_49_-_10_Fokuspunkte_-_nicht_entfettet/overlay_contact_sheet.jpg",
+      "tile_overlay_count": 16
+    },
+    {
+      "slide_key": "high_blast|split-0|1373 19 A Score 87 - 10 Fokuspunkte - 2026-03-08 13.07.36",
+      "experiment": "high_blast",
+      "sample_id": "SAMPLE_379_1373_19_A",
+      "contact_sheet": "/home/jeff/Projects/STAMP/validation_report/blast_enrichment_triage/overlays/high_blast/SAMPLE_379_1373_19_A__1373_19_A_Score_87_-_10_Fokuspunkte_-_2026-03-08_13.07.36/overlay_contact_sheet.jpg",
+      "tile_overlay_count": 16
+    },
+    {
+      "slide_key": "high_blast|split-3|S_550 19 B Score 100 - 5 Fokuspunkte - entfettet - 2026-03-03 20.34.42",
+      "experiment": "high_blast",
+      "sample_id": "SAMPLE_105_550_19_B",
+      "contact_sheet": "/home/jeff/Projects/STAMP/validation_report/blast_enrichment_triage/overlays/high_blast/SAMPLE_105_550_19_B__S_550_19_B_Score_100_-_5_Fokuspunkte_-_entfettet_-_2026-03-03_20.34.42/overlay_contact_sheet.jpg",
+      "tile_overlay_count": 16
+    },
+    {
+      "slide_key": "blast_percent|split-4|S_550 19 B Score 100 - 5 Fokuspunkte - entfettet - 2026-03-03 20.34.42",
+      "experiment": "blast_percent",
+      "sample_id": "SAMPLE_105_550_19_B",
+      "contact_sheet": "/home/jeff/Projects/STAMP/validation_report/blast_enrichment_triage/overlays/blast_percent/SAMPLE_105_550_19_B__S_550_19_B_Score_100_-_5_Fokuspunkte_-_entfettet_-_2026-03-03_20.34.42/overlay_contact_sheet.jpg",
+      "tile_overlay_count": 16
+    },
+    {
+      "slide_key": "high_blast|split-3|189-19 C Score 82 - 10 Fokuspunkte - nicht entfettet",
+      "experiment": "high_blast",
+      "sample_id": "SAMPLE_391_189_19_C",
+      "contact_sheet": "/home/jeff/Projects/STAMP/validation_report/blast_enrichment_triage/overlays/high_blast/SAMPLE_391_189_19_C__189-19_C_Score_82_-_10_Fokuspunkte_-_nicht_entfettet/overlay_contact_sheet.jpg",
+      "tile_overlay_count": 16
+    },
+    {
+      "slide_key": "high_blast|split-1|1261 19 A Score 75 -10 Fokuspunkte - 2026-03-07 12.27.22",
+      "experiment": "high_blast",
+      "sample_id": "SAMPLE_404_1261_19_A",
+      "contact_sheet": "/home/jeff/Projects/STAMP/validation_report/blast_enrichment_triage/overlays/high_blast/SAMPLE_404_1261_19_A__1261_19_A_Score_75_-10_Fokuspunkte_-_2026-03-07_12.27.22/overlay_contact_sheet.jpg",
+      "tile_overlay_count": 16
+    },
+    {
+      "slide_key": "blast_percent|split-4|1261 19 C Score 76 -10 Fokuspunkte - 2026-03-07 12.33.11",
+      "experiment": "blast_percent",
+      "sample_id": "SAMPLE_404_1261_19_C",
+      "contact_sheet": "/home/jeff/Projects/STAMP/validation_report/blast_enrichment_triage/overlays/blast_percent/SAMPLE_404_1261_19_C__1261_19_C_Score_76_-10_Fokuspunkte_-_2026-03-07_12.33.11/overlay_contact_sheet.jpg",
+      "tile_overlay_count": 16
+    },
+    {
+      "slide_key": "high_blast|split-2|629 19 AScore 63 - 10 Fokuspunkte - entfettet - 2026-03-03 22.57.04",
+      "experiment": "high_blast",
+      "sample_id": "SAMPLE_395_629_19_A",
+      "contact_sheet": "/home/jeff/Projects/STAMP/validation_report/blast_enrichment_triage/overlays/high_blast/SAMPLE_395_629_19_A__629_19_AScore_63_-_10_Fokuspunkte_-_entfettet_-_2026-03-03_22.57.04/overlay_contact_sheet.jpg",
+      "tile_overlay_count": 16
+    },
+    {
+      "slide_key": "high_blast|split-0|S_665 19 C Score 95 - 10 Fokuspunkte - entfettet - 2026-03-03 23.38.50",
+      "experiment": "high_blast",
+      "sample_id": "SAMPLE_309_665_19_C",
+      "contact_sheet": "/home/jeff/Projects/STAMP/validation_report/blast_enrichment_triage/overlays/high_blast/SAMPLE_309_665_19_C__S_665_19_C_Score_95_-_10_Fokuspunkte_-_entfettet_-_2026-03-03_23.38.50/overlay_contact_sheet.jpg",
+      "tile_overlay_count": 16
+    },
+    {
+      "slide_key": "blast_percent|split-0|550 19 C Score 78 - 5 Fokuspunkte - entfettet - 2026-03-03 20.36.05",
+      "experiment": "blast_percent",
+      "sample_id": "SAMPLE_105_550_19_C",
+      "contact_sheet": "/home/jeff/Projects/STAMP/validation_report/blast_enrichment_triage/overlays/blast_percent/SAMPLE_105_550_19_C__550_19_C_Score_78_-_5_Fokuspunkte_-_entfettet_-_2026-03-03_20.36.05/overlay_contact_sheet.jpg",
+      "tile_overlay_count": 16
+    },
+    {
+      "slide_key": "blast_percent|split-2|S_1411 19 A Score 92 - 10 Fokuspunkte - 2026-03-08 14.01.06",
+      "experiment": "blast_percent",
+      "sample_id": "SAMPLE_408_1411_19_A",
+      "contact_sheet": "/home/jeff/Projects/STAMP/validation_report/blast_enrichment_triage/overlays/blast_percent/SAMPLE_408_1411_19_A__S_1411_19_A_Score_92_-_10_Fokuspunkte_-_2026-03-08_14.01.06/overlay_contact_sheet.jpg",
+      "tile_overlay_count": 16
+    },
+    {
+      "slide_key": "high_blast|split-0|755 19 A Score 72 - 5 Fokuspunkte - entfettet - 2026-03-04 16.41.16",
+      "experiment": "high_blast",
+      "sample_id": "SAMPLE_368_755_19_A",
+      "contact_sheet": "/home/jeff/Projects/STAMP/validation_report/blast_enrichment_triage/overlays/high_blast/SAMPLE_368_755_19_A__755_19_A_Score_72_-_5_Fokuspunkte_-_entfettet_-_2026-03-04_16.41.16/overlay_contact_sheet.jpg",
+      "tile_overlay_count": 16
+    },
+    {
+      "slide_key": "high_blast|split-1|S_1309 19 C Score 83 -10 Fokuspunkte - 2026-03-07 14.38.43",
+      "experiment": "high_blast",
+      "sample_id": "SAMPLE_406_1309_19_C",
+      "contact_sheet": "/home/jeff/Projects/STAMP/validation_report/blast_enrichment_triage/overlays/high_blast/SAMPLE_406_1309_19_C__S_1309_19_C_Score_83_-10_Fokuspunkte_-_2026-03-07_14.38.43/overlay_contact_sheet.jpg",
+      "tile_overlay_count": 16
+    },
+    {
+      "slide_key": "blast_percent|split-2|S_803 19 B Score 100 - 10 Fokuspunkte - entfettet - 2026-03-04 19.18.04",
+      "experiment": "blast_percent",
+      "sample_id": "SAMPLE_396_803_19_B",
+      "contact_sheet": "/home/jeff/Projects/STAMP/validation_report/blast_enrichment_triage/overlays/blast_percent/SAMPLE_396_803_19_B__S_803_19_B_Score_100_-_10_Fokuspunkte_-_entfettet_-_2026-03-04_19.18.0/overlay_contact_sheet.jpg",
+      "tile_overlay_count": 16
+    }
+  ],
+  "deepheme_readiness": {
+    "raw_wsis": "available locally",
+    "uni2_features": "available locally",
+    "stamp_heatmap_tiles": "available locally",
+    "cell_level_annotations": "missing",
+    "deepheme_pretrained_detector_classifier": "not available from public repo/release checked during planning",
+    "sources": [
+      "https://github.com/GoldgofLab/DeepHeme",
+      "https://github.com/GoldgofLab/DeepHeme/releases/tag/v1.1"
+    ]
+  }
+}

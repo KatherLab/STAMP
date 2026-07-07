@@ -1,0 +1,419 @@
+{
+  "high_blast": [
+    {
+      "sample_id": "SAMPLE_416_621_19_C",
+      "stem": "S_621 19 C Score 100 - 10 Fokuspunkte - entfettet - 2026-03-03 22.52.24",
+      "split": "split-4",
+      "experiment": "high_blast",
+      "blast_pct_gt": 35.0,
+      "enrichment": 0.684,
+      "tech_concern": 0,
+      "note": "GT high / pred high",
+      "overview": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_high_blast_uni2/heatmaps/split-4/S_621 19 C Score 100 - 10 Fokuspunkte - entfettet - 2026-03-03 22.52.24/plots/overview-S_621 19 C Score 100 - 10 Fokuspunkte - entfettet - 2026-03-03 22.52.24.png"
+    },
+    {
+      "sample_id": "SAMPLE_404_1349_19_A",
+      "stem": "1349 19 A Score 78 -10 Fokuspunkte - 2026-03-07 16.38.07",
+      "split": "split-4",
+      "experiment": "high_blast",
+      "blast_pct_gt": 25.0,
+      "enrichment": 0.63,
+      "tech_concern": 1,
+      "note": "GT high / pred high",
+      "overview": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_high_blast_uni2/heatmaps/split-4/1349 19 A Score 78 -10 Fokuspunkte - 2026-03-07 16.38.07/plots/overview-1349 19 A Score 78 -10 Fokuspunkte - 2026-03-07 16.38.07.png"
+    },
+    {
+      "sample_id": "SAMPLE_357_1131_19_B",
+      "stem": "1131 19 B Score 91 -10 Fokuspunkte - frisches Roticlear - 2026-03-06 21.08.01",
+      "split": "split-3",
+      "experiment": "high_blast",
+      "blast_pct_gt": 56.0,
+      "enrichment": 0.616,
+      "tech_concern": 0,
+      "note": "GT high / pred high",
+      "overview": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_high_blast_uni2/heatmaps/split-3/1131 19 B Score 91 -10 Fokuspunkte - frisches Roticlear - 2026-03-06 21.08.01/plots/overview-1131 19 B Score 91 -10 Fokuspunkte - frisches Roticlear - 2026-03-06 21.08.01.png"
+    },
+    {
+      "sample_id": "SAMPLE_405_1321_19_A",
+      "stem": "1321 19 A Score 85 -10 Fokuspunkte - 2026-03-07 15.08.02",
+      "split": "split-0",
+      "experiment": "high_blast",
+      "blast_pct_gt": 77.0,
+      "enrichment": 0.55,
+      "tech_concern": 0,
+      "note": "GT high / pred high",
+      "overview": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_high_blast_uni2/heatmaps/split-0/1321 19 A Score 85 -10 Fokuspunkte - 2026-03-07 15.08.02/plots/overview-1321 19 A Score 85 -10 Fokuspunkte - 2026-03-07 15.08.02.png"
+    },
+    {
+      "sample_id": "SAMPLE_401_960_19_B",
+      "stem": "S_960 19 B Score 95 - 5 Fokuspunkte - entfettet - 2026-03-04 21.56.58",
+      "split": "split-2",
+      "experiment": "high_blast",
+      "blast_pct_gt": 43.0,
+      "enrichment": 0.545,
+      "tech_concern": 0,
+      "note": "GT high / pred high",
+      "overview": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_high_blast_uni2/heatmaps/split-2/S_960 19 B Score 95 - 5 Fokuspunkte - entfettet - 2026-03-04 21.56.58/plots/overview-S_960 19 B Score 95 - 5 Fokuspunkte - entfettet - 2026-03-04 21.56.58.png"
+    },
+    {
+      "sample_id": "SAMPLE_396_803_19_B",
+      "stem": "S_803 19 B Score 100 - 10 Fokuspunkte - entfettet - 2026-03-04 19.18.04",
+      "split": "split-4",
+      "experiment": "high_blast",
+      "blast_pct_gt": 81.0,
+      "enrichment": 0.519,
+      "tech_concern": 0,
+      "note": "GT high / pred high",
+      "overview": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_high_blast_uni2/heatmaps/split-4/S_803 19 B Score 100 - 10 Fokuspunkte - entfettet - 2026-03-04 19.18.04/plots/overview-S_803 19 B Score 100 - 10 Fokuspunkte - entfettet - 2026-03-04 19.18.04.png"
+    },
+    {
+      "sample_id": "SAMPLE_416_1012_19_A",
+      "stem": "1012 19 A Score 73 - 10 Fokuspunkte- 2026-03-05 20.15.46",
+      "split": "split-2",
+      "experiment": "high_blast",
+      "blast_pct_gt": 21.0,
+      "enrichment": 0.419,
+      "tech_concern": 1,
+      "note": "GT high / pred high",
+      "overview": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_high_blast_uni2/heatmaps/split-2/1012 19 A Score 73 - 10 Fokuspunkte- 2026-03-05 20.15.46/plots/overview-1012 19 A Score 73 - 10 Fokuspunkte- 2026-03-05 20.15.46.png"
+    },
+    {
+      "sample_id": "SAMPLE_402_1085_19_B",
+      "stem": "1085 19 B Score 89 -10 Fokuspunkte - 2026-03-06 19.40.50",
+      "split": "split-2",
+      "experiment": "high_blast",
+      "blast_pct_gt": 60.0,
+      "enrichment": 0.415,
+      "tech_concern": 0,
+      "note": "GT high / pred high",
+      "overview": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_high_blast_uni2/heatmaps/split-2/1085 19 B Score 89 -10 Fokuspunkte - 2026-03-06 19.40.50/plots/overview-1085 19 B Score 89 -10 Fokuspunkte - 2026-03-06 19.40.50.png"
+    }
+  ],
+  "blast_percent": [
+    {
+      "sample_id": "SAMPLE_388_583_19_A",
+      "stem": "583 19 A Score 64 - 10 Fokuspunkte - entfettet - 2026-03-03 22.02.40",
+      "split": "split-0",
+      "experiment": "blast_percent",
+      "blast_pct_gt": 3.0,
+      "enrichment": 0.694,
+      "tech_concern": 2,
+      "note": "GT 3% (low) \u2014 correct",
+      "overview": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_blast_percent_uni2/heatmaps/split-0/583 19 A Score 64 - 10 Fokuspunkte - entfettet - 2026-03-03 22.02.40/plots/overview-583 19 A Score 64 - 10 Fokuspunkte - entfettet - 2026-03-03 22.02.40.png"
+    },
+    {
+      "sample_id": "SAMPLE_398_1188_19_A",
+      "stem": "1188 19 A Score 93 -10 Fokuspunkte - 2026-03-07 10.20.25",
+      "split": "split-4",
+      "experiment": "blast_percent",
+      "blast_pct_gt": 0.0,
+      "enrichment": 0.688,
+      "tech_concern": 0,
+      "note": "GT 0% (low) \u2014 correct",
+      "overview": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_blast_percent_uni2/heatmaps/split-4/1188 19 A Score 93 -10 Fokuspunkte - 2026-03-07 10.20.25/plots/overview-1188 19 A Score 93 -10 Fokuspunkte - 2026-03-07 10.20.25.png"
+    },
+    {
+      "sample_id": "SAMPLE_399_1294_19_C",
+      "stem": "1294 19 C Score 96 -10 Fokuspunkte - 2026-03-07 14.15.44",
+      "split": "split-3",
+      "experiment": "blast_percent",
+      "blast_pct_gt": 1.0,
+      "enrichment": 0.656,
+      "tech_concern": 1,
+      "note": "GT 1% (low) \u2014 correct",
+      "overview": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_blast_percent_uni2/heatmaps/split-3/1294 19 C Score 96 -10 Fokuspunkte - 2026-03-07 14.15.44/plots/overview-1294 19 C Score 96 -10 Fokuspunkte - 2026-03-07 14.15.44.png"
+    },
+    {
+      "sample_id": "SAMPLE_408_1411_19_C",
+      "stem": "1411 19 C Score 88 - 10 Fokuspunkte - 2026-03-08 14.08.49",
+      "split": "split-1",
+      "experiment": "blast_percent",
+      "blast_pct_gt": 91.0,
+      "enrichment": 0.199,
+      "tech_concern": 1,
+      "note": "GT 91% -> pred 13% \u2014 FAILURE",
+      "overview": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_blast_percent_uni2/heatmaps/split-1/1411 19 C Score 88 - 10 Fokuspunkte - 2026-03-08 14.08.49/plots/overview-1411 19 C Score 88 - 10 Fokuspunkte - 2026-03-08 14.08.49.png"
+    },
+    {
+      "sample_id": "SAMPLE_408_1411_19_A",
+      "stem": "S_1411 19 A Score 92 - 10 Fokuspunkte - 2026-03-08 14.01.06",
+      "split": "split-2",
+      "experiment": "blast_percent",
+      "blast_pct_gt": 91.0,
+      "enrichment": 0.464,
+      "tech_concern": 1,
+      "note": "GT 91% -> pred 12% \u2014 FAILURE",
+      "overview": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_blast_percent_uni2/heatmaps/split-2/S_1411 19 A Score 92 - 10 Fokuspunkte - 2026-03-08 14.01.06/plots/overview-S_1411 19 A Score 92 - 10 Fokuspunkte - 2026-03-08 14.01.06.png"
+    },
+    {
+      "sample_id": "SAMPLE_404_1261_19_A",
+      "stem": "1261 19 A Score 75 -10 Fokuspunkte - 2026-03-07 12.27.22",
+      "split": "split-2",
+      "experiment": "blast_percent",
+      "blast_pct_gt": 90.0,
+      "enrichment": 0.499,
+      "tech_concern": 1,
+      "note": "GT 90% -> pred 12% \u2014 FAILURE",
+      "overview": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_blast_percent_uni2/heatmaps/split-2/1261 19 A Score 75 -10 Fokuspunkte - 2026-03-07 12.27.22/plots/overview-1261 19 A Score 75 -10 Fokuspunkte - 2026-03-07 12.27.22.png"
+    }
+  ],
+  "explain_pairs": [
+    {
+      "sample_id": "SAMPLE_416_621_19_C",
+      "high_blast": {
+        "sample_id": "SAMPLE_416_621_19_C",
+        "stem": "S_621 19 C Score 100 - 10 Fokuspunkte - entfettet - 2026-03-03 22.52.24",
+        "split": "split-4",
+        "experiment": "high_blast",
+        "blast_pct_gt": 35.0,
+        "enrichment": 0.684,
+        "tech_concern": 0,
+        "note": "HIGH_BLAST attention",
+        "overview": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_high_blast_uni2/heatmaps/split-4/S_621 19 C Score 100 - 10 Fokuspunkte - entfettet - 2026-03-03 22.52.24/plots/overview-S_621 19 C Score 100 - 10 Fokuspunkte - entfettet - 2026-03-03 22.52.24.png"
+      },
+      "blast_percent": {
+        "sample_id": "SAMPLE_416_621_19_C",
+        "stem": "S_621 19 C Score 100 - 10 Fokuspunkte - entfettet - 2026-03-03 22.52.24",
+        "split": "split-4",
+        "experiment": "blast_percent",
+        "blast_pct_gt": 35.0,
+        "enrichment": 0.286,
+        "tech_concern": 0,
+        "note": "BLAST_PERCENT attention",
+        "overview": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_blast_percent_uni2/heatmaps/split-4/S_621 19 C Score 100 - 10 Fokuspunkte - entfettet - 2026-03-03 22.52.24/plots/overview-S_621 19 C Score 100 - 10 Fokuspunkte - entfettet - 2026-03-03 22.52.24.png"
+      }
+    },
+    {
+      "sample_id": "SAMPLE_404_1349_19_A",
+      "high_blast": {
+        "sample_id": "SAMPLE_404_1349_19_A",
+        "stem": "1349 19 A Score 78 -10 Fokuspunkte - 2026-03-07 16.38.07",
+        "split": "split-4",
+        "experiment": "high_blast",
+        "blast_pct_gt": 25.0,
+        "enrichment": 0.63,
+        "tech_concern": 1,
+        "note": "HIGH_BLAST attention",
+        "overview": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_high_blast_uni2/heatmaps/split-4/1349 19 A Score 78 -10 Fokuspunkte - 2026-03-07 16.38.07/plots/overview-1349 19 A Score 78 -10 Fokuspunkte - 2026-03-07 16.38.07.png"
+      },
+      "blast_percent": {
+        "sample_id": "SAMPLE_404_1349_19_A",
+        "stem": "1349 19 A Score 78 -10 Fokuspunkte - 2026-03-07 16.38.07",
+        "split": "split-1",
+        "experiment": "blast_percent",
+        "blast_pct_gt": 25.0,
+        "enrichment": 0.334,
+        "tech_concern": 3,
+        "note": "BLAST_PERCENT attention",
+        "overview": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_blast_percent_uni2/heatmaps/split-1/1349 19 A Score 78 -10 Fokuspunkte - 2026-03-07 16.38.07/plots/overview-1349 19 A Score 78 -10 Fokuspunkte - 2026-03-07 16.38.07.png"
+      }
+    },
+    {
+      "sample_id": "SAMPLE_357_1131_19_B",
+      "high_blast": {
+        "sample_id": "SAMPLE_357_1131_19_B",
+        "stem": "1131 19 B Score 91 -10 Fokuspunkte - frisches Roticlear - 2026-03-06 21.08.01",
+        "split": "split-3",
+        "experiment": "high_blast",
+        "blast_pct_gt": 56.0,
+        "enrichment": 0.616,
+        "tech_concern": 0,
+        "note": "HIGH_BLAST attention",
+        "overview": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_high_blast_uni2/heatmaps/split-3/1131 19 B Score 91 -10 Fokuspunkte - frisches Roticlear - 2026-03-06 21.08.01/plots/overview-1131 19 B Score 91 -10 Fokuspunkte - frisches Roticlear - 2026-03-06 21.08.01.png"
+      },
+      "blast_percent": {
+        "sample_id": "SAMPLE_357_1131_19_B",
+        "stem": "1131 19 B Score 91 -10 Fokuspunkte - frisches Roticlear - 2026-03-06 21.08.01",
+        "split": "split-0",
+        "experiment": "blast_percent",
+        "blast_pct_gt": 56.0,
+        "enrichment": 0.277,
+        "tech_concern": 1,
+        "note": "BLAST_PERCENT attention",
+        "overview": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_blast_percent_uni2/heatmaps/split-0/1131 19 B Score 91 -10 Fokuspunkte - frisches Roticlear - 2026-03-06 21.08.01/plots/overview-1131 19 B Score 91 -10 Fokuspunkte - frisches Roticlear - 2026-03-06 21.08.01.png"
+      }
+    },
+    {
+      "sample_id": "SAMPLE_405_1321_19_A",
+      "high_blast": {
+        "sample_id": "SAMPLE_405_1321_19_A",
+        "stem": "1321 19 A Score 85 -10 Fokuspunkte - 2026-03-07 15.08.02",
+        "split": "split-0",
+        "experiment": "high_blast",
+        "blast_pct_gt": 77.0,
+        "enrichment": 0.55,
+        "tech_concern": 0,
+        "note": "HIGH_BLAST attention",
+        "overview": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_high_blast_uni2/heatmaps/split-0/1321 19 A Score 85 -10 Fokuspunkte - 2026-03-07 15.08.02/plots/overview-1321 19 A Score 85 -10 Fokuspunkte - 2026-03-07 15.08.02.png"
+      },
+      "blast_percent": {
+        "sample_id": "SAMPLE_405_1321_19_A",
+        "stem": "1321 19 A Score 85 -10 Fokuspunkte - 2026-03-07 15.08.02",
+        "split": "split-0",
+        "experiment": "blast_percent",
+        "blast_pct_gt": 77.0,
+        "enrichment": 0.299,
+        "tech_concern": 0,
+        "note": "BLAST_PERCENT attention",
+        "overview": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_blast_percent_uni2/heatmaps/split-0/1321 19 A Score 85 -10 Fokuspunkte - 2026-03-07 15.08.02/plots/overview-1321 19 A Score 85 -10 Fokuspunkte - 2026-03-07 15.08.02.png"
+      }
+    },
+    {
+      "sample_id": "SAMPLE_401_960_19_B",
+      "high_blast": {
+        "sample_id": "SAMPLE_401_960_19_B",
+        "stem": "S_960 19 B Score 95 - 5 Fokuspunkte - entfettet - 2026-03-04 21.56.58",
+        "split": "split-2",
+        "experiment": "high_blast",
+        "blast_pct_gt": 43.0,
+        "enrichment": 0.545,
+        "tech_concern": 0,
+        "note": "HIGH_BLAST attention",
+        "overview": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_high_blast_uni2/heatmaps/split-2/S_960 19 B Score 95 - 5 Fokuspunkte - entfettet - 2026-03-04 21.56.58/plots/overview-S_960 19 B Score 95 - 5 Fokuspunkte - entfettet - 2026-03-04 21.56.58.png"
+      },
+      "blast_percent": {
+        "sample_id": "SAMPLE_401_960_19_B",
+        "stem": "S_960 19 B Score 95 - 5 Fokuspunkte - entfettet - 2026-03-04 21.56.58",
+        "split": "split-0",
+        "experiment": "blast_percent",
+        "blast_pct_gt": 43.0,
+        "enrichment": 0.211,
+        "tech_concern": 1,
+        "note": "BLAST_PERCENT attention",
+        "overview": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_blast_percent_uni2/heatmaps/split-0/S_960 19 B Score 95 - 5 Fokuspunkte - entfettet - 2026-03-04 21.56.58/plots/overview-S_960 19 B Score 95 - 5 Fokuspunkte - entfettet - 2026-03-04 21.56.58.png"
+      }
+    }
+  ],
+  "response": [
+    {
+      "sample_id": "SAMPLE_416_1012_19_A",
+      "stem": "1012 19 A Score 73 - 10 Fokuspunkte- 2026-03-05 20.15.46",
+      "split": "split-3",
+      "experiment": "response",
+      "gt": "no",
+      "pred": "no",
+      "p_yes": 0.02,
+      "correct": true,
+      "enrichment": 0.419,
+      "background": 0.002,
+      "overview": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_response_uni2/heatmaps/split-3/1012 19 A Score 73 - 10 Fokuspunkte- 2026-03-05 20.15.46/plots/overview-1012 19 A Score 73 - 10 Fokuspunkte- 2026-03-05 20.15.46.png"
+    },
+    {
+      "sample_id": "SAMPLE_396_1000_19_B",
+      "stem": "1000 19 B Score 64 - 10 Fokuspunkte- 2026-03-05 19.26.44",
+      "split": "split-4",
+      "experiment": "response",
+      "gt": "no",
+      "pred": "no",
+      "p_yes": 0.001,
+      "correct": true,
+      "enrichment": 0.418,
+      "background": 0.001,
+      "overview": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_response_uni2/heatmaps/split-4/1000 19 B Score 64 - 10 Fokuspunkte- 2026-03-05 19.26.44/plots/overview-1000 19 B Score 64 - 10 Fokuspunkte- 2026-03-05 19.26.44.png"
+    },
+    {
+      "sample_id": "SAMPLE_397_895_19_B",
+      "stem": "S_895 19 B Score 97 - 10 Fokuspunkte - entfettet - 2026-03-04 20.46.51",
+      "split": "split-2",
+      "experiment": "response",
+      "gt": "no",
+      "pred": "no",
+      "p_yes": 0.262,
+      "correct": true,
+      "enrichment": 0.392,
+      "background": 0.011,
+      "overview": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_response_uni2/heatmaps/split-2/S_895 19 B Score 97 - 10 Fokuspunkte - entfettet - 2026-03-04 20.46.51/plots/overview-S_895 19 B Score 97 - 10 Fokuspunkte - entfettet - 2026-03-04 20.46.51.png"
+    },
+    {
+      "sample_id": "SAMPLE_396_1000_19_A",
+      "stem": "1000 19 A Score 58 - 10 Fokuspunkte- 2026-03-05 19.23.09",
+      "split": "split-0",
+      "experiment": "response",
+      "gt": "no",
+      "pred": "no",
+      "p_yes": 0.005,
+      "correct": true,
+      "enrichment": 0.377,
+      "background": 0.004,
+      "overview": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_response_uni2/heatmaps/split-0/1000 19 A Score 58 - 10 Fokuspunkte- 2026-03-05 19.23.09/plots/overview-1000 19 A Score 58 - 10 Fokuspunkte- 2026-03-05 19.23.09.png"
+    },
+    {
+      "sample_id": "SAMPLE_416_1012_19_C",
+      "stem": "1012 19 C Score 74 - 10 Fokuspunkte- 2026-03-05 20.27.13",
+      "split": "split-0",
+      "experiment": "response",
+      "gt": "no",
+      "pred": "no",
+      "p_yes": 0.011,
+      "correct": true,
+      "enrichment": 0.359,
+      "background": 0.003,
+      "overview": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_response_uni2/heatmaps/split-0/1012 19 C Score 74 - 10 Fokuspunkte- 2026-03-05 20.27.13/plots/overview-1012 19 C Score 74 - 10 Fokuspunkte- 2026-03-05 20.27.13.png"
+    },
+    {
+      "sample_id": "SAMPLE_396_1000_19_C",
+      "stem": "1000 19 C Score 59 - 10 Fokuspunkte- 2026-03-05 19.30.52",
+      "split": "split-2",
+      "experiment": "response",
+      "gt": "no",
+      "pred": "no",
+      "p_yes": 0.002,
+      "correct": true,
+      "enrichment": 0.244,
+      "background": 0.005,
+      "overview": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_response_uni2/heatmaps/split-2/1000 19 C Score 59 - 10 Fokuspunkte- 2026-03-05 19.30.52/plots/overview-1000 19 C Score 59 - 10 Fokuspunkte- 2026-03-05 19.30.52.png"
+    },
+    {
+      "sample_id": "SAMPLE_391_189_19_B",
+      "stem": "189-19 B Score 31 - 10 Fokuspunkte - nicht entfettet",
+      "split": "split-2",
+      "experiment": "response",
+      "gt": "yes",
+      "pred": "yes",
+      "p_yes": 0.959,
+      "correct": true,
+      "enrichment": 0.043,
+      "background": 0.026,
+      "overview": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_response_uni2/heatmaps/split-2/189-19 B Score 31 - 10 Fokuspunkte - nicht entfettet/plots/overview-189-19 B Score 31 - 10 Fokuspunkte - nicht entfettet.png"
+    },
+    {
+      "sample_id": "SAMPLE_379_931_19_A",
+      "stem": "931 19 A Score 30 - 5 Fokuspunkte - entfettet - 2026-03-04 21.23.41",
+      "split": "split-2",
+      "experiment": "response",
+      "gt": "yes",
+      "pred": "yes",
+      "p_yes": 0.984,
+      "correct": true,
+      "enrichment": 0.009,
+      "background": 0.0,
+      "overview": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_response_uni2/heatmaps/split-2/931 19 A Score 30 - 5 Fokuspunkte - entfettet - 2026-03-04 21.23.41/plots/overview-931 19 A Score 30 - 5 Fokuspunkte - entfettet - 2026-03-04 21.23.41.png"
+    },
+    {
+      "sample_id": "SAMPLE_391_189_19_C",
+      "stem": "189-19 C Score 82 - 10 Fokuspunkte - nicht entfettet",
+      "split": "split-3",
+      "experiment": "response",
+      "gt": "yes",
+      "pred": "yes",
+      "p_yes": 0.85,
+      "correct": true,
+      "enrichment": 0.009,
+      "background": 0.081,
+      "overview": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_response_uni2/heatmaps/split-3/189-19 C Score 82 - 10 Fokuspunkte - nicht entfettet/plots/overview-189-19 C Score 82 - 10 Fokuspunkte - nicht entfettet.png"
+    },
+    {
+      "sample_id": "SAMPLE_380_1020_19_A",
+      "stem": "1020 19 A Score 93 - 10 Fokuspunkte- 2026-03-05 20.40.52",
+      "split": "split-0",
+      "experiment": "response",
+      "gt": "yes",
+      "pred": "yes",
+      "p_yes": 0.875,
+      "correct": true,
+      "enrichment": 0.008,
+      "background": 0.011,
+      "overview": "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_response_uni2/heatmaps/split-0/1020 19 A Score 93 - 10 Fokuspunkte- 2026-03-05 20.40.52/plots/overview-1020 19 A Score 93 - 10 Fokuspunkte- 2026-03-05 20.40.52.png"
+    }
+  ]
+}

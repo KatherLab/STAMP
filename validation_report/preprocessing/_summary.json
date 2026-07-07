@@ -1,0 +1,102 @@
+{
+  "116 26 B Score 49 - 10 Fokuspunkte - entfettet - 2026-03-04 18.49.41": {
+    "stem": "116 26 B Score 49 - 10 Fokuspunkte - entfettet - 2026-03-04 18.49.41",
+    "dims": [
+      57344,
+      37632
+    ],
+    "mpp_x": 0.22076029846792353,
+    "tile_size_um": 256.0,
+    "tile_slide_px": 1160,
+    "grid": [
+      49,
+      32
+    ],
+    "theoretical_tiles": 1568,
+    "kept_tiles": 1206,
+    "retention_pct": 76.91326530612245,
+    "rejected_sampled": 300,
+    "rejection_reasons_sampled": {
+      "brightness": 0,
+      "canny": 281,
+      "unknown": 19
+    },
+    "inferred_fraction_brightness": 0.0,
+    "inferred_fraction_canny": 0.9366666666666666
+  },
+  "127 26 C Score 0 - 5 Fokuspunkte - entfettet - 2026-03-04 17.28.20": {
+    "stem": "127 26 C Score 0 - 5 Fokuspunkte - entfettet - 2026-03-04 17.28.20",
+    "dims": [
+      96768,
+      43008
+    ],
+    "mpp_x": 0.22076029846792353,
+    "tile_size_um": 256.0,
+    "tile_slide_px": 1160,
+    "grid": [
+      83,
+      37
+    ],
+    "theoretical_tiles": 3071,
+    "kept_tiles": 143,
+    "retention_pct": 4.656463692608271,
+    "rejected_sampled": 300,
+    "rejection_reasons_sampled": {
+      "brightness": 0,
+      "canny": 299,
+      "unknown": 1
+    },
+    "inferred_fraction_brightness": 0.0,
+    "inferred_fraction_canny": 0.9966666666666667
+  },
+  "333 19 A Score 29 - 5 Fokuspunkte - entfettet - 2026-03-03 18.42.23": {
+    "stem": "333 19 A Score 29 - 5 Fokuspunkte - entfettet - 2026-03-03 18.42.23",
+    "dims": [
+      132608,
+      59136
+    ],
+    "mpp_x": 0.22076029846792353,
+    "tile_size_um": 256.0,
+    "tile_slide_px": 1160,
+    "grid": [
+      114,
+      50
+    ],
+    "theoretical_tiles": 5700,
+    "kept_tiles": 2850,
+    "retention_pct": 50.0,
+    "rejected_sampled": 300,
+    "rejection_reasons_sampled": {
+      "brightness": 0,
+      "canny": 276,
+      "unknown": 24
+    },
+    "inferred_fraction_brightness": 0.0,
+    "inferred_fraction_canny": 0.92
+  },
+  "931 19 A Score 30 - 5 Fokuspunkte - entfettet - 2026-03-04 21.23.41": {
+    "stem": "931 19 A Score 30 - 5 Fokuspunkte - entfettet - 2026-03-04 21.23.41",
+    "dims": [
+      82432,
+      32256
+    ],
+    "mpp_x": 0.22076029846792353,
+    "tile_size_um": 256.0,
+    "tile_slide_px": 1160,
+    "grid": [
+      71,
+      27
+    ],
+    "theoretical_tiles": 1917,
+    "kept_tiles": 762,
+    "retention_pct": 39.749608763693274,
+    "rejected_sampled": 300,
+    "rejection_reasons_sampled": {
+      "brightness": 0,
+      "canny": 262,
+      "unknown": 38
+    },
+    "inferred_fraction_brightness": 0.0,
+    "inferred_fraction_canny": 0.8733333333333333
+  }
+}

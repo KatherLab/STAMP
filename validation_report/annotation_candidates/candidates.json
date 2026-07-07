@@ -1,0 +1,808 @@
+{
+  "response": {
+    "high_confidence_yes": [
+      {
+        "SAMPLE_ID": "SAMPLE_399_1294_19_A",
+        "stem": "S_1294 19 A Score 98 -10 Fokuspunkte - 2026-03-07 14.09.08",
+        "RESPONSE_CR": "yes",
+        "RESPONSE_CR_yes": 0.996678590774536,
+        "split": "split-4"
+      },
+      {
+        "SAMPLE_ID": "SAMPLE_265_417_19_C",
+        "stem": "S_417 19 C Score 96 - 5 Fokuspunkte - entfettet - 2026-03-03 19.28.34",
+        "RESPONSE_CR": "no",
+        "RESPONSE_CR_yes": 0.995688021183014,
+        "split": "split-2"
+      },
+      {
+        "SAMPLE_ID": "SAMPLE_368_632_19_B",
+        "stem": "632 19 B Score 88 - 10 Fokuspunkte - entfettet - 2026-03-03 23.09.06",
+        "RESPONSE_CR": "yes",
+        "RESPONSE_CR_yes": 0.9950610995292664,
+        "split": "split-2"
+      },
+      {
+        "SAMPLE_ID": "SAMPLE_309_665_19_A",
+        "stem": "665 19 A Score 57 - 10 Fokuspunkte - entfettet - 2026-03-03 23.29.29",
+        "RESPONSE_CR": "yes",
+        "RESPONSE_CR_yes": 0.994494378566742,
+        "split": "split-4"
+      },
+      {
+        "SAMPLE_ID": "SAMPLE_416_1333_19_C",
+        "stem": "S_1333 19 C Score 97 -10 Fokuspunkte - 2026-03-07 16.07.38",
+        "RESPONSE_CR": "yes",
+        "RESPONSE_CR_yes": 0.9942238926887512,
+        "split": "split-2"
+      },
+      {
+        "SAMPLE_ID": "SAMPLE_381_1369_19_C",
+        "stem": "1369 19 C Score 89 -10 Fokuspunkte - 2026-03-07 17.55.29",
+        "RESPONSE_CR": "yes",
+        "RESPONSE_CR_yes": 0.9937458038330078,
+        "split": "split-2"
+      },
+      {
+        "SAMPLE_ID": "SAMPLE_265_417_19_B",
+        "stem": "417 19 B Score 72 - 5 Fokuspunkte - entfettet - 2026-03-03 19.22.29",
+        "RESPONSE_CR": "no",
+        "RESPONSE_CR_yes": 0.9935179948806764,
+        "split": "split-2"
+      },
+      {
+        "SAMPLE_ID": "SAMPLE_383_662_19_B",
+        "stem": "S_662 19 B Score 99 - 10 Fokuspunkte - entfettet - 2026-03-03 23.23.47",
+        "RESPONSE_CR": "yes",
+        "RESPONSE_CR_yes": 0.9934278130531312,
+        "split": "split-4"
+      },
+      {
+        "SAMPLE_ID": "SAMPLE_352_587_19_B",
+        "stem": "587 19 B  Score 46 - 10 Fokuspunkte - entfettet - 2026-03-03 22.25.35",
+        "RESPONSE_CR": "yes",
+        "RESPONSE_CR_yes": 0.9931868314743042,
+        "split": "split-2"
+      },
+      {
+        "SAMPLE_ID": "SAMPLE_299_85_19_A",
+        "stem": "85-19 A Score 70 - 10 Fokuspunkte - nicht entfettet",
+        "RESPONSE_CR": "yes",
+        "RESPONSE_CR_yes": 0.9927962422370912,
+        "split": "split-2"
+      }
+    ],
+    "high_confidence_no": [
+      {
+        "SAMPLE_ID": "SAMPLE_404_1261_19_A",
+        "stem": "1261 19 A Score 75 -10 Fokuspunkte - 2026-03-07 12.27.22",
+        "RESPONSE_CR": "no",
+        "RESPONSE_CR_yes": 0.0003406111500225,
+        "split": "split-4"
+      },
+      {
+        "SAMPLE_ID": "SAMPLE_408_1411_19_A",
+        "stem": "S_1411 19 A Score 92 - 10 Fokuspunkte - 2026-03-08 14.01.06",
+        "RESPONSE_CR": "no",
+        "RESPONSE_CR_yes": 0.0003846644831355,
+        "split": "split-4"
+      },
+      {
+        "SAMPLE_ID": "SAMPLE_395_486_19_B",
+        "stem": "486 19 B Score 87 - 5 Fokuspunkte - entfettet - 2026-03-03 20.01.03",
+        "RESPONSE_CR": "no",
+        "RESPONSE_CR_yes": 0.0004045817768201,
+        "split": "split-4"
+      },
+      {
+        "SAMPLE_ID": "SAMPLE_395_486_19_A",
+        "stem": "S_486 19 A Score 91 - 5 Fokuspunkte - entfettet - 2026-03-03 19.59.27",
+        "RESPONSE_CR": "no",
+        "RESPONSE_CR_yes": 0.0004707938933279,
+        "split": "split-2"
+      },
+      {
+        "SAMPLE_ID": "SAMPLE_408_1411_19_C",
+        "stem": "1411 19 C Score 88 - 10 Fokuspunkte - 2026-03-08 14.08.49",
+        "RESPONSE_CR": "no",
+        "RESPONSE_CR_yes": 0.0007335263653658,
+        "split": "split-0"
+      },
+      {
+        "SAMPLE_ID": "SAMPLE_396_1000_19_B",
+        "stem": "1000 19 B Score 64 - 10 Fokuspunkte- 2026-03-05 19.26.44",
+        "RESPONSE_CR": "no",
+        "RESPONSE_CR_yes": 0.0008248258964158,
+        "split": "split-4"
+      },
+      {
+        "SAMPLE_ID": "SAMPLE_392_585_19_C",
+        "stem": "S_585 19 C Score 85 - 10 Fokuspunkte - entfettet - 2026-03-03 22.19.48",
+        "RESPONSE_CR": "no",
+        "RESPONSE_CR_yes": 0.0008373464806936,
+        "split": "split-4"
+      },
+      {
+        "SAMPLE_ID": "SAMPLE_403_1148_19_A",
+        "stem": "S_1148 19 A Score 100 -10 Fokuspunkte - frisches Roticlear - 2026-03-06 21.49.07",
+        "RESPONSE_CR": "no",
+        "RESPONSE_CR_yes": 0.0009134362917393,
+        "split": "split-0"
+      },
+      {
+        "SAMPLE_ID": "SAMPLE_406_1309_19_B",
+        "stem": "1309 19 B Score 73 -10 Fokuspunkte - 2026-03-07 14.35.53",
+        "RESPONSE_CR": "no",
+        "RESPONSE_CR_yes": 0.000974710448645,
+        "split": "split-4"
+      },
+      {
+        "SAMPLE_ID": "SAMPLE_390_1359_19_C",
+        "stem": "S_1359 19 C Score 92 -10 Fokuspunkte - 2026-03-07 17.33.50",
+        "RESPONSE_CR": "no",
+        "RESPONSE_CR_yes": 0.0009963731281459,
+        "split": "split-4"
+      }
+    ],
+    "near_boundary": [
+      {
+        "SAMPLE_ID": "SAMPLE_238_1226_19_A",
+        "stem": "1226 19 A Score 89 -10 Fokuspunkte - 2026-03-07 11.24.43",
+        "RESPONSE_CR": "yes",
+        "RESPONSE_CR_yes": 0.5034447908401489,
+        "split": "split-1"
+      },
+      {
+        "SAMPLE_ID": "SAMPLE_357_596_19_B",
+        "stem": "596 19 B  Score 72 - 10 Fokuspunkte - entfettet - 2026-03-03 22.42.43",
+        "RESPONSE_CR": "no",
+        "RESPONSE_CR_yes": 0.494121104478836,
+        "split": "split-1"
+      },
+      {
+        "SAMPLE_ID": "SAMPLE_371_1176_19_C",
+        "stem": "S-1176 19 C Score 99 -10 Fokuspunkte - 2026-03-07 09.38.06",
+        "RESPONSE_CR": "yes",
+        "RESPONSE_CR_yes": 0.5111051201820374,
+        "split": "split-1"
+      },
+      {
+        "SAMPLE_ID": "SAMPLE_373_394_19_C",
+        "stem": "394 19 C Score 80 - 5 Fokuspunkte - entfettet - 2026-03-03 19.13.55",
+        "RESPONSE_CR": "yes",
+        "RESPONSE_CR_yes": 0.4850540459156036,
+        "split": "split-2"
+      },
+      {
+        "SAMPLE_ID": "SAMPLE_373_1017_19_B",
+        "stem": "S_1017 19 B Score 99 - 10 Fokuspunkte- 2026-03-05 20.34.46",
+        "RESPONSE_CR": "no",
+        "RESPONSE_CR_yes": 0.5162222385406494,
+        "split": "split-0"
+      },
+      {
+        "SAMPLE_ID": "SAMPLE_407_1394_19_C",
+        "stem": "S_1394 19 C Score 85 - 10 Fokuspunkte - 2026-03-08 13.35.49",
+        "RESPONSE_CR": "no",
+        "RESPONSE_CR_yes": 0.5186901688575745,
+        "split": "split-1"
+      },
+      {
+        "SAMPLE_ID": "SAMPLE_390_1100_19_C",
+        "stem": "1100 19 C Score 93 -10 Fokuspunkte - frisches Roticlear - 2026-03-06 19.56.24",
+        "RESPONSE_CR": "yes",
+        "RESPONSE_CR_yes": 0.5195316672325134,
+        "split": "split-4"
+      },
+      {
+        "SAMPLE_ID": "SAMPLE_395_1357_19_B",
+        "stem": "1357 19 B Score 96 -10 Fokuspunkte - 2026-03-07 17.17.02",
+        "RESPONSE_CR": "yes",
+        "RESPONSE_CR_yes": 0.4793995916843414,
+        "split": "split-1"
+      },
+      {
+        "SAMPLE_ID": "SAMPLE_359_652_19_A",
+        "stem": "652 19 A Score 78 - 10 Fokuspunkte - entfettet - 2026-03-03 23.16.13",
+        "RESPONSE_CR": "yes",
+        "RESPONSE_CR_yes": 0.525107204914093,
+        "split": "split-2"
+      },
+      {
+        "SAMPLE_ID": "SAMPLE_380_317_19_B",
+        "stem": "317 19 B Score 71 - 5 Fokuspunkte - entfettet- 2026-03-03 18.22.56",
+        "RESPONSE_CR": "yes",
+        "RESPONSE_CR_yes": 0.5269373059272766,
+        "split": "split-1"
+      }
+    ]
+  },
+  "blast_percent": {
+    "highest_predicted": [
+      {
+        "SAMPLE_ID": "SAMPLE_392_585_19_C",
+        "stem": "S_585 19 C Score 85 - 10 Fokuspunkte - entfettet - 2026-03-03 22.19.48",
+        "BLAST_PERCENT": 88.0,
+        "pred": 12.763259887695312,
+        "abs_err": 75.23674011230469,
+        "split": "split-1"
+      },
+      {
+        "SAMPLE_ID": "SAMPLE_408_1411_19_C",
+        "stem": "1411 19 C Score 88 - 10 Fokuspunkte - 2026-03-08 14.08.49",
+        "BLAST_PERCENT": 91.0,
+        "pred": 12.751441955566406,
+        "abs_err": 78.2485580444336,
+        "split": "split-1"
+      },
+      {
+        "SAMPLE_ID": "SAMPLE_390_1359_19_B",
+        "stem": "1359 19 B Score 67 -10 Fokuspunkte - 2026-03-07 17.30.25",
+        "BLAST_PERCENT": 84.0,
+        "pred": 12.738273620605469,
+        "abs_err": 71.26172637939453,
+        "split": "split-1"
+      },
+      {
+        "SAMPLE_ID": "SAMPLE_403_1148_19_B",
+        "stem": "1148 19 B Score 99 -10 Fokuspunkte - frisches Roticlear - 2026-03-06 21.51.56",
+        "BLAST_PERCENT": 86.0,
+        "pred": 12.675090789794922,
+        "abs_err": 73.32490921020508,
+        "split": "split-1"
+      },
+      {
+        "SAMPLE_ID": "SAMPLE_404_1349_19_A",
+        "stem": "1349 19 A Score 78 -10 Fokuspunkte - 2026-03-07 16.38.07",
+        "BLAST_PERCENT": 25.0,
+        "pred": 12.633522033691406,
+        "abs_err": 12.366477966308594,
+        "split": "split-1"
+      },
+      {
+        "SAMPLE_ID": "SAMPLE_416_806_19_A",
+        "stem": "806 19 A Score 74 - 5 Fokuspunkte - entfettet - 2026-03-04 16.59.24",
+        "BLAST_PERCENT": 11.0,
+        "pred": 12.55824375152588,
+        "abs_err": 1.5582437515258807,
+        "split": "split-1"
+      },
+      {
+        "SAMPLE_ID": "SAMPLE_416_806_19_A",
+        "stem": "806 19 A Score 80 - 10 Fokuspunkte - entfettet  2026-03-04 18.33.33",
+        "BLAST_PERCENT": 11.0,
+        "pred": 12.55824375152588,
+        "abs_err": 1.5582437515258807,
+        "split": "split-1"
+      },
+      {
+        "SAMPLE_ID": "SAMPLE_395_629_19_B",
+        "stem": "629 19 B Score 61 - 10 Fokuspunkte - entfettet - 2026-03-03 22.59.55",
+        "BLAST_PERCENT": 4.0,
+        "pred": 12.306819915771484,
+        "abs_err": 8.306819915771484,
+        "split": "split-1"
+      },
+      {
+        "SAMPLE_ID": "SAMPLE_395_629_19_A",
+        "stem": "629 19 AScore 63 - 10 Fokuspunkte - entfettet - 2026-03-03 22.57.04",
+        "BLAST_PERCENT": 4.0,
+        "pred": 12.23472023010254,
+        "abs_err": 8.23472023010254,
+        "split": "split-1"
+      },
+      {
+        "SAMPLE_ID": "SAMPLE_390_1359_19_A",
+        "stem": "1359 19 A Score 74 -10 Fokuspunkte - 2026-03-07 17.26.22",
+        "BLAST_PERCENT": 84.0,
+        "pred": 12.089750289916992,
+        "abs_err": 71.91024971008301,
+        "split": "split-0"
+      }
+    ],
+    "lowest_predicted": [
+      {
+        "SAMPLE_ID": "SAMPLE_415_557_19_B",
+        "stem": "S_557 19 B  Score 99 - 10 Fokuspunkte - entfettet - 2026-03-03 21.55.28",
+        "BLAST_PERCENT": 0.0,
+        "pred": -2.5424673557281494,
+        "abs_err": 2.5424673557281494,
+        "split": "split-4"
+      },
+      {
+        "SAMPLE_ID": "SAMPLE_414_1064_19_C",
+        "stem": "1064 19 C Score 75 -10 Fokuspunkte - 2026-03-06 19.19.36",
+        "BLAST_PERCENT": 2.0,
+        "pred": -2.21435284614563,
+        "abs_err": 4.21435284614563,
+        "split": "split-4"
+      },
+      {
+        "SAMPLE_ID": "SAMPLE_398_1188_19_A",
+        "stem": "1188 19 A Score 93 -10 Fokuspunkte - 2026-03-07 10.20.25",
+        "BLAST_PERCENT": 0.0,
+        "pred": -1.9707201719284055,
+        "abs_err": 1.9707201719284055,
+        "split": "split-4"
+      },
+      {
+        "SAMPLE_ID": "SAMPLE_404_1312_19_B",
+        "stem": "1312 19 B Score 99 -10 Fokuspunkte - 2026-03-07 14.45.46",
+        "BLAST_PERCENT": 0.0,
+        "pred": -1.962019681930542,
+        "abs_err": 1.962019681930542,
+        "split": "split-4"
+      },
+      {
+        "SAMPLE_ID": "SAMPLE_416_621_19_C",
+        "stem": "S_621 19 C Score 100 - 10 Fokuspunkte - entfettet - 2026-03-03 22.52.24",
+        "BLAST_PERCENT": 35.0,
+        "pred": -1.824225187301636,
+        "abs_err": 36.824225187301636,
+        "split": "split-4"
+      },
+      {
+        "SAMPLE_ID": "SAMPLE_396_1319_19_C",
+        "stem": "1319 19 C Score 98 -10 Fokuspunkte - 2026-03-07 15.02.09",
+        "BLAST_PERCENT": 0.0,
+        "pred": -1.4600800275802612,
+        "abs_err": 1.4600800275802612,
+        "split": "split-4"
+      },
+      {
+        "SAMPLE_ID": "SAMPLE_415_258_19_B",
+        "stem": "258 19 B Score 100- 5 Fokuspunkte - entfettet  - 2026-03-03 17.14.15",
+        "BLAST_PERCENT": 0.0,
+        "pred": -1.4143755435943604,
+        "abs_err": 1.4143755435943604,
+        "split": "split-4"
+      },
+      {
+        "SAMPLE_ID": "SAMPLE_394_1219_19_A",
+        "stem": "1219 19 A Score 67 -10 Fokuspunkte - 2026-03-07 11.03.37",
+        "BLAST_PERCENT": 1.0,
+        "pred": -1.092752456665039,
+        "abs_err": 2.092752456665039,
+        "split": "split-0"
+      },
+      {
+        "SAMPLE_ID": "SAMPLE_415_880_19_A",
+        "stem": "880 19 A Score 99 - 10 Fokuspunkte - entfettet - 2026-03-04 20.02.18",
+        "BLAST_PERCENT": 0.0,
+        "pred": -1.0575181245803833,
+        "abs_err": 1.0575181245803833,
+        "split": "split-3"
+      },
+      {
+        "SAMPLE_ID": "SAMPLE_398_1135_19_C",
+        "stem": "1135 19 C Score 94 -10 Fokuspunkte - frisches Roticlear - 2026-03-06 21.23.47",
+        "BLAST_PERCENT": 0.0,
+        "pred": -1.014060139656067,
+        "abs_err": 1.014060139656067,
+        "split": "split-2"
+      }
+    ],
+    "largest_errors": [
+      {
+        "SAMPLE_ID": "SAMPLE_396_803_19_B",
+        "stem": "S_803 19 B Score 100 - 10 Fokuspunkte - entfettet - 2026-03-04 19.18.04",
+        "BLAST_PERCENT": 81.0,
+        "pred": 0.1207219660282135,
+        "abs_err": 80.87927803397179,
+        "split": "split-2"
+      },
+      {
+        "SAMPLE_ID": "SAMPLE_396_803_19_A",
+        "stem": "803 19 A Score 99 - 10 Fokuspunkte - entfettet - 2026-03-04 19.12.50",
+        "BLAST_PERCENT": 81.0,
+        "pred": 1.2297165393829346,
+        "abs_err": 79.77028346061707,
+        "split": "split-2"
+      },
+      {
+        "SAMPLE_ID": "SAMPLE_408_1411_19_A",
+        "stem": "S_1411 19 A Score 92 - 10 Fokuspunkte - 2026-03-08 14.01.06",
+        "BLAST_PERCENT": 91.0,
+        "pred": 11.906964302062988,
+        "abs_err": 79.09303569793701,
+        "split": "split-2"
+      },
+      {
+        "SAMPLE_ID": "SAMPLE_404_1261_19_C",
+        "stem": "1261 19 C Score 76 -10 Fokuspunkte - 2026-03-07 12.33.11",
+        "BLAST_PERCENT": 90.0,
+        "pred": 11.335588455200195,
+        "abs_err": 78.6644115447998,
+        "split": "split-4"
+      },
+      {
+        "SAMPLE_ID": "SAMPLE_408_1411_19_C",
+        "stem": "1411 19 C Score 88 - 10 Fokuspunkte - 2026-03-08 14.08.49",
+        "BLAST_PERCENT": 91.0,
+        "pred": 12.751441955566406,
+        "abs_err": 78.2485580444336,
+        "split": "split-1"
+      },
+      {
+        "SAMPLE_ID": "SAMPLE_404_1261_19_B",
+        "stem": "S_1261 19 B Score 93 -10 Fokuspunkte - 2026-03-07 12.30.11",
+        "BLAST_PERCENT": 90.0,
+        "pred": 11.775408744812012,
+        "abs_err": 78.22459125518799,
+        "split": "split-3"
+      },
+      {
+        "SAMPLE_ID": "SAMPLE_404_1261_19_A",
+        "stem": "1261 19 A Score 75 -10 Fokuspunkte - 2026-03-07 12.27.22",
+        "BLAST_PERCENT": 90.0,
+        "pred": 11.927680015563965,
+        "abs_err": 78.07231998443604,
+        "split": "split-2"
+      },
+      {
+        "SAMPLE_ID": "SAMPLE_392_229_19_A",
+        "stem": "S_229 19 A Score 99 - 5 Fokuspunkte - entfettet 2026-02-26 17.37.02",
+        "BLAST_PERCENT": 88.0,
+        "pred": 10.881392478942873,
+        "abs_err": 77.11860752105713,
+        "split": "split-4"
+      },
+      {
+        "SAMPLE_ID": "SAMPLE_392_585_19_A",
+        "stem": "585 19 A Score 75 - 10 Fokuspunkte - entfettet - 2026-03-03 22.13.38",
+        "BLAST_PERCENT": 88.0,
+        "pred": 11.146841049194336,
+        "abs_err": 76.85315895080566,
+        "split": "split-4"
+      },
+      {
+        "SAMPLE_ID": "SAMPLE_392_585_19_B",
+        "stem": "585 19 B Score 68 - 10 Fokuspunkte - entfettet - 2026-03-03 22.16.47",
+        "BLAST_PERCENT": 88.0,
+        "pred": 11.288761138916016,
+        "abs_err": 76.71123886108398,
+        "split": "split-4"
+      }
+    ]
+  },
+  "high_blast": {
+    "high_confidence_yes": [
+      {
+        "SAMPLE_ID": "SAMPLE_404_1261_19_A",
+        "stem": "1261 19 A Score 75 -10 Fokuspunkte - 2026-03-07 12.27.22",
+        "HIGH_BLAST": "yes",
+        "HIGH_BLAST_yes": 0.999923825263977,
+        "split": "split-1"
+      },
+      {
+        "SAMPLE_ID": "SAMPLE_392_585_19_C",
+        "stem": "S_585 19 C Score 85 - 10 Fokuspunkte - entfettet - 2026-03-03 22.19.48",
+        "HIGH_BLAST": "yes",
+        "HIGH_BLAST_yes": 0.9999090433120728,
+        "split": "split-1"
+      },
+      {
+        "SAMPLE_ID": "SAMPLE_408_1411_19_A",
+        "stem": "S_1411 19 A Score 92 - 10 Fokuspunkte - 2026-03-08 14.01.06",
+        "HIGH_BLAST": "yes",
+        "HIGH_BLAST_yes": 0.9999057054519652,
+        "split": "split-1"
+      },
+      {
+        "SAMPLE_ID": "SAMPLE_406_1309_19_C",
+        "stem": "S_1309 19 C Score 83 -10 Fokuspunkte - 2026-03-07 14.38.43",
+        "HIGH_BLAST": "yes",
+        "HIGH_BLAST_yes": 0.9999006986618042,
+        "split": "split-1"
+      },
+      {
+        "SAMPLE_ID": "SAMPLE_404_1261_19_C",
+        "stem": "1261 19 C Score 76 -10 Fokuspunkte - 2026-03-07 12.33.11",
+        "HIGH_BLAST": "yes",
+        "HIGH_BLAST_yes": 0.9998061060905457,
+        "split": "split-0"
+      },
+      {
+        "SAMPLE_ID": "SAMPLE_414_968_19_C",
+        "stem": "968 19 C Score 77 - 10 Fokuspunkte- 2026-03-05 18.40.04",
+        "HIGH_BLAST": "yes",
+        "HIGH_BLAST_yes": 0.99979168176651,
+        "split": "split-1"
+      },
+      {
+        "SAMPLE_ID": "SAMPLE_395_486_19_A",
+        "stem": "S_486 19 A Score 91 - 5 Fokuspunkte - entfettet - 2026-03-03 19.59.27",
+        "HIGH_BLAST": "yes",
+        "HIGH_BLAST_yes": 0.9997761845588684,
+        "split": "split-4"
+      },
+      {
+        "SAMPLE_ID": "SAMPLE_392_585_19_A",
+        "stem": "585 19 A Score 75 - 10 Fokuspunkte - entfettet - 2026-03-03 22.13.38",
+        "HIGH_BLAST": "yes",
+        "HIGH_BLAST_yes": 0.9997331500053406,
+        "split": "split-0"
+      },
+      {
+        "SAMPLE_ID": "SAMPLE_392_229_19_A",
+        "stem": "S_229 19 A Score 99 - 5 Fokuspunkte - entfettet 2026-02-26 17.37.02",
+        "HIGH_BLAST": "yes",
+        "HIGH_BLAST_yes": 0.9997038245201112,
+        "split": "split-0"
+      },
+      {
+        "SAMPLE_ID": "SAMPLE_403_1148_19_A",
+        "stem": "S_1148 19 A Score 100 -10 Fokuspunkte - frisches Roticlear - 2026-03-06 21.49.07",
+        "HIGH_BLAST": "yes",
+        "HIGH_BLAST_yes": 0.9996989965438844,
+        "split": "split-1"
+      }
+    ],
+    "high_confidence_no": [
+      {
+        "SAMPLE_ID": "SAMPLE_309_665_19_C",
+        "stem": "S_665 19 C Score 95 - 10 Fokuspunkte - entfettet - 2026-03-03 23.38.50",
+        "HIGH_BLAST": "no",
+        "HIGH_BLAST_yes": 0.0003046975180041,
+        "split": "split-0"
+      },
+      {
+        "SAMPLE_ID": "SAMPLE_379_1373_19_A",
+        "stem": "1373 19 A Score 87 - 10 Fokuspunkte - 2026-03-08 13.07.36",
+        "HIGH_BLAST": "no",
+        "HIGH_BLAST_yes": 0.0003496973367873,
+        "split": "split-0"
+      },
+      {
+        "SAMPLE_ID": "SAMPLE_368_755_19_A",
+        "stem": "755 19 A Score 66 - 10 Fokuspunkte - entfettet - 2026-03-04 18.12.30",
+        "HIGH_BLAST": "no",
+        "HIGH_BLAST_yes": 0.0003672870516311,
+        "split": "split-0"
+      },
+      {
+        "SAMPLE_ID": "SAMPLE_368_755_19_A",
+        "stem": "755 19 A Score 72 - 5 Fokuspunkte - entfettet - 2026-03-04 16.41.16",
+        "HIGH_BLAST": "no",
+        "HIGH_BLAST_yes": 0.0003672870516311,
+        "split": "split-0"
+      },
+      {
+        "SAMPLE_ID": "SAMPLE_368_632_19_B",
+        "stem": "632 19 B Score 88 - 10 Fokuspunkte - entfettet - 2026-03-03 23.09.06",
+        "HIGH_BLAST": "no",
+        "HIGH_BLAST_yes": 0.0004309052892494,
+        "split": "split-0"
+      },
+      {
+        "SAMPLE_ID": "SAMPLE_416_1333_19_B",
+        "stem": "1333 19 B Score 92 -10 Fokuspunkte - 2026-03-07 16.02.33",
+        "HIGH_BLAST": "no",
+        "HIGH_BLAST_yes": 0.0004325671470724,
+        "split": "split-0"
+      },
+      {
+        "SAMPLE_ID": "SAMPLE_381_1369_19_B",
+        "stem": "1369 19 B Score 84 -10 Fokuspunkte - 2026-03-07 17.51.29",
+        "HIGH_BLAST": "no",
+        "HIGH_BLAST_yes": 0.0004998348886147,
+        "split": "split-0"
+      },
+      {
+        "SAMPLE_ID": "SAMPLE_366_822_19_C",
+        "stem": "S_822 19 C Score 91 - 10 Fokuspunkte - entfettet - 2026-03-04 19.48.30",
+        "HIGH_BLAST": "no",
+        "HIGH_BLAST_yes": 0.0005311429849825,
+        "split": "split-0"
+      },
+      {
+        "SAMPLE_ID": "SAMPLE_368_632_19_C",
+        "stem": "S_632 19 C Score 96 - 10 Fokuspunkte - entfettet - 2026-03-03 23.12.24",
+        "HIGH_BLAST": "no",
+        "HIGH_BLAST_yes": 0.0005566146573983,
+        "split": "split-0"
+      },
+      {
+        "SAMPLE_ID": "SAMPLE_342_378_19_B",
+        "stem": "378 19 B Score 89 - 5 Fokuspunkte - entfettet - 2026-03-03 18.58.59",
+        "HIGH_BLAST": "no",
+        "HIGH_BLAST_yes": 0.0006602881476283,
+        "split": "split-0"
+      }
+    ],
+    "near_boundary": [
+      {
+        "SAMPLE_ID": "SAMPLE_395_1043_19_C",
+        "stem": "1043 19 C Score 81 - 10 Fokuspunkte- 2026-03-05 22.06.38",
+        "HIGH_BLAST": "no",
+        "HIGH_BLAST_yes": 0.5035369992256165,
+        "split": "split-2"
+      },
+      {
+        "SAMPLE_ID": "SAMPLE_396_1146_19_B",
+        "stem": "S_1146 19 B Score 100 -10 Fokuspunkte - frisches Roticlear - 2026-03-06 21.40.37",
+        "HIGH_BLAST": "no",
+        "HIGH_BLAST_yes": 0.4932635426521301,
+        "split": "split-3"
+      },
+      {
+        "SAMPLE_ID": "SAMPLE_343_119_19_B",
+        "stem": "S_119-19 B Score 95 - 10 Fokuspunkte - nicht entfettet",
+        "HIGH_BLAST": "no",
+        "HIGH_BLAST_yes": 0.5110856890678406,
+        "split": "split-3"
+      },
+      {
+        "SAMPLE_ID": "SAMPLE_416_621_19_C",
+        "stem": "S_621 19 C Score 100 - 10 Fokuspunkte - entfettet - 2026-03-03 22.52.24",
+        "HIGH_BLAST": "yes",
+        "HIGH_BLAST_yes": 0.52301424741745,
+        "split": "split-4"
+      },
+      {
+        "SAMPLE_ID": "SAMPLE_403_1215_19_C",
+        "stem": "1215 19 C Score 99 -10 Fokuspunkte - 2026-03-07 10.50.55",
+        "HIGH_BLAST": "no",
+        "HIGH_BLAST_yes": 0.5254700779914856,
+        "split": "split-3"
+      },
+      {
+        "SAMPLE_ID": "SAMPLE_415_287_19_B",
+        "stem": "S_287 19 B Score 99 - 5 Fokuspunkte - entfettet - 2026-03-03 17.46.12",
+        "HIGH_BLAST": "no",
+        "HIGH_BLAST_yes": 0.5263472199440002,
+        "split": "split-3"
+      },
+      {
+        "SAMPLE_ID": "SAMPLE_416_806_19_C",
+        "stem": "806 19 C Score 22 - 5 Fokuspunkte - entfettet - 2026-03-04 17.04.27",
+        "HIGH_BLAST": "no",
+        "HIGH_BLAST_yes": 0.4655458331108093,
+        "split": "split-1"
+      },
+      {
+        "SAMPLE_ID": "SAMPLE_416_806_19_C",
+        "stem": "806 19 C Score 90 - 10 Fokuspunkte - entfettet - 2026-03-04 18.39.52",
+        "HIGH_BLAST": "no",
+        "HIGH_BLAST_yes": 0.4655458331108093,
+        "split": "split-1"
+      },
+      {
+        "SAMPLE_ID": "SAMPLE_414_1414_19_C",
+        "stem": "1414 19 C Score 70 - 10 Fokuspunkte - 2026-03-08 14.21.07",
+        "HIGH_BLAST": "no",
+        "HIGH_BLAST_yes": 0.5357879400253296,
+        "split": "split-0"
+      },
+      {
+        "SAMPLE_ID": "SAMPLE_381_1141_19_B",
+        "stem": "1141 19 B Score 0 -10 Fokuspunkte - frisches Roticlear - 2026-03-06 21.30.07",
+        "HIGH_BLAST": "no",
+        "HIGH_BLAST_yes": 0.4633403420448303,
+        "split": "split-4"
+      }
+    ]
+  },
+  "confident_mistakes_response": [
+    {
+      "SAMPLE_ID": "SAMPLE_265_417_19_C",
+      "stem": "S_417 19 C Score 96 - 5 Fokuspunkte - entfettet - 2026-03-03 19.28.34",
+      "RESPONSE_CR": "no",
+      "pred": "yes",
+      "RESPONSE_CR_yes": 0.995688021183014,
+      "confidence": 0.991376042366028
+    },
+    {
+      "SAMPLE_ID": "SAMPLE_265_417_19_B",
+      "stem": "417 19 B Score 72 - 5 Fokuspunkte - entfettet - 2026-03-03 19.22.29",
+      "RESPONSE_CR": "no",
+      "pred": "yes",
+      "RESPONSE_CR_yes": 0.9935179948806764,
+      "confidence": 0.9870359897613528
+    },
+    {
+      "SAMPLE_ID": "SAMPLE_390_280_19_C",
+      "stem": "280 19 C Score 98 - 5 Fokuspunkte - entfettet - 2026-03-03 17.37.40",
+      "RESPONSE_CR": "yes",
+      "pred": "no",
+      "RESPONSE_CR_yes": 0.0089951241388916,
+      "confidence": 0.9820097517222168
+    },
+    {
+      "SAMPLE_ID": "SAMPLE_396_1146_19_A",
+      "stem": "1146 19 A Score 96 -10 Fokuspunkte - frisches Roticlear - 2026-03-06 21.37.17",
+      "RESPONSE_CR": "yes",
+      "pred": "no",
+      "RESPONSE_CR_yes": 0.0124083962291479,
+      "confidence": 0.9751832075417042
+    },
+    {
+      "SAMPLE_ID": "SAMPLE_402_1085_19_A",
+      "stem": "1085 19 A Score 3 -10 Fokuspunkte - 2026-03-06 19.34.19",
+      "RESPONSE_CR": "no",
+      "pred": "yes",
+      "RESPONSE_CR_yes": 0.9851974844932556,
+      "confidence": 0.9703949689865112
+    },
+    {
+      "SAMPLE_ID": "SAMPLE_396_1146_19_B",
+      "stem": "S_1146 19 B Score 100 -10 Fokuspunkte - frisches Roticlear - 2026-03-06 21.40.37",
+      "RESPONSE_CR": "yes",
+      "pred": "no",
+      "RESPONSE_CR_yes": 0.0259222313761711,
+      "confidence": 0.9481555372476578
+    },
+    {
+      "SAMPLE_ID": "SAMPLE_265_417_19_A",
+      "stem": "417 19 A Score 75 - 5 Fokuspunkte - entfettet - 2026-03-03 19.17.28",
+      "RESPONSE_CR": "no",
+      "pred": "yes",
+      "RESPONSE_CR_yes": 0.971126914024353,
+      "confidence": 0.942253828048706
+    },
+    {
+      "SAMPLE_ID": "SAMPLE_395_629_19_A",
+      "stem": "629 19 AScore 63 - 10 Fokuspunkte - entfettet - 2026-03-03 22.57.04",
+      "RESPONSE_CR": "yes",
+      "pred": "no",
+      "RESPONSE_CR_yes": 0.0594895780086517,
+      "confidence": 0.8810208439826966
+    },
+    {
+      "SAMPLE_ID": "SAMPLE_344_253_19_B",
+      "stem": "253 19 B Score 97 - 5 Fokuspunkte - entfettet 2026-02-26 18.07.35",
+      "RESPONSE_CR": "no",
+      "pred": "yes",
+      "RESPONSE_CR_yes": 0.937025249004364,
+      "confidence": 0.874050498008728
+    },
+    {
+      "SAMPLE_ID": "SAMPLE_385_829_19_C",
+      "stem": "S_829 19 C Score 99 - 10 Fokuspunkte - entfettet - 2026-03-04 19.58.59",
+      "RESPONSE_CR": "no",
+      "pred": "yes",
+      "RESPONSE_CR_yes": 0.9368433952331544,
+      "confidence": 0.8736867904663088
+    },
+    {
+      "SAMPLE_ID": "SAMPLE_381_1410_19_B",
+      "stem": "S_1410 19 B Score 99- 2026-03-08 13.53.54",
+      "RESPONSE_CR": "no",
+      "pred": "yes",
+      "RESPONSE_CR_yes": 0.9367139935493468,
+      "confidence": 0.8734279870986936
+    },
+    {
+      "SAMPLE_ID": "SAMPLE_401_1154_19_A",
+      "stem": "S_1154 19 A Score 98 -10 Fokuspunkte - frisches Roticlear - 2026-03-06 22.14.18",
+      "RESPONSE_CR": "yes",
+      "pred": "no",
+      "RESPONSE_CR_yes": 0.0659840703010559,
+      "confidence": 0.8680318593978882
+    },
+    {
+      "SAMPLE_ID": "SAMPLE_403_1258_19_D",
+      "stem": "1258 19 D Score 78 -10 Fokuspunkte - 2026-03-07 12.06.07",
+      "RESPONSE_CR": "yes",
+      "pred": "no",
+      "RESPONSE_CR_yes": 0.0670904219150543,
+      "confidence": 0.8658191561698914
+    },
+    {
+      "SAMPLE_ID": "SAMPLE_414_1414_19_A",
+      "stem": "1414 19 A Score 93 - 10 Fokuspunkte - 2026-03-08 14.11.54",
+      "RESPONSE_CR": "yes",
+      "pred": "no",
+      "RESPONSE_CR_yes": 0.0789457485079765,
+      "confidence": 0.8421085029840469
+    },
+    {
+      "SAMPLE_ID": "SAMPLE_394_901_19_B",
+      "stem": "901 19 B Score 67 - 5 Fokuspunkte - entfettet - 2026-03-04 21.03.45",
+      "RESPONSE_CR": "no",
+      "pred": "yes",
+      "RESPONSE_CR_yes": 0.9145663380622864,
+      "confidence": 0.8291326761245728
+    }
+  ]
+}

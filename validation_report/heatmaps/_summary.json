@@ -1,0 +1,452 @@
+[
+  {
+    "stem": "333 19 A Score 29 - 5 Fokuspunkte - entfettet - 2026-03-03 18.42.23",
+    "sample_id": "SAMPLE_379_333_19_A",
+    "clini": {
+      "BLAST_PERCENT": 2.0,
+      "RESPONSE_CR": "yes",
+      "BLAST_SEVERITY": "low",
+      "HIGH_BLAST": "no"
+    },
+    "experiments": {
+      "response": {
+        "split": 0,
+        "label": "RESPONSE_CR",
+        "task": "classification",
+        "gt": "yes",
+        "pred": {
+          "SAMPLE_ID": "SAMPLE_379_333_19_A",
+          "RESPONSE_CR": "yes",
+          "pred": "yes",
+          "RESPONSE_CR_yes": 0.9445675611495972,
+          "RESPONSE_CR_no": 0.0554324425756931,
+          "loss": 0.3443065285682678
+        },
+        "has_overview": true,
+        "has_classmap": true
+      },
+      "blast_percent": {
+        "split": 2,
+        "label": "BLAST_PERCENT",
+        "task": "regression",
+        "gt": 2.0,
+        "pred": {
+          "SAMPLE_ID": "SAMPLE_379_333_19_A",
+          "BLAST_PERCENT": 2.0,
+          "pred": 3.573137760162353,
+          "loss": 1.5731377601623535
+        },
+        "has_overview": true,
+        "has_classmap": true
+      },
+      "blast_severity": {
+        "split": 0,
+        "label": "BLAST_SEVERITY",
+        "task": "classification",
+        "gt": "low",
+        "pred": {
+          "SAMPLE_ID": "SAMPLE_379_333_19_A",
+          "BLAST_SEVERITY": "low",
+          "pred": "low",
+          "BLAST_SEVERITY_high": 0.1706351041793823,
+          "BLAST_SEVERITY_intermediate": 0.0176300834864377,
+          "BLAST_SEVERITY_low": 0.8117347955703735,
+          "loss": 0.682439386844635
+        },
+        "has_overview": true,
+        "has_classmap": true
+      },
+      "high_blast": {
+        "split": 3,
+        "label": "HIGH_BLAST",
+        "task": "classification",
+        "gt": "no",
+        "pred": {
+          "SAMPLE_ID": "SAMPLE_379_333_19_A",
+          "HIGH_BLAST": "no",
+          "pred": "no",
+          "HIGH_BLAST_yes": 0.1655154824256897,
+          "HIGH_BLAST_no": 0.8344845175743103,
+          "loss": 0.413589596748352
+        },
+        "has_overview": true,
+        "has_classmap": true
+      }
+    }
+  },
+  {
+    "stem": "931 19 A Score 30 - 5 Fokuspunkte - entfettet - 2026-03-04 21.23.41",
+    "sample_id": "SAMPLE_379_931_19_A",
+    "clini": {
+      "BLAST_PERCENT": 4.0,
+      "RESPONSE_CR": "yes",
+      "BLAST_SEVERITY": "low",
+      "HIGH_BLAST": "no"
+    },
+    "experiments": {
+      "response": {
+        "split": 2,
+        "label": "RESPONSE_CR",
+        "task": "classification",
+        "gt": "yes",
+        "pred": {
+          "SAMPLE_ID": "SAMPLE_379_931_19_A",
+          "RESPONSE_CR": "yes",
+          "pred": "yes",
+          "RESPONSE_CR_yes": 0.9837501645088196,
+          "RESPONSE_CR_no": 0.0162498205900192,
+          "loss": 0.3221065700054168
+        },
+        "has_overview": true,
+        "has_classmap": true
+      },
+      "blast_percent": {
+        "split": 3,
+        "label": "BLAST_PERCENT",
+        "task": "regression",
+        "gt": 4.0,
+        "pred": {
+          "SAMPLE_ID": "SAMPLE_379_931_19_A",
+          "BLAST_PERCENT": 4.0,
+          "pred": 3.990363359451294,
+          "loss": 0.009636640548706
+        },
+        "has_overview": true,
+        "has_classmap": true
+      },
+      "blast_severity": {
+        "split": 4,
+        "label": "BLAST_SEVERITY",
+        "task": "classification",
+        "gt": "low",
+        "pred": {
+          "SAMPLE_ID": "SAMPLE_379_931_19_A",
+          "BLAST_SEVERITY": "low",
+          "pred": "low",
+          "BLAST_SEVERITY_high": 0.0113148409873247,
+          "BLAST_SEVERITY_intermediate": 0.1103554964065551,
+          "BLAST_SEVERITY_low": 0.8783296942710876,
+          "loss": 0.6334800124168396
+        },
+        "has_overview": true,
+        "has_classmap": true
+      },
+      "high_blast": {
+        "split": 2,
+        "label": "HIGH_BLAST",
+        "task": "classification",
+        "gt": "no",
+        "pred": {
+          "SAMPLE_ID": "SAMPLE_379_931_19_A",
+          "HIGH_BLAST": "no",
+          "pred": "no",
+          "HIGH_BLAST_yes": 0.0840164348483085,
+          "HIGH_BLAST_no": 0.9159836173057556,
+          "loss": 0.3612988889217376
+        },
+        "has_overview": true,
+        "has_classmap": true
+      }
+    }
+  },
+  {
+    "stem": "189-19 B Score 31 - 10 Fokuspunkte - nicht entfettet",
+    "sample_id": "SAMPLE_391_189_19_B",
+    "clini": {
+      "BLAST_PERCENT": 0.0,
+      "RESPONSE_CR": "yes",
+      "BLAST_SEVERITY": "low",
+      "HIGH_BLAST": "no"
+    },
+    "experiments": {
+      "response": {
+        "split": 2,
+        "label": "RESPONSE_CR",
+        "task": "classification",
+        "gt": "yes",
+        "pred": {
+          "SAMPLE_ID": "SAMPLE_391_189_19_B",
+          "RESPONSE_CR": "yes",
+          "pred": "yes",
+          "RESPONSE_CR_yes": 0.9585897922515868,
+          "RESPONSE_CR_no": 0.0414102263748645,
+          "loss": 0.3362183570861816
+        },
+        "has_overview": true,
+        "has_classmap": true
+      },
+      "blast_percent": {
+        "split": 3,
+        "label": "BLAST_PERCENT",
+        "task": "regression",
+        "gt": 0.0,
+        "pred": {
+          "SAMPLE_ID": "SAMPLE_391_189_19_B",
+          "BLAST_PERCENT": 0.0,
+          "pred": -0.6483745574951172,
+          "loss": 0.6483745574951172
+        },
+        "has_overview": true,
+        "has_classmap": true
+      },
+      "blast_severity": {
+        "split": 2,
+        "label": "BLAST_SEVERITY",
+        "task": "classification",
+        "gt": "low",
+        "pred": {
+          "SAMPLE_ID": "SAMPLE_391_189_19_B",
+          "BLAST_SEVERITY": "low",
+          "pred": "low",
+          "BLAST_SEVERITY_high": 0.1383198946714401,
+          "BLAST_SEVERITY_intermediate": 0.0086360005661845,
+          "BLAST_SEVERITY_low": 0.8530440926551819,
+          "loss": 0.6518765091896057
+        },
+        "has_overview": true,
+        "has_classmap": true
+      },
+      "high_blast": {
+        "split": 3,
+        "label": "HIGH_BLAST",
+        "task": "classification",
+        "gt": "no",
+        "pred": {
+          "SAMPLE_ID": "SAMPLE_391_189_19_B",
+          "HIGH_BLAST": "no",
+          "pred": "no",
+          "HIGH_BLAST_yes": 0.4285307824611664,
+          "HIGH_BLAST_no": 0.5714691877365112,
+          "loss": 0.6242297291755676
+        },
+        "has_overview": true,
+        "has_classmap": true
+      }
+    }
+  },
+  {
+    "stem": "189-19 C Score 82 - 10 Fokuspunkte - nicht entfettet",
+    "sample_id": "SAMPLE_391_189_19_C",
+    "clini": {
+      "BLAST_PERCENT": 0.0,
+      "RESPONSE_CR": "yes",
+      "BLAST_SEVERITY": "low",
+      "HIGH_BLAST": "no"
+    },
+    "experiments": {
+      "response": {
+        "split": 3,
+        "label": "RESPONSE_CR",
+        "task": "classification",
+        "gt": "yes",
+        "pred": {
+          "SAMPLE_ID": "SAMPLE_391_189_19_C",
+          "RESPONSE_CR": "yes",
+          "pred": "yes",
+          "RESPONSE_CR_yes": 0.849699854850769,
+          "RESPONSE_CR_no": 0.1503001600503921,
+          "loss": 0.4033852815628052
+        },
+        "has_overview": true,
+        "has_classmap": true
+      },
+      "blast_percent": {
+        "split": 1,
+        "label": "BLAST_PERCENT",
+        "task": "regression",
+        "gt": 0.0,
+        "pred": {
+          "SAMPLE_ID": "SAMPLE_391_189_19_C",
+          "BLAST_PERCENT": 0.0,
+          "pred": 2.106354236602783,
+          "loss": 2.106354236602783
+        },
+        "has_overview": true,
+        "has_classmap": true
+      },
+      "blast_severity": {
+        "split": 3,
+        "label": "BLAST_SEVERITY",
+        "task": "classification",
+        "gt": "low",
+        "pred": {
+          "SAMPLE_ID": "SAMPLE_391_189_19_C",
+          "BLAST_SEVERITY": "low",
+          "pred": "high",
+          "BLAST_SEVERITY_high": 0.5741812586784363,
+          "BLAST_SEVERITY_intermediate": 0.0179693643003702,
+          "BLAST_SEVERITY_low": 0.4078493416309356,
+          "loss": 1.0501582622528076
+        },
+        "has_overview": true,
+        "has_classmap": true
+      },
+      "high_blast": {
+        "split": 3,
+        "label": "HIGH_BLAST",
+        "task": "classification",
+        "gt": "no",
+        "pred": {
+          "SAMPLE_ID": "SAMPLE_391_189_19_C",
+          "HIGH_BLAST": "no",
+          "pred": "no",
+          "HIGH_BLAST_yes": 0.4426899552345276,
+          "HIGH_BLAST_no": 0.5573099851608276,
+          "loss": 0.6374784708023071
+        },
+        "has_overview": true,
+        "has_classmap": true
+      }
+    }
+  },
+  {
+    "stem": "258 19 B Score 100- 5 Fokuspunkte - entfettet  - 2026-03-03 17.14.15",
+    "sample_id": "SAMPLE_415_258_19_B",
+    "clini": {
+      "BLAST_PERCENT": 0.0,
+      "RESPONSE_CR": "yes",
+      "BLAST_SEVERITY": "low",
+      "HIGH_BLAST": "no"
+    },
+    "experiments": {
+      "response": {
+        "split": 4,
+        "label": "RESPONSE_CR",
+        "task": "classification",
+        "gt": "yes",
+        "pred": {
+          "SAMPLE_ID": "SAMPLE_415_258_19_B",
+          "RESPONSE_CR": "yes",
+          "pred": "yes",
+          "RESPONSE_CR_yes": 0.7688641548156738,
+          "RESPONSE_CR_no": 0.2311358600854873,
+          "loss": 0.4599997103214264
+        },
+        "has_overview": true,
+        "has_classmap": true
+      },
+      "blast_percent": {
+        "split": 4,
+        "label": "BLAST_PERCENT",
+        "task": "regression",
+        "gt": 0.0,
+        "pred": {
+          "SAMPLE_ID": "SAMPLE_415_258_19_B",
+          "BLAST_PERCENT": 0.0,
+          "pred": -1.4143755435943604,
+          "loss": 1.4143755435943604
+        },
+        "has_overview": true,
+        "has_classmap": true
+      },
+      "blast_severity": {
+        "split": 1,
+        "label": "BLAST_SEVERITY",
+        "task": "classification",
+        "gt": "low",
+        "pred": {
+          "SAMPLE_ID": "SAMPLE_415_258_19_B",
+          "BLAST_SEVERITY": "low",
+          "pred": "low",
+          "BLAST_SEVERITY_high": 0.0934729948639869,
+          "BLAST_SEVERITY_intermediate": 0.0104279546067118,
+          "BLAST_SEVERITY_low": 0.8960990309715271,
+          "loss": 0.6208924651145935
+        },
+        "has_overview": true,
+        "has_classmap": true
+      },
+      "high_blast": {
+        "split": 4,
+        "label": "HIGH_BLAST",
+        "task": "classification",
+        "gt": "no",
+        "pred": {
+          "SAMPLE_ID": "SAMPLE_415_258_19_B",
+          "HIGH_BLAST": "no",
+          "pred": "no",
+          "HIGH_BLAST_yes": 0.100190632045269,
+          "HIGH_BLAST_no": 0.8998093605041504,
+          "loss": 0.3712188899517059
+        },
+        "has_overview": true,
+        "has_classmap": true
+      }
+    }
+  },
+  {
+    "stem": "S_895 19 B Score 97 - 10 Fokuspunkte - entfettet - 2026-03-04 20.46.51",
+    "sample_id": "SAMPLE_397_895_19_B",
+    "clini": {
+      "BLAST_PERCENT": 75.0,
+      "RESPONSE_CR": "no",
+      "BLAST_SEVERITY": "high",
+      "HIGH_BLAST": "yes"
+    },
+    "experiments": {
+      "response": {
+        "split": 2,
+        "label": "RESPONSE_CR",
+        "task": "classification",
+        "gt": "no",
+        "pred": {
+          "SAMPLE_ID": "SAMPLE_397_895_19_B",
+          "RESPONSE_CR": "no",
+          "pred": "no",
+          "RESPONSE_CR_yes": 0.2620502710342407,
+          "RESPONSE_CR_no": 0.7379497289657593,
+          "loss": 0.4832442998886108
+        },
+        "has_overview": true,
+        "has_classmap": true
+      },
+      "blast_percent": {
+        "split": 3,
+        "label": "BLAST_PERCENT",
+        "task": "regression",
+        "gt": 75.0,
+        "pred": {
+          "SAMPLE_ID": "SAMPLE_397_895_19_B",
+          "BLAST_PERCENT": 75.0,
+          "pred": 0.9282602071762084,
+          "loss": 74.07173919677734
+        },
+        "has_overview": true,
+        "has_classmap": true
+      },
+      "blast_severity": {
+        "split": 2,
+        "label": "BLAST_SEVERITY",
+        "task": "classification",
+        "gt": "high",
+        "pred": {
+          "SAMPLE_ID": "SAMPLE_397_895_19_B",
+          "BLAST_SEVERITY": "high",
+          "pred": "low",
+          "BLAST_SEVERITY_high": 0.4306860566139221,
+          "BLAST_SEVERITY_intermediate": 0.0576068945229053,
+          "BLAST_SEVERITY_low": 0.5117071270942688,
+          "loss": 1.0199313163757324
+        },
+        "has_overview": true,
+        "has_classmap": true
+      },
+      "high_blast": {
+        "split": 2,
+        "label": "HIGH_BLAST",
+        "task": "classification",
+        "gt": "yes",
+        "pred": {
+          "SAMPLE_ID": "SAMPLE_397_895_19_B",
+          "HIGH_BLAST": "yes",
+          "pred": "yes",
+          "HIGH_BLAST_yes": 0.6178797483444214,
+          "HIGH_BLAST_no": 0.3821202516555786,
+          "loss": 0.582199215888977
+        },
+        "has_overview": true,
+        "has_classmap": true
+      }
+    }
+  }
+]

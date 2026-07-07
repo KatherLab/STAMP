@@ -1,0 +1,25 @@
+{
+  "stem": "931 19 A Score 30 - 5 Fokuspunkte - entfettet - 2026-03-04 21.23.41",
+  "dims": [
+    82432,
+    32256
+  ],
+  "mpp_x": 0.22076029846792353,
+  "tile_size_um": 256.0,
+  "tile_slide_px": 1160,
+  "grid": [
+    71,
+    27
+  ],
+  "theoretical_tiles": 1917,
+  "kept_tiles": 762,
+  "retention_pct": 39.749608763693274,
+  "rejected_sampled": 300,
+  "rejection_reasons_sampled": {
+    "brightness": 0,
+    "canny": 262,
+    "unknown": 38
+  },
+  "inferred_fraction_brightness": 0.0,
+  "inferred_fraction_canny": 0.8733333333333333
+}
