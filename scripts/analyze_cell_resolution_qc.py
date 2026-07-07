@@ -99,9 +99,7 @@ def segment_cell_like_candidates(rgb: np.ndarray) -> CandidateSummary:
     stain_mask = ((gray < 210) & (saturation > 25)).astype(np.uint8) * 255
 
     blurred = cv2.GaussianBlur(gray, (5, 5), 0)
-    otsu = cv2.threshold(
-        blurred, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU
-    )[1]
+    otsu = cv2.threshold(blurred, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)[1]
     mask = cv2.bitwise_and(otsu, stain_mask)
     mask = cv2.bitwise_and(mask, tissue_mask)
 
@@ -205,12 +203,8 @@ def summarize_tiles(
         bottom_candidate_density = mean(
             [float(row["candidate_count"]) for row in bottom_rows]
         )
-        all_candidate_density = mean(
-            [float(row["candidate_count"]) for row in rows]
-        )
-        zoom_laplacian_mean = mean(
-            [float(row["zoom_laplacian_var"]) for row in rows]
-        )
+        all_candidate_density = mean([float(row["candidate_count"]) for row in rows])
+        zoom_laplacian_mean = mean([float(row["zoom_laplacian_var"]) for row in rows])
         zoom_background_mean = mean(
             [float(row["zoom_background_fraction"]) for row in rows]
         )
@@ -570,9 +564,7 @@ th { background: #f5f7fa; text-align: left; }
         sample_id = row["sample_id"]
         contact = Path(row["overlay_contact_sheet"])
         parts.append("<section class='slide'>")
-        parts.append(
-            f"<h3>{html.escape(row['group'])}: {html.escape(sample_id)}</h3>"
-        )
+        parts.append(f"<h3>{html.escape(row['group'])}: {html.escape(sample_id)}</h3>")
         parts.append(
             "<p class='small'>"
             f"Candidate mean: {format_number(row['all_candidate_count_mean'])}; "

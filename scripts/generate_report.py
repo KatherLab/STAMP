@@ -13,16 +13,13 @@ Usage:
 """
 
 import base64
-import csv
 from datetime import datetime
 from pathlib import Path
 
 import pandas as pd
 
 # === Configuration ===
-BASE_DIR = Path(
-    "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_response_uni2"
-)
+BASE_DIR = Path("/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_response_uni2")
 STATS_DIR = BASE_DIR / "statistics"
 HEATMAP_DIR = BASE_DIR / "heatmaps"
 CROSSVAL_DIR = BASE_DIR / "crossval"
@@ -66,10 +63,7 @@ def load_stats():
 def collect_heatmap_slides():
     """Collect all heatmap slide info with predictions and ground truth."""
     slide_df = pd.read_csv(SLIDE_TABLE)
-    clini_df = pd.read_csv(CLINI_TABLE)
-
     fname_to_sample = dict(zip(slide_df["FILENAME"], slide_df["SAMPLE_ID"]))
-    sample_response = dict(zip(clini_df["SAMPLE_ID"], clini_df["RESPONSE_CR"]))
 
     # Load all predictions
     all_preds = {}
@@ -104,12 +98,28 @@ def collect_heatmap_slides():
 
             # Collect top/bottom tiles
             tiles_dir = slide_dir / "tiles"
-            top_tiles = sorted(
-                [t for ext in ("*.png", "*.jpg", "*.jpeg") for t in tiles_dir.glob(f"top_*{ext}")]
-            )[:4] if tiles_dir.exists() else []
-            bottom_tiles = sorted(
-                [t for ext in ("*.png", "*.jpg", "*.jpeg") for t in tiles_dir.glob(f"bottom_*{ext}")]
-            )[:4] if tiles_dir.exists() else []
+            top_tiles = (
+                sorted(
+                    [
+                        t
+                        for ext in ("*.png", "*.jpg", "*.jpeg")
+                        for t in tiles_dir.glob(f"top_*{ext}")
+                    ]
+                )[:4]
+                if tiles_dir.exists()
+                else []
+            )
+            bottom_tiles = (
+                sorted(
+                    [
+                        t
+                        for ext in ("*.png", "*.jpg", "*.jpeg")
+                        for t in tiles_dir.glob(f"bottom_*{ext}")
+                    ]
+                )[:4]
+                if tiles_dir.exists()
+                else []
+            )
 
             slides.append(
                 {
@@ -137,9 +147,6 @@ def generate_html():
     # Group slides by ground truth
     yes_slides = [s for s in slides if s["gt"] == "yes"]
     no_slides = [s for s in slides if s["gt"] == "no"]
-
-    # Aggregate AUROC for summary
-    agg_yes = aggregated[aggregated.iloc[:, 0] == "yes"].iloc[0] if len(aggregated) > 0 else None
 
     # Extract mean AUROC from aggregated CSV
     # The columns are: class, mean, 95%_low, 95%_high (for roc_auc_score)
@@ -198,7 +205,7 @@ def generate_html():
 <body>
 
 <h1>AML Response Prediction — Crossvalidation Report</h1>
-<p style="color: #666; margin-bottom: 20px;">Generated {datetime.now().strftime('%Y-%m-%d %H:%M')} &mdash; STAMP Framework</p>
+<p style="color: #666; margin-bottom: 20px;">Generated {datetime.now().strftime("%Y-%m-%d %H:%M")} &mdash; STAMP Framework</p>
 
 <div class="section">
 <h2>1. Experiment Summary</h2>
@@ -255,8 +262,8 @@ below 5% (complete remission), while "no" indicates &ge;5% blasts.
 
 <div class="note">
 <strong>Note:</strong> Heatmaps are available for {len(slides)} out of 529 slides (covering
-{len(set(s['sample_id'] for s in slides))} samples from
-{len(set(s['sample_id'].rsplit('_', 3)[0] + '_' + s['sample_id'].rsplit('_', 3)[1] for s in slides))} biological patients).
+{len(set(s["sample_id"] for s in slides))} samples from
+{len(set(s["sample_id"].rsplit("_", 3)[0] + "_" + s["sample_id"].rsplit("_", 3)[1] for s in slides))} biological patients).
 Only slides with available WSI (.ndpi) files could be visualized. Each heatmap uses the model
 from the crossval split where that slide was in the <em>test set</em>, ensuring no data leakage.
 <br><br>
@@ -340,7 +347,9 @@ def _make_stats_table(individual: pd.DataFrame) -> str:
 
         badge = "badge-yes" if cls == "yes" else "badge-no"
         html += f'<tr><td>{fold}</td><td><span class="badge {badge}">{cls}</span></td>'
-        html += f"<td>{count}</td><td>{auroc:.4f}</td><td>{ap:.4f}</td><td>{f1:.4f}</td>"
+        html += (
+            f"<td>{count}</td><td>{auroc:.4f}</td><td>{ap:.4f}</td><td>{f1:.4f}</td>"
+        )
         html += f"<td>{pval:.2e}</td></tr>\n"
 
     html += "</table>\n"
@@ -365,17 +374,17 @@ def _make_slide_card(slide: dict) -> str:
     html = f"""
 <div class="slide-card">
   <div class="slide-header">
-    <h3 style="font-size: 1em; margin: 0;">{slide['sample_id']}</h3>
+    <h3 style="font-size: 1em; margin: 0;">{slide["sample_id"]}</h3>
     <div class="slide-meta">
       {gt_badge}
-      <span class="badge">Pred: {slide['pred']}</span>
-      <span class="badge">P(yes)={slide['prob_yes']:.4f}</span>
-      <span class="badge">Split {slide['split']}</span>
+      <span class="badge">Pred: {slide["pred"]}</span>
+      <span class="badge">P(yes)={slide["prob_yes"]:.4f}</span>
+      <span class="badge">Split {slide["split"]}</span>
       {correct_badge}
     </div>
   </div>
-  <p style="font-size: 0.8em; color: #999; margin-bottom: 8px;">{slide['stem']}</p>
-  <img class="overview-img" src="{overview_uri}" alt="Heatmap overview for {slide['sample_id']}">
+  <p style="font-size: 0.8em; color: #999; margin-bottom: 8px;">{slide["stem"]}</p>
+  <img class="overview-img" src="{overview_uri}" alt="Heatmap overview for {slide["sample_id"]}">
 """
 
     if slide["top_tiles"]:

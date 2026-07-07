@@ -8,6 +8,7 @@ For each target slide:
   - "kept_grid.jpg"     : grid of example tiles that were kept
   - "stats.json"        : tile counts + retention rate + per-reason counts
 """
+
 import json
 import zipfile
 from pathlib import Path
@@ -15,7 +16,7 @@ from pathlib import Path
 import cv2
 import numpy as np
 import openslide
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw
 
 WSI_DIR = Path("/mnt/nvme0n1p1/Jeff_projects/B01/data/AG Janssen")
 CACHE_DIR = Path("/mnt/nvme0n1p1/Jeff_projects/B01/cache")
@@ -48,7 +49,7 @@ def load_kept_coords(zip_path: Path) -> set[tuple[int, int]]:
         for name in zf.namelist():
             if not name.startswith("tile_("):
                 continue
-            body = name[len("tile_("):].rsplit(")", 1)[0]
+            body = name[len("tile_(") :].rsplit(")", 1)[0]
             xs, ys = body.split(",")
             coords.add((round(float(xs.strip())), round(float(ys.strip()))))
     return coords
@@ -67,7 +68,13 @@ def classify_reject(tile_img: Image.Image) -> str:
     return "kept"
 
 
-def grid_image(tiles: list[Image.Image], cols: int = 4, size_px: int = 160, gap: int = 4, bg=(255, 255, 255)) -> Image.Image:
+def grid_image(
+    tiles: list[Image.Image],
+    cols: int = 4,
+    size_px: int = 160,
+    gap: int = 4,
+    bg=(255, 255, 255),
+) -> Image.Image:
     if not tiles:
         return Image.new("RGB", (size_px, size_px), bg)
     rows = (len(tiles) + cols - 1) // cols
@@ -114,7 +121,7 @@ def process_slide(stem: str) -> dict:
     overlay = Image.new("RGBA", thumb.size, (0, 0, 0, 0))
     dr = ImageDraw.Draw(overlay)
     kept_grid_mask = np.zeros((n_tiles_y, n_tiles_x), dtype=bool)
-    for (x_um, y_um) in kept_coords:
+    for x_um, y_um in kept_coords:
         # Tile (xi, yi) on the grid. The tiler uses supertile-aligned coords,
         # but individual tile coord = xi*TILE_SIZE_UM
         xi = int(round(x_um / TILE_SIZE_UM))
@@ -130,14 +137,16 @@ def process_slide(stem: str) -> dict:
             x1 = min(x0 + tile_thumb_px, thumb.size[0])
             y1 = min(y0 + tile_thumb_px, thumb.size[1])
             if kept_grid_mask[yi, xi]:
-                dr.rectangle([x0, y0, x1 - 1, y1 - 1], outline=(0, 200, 0, 200), width=1)
+                dr.rectangle(
+                    [x0, y0, x1 - 1, y1 - 1], outline=(0, 200, 0, 200), width=1
+                )
             else:
                 dr.rectangle([x0, y0, x1 - 1, y1 - 1], fill=(200, 0, 0, 90))
 
     after = Image.alpha_composite(after.convert("RGBA"), overlay).convert("RGB")
     ImageDraw.Draw(after).text(
         (10, 10),
-        f"kept={n_kept}/{theoretical} ({100*n_kept/max(theoretical,1):.1f}%)  |  rejected in red, kept outlined green",
+        f"kept={n_kept}/{theoretical} ({100 * n_kept / max(theoretical, 1):.1f}%)  |  rejected in red, kept outlined green",
         fill=(255, 255, 255),
     )
     after.save(OUT_DIR / f"{stem}__after.jpg", quality=85)
@@ -159,7 +168,11 @@ def process_slide(stem: str) -> dict:
     kept_examples = []
     rng = np.random.default_rng(0)
     if kept_sample_zip_names:
-        sampled = rng.choice(kept_sample_zip_names, size=min(12, len(kept_sample_zip_names)), replace=False)
+        sampled = rng.choice(
+            kept_sample_zip_names,
+            size=min(12, len(kept_sample_zip_names)),
+            replace=False,
+        )
         with zipfile.ZipFile(cache_zip) as zf:
             for name in sampled:
                 with zf.open(name) as fp:
@@ -169,7 +182,11 @@ def process_slide(stem: str) -> dict:
     rejected_examples = []
     reasons = {"brightness": 0, "canny": 0, "unknown": 0}
     if rejected_positions:
-        sampled_rej = rng.choice(len(rejected_positions), size=min(32, len(rejected_positions)), replace=False)
+        sampled_rej = rng.choice(
+            len(rejected_positions),
+            size=min(32, len(rejected_positions)),
+            replace=False,
+        )
         for idx in sampled_rej:
             xi, yi = rejected_positions[idx]
             x_slide = xi * tile_px_slide
@@ -201,7 +218,9 @@ def process_slide(stem: str) -> dict:
         for idx in idx_sample:
             xi, yi = rejected_positions[idx]
             region = slide.read_region(
-                (xi * tile_px_slide, yi * tile_px_slide), 0, (tile_px_slide, tile_px_slide)
+                (xi * tile_px_slide, yi * tile_px_slide),
+                0,
+                (tile_px_slide, tile_px_slide),
             ).convert("RGB")
             small = region.resize((TILE_SIZE_PX, TILE_SIZE_PX), Image.LANCZOS)
             r = classify_reject(small)
@@ -213,8 +232,12 @@ def process_slide(stem: str) -> dict:
     slide.close()
 
     # Save grids
-    grid_image(kept_examples, cols=4, size_px=160).save(OUT_DIR / f"{stem}__kept_grid.jpg", quality=88)
-    grid_image(rejected_examples, cols=4, size_px=160).save(OUT_DIR / f"{stem}__rejected_grid.jpg", quality=88)
+    grid_image(kept_examples, cols=4, size_px=160).save(
+        OUT_DIR / f"{stem}__kept_grid.jpg", quality=88
+    )
+    grid_image(rejected_examples, cols=4, size_px=160).save(
+        OUT_DIR / f"{stem}__rejected_grid.jpg", quality=88
+    )
 
     stats = {
         "stem": stem,

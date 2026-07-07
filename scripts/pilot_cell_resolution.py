@@ -22,7 +22,9 @@ from PIL import Image, ImageDraw, ImageFont
 
 
 ROOT = Path(__file__).resolve().parents[1]
-CANDIDATES_PATH = ROOT / "validation_report" / "annotation_candidates" / "candidates.json"
+CANDIDATES_PATH = (
+    ROOT / "validation_report" / "annotation_candidates" / "candidates.json"
+)
 CLINI_PATH = ROOT / "tables" / "stamp_clini.csv"
 DEFAULT_OUT = ROOT / "validation_report" / "pilot_cell_res"
 
@@ -194,8 +196,7 @@ def build_slide_specs(
         for sample_id in group_cfg["sample_ids"]:
             if sample_id not in rows_by_sample:
                 raise KeyError(
-                    f"{sample_id} not found at "
-                    f"{'.'.join(group_cfg['candidate_path'])}"
+                    f"{sample_id} not found at {'.'.join(group_cfg['candidate_path'])}"
                 )
             if sample_id not in clinical:
                 raise KeyError(f"{sample_id} not found in {CLINI_PATH}")
@@ -261,9 +262,7 @@ def copy_and_zoom_tile(
             )
         left = (width - zoom_px) // 2
         top = (height - zoom_px) // 2
-        rgb.crop((left, top, left + zoom_px, top + zoom_px)).save(
-            zoom_path, quality=92
-        )
+        rgb.crop((left, top, left + zoom_px, top + zoom_px)).save(zoom_path, quality=92)
 
     return {
         "kind": source.kind,
@@ -275,7 +274,9 @@ def copy_and_zoom_tile(
     }
 
 
-def text_size(draw: ImageDraw.ImageDraw, text: str, font: ImageFont.ImageFont) -> tuple[int, int]:
+def text_size(
+    draw: ImageDraw.ImageDraw, text: str, font: ImageFont.ImageFont
+) -> tuple[int, int]:
     box = draw.textbbox((0, 0), text, font=font)
     return box[2] - box[0], box[3] - box[1]
 
@@ -383,12 +384,13 @@ def make_contact_sheet(
     if "abs_err" in slide.candidate:
         pred_bits.append(f"abs_err={float(slide.candidate['abs_err']):.2f}")
     if "HIGH_BLAST_yes" in slide.candidate:
-        pred_bits.append(f"HIGH_BLAST_yes={float(slide.candidate['HIGH_BLAST_yes']):.4f}")
+        pred_bits.append(
+            f"HIGH_BLAST_yes={float(slide.candidate['HIGH_BLAST_yes']):.4f}"
+        )
     metadata = (
         f"GT BLAST_PERCENT={slide.clinical.get('BLAST_PERCENT', '')}; "
         f"GT HIGH_BLAST={slide.clinical.get('HIGH_BLAST', '')}; "
-        f"experiment={slide.experiment}; split={slide.split}; "
-        + "; ".join(pred_bits)
+        f"experiment={slide.experiment}; split={slide.split}; " + "; ".join(pred_bits)
     )
     y = draw_wrapped(
         draw,
@@ -681,7 +683,9 @@ def build_outputs(
 
 
 def print_summary(slides: list[SlideSpec], *, dry_run: bool) -> None:
-    total_tiles = sum(len(slide.top_tiles) + len(slide.bottom_tiles) for slide in slides)
+    total_tiles = sum(
+        len(slide.top_tiles) + len(slide.bottom_tiles) for slide in slides
+    )
     mode = "DRY RUN" if dry_run else "WROTE"
     print(f"{mode}: {len(slides)} slides, {total_tiles} source tiles")
     for group in GROUP_ORDER:

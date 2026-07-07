@@ -158,16 +158,16 @@ def make_regression_section(exp):
     scatter_svg_path = stats_dir / "plots" / "fold_patient-preds_scatter.svg"
 
     html = f"""
-<div class="experiment-section" id="exp-{exp['name'].lower()}">
-<h2>{exp['display_name']}</h2>
+<div class="experiment-section" id="exp-{exp["name"].lower()}">
+<h2>{exp["display_name"]}</h2>
 
-<p>{exp['description']}</p>
+<p>{exp["description"]}</p>
 
 <div class="summary-box">
   <div class="summary-item"><div class="label">Task</div><div class="value">Regression</div></div>
-  <div class="summary-item"><div class="label">Target</div><div class="value">{exp['name']}</div></div>
-  <div class="summary-item"><div class="label">Distribution</div><div class="value">{exp['class_balance']}</div></div>
-  <div class="summary-item"><div class="label">Crossval</div><div class="value">{exp['crossval_type']}</div></div>
+  <div class="summary-item"><div class="label">Target</div><div class="value">{exp["name"]}</div></div>
+  <div class="summary-item"><div class="label">Distribution</div><div class="value">{exp["class_balance"]}</div></div>
+  <div class="summary-item"><div class="label">Crossval</div><div class="value">{exp["crossval_type"]}</div></div>
   <div class="summary-item"><div class="label">Samples</div><div class="value">489</div></div>
   <div class="summary-item"><div class="label">Model</div><div class="value">ViT MIL (UNI2)</div></div>
 </div>
@@ -175,26 +175,26 @@ def make_regression_section(exp):
 <h3>Performance Metrics</h3>
 <div class="metrics-grid metrics-grid-3">
   <div class="metric-card">
-    <div class="metric-value">{stats['pearson_r']:.3f}</div>
+    <div class="metric-value">{stats["pearson_r"]:.3f}</div>
     <div class="metric-label">Pearson r</div>
   </div>
   <div class="metric-card">
-    <div class="metric-value">{stats['mae']:.1f}%</div>
+    <div class="metric-value">{stats["mae"]:.1f}%</div>
     <div class="metric-label">Mean Absolute Error</div>
   </div>
   <div class="metric-card">
-    <div class="metric-value">{stats['rmse']:.1f}%</div>
+    <div class="metric-value">{stats["rmse"]:.1f}%</div>
     <div class="metric-label">Root Mean Squared Error</div>
   </div>
 </div>
 
 <div class="metrics-grid">
   <div class="metric-card">
-    <div class="metric-value">{stats['r2']:.3f}</div>
+    <div class="metric-value">{stats["r2"]:.3f}</div>
     <div class="metric-label">R&sup2; Score</div>
   </div>
   <div class="metric-card">
-    <div class="metric-value">{stats['pearson_p']:.2e}</div>
+    <div class="metric-value">{stats["pearson_p"]:.2e}</div>
     <div class="metric-label">Pearson p-value</div>
   </div>
 </div>
@@ -205,8 +205,8 @@ def make_regression_section(exp):
 </div>
 
 <p class="caption">Each point represents one patient (test-set prediction from the respective crossval fold).
-The dashed line is the identity line (perfect prediction). Pearson r = {stats['pearson_r']:.3f}
-indicates moderate-strong correlation. Note the R&sup2; = {stats['r2']:.3f} is near zero due to the
+The dashed line is the identity line (perfect prediction). Pearson r = {stats["pearson_r"]:.3f}
+indicates moderate-strong correlation. Note the R&sup2; = {stats["r2"]:.3f} is near zero due to the
 heavily skewed distribution (many samples near 0%, few at high %).</p>
 """
     return html
@@ -256,23 +256,17 @@ def make_classification_section(exp):
             "count": int(float(row.iloc[10])),
         }
 
-    # Build metric cards
-    primary = class_stats.get(true_class, {})
-    primary_auroc = primary.get("auroc_mean", 0)
-    primary_auroc_ci = f"{primary.get('auroc_low', 0):.3f}–{primary.get('auroc_high', 0):.3f}"
-    primary_auprc = primary.get("auprc_mean", 0)
-
     html = f"""
 <div class="experiment-section" id="exp-{name.lower()}">
-<h2>{exp['display_name']}</h2>
+<h2>{exp["display_name"]}</h2>
 
-<p>{exp['description']}</p>
+<p>{exp["description"]}</p>
 
 <div class="summary-box">
   <div class="summary-item"><div class="label">Task</div><div class="value">Classification ({len(categories)}-class)</div></div>
   <div class="summary-item"><div class="label">Target</div><div class="value">{name}</div></div>
-  <div class="summary-item"><div class="label">Class Balance</div><div class="value">{exp['class_balance']}</div></div>
-  <div class="summary-item"><div class="label">Crossval</div><div class="value">{exp['crossval_type']}</div></div>
+  <div class="summary-item"><div class="label">Class Balance</div><div class="value">{exp["class_balance"]}</div></div>
+  <div class="summary-item"><div class="label">Crossval</div><div class="value">{exp["crossval_type"]}</div></div>
   <div class="summary-item"><div class="label">Samples</div><div class="value">489</div></div>
   <div class="summary-item"><div class="label">Model</div><div class="value">ViT MIL (UNI2)</div></div>
 </div>
@@ -287,19 +281,19 @@ def make_classification_section(exp):
         badge_cls = "badge-yes" if cls == true_class else "badge-no"
         html += f"""
 <div class="class-metric-block">
-  <h4><span class="badge {badge_cls}">{cls}</span> (n={cs.get('count', '?')})</h4>
+  <h4><span class="badge {badge_cls}">{cls}</span> (n={cs.get("count", "?")})</h4>
   <div class="metrics-grid metrics-grid-3">
     <div class="metric-card">
-      <div class="metric-value">{cs.get('auroc_mean', 0):.3f}</div>
-      <div class="metric-label">AUROC ({cs.get('auroc_low', 0):.3f}–{cs.get('auroc_high', 0):.3f})</div>
+      <div class="metric-value">{cs.get("auroc_mean", 0):.3f}</div>
+      <div class="metric-label">AUROC ({cs.get("auroc_low", 0):.3f}–{cs.get("auroc_high", 0):.3f})</div>
     </div>
     <div class="metric-card">
-      <div class="metric-value">{cs.get('auprc_mean', 0):.3f}</div>
-      <div class="metric-label">AUPRC ({cs.get('auprc_low', 0):.3f}–{cs.get('auprc_high', 0):.3f})</div>
+      <div class="metric-value">{cs.get("auprc_mean", 0):.3f}</div>
+      <div class="metric-label">AUPRC ({cs.get("auprc_low", 0):.3f}–{cs.get("auprc_high", 0):.3f})</div>
     </div>
     <div class="metric-card">
-      <div class="metric-value">{cs.get('f1_mean', 0):.3f}</div>
-      <div class="metric-label">F1 ({cs.get('f1_low', 0):.3f}–{cs.get('f1_high', 0):.3f})</div>
+      <div class="metric-value">{cs.get("f1_mean", 0):.3f}</div>
+      <div class="metric-label">F1 ({cs.get("f1_low", 0):.3f}–{cs.get("f1_high", 0):.3f})</div>
     </div>
   </div>
 </div>
@@ -356,8 +350,12 @@ def make_classification_table(ind: pd.DataFrame, categories: list[str]) -> str:
         else:
             row_style = ""
 
-        html += f"<tr {row_style}><td>{fold}</td><td><span class='badge'>{cls}</span></td>"
-        html += f"<td>{count}</td><td>{auroc:.4f}</td><td>{ap:.4f}</td><td>{f1:.4f}</td>"
+        html += (
+            f"<tr {row_style}><td>{fold}</td><td><span class='badge'>{cls}</span></td>"
+        )
+        html += (
+            f"<td>{count}</td><td>{auroc:.4f}</td><td>{ap:.4f}</td><td>{f1:.4f}</td>"
+        )
         html += f"<td>{pval:.2e}</td></tr>\n"
 
     html += "</table>\n"
@@ -512,16 +510,16 @@ def make_slide_card_regression(slide: dict) -> str:
     html = f"""
 <div class="slide-card">
   <div class="slide-header">
-    <h4 style="font-size: 1em; margin: 0;">{slide['sample_id']}</h4>
+    <h4 style="font-size: 1em; margin: 0;">{slide["sample_id"]}</h4>
     <div class="slide-meta">
       <span class="badge">GT: {gt_val}%</span>
       <span class="badge">Pred: {float(pred_val):.1f}%</span>
-      <span class="badge badge-{'correct' if error_str != '?' and float(error_str.replace('%','')) < 10 else 'wrong'}">Error: {error_str}</span>
-      <span class="badge">Split {slide['split']}</span>
+      <span class="badge badge-{"correct" if error_str != "?" and float(error_str.replace("%", "")) < 10 else "wrong"}">Error: {error_str}</span>
+      <span class="badge">Split {slide["split"]}</span>
     </div>
   </div>
-  <p style="font-size: 0.8em; color: #999; margin-bottom: 8px;">{slide['stem']}</p>
-  <img class="overview-img" src="{overview_uri}" alt="Heatmap overview for {slide['sample_id']}" loading="lazy">
+  <p style="font-size: 0.8em; color: #999; margin-bottom: 8px;">{slide["stem"]}</p>
+  <img class="overview-img" src="{overview_uri}" alt="Heatmap overview for {slide["sample_id"]}" loading="lazy">
 """
 
     if slide["top_tiles"]:
@@ -556,7 +554,8 @@ def make_slide_card_classification(slide: dict) -> str:
     probs = slide.get("probs", {})
 
     prob_badges = " ".join(
-        f'<span class="badge">P({cls})={prob:.3f}</span>' for cls, prob in sorted(probs.items())
+        f'<span class="badge">P({cls})={prob:.3f}</span>'
+        for cls, prob in sorted(probs.items())
     )
 
     overview_uri = embed_image(slide["overview_path"])
@@ -564,17 +563,17 @@ def make_slide_card_classification(slide: dict) -> str:
     html = f"""
 <div class="slide-card">
   <div class="slide-header">
-    <h4 style="font-size: 1em; margin: 0;">{slide['sample_id']}</h4>
+    <h4 style="font-size: 1em; margin: 0;">{slide["sample_id"]}</h4>
     <div class="slide-meta">
       <span class="badge badge-yes">GT: {gt}</span>
       <span class="badge">Pred: {pred}</span>
       {prob_badges}
-      <span class="badge">Split {slide['split']}</span>
+      <span class="badge">Split {slide["split"]}</span>
       {correct_badge}
     </div>
   </div>
-  <p style="font-size: 0.8em; color: #999; margin-bottom: 8px;">{slide['stem']}</p>
-  <img class="overview-img" src="{overview_uri}" alt="Heatmap overview for {slide['sample_id']}" loading="lazy">
+  <p style="font-size: 0.8em; color: #999; margin-bottom: 8px;">{slide["stem"]}</p>
+  <img class="overview-img" src="{overview_uri}" alt="Heatmap overview for {slide["sample_id"]}" loading="lazy">
 """
 
     if slide["top_tiles"]:
@@ -845,7 +844,7 @@ and MIL architecture (ViT, 2-layer, 8-head, 512-dim, max_epochs=32, patience=16)
   <td>Regression</td>
   <td>Continuous (0–91%)</td>
   <td>Pearson r</td>
-  <td><strong>{bp_stats['pearson_r']:.3f}</strong> (MAE={bp_stats['mae']:.1f}%)</td>
+  <td><strong>{bp_stats["pearson_r"]:.3f}</strong> (MAE={bp_stats["mae"]:.1f}%)</td>
 </tr>
 """
 
@@ -862,7 +861,7 @@ and MIL architecture (ViT, 2-layer, 8-head, 512-dim, max_epochs=32, patience=16)
   <td>3-class Classification</td>
   <td>high / intermediate / low</td>
   <td>AUROC (per-class)</td>
-  <td><strong>high={bs_classes.get('high', 0):.3f}</strong>, int={bs_classes.get('intermediate', 0):.3f}, low={bs_classes.get('low', 0):.3f}</td>
+  <td><strong>high={bs_classes.get("high", 0):.3f}</strong>, int={bs_classes.get("intermediate", 0):.3f}, low={bs_classes.get("low", 0):.3f}</td>
 </tr>
 """
 
@@ -1003,7 +1002,9 @@ Dataset: 489 AML bone marrow aspirate samples, 69 biological patients
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Generate combined blast analysis report")
+    parser = argparse.ArgumentParser(
+        description="Generate combined blast analysis report"
+    )
     parser.add_argument(
         "--max-slides",
         type=int,

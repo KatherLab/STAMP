@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Aggregate per-slide-per-experiment heatmaps + predictions into compact panels."""
+
 import json
 import shutil
 from pathlib import Path
@@ -7,17 +8,25 @@ from pathlib import Path
 import pandas as pd
 
 EXP_BASE = {
-    "response":       Path("/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_response_uni2"),
-    "blast_percent":  Path("/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_blast_percent_uni2"),
-    "blast_severity": Path("/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_blast_severity_uni2"),
-    "high_blast":     Path("/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_high_blast_uni2"),
+    "response": Path(
+        "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_response_uni2"
+    ),
+    "blast_percent": Path(
+        "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_blast_percent_uni2"
+    ),
+    "blast_severity": Path(
+        "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_blast_severity_uni2"
+    ),
+    "high_blast": Path(
+        "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_high_blast_uni2"
+    ),
 }
 
 EXP_LABELS = {
-    "response":       ("RESPONSE_CR", "classification"),
-    "blast_percent":  ("BLAST_PERCENT", "regression"),
+    "response": ("RESPONSE_CR", "classification"),
+    "blast_percent": ("BLAST_PERCENT", "regression"),
     "blast_severity": ("BLAST_SEVERITY", "classification"),
-    "high_blast":     ("HIGH_BLAST", "classification"),
+    "high_blast": ("HIGH_BLAST", "classification"),
 }
 
 OUT_DIR = Path("/home/jeff/Projects/STAMP/validation_report/heatmaps")
@@ -73,7 +82,11 @@ def find_classmap(exp: str, split: int, stem: str) -> Path | None:
         return p
     # regression: no classmap; pick raw-overlay or the relevance heatmap instead
     for p in sorted(rawdir.glob("*.png")):
-        if "classmap" not in p.name and "thumbnail" not in p.name and "raw-overlay" not in p.name:
+        if (
+            "classmap" not in p.name
+            and "thumbnail" not in p.name
+            and "raw-overlay" not in p.name
+        ):
             return p
     return None
 
@@ -117,14 +130,24 @@ def main():
         per_slide = {
             "stem": stem,
             "sample_id": sample_id,
-            "clini": {k: clini[k] for k in ["BLAST_PERCENT", "RESPONSE_CR", "BLAST_SEVERITY", "HIGH_BLAST"]},
+            "clini": {
+                k: clini[k]
+                for k in [
+                    "BLAST_PERCENT",
+                    "RESPONSE_CR",
+                    "BLAST_SEVERITY",
+                    "HIGH_BLAST",
+                ]
+            },
             "experiments": per_exp,
         }
         summary.append(per_slide)
-        print(f"{stem[:50]:<50}  exps_with_heatmap={sum(1 for e in per_exp.values() if e['has_overview'])}/{len(per_exp)}")
+        print(
+            f"{stem[:50]:<50}  exps_with_heatmap={sum(1 for e in per_exp.values() if e['has_overview'])}/{len(per_exp)}"
+        )
 
     (OUT_DIR / "_summary.json").write_text(json.dumps(summary, indent=2, default=str))
-    print(f"\nWrote summary: {OUT_DIR/'_summary.json'}")
+    print(f"\nWrote summary: {OUT_DIR / '_summary.json'}")
 
 
 if __name__ == "__main__":

@@ -212,7 +212,9 @@ def discover_slides_for_experiment(
             continue
 
         top_tiles, missing_top = collect_ranked_tiles(tile_dir, "top", top_k)
-        bottom_tiles, missing_bottom = collect_ranked_tiles(tile_dir, "bottom", bottom_k)
+        bottom_tiles, missing_bottom = collect_ranked_tiles(
+            tile_dir, "bottom", bottom_k
+        )
         if missing_top or missing_bottom:
             skipped.append(
                 {
@@ -297,9 +299,7 @@ def segment_cell_like_candidates(rgb: np.ndarray) -> CandidateSummary:
     stain_mask = ((gray < 210) & (saturation > 25)).astype(np.uint8) * 255
 
     blurred = cv2.GaussianBlur(gray, (5, 5), 0)
-    otsu = cv2.threshold(
-        blurred, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU
-    )[1]
+    otsu = cv2.threshold(blurred, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)[1]
     mask = cv2.bitwise_and(otsu, stain_mask)
     mask = cv2.bitwise_and(mask, tissue_mask)
 
@@ -487,10 +487,14 @@ def normalize_tile_rows(tile_rows: list[dict[str, Any]]) -> None:
                 else 0.0
             )
             focus_norm = (
-                as_float(row["zoom_laplacian_var"]) / max_focus if max_focus > 0 else 0.0
+                as_float(row["zoom_laplacian_var"]) / max_focus
+                if max_focus > 0
+                else 0.0
             )
             tissue_fraction = as_float(row["zoom_tissue_fraction"])
-            cellular_visibility = candidate_norm * math.sqrt(focus_norm) * tissue_fraction
+            cellular_visibility = (
+                candidate_norm * math.sqrt(focus_norm) * tissue_fraction
+            )
 
             row["positive_attention_score_slide_norm"] = positive_norm
             row["cellular_visibility_proxy"] = cellular_visibility
@@ -508,7 +512,9 @@ def rank_blast_percent_failures(tile_rows: list[dict[str, Any]]) -> set[str]:
         err = row.get("blast_percent_abs_err", "")
         if err == "":
             continue
-        by_sample[row["sample_id"]] = max(by_sample.get(row["sample_id"], 0.0), float(err))
+        by_sample[row["sample_id"]] = max(
+            by_sample.get(row["sample_id"], 0.0), float(err)
+        )
     ranked = sorted(by_sample.items(), key=lambda item: item[1], reverse=True)
     return {sample_id for sample_id, _ in ranked[:10]}
 
@@ -529,7 +535,9 @@ def summarize_slides(
         top_rows = [row for row in rows if row["tile_kind"] == "top"]
         bottom_rows = [row for row in rows if row["tile_kind"] == "bottom"]
 
-        top_enrichment = mean([as_float(row["blast_enrichment_proxy"]) for row in top_rows])
+        top_enrichment = mean(
+            [as_float(row["blast_enrichment_proxy"]) for row in top_rows]
+        )
         bottom_enrichment = mean(
             [as_float(row["blast_enrichment_proxy"]) for row in bottom_rows]
         )
@@ -601,8 +609,7 @@ def summarize_slides(
                 "tile_count": len(rows),
                 "top_enrichment_proxy_mean": top_enrichment,
                 "bottom_enrichment_proxy_mean": bottom_enrichment,
-                "top_minus_bottom_enrichment_proxy": top_enrichment
-                - bottom_enrichment,
+                "top_minus_bottom_enrichment_proxy": top_enrichment - bottom_enrichment,
                 "top_bottom_enrichment_ratio": safe_ratio(
                     top_enrichment, bottom_enrichment
                 ),
@@ -777,9 +784,7 @@ def summarize_experiments(slide_rows: list[dict[str, Any]]) -> list[dict[str, An
     for experiment in sorted({row["experiment"] for row in slide_rows}):
         rows = [row for row in slide_rows if row["experiment"] == experiment]
         labeled = [row for row in rows if row["blast_percent_gt"] != ""]
-        high_blast_rows = [
-            row for row in rows if row["high_blast_gt"] in {"yes", "no"}
-        ]
+        high_blast_rows = [row for row in rows if row["high_blast_gt"] in {"yes", "no"}]
 
         spearman_top = ""
         spearman_delta = ""
@@ -842,7 +847,10 @@ def summarize_experiments(slide_rows: list[dict[str, Any]]) -> list[dict[str, An
                     [float(row["top_enrichment_proxy_mean"]) for row in failures]
                 ),
                 "blast_percent_top10_failure_delta_mean": mean(
-                    [float(row["top_minus_bottom_enrichment_proxy"]) for row in failures]
+                    [
+                        float(row["top_minus_bottom_enrichment_proxy"])
+                        for row in failures
+                    ]
                 ),
             }
         )
@@ -1189,7 +1197,9 @@ def build_report_summary(
     high_blast = row_by_key(experiment_rows, "experiment", "high_blast")
     high_blast_high = group_row(group_rows, "high_blast", "high_blast_ge20")
     high_blast_low = group_row(group_rows, "high_blast", "low_blast_lt5")
-    high_blast_conf_yes = group_row(group_rows, "high_blast", "high_blast_confident_yes")
+    high_blast_conf_yes = group_row(
+        group_rows, "high_blast", "high_blast_confident_yes"
+    )
     high_blast_conf_no = group_row(group_rows, "high_blast", "high_blast_confident_no")
     blast_percent_high = group_row(group_rows, "blast_percent", "high_blast_ge20")
     blast_percent_low = group_row(group_rows, "blast_percent", "low_blast_lt5")
@@ -1530,9 +1540,7 @@ th { background: #f5f7fa; text-align: left; }
         html_list(report_summary["next_steps"]),
         "<h2>Email Draft</h2>",
         f"<p><b>Subject:</b> {html.escape(report_summary['email_subject'])}</p>",
-        "<pre>"
-        + html.escape("\n".join(report_summary["email_body"]))
-        + "</pre>",
+        "<pre>" + html.escape("\n".join(report_summary["email_body"])) + "</pre>",
         "<h2>QC Thresholds</h2>",
         html_table([thresholds], list(thresholds)),
         "<h2>Experiment Summary</h2>",

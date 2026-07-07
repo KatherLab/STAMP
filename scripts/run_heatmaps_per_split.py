@@ -40,22 +40,32 @@ OPACITY = 0.6
 # Experiment configurations
 EXPERIMENTS = {
     "response": {
-        "base_dir": Path("/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_response_uni2"),
+        "base_dir": Path(
+            "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_response_uni2"
+        ),
     },
     "blast_percent": {
-        "base_dir": Path("/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_blast_percent_uni2"),
+        "base_dir": Path(
+            "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_blast_percent_uni2"
+        ),
     },
     "blast_severity": {
-        "base_dir": Path("/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_blast_severity_uni2"),
+        "base_dir": Path(
+            "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_blast_severity_uni2"
+        ),
     },
     "high_blast": {
-        "base_dir": Path("/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_high_blast_uni2"),
+        "base_dir": Path(
+            "/mnt/nvme0n1p1/Jeff_projects/B01/AG Janssen/stamp_aml_high_blast_uni2"
+        ),
     },
 }
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Run STAMP heatmaps per crossval split")
+    parser = argparse.ArgumentParser(
+        description="Run STAMP heatmaps per crossval split"
+    )
     parser.add_argument(
         "--experiment",
         required=True,
@@ -97,7 +107,9 @@ def main():
     available_wsis = {p.stem: p.name for p in WSI_DIR.glob("*.ndpi")}
     print(f"Found {len(available_wsis)} available WSI files")
 
-    splits_to_run = args.splits if args.splits is not None else range(len(splits_data["splits"]))
+    splits_to_run = (
+        args.splits if args.splits is not None else range(len(splits_data["splits"]))
+    )
 
     for split_i in splits_to_run:
         if split_i >= len(splits_data["splits"]):
@@ -166,7 +178,9 @@ def main():
             )
 
             if result.returncode != 0:
-                print(f"[ERROR] Split {split_i} failed with return code {result.returncode}")
+                print(
+                    f"[ERROR] Split {split_i} failed with return code {result.returncode}"
+                )
             else:
                 print(f"[DONE] Split {split_i} heatmaps complete")
         finally:

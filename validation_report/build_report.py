@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
 """Build the final HTML and PDF validation report."""
+
 import base64
 import json
 from datetime import date
 from pathlib import Path
-
-import pandas as pd
 
 ROOT = Path("/home/jeff/Projects/STAMP/validation_report")
 PRE_DIR = ROOT / "preprocessing"
@@ -23,10 +22,10 @@ PRE_SLIDES = [
 ]
 
 EXP_LABELS = {
-    "response":       ("RESPONSE_CR (binary)",       "classification"),
-    "blast_percent":  ("BLAST_PERCENT (regression)", "regression"),
-    "blast_severity": ("BLAST_SEVERITY (3-class)",   "classification"),
-    "high_blast":     ("HIGH_BLAST (binary)",        "classification"),
+    "response": ("RESPONSE_CR (binary)", "classification"),
+    "blast_percent": ("BLAST_PERCENT (regression)", "regression"),
+    "blast_severity": ("BLAST_SEVERITY (3-class)", "classification"),
+    "high_blast": ("HIGH_BLAST (binary)", "classification"),
 }
 
 
@@ -49,7 +48,7 @@ def fmt_pred_response(pred: dict) -> str:
     if not pred:
         return "<i>no prediction</i>"
     p_yes = pred.get("RESPONSE_CR_yes", "?")
-    p_no  = pred.get("RESPONSE_CR_no", "?")
+    p_no = pred.get("RESPONSE_CR_no", "?")
     pred_class = pred.get("pred", "?")
     return f"P(yes)={p_yes:.3f}, P(no)={p_no:.3f} → <b>{pred_class}</b>"
 
@@ -58,7 +57,11 @@ def fmt_pred_severity(pred: dict) -> str:
     if not pred:
         return "<i>no prediction</i>"
     parts = []
-    for k in ["BLAST_SEVERITY_low", "BLAST_SEVERITY_intermediate", "BLAST_SEVERITY_high"]:
+    for k in [
+        "BLAST_SEVERITY_low",
+        "BLAST_SEVERITY_intermediate",
+        "BLAST_SEVERITY_high",
+    ]:
         if k in pred:
             parts.append(f"P({k.split('_')[-1]})={pred[k]:.3f}")
     return ", ".join(parts) + f" → <b>{pred.get('pred', '?')}</b>"
@@ -68,7 +71,7 @@ def fmt_pred_high_blast(pred: dict) -> str:
     if not pred:
         return "<i>no prediction</i>"
     p_yes = pred.get("HIGH_BLAST_yes", "?")
-    return f"P(yes)={p_yes:.3f} → <b>{pred.get('pred','?')}</b>"
+    return f"P(yes)={p_yes:.3f} → <b>{pred.get('pred', '?')}</b>"
 
 
 def fmt_pred_regression(pred: dict, gt) -> str:
@@ -97,30 +100,30 @@ def section_preprocessing() -> str:
 <div class="slide-block">
   <h3>{stem}</h3>
   <div class="kv">
-    <div><span class="k">WSI dims:</span> {s['dims'][0]} × {s['dims'][1]} px (MPP {s['mpp_x']:.4f} µm/px)</div>
-    <div><span class="k">Tile grid:</span> {s['grid'][0]} × {s['grid'][1]} = {s['theoretical_tiles']} theoretical tiles</div>
-    <div><span class="k">Tiles kept:</span> <b>{s['kept_tiles']}</b> / {s['theoretical_tiles']} (<b>{s['retention_pct']:.1f}%</b>)</div>
+    <div><span class="k">WSI dims:</span> {s["dims"][0]} × {s["dims"][1]} px (MPP {s["mpp_x"]:.4f} µm/px)</div>
+    <div><span class="k">Tile grid:</span> {s["grid"][0]} × {s["grid"][1]} = {s["theoretical_tiles"]} theoretical tiles</div>
+    <div><span class="k">Tiles kept:</span> <b>{s["kept_tiles"]}</b> / {s["theoretical_tiles"]} (<b>{s["retention_pct"]:.1f}%</b>)</div>
     <div><span class="k">Rejection reason (sampled n={sample_n}):</span>
       Canny low-edge <b>{canny_pct:.1f}%</b> • brightness ≥ 240 <b>{bright_pct:.1f}%</b> • boundary/other <b>{unknown_pct:.1f}%</b></div>
   </div>
   <div class="row">
     <div class="col">
       <div class="caption">Before preprocessing — raw thumbnail</div>
-      {img_tag(PRE_DIR / f'{stem}__before.jpg')}
+      {img_tag(PRE_DIR / f"{stem}__before.jpg")}
     </div>
     <div class="col">
       <div class="caption">After preprocessing — kept tiles outlined green; rejected tiles shaded red</div>
-      {img_tag(PRE_DIR / f'{stem}__after.jpg')}
+      {img_tag(PRE_DIR / f"{stem}__after.jpg")}
     </div>
   </div>
   <div class="row">
     <div class="col">
       <div class="caption">Example KEPT tiles (passed brightness + Canny edge test)</div>
-      {img_tag(PRE_DIR / f'{stem}__kept_grid.jpg')}
+      {img_tag(PRE_DIR / f"{stem}__kept_grid.jpg")}
     </div>
     <div class="col">
       <div class="caption">Example REJECTED tiles (label = reason for rejection)</div>
-      {img_tag(PRE_DIR / f'{stem}__rejected_grid.jpg')}
+      {img_tag(PRE_DIR / f"{stem}__rejected_grid.jpg")}
     </div>
   </div>
 </div>
@@ -189,13 +192,17 @@ def section_heatmaps() -> str:
         )
 
         exp_blocks = []
-        for exp_key, exp_label in [("response", EXP_LABELS["response"][0]),
-                                    ("blast_percent", EXP_LABELS["blast_percent"][0]),
-                                    ("blast_severity", EXP_LABELS["blast_severity"][0]),
-                                    ("high_blast", EXP_LABELS["high_blast"][0])]:
+        for exp_key, exp_label in [
+            ("response", EXP_LABELS["response"][0]),
+            ("blast_percent", EXP_LABELS["blast_percent"][0]),
+            ("blast_severity", EXP_LABELS["blast_severity"][0]),
+            ("high_blast", EXP_LABELS["high_blast"][0]),
+        ]:
             e = per_exp.get(exp_key, {})
             if not e:
-                exp_blocks.append(f'<div class="exp-block"><h4>{exp_label}</h4><i>not in test set</i></div>')
+                exp_blocks.append(
+                    f'<div class="exp-block"><h4>{exp_label}</h4><i>not in test set</i></div>'
+                )
                 continue
             gt = e["gt"]
             pred = e.get("pred", {}) or {}
@@ -224,7 +231,7 @@ def section_heatmaps() -> str:
       {img_tag(overview_path)}
     </div>
     <div class="col">
-      <div class="caption">{'Class map' if exp_key != 'blast_percent' else 'Relevance heatmap'}</div>
+      <div class="caption">{"Class map" if exp_key != "blast_percent" else "Relevance heatmap"}</div>
       {img_tag(classmap_path)}
     </div>
   </div>
@@ -236,13 +243,15 @@ def section_heatmaps() -> str:
   <h3>{stem}</h3>
   <div class="meta">SAMPLE_ID = <code>{sid}</code></div>
   <table class="small">{clinical_row}</table>
-  {''.join(exp_blocks)}
+  {"".join(exp_blocks)}
 </div>
 """)
     return "\n".join(blocks)
 
 
-def fmt_table(rows: list[dict], cols: list[tuple[str, str]], floatfmt: dict | None = None) -> str:
+def fmt_table(
+    rows: list[dict], cols: list[tuple[str, str]], floatfmt: dict | None = None
+) -> str:
     floatfmt = floatfmt or {}
     head = "".join(f"<th>{label}</th>" for _, label in cols)
     body = []
@@ -262,13 +271,13 @@ def section_annotation() -> str:
 
     # 1. RESPONSE — high confidence yes (good to verify; pick a few that are borderline-clinical)
     rh_yes = cand["response"]["high_confidence_yes"][:8]
-    rh_no  = cand["response"]["high_confidence_no"][:8]
+    rh_no = cand["response"]["high_confidence_no"][:8]
     rh_bnd = cand["response"]["near_boundary"][:8]
     conf_mistakes = cand["confident_mistakes_response"][:10]
 
     bp_high = cand["blast_percent"]["highest_predicted"][:8]
-    bp_low  = cand["blast_percent"]["lowest_predicted"][:8]
-    bp_err  = cand["blast_percent"]["largest_errors"][:10]
+    bp_low = cand["blast_percent"]["lowest_predicted"][:8]
+    bp_err = cand["blast_percent"]["largest_errors"][:10]
 
     return f"""
 <p>The most informative slides for additional human annotation are those where the model is
@@ -280,47 +289,121 @@ matters most for AUROC). Below are the top picks per task.</p>
 <h3>RESPONSE_CR — highest-confidence positives (P(yes) → 1)</h3>
 <p>These are great <b>positive controls</b>: ask a haematopathologist to confirm the visual cues
 the model is locking onto.</p>
-{fmt_table(rh_yes,
-    [("SAMPLE_ID","SAMPLE_ID"),("RESPONSE_CR","GT"),("RESPONSE_CR_yes","P(yes)"),("split","split"),("stem","slide")],
-    {"RESPONSE_CR_yes":"{:.3f}"})}
+{
+        fmt_table(
+            rh_yes,
+            [
+                ("SAMPLE_ID", "SAMPLE_ID"),
+                ("RESPONSE_CR", "GT"),
+                ("RESPONSE_CR_yes", "P(yes)"),
+                ("split", "split"),
+                ("stem", "slide"),
+            ],
+            {"RESPONSE_CR_yes": "{:.3f}"},
+        )
+    }
 
 <h3>RESPONSE_CR — highest-confidence negatives (P(yes) → 0)</h3>
-{fmt_table(rh_no,
-    [("SAMPLE_ID","SAMPLE_ID"),("RESPONSE_CR","GT"),("RESPONSE_CR_yes","P(yes)"),("split","split"),("stem","slide")],
-    {"RESPONSE_CR_yes":"{:.3f}"})}
+{
+        fmt_table(
+            rh_no,
+            [
+                ("SAMPLE_ID", "SAMPLE_ID"),
+                ("RESPONSE_CR", "GT"),
+                ("RESPONSE_CR_yes", "P(yes)"),
+                ("split", "split"),
+                ("stem", "slide"),
+            ],
+            {"RESPONSE_CR_yes": "{:.3f}"},
+        )
+    }
 
 <h3>RESPONSE_CR — near decision boundary (P(yes) ≈ 0.5)</h3>
 <p>Annotating these directly improves AUROC because they are the model's hardest cases.</p>
-{fmt_table(rh_bnd,
-    [("SAMPLE_ID","SAMPLE_ID"),("RESPONSE_CR","GT"),("RESPONSE_CR_yes","P(yes)"),("split","split"),("stem","slide")],
-    {"RESPONSE_CR_yes":"{:.3f}"})}
+{
+        fmt_table(
+            rh_bnd,
+            [
+                ("SAMPLE_ID", "SAMPLE_ID"),
+                ("RESPONSE_CR", "GT"),
+                ("RESPONSE_CR_yes", "P(yes)"),
+                ("split", "split"),
+                ("stem", "slide"),
+            ],
+            {"RESPONSE_CR_yes": "{:.3f}"},
+        )
+    }
 
 <h3>RESPONSE_CR — confident mistakes (high P, wrong label)</h3>
 <p>These are slides where the model is sure but disagrees with GT — top suspects for either
 <b>label noise</b> or <b>genuinely difficult</b> morphology. Re-annotating them is the
 single highest-value signal you can collect.</p>
-{fmt_table(conf_mistakes,
-    [("SAMPLE_ID","SAMPLE_ID"),("RESPONSE_CR","GT"),("pred","pred"),("RESPONSE_CR_yes","P(yes)"),("confidence","conf"),("stem","slide")],
-    {"RESPONSE_CR_yes":"{:.3f}", "confidence":"{:.3f}"})}
+{
+        fmt_table(
+            conf_mistakes,
+            [
+                ("SAMPLE_ID", "SAMPLE_ID"),
+                ("RESPONSE_CR", "GT"),
+                ("pred", "pred"),
+                ("RESPONSE_CR_yes", "P(yes)"),
+                ("confidence", "conf"),
+                ("stem", "slide"),
+            ],
+            {"RESPONSE_CR_yes": "{:.3f}", "confidence": "{:.3f}"},
+        )
+    }
 
 <h3>BLAST_PERCENT — highest predicted blast % (top of regression range)</h3>
-{fmt_table(bp_high,
-    [("SAMPLE_ID","SAMPLE_ID"),("BLAST_PERCENT","GT"),("pred","pred"),("abs_err","|err|"),("split","split"),("stem","slide")],
-    {"pred":"{:.2f}","abs_err":"{:.2f}"})}
+{
+        fmt_table(
+            bp_high,
+            [
+                ("SAMPLE_ID", "SAMPLE_ID"),
+                ("BLAST_PERCENT", "GT"),
+                ("pred", "pred"),
+                ("abs_err", "|err|"),
+                ("split", "split"),
+                ("stem", "slide"),
+            ],
+            {"pred": "{:.2f}", "abs_err": "{:.2f}"},
+        )
+    }
 
 <h3>BLAST_PERCENT — lowest predicted blast % (bottom of regression range)</h3>
-{fmt_table(bp_low,
-    [("SAMPLE_ID","SAMPLE_ID"),("BLAST_PERCENT","GT"),("pred","pred"),("abs_err","|err|"),("split","split"),("stem","slide")],
-    {"pred":"{:.2f}","abs_err":"{:.2f}"})}
+{
+        fmt_table(
+            bp_low,
+            [
+                ("SAMPLE_ID", "SAMPLE_ID"),
+                ("BLAST_PERCENT", "GT"),
+                ("pred", "pred"),
+                ("abs_err", "|err|"),
+                ("split", "split"),
+                ("stem", "slide"),
+            ],
+            {"pred": "{:.2f}", "abs_err": "{:.2f}"},
+        )
+    }
 
 <h3>BLAST_PERCENT — largest absolute errors</h3>
 <p>Most of these are slides where GT ≥ 80 % but the model predicts &lt; 15 % (or vice versa).
 Have the pathologist re-count: in our experience, most of these resolve into either a
 counting error in the original GT or an unusual blast morphology that the model has not
 seen often enough.</p>
-{fmt_table(bp_err,
-    [("SAMPLE_ID","SAMPLE_ID"),("BLAST_PERCENT","GT"),("pred","pred"),("abs_err","|err|"),("split","split"),("stem","slide")],
-    {"pred":"{:.2f}","abs_err":"{:.2f}"})}
+{
+        fmt_table(
+            bp_err,
+            [
+                ("SAMPLE_ID", "SAMPLE_ID"),
+                ("BLAST_PERCENT", "GT"),
+                ("pred", "pred"),
+                ("abs_err", "|err|"),
+                ("split", "split"),
+                ("stem", "slide"),
+            ],
+            {"pred": "{:.2f}", "abs_err": "{:.2f}"},
+        )
+    }
 
 <h3>Recommended sampling strategy (for ~30–50 slides total)</h3>
 <ul>
@@ -429,12 +512,13 @@ relevance heatmap for the regression head.</p>
 def main():
     html = build_html()
     OUT_HTML.write_text(html)
-    print(f"Wrote HTML: {OUT_HTML}  ({OUT_HTML.stat().st_size/1024/1024:.1f} MB)")
+    print(f"Wrote HTML: {OUT_HTML}  ({OUT_HTML.stat().st_size / 1024 / 1024:.1f} MB)")
 
     try:
         from weasyprint import HTML
+
         HTML(string=html, base_url=str(ROOT)).write_pdf(str(OUT_PDF))
-        print(f"Wrote PDF:  {OUT_PDF}  ({OUT_PDF.stat().st_size/1024/1024:.1f} MB)")
+        print(f"Wrote PDF:  {OUT_PDF}  ({OUT_PDF.stat().st_size / 1024 / 1024:.1f} MB)")
     except Exception as e:
         print(f"PDF generation failed: {e}")
 
