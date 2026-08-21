@@ -48,25 +48,13 @@ To setup STAMP you need [uv](https://docs.astral.sh/uv/) 0.12 or newer.
 | CUDA (`--extra gpu`, `--extra gpu_all`) | 3.13, 3.14 | Linux x86_64, Linux aarch64 |
 
 Python **3.14 is recommended** and is what `.python-version` selects; 3.13 remains
-supported. The CUDA builds are pinned to one ABI stack: **CUDA 13.0 with PyTorch
-2.11.0 and TorchVision 0.26.0**.
-
-CI runs the test suite on Linux. macOS is checked for installation and imports
-only, so it stays usable for development but is not a tested target.
-
-There is no CUDA build for macOS or Windows. `flash-attn`, `mamba-ssm` and
-`causal-conv1d` are only published as pre-built wheels for Linux, and STAMP
-refuses to compile them (see [below](#why-uv-is-required)), so a GPU extra on
-those platforms fails with a clear resolution error rather than a compiler error.
+supported. The CUDA builds are pinned to **CUDA 13.0 with PyTorch 2.11.0 and
+TorchVision 0.26.0**. There is no CUDA build for macOS or Windows — use
+`--extra cpu` there.
 
 > [!IMPORTANT]
-> uv is required for the GPU workflow. The PyTorch and Astral wheel indexes are
-> configured through `[tool.uv.sources]` in `pyproject.toml`, which is
-> uv-specific and invisible to other installers. Installing with plain `pip`
-> would mean pointing it at
-> `https://download.pytorch.org/whl/cu130` and
-> `https://wheels.astral.sh/simple/cu130/` yourself, and re-deriving the exact
-> pins by hand. See [Why uv is required](#why-uv-is-required).
+> Install with uv, not pip. The wheel indexes STAMP needs are configured in
+> `[tool.uv.sources]` in `pyproject.toml`, which pip does not read.
 
 ### Install or Update uv:
 
@@ -107,17 +95,13 @@ uv sync --extra gpu_all
 source .venv/bin/activate
 ```
 
-Both GPU extras install **pre-built wheels by default**. `flash-attn`,
-`mamba-ssm` and `causal-conv1d` come from the
-[Astral wheel index](https://wheels.astral.sh/simple/cu130/) already compiled
-against CUDA 13.0 and PyTorch 2.11, so nothing is compiled locally and no CUDA
-toolkit needs to be installed to *install* STAMP. You still need an NVIDIA
-driver to *run* on a GPU.
+Both GPU extras install pre-built wheels, so nothing is compiled locally and no
+CUDA toolkit is needed to install STAMP. You still need an NVIDIA driver to run
+on a GPU.
 
 > [!NOTE]
-> `--extra gpu_prebuilt` is deprecated and now just an alias for
-> `--extra gpu_all`, which is pre-built anyway. It will be removed in the next
-> breaking release.
+> `--extra gpu_prebuilt` is a deprecated alias for `--extra gpu_all` and will be
+> removed in the next breaking release.
 
 If you encounter errors during installation please read Installation Troubleshooting [below](#installation-troubleshooting).
 
@@ -136,31 +120,6 @@ If you encounter errors during installation please read Installation Troubleshoo
 > ```bash
 > apt update && apt install -y libgl1 libglx-mesa0 libglib2.0-0
 > ```
-
-### Why uv is required
-
-The GPU workflow depends on configuration that only uv reads:
-
-* `[tool.uv.sources]` routes `torch` and `torchvision` to
-  `https://download.pytorch.org/whl/cu130` (or `.../cpu` for the `cpu` extra)
-  and the three compiled extensions to `https://wheels.astral.sh/simple/cu130/`.
-* `[tool.uv.exclude-dependencies]` drops the unconditional CUDA requirements
-  that the UNI, GigaPath and COBRA forks declare, so a CPU install stays free of
-  CUDA-only packages.
-* `[tool.uv.no-build-package]` forbids source builds of `flash-attn`,
-  `mamba-ssm` and `causal-conv1d`.
-
-None of this is visible to `pip`, which reads only `[project]`. Installing with
-pip would resolve `flash-attn` from PyPI and try to compile it — which is
-exactly what this configuration exists to prevent. If you must use pip, you have
-to add both indexes yourself and pin the extensions to the same
-`+cu.13.0.torch.2.11` local versions listed in `pyproject.toml`.
-
-Source builds of the three extensions are refused on purpose: they are
-ABI-locked to one PyTorch build, take a long time, need a matching CUDA toolkit,
-and were the most common cause of broken installs. An unsupported platform now
-fails during resolution with a clear message instead of part-way through a
-compile.
 
 ## Basic Usage
 
@@ -228,8 +187,7 @@ please consider citing our [Nature Protocols publication](https://www.nature.com
 
 These only exist as pre-built wheels for Linux x86_64 and Linux aarch64 on
 Python 3.13/3.14. On any other platform uv reports that no compatible version
-was found. This is deliberate — STAMP does not fall back to compiling them.
-Use `--extra cpu` on macOS and Windows.
+was found. Use `--extra cpu` on macOS and Windows.
 
 #### Triton Errors
 
@@ -258,10 +216,8 @@ was compiled against:
 E       ImportError: [...]/.venv/lib/python3.14/site-packages/flash_attn_2_cuda.cpython-314-x86_64-linux-gnu.so: undefined symbol: _ZN3c105ErrorC2ENS_14SourceLocationENSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE
 ```
 
-This should no longer happen, because the extension versions carry the PyTorch
-build in their version string (`+cu.13.0.torch.2.11`) and the lockfile pins them
-together with torch. If you do hit it, you are almost certainly in an
-environment left over from an older STAMP release. Check what is installed:
+This usually means the environment is left over from an older STAMP release.
+Check what is installed:
 
 ```bash
 uv run python scripts/verify_installed_stack.py --expect-cuda
