@@ -52,10 +52,16 @@ def extract_multiplex_(
     slide_end: int | None = None,
 ) -> None:
     wsi_dir = wsi_dir.resolve()
-    marker_configs, marker_metadata_source = _autofill_marker_statistics(
-        marker_configs=marker_configs,
-        marker_metadata_csv=marker_metadata_csv,
-    )
+    if isinstance(extractor, MultiplexExtractor) and extractor.preprocess is not None:
+        # Marker-aware models (currently KRONOS2) own their normalization tables.
+        # Do not silently combine those statistics with STAMP's generic table.
+        marker_configs = list(marker_configs)
+        marker_metadata_source = None
+    else:
+        marker_configs, marker_metadata_source = _autofill_marker_statistics(
+            marker_configs=marker_configs,
+            marker_metadata_csv=marker_metadata_csv,
+        )
     marker_names = [marker.name for marker in marker_configs]
     marker_normalization = _marker_normalization(marker_configs)
 
@@ -94,6 +100,11 @@ def extract_multiplex_(
             "Loaded multiplex marker mean/std metadata, but the selected extractor "
             "uses per-marker RGB tiles. Marker normalization is only applied for "
             "MultiplexExtractor implementations."
+        )
+    elif isinstance(extractor, MultiplexExtractor) and extractor.preprocess is not None:
+        _logger.info(
+            "The selected multiplex extractor applies its own marker-aware "
+            "normalization; STAMP marker mean/std values are not used."
         )
 
     for slide_path in (progress := tqdm(slide_paths)):
@@ -153,6 +164,7 @@ def extract_multiplex_(
                         model=model,
                         patch_batch=patch_batch,
                         marker_normalization=marker_normalization,
+                        marker_names=marker_names,
                     )
                     outputs = _normalize_outputs(outputs)
 
@@ -188,11 +200,6 @@ class _Datasets(dict[str, h5py.Dataset]):
 
 def _create_datasets(h5_fp: h5py.File, outputs: MultiplexFeatures) -> _Datasets:
     feat_dim = int(outputs.feats.shape[1])
-    n_markers = int(outputs.marker_embeddings.shape[1])
-    marker_feat_dim = int(outputs.marker_embeddings.shape[2])
-    token_y = int(outputs.token_embeddings.shape[2])
-    token_x = int(outputs.token_embeddings.shape[3])
-    token_feat_dim = int(outputs.token_embeddings.shape[4])
 
     feats_ds = h5_fp.create_dataset(
         "feats",
@@ -202,20 +209,8 @@ def _create_datasets(h5_fp: h5py.File, outputs: MultiplexFeatures) -> _Datasets:
     )
     h5_fp["patch_embeddings"] = feats_ds
 
-    return _Datasets(
+    datasets = _Datasets(
         feats=feats_ds,
-        marker_embeddings=h5_fp.create_dataset(
-            "marker_embeddings",
-            shape=(0, n_markers, marker_feat_dim),
-            maxshape=(None, n_markers, marker_feat_dim),
-            dtype="f4",
-        ),
-        token_embeddings=h5_fp.create_dataset(
-            "token_embeddings",
-            shape=(0, n_markers, token_y, token_x, token_feat_dim),
-            maxshape=(None, n_markers, token_y, token_x, token_feat_dim),
-            dtype="f4",
-        ),
         coord_x=h5_fp.create_dataset(
             "coord_x",
             shape=(0,),
@@ -229,6 +224,27 @@ def _create_datasets(h5_fp: h5py.File, outputs: MultiplexFeatures) -> _Datasets:
             dtype="i4",
         ),
     )
+    if outputs.marker_embeddings is not None:
+        n_markers = int(outputs.marker_embeddings.shape[1])
+        marker_feat_dim = int(outputs.marker_embeddings.shape[2])
+        datasets["marker_embeddings"] = h5_fp.create_dataset(
+            "marker_embeddings",
+            shape=(0, n_markers, marker_feat_dim),
+            maxshape=(None, n_markers, marker_feat_dim),
+            dtype="f4",
+        )
+    if outputs.token_embeddings is not None:
+        n_markers = int(outputs.token_embeddings.shape[1])
+        token_y = int(outputs.token_embeddings.shape[2])
+        token_x = int(outputs.token_embeddings.shape[3])
+        token_feat_dim = int(outputs.token_embeddings.shape[4])
+        datasets["token_embeddings"] = h5_fp.create_dataset(
+            "token_embeddings",
+            shape=(0, n_markers, token_y, token_x, token_feat_dim),
+            maxshape=(None, n_markers, token_y, token_x, token_feat_dim),
+            dtype="f4",
+        )
+    return datasets
 
 
 def _append_batch(
@@ -254,12 +270,17 @@ def _append_batch(
             copy=False,
         )
     )
-    datasets["marker_embeddings"][start:stop] = (
-        outputs.marker_embeddings.detach().cpu().numpy().astype(np.float32, copy=False)
-    )
-    datasets["token_embeddings"][start:stop] = (
-        outputs.token_embeddings.detach().cpu().numpy().astype(np.float32, copy=False)
-    )
+    if outputs.marker_embeddings is not None:
+        datasets["marker_embeddings"][start:stop] = (
+            outputs.marker_embeddings.detach()
+            .cpu()
+            .numpy()
+            .astype(np.float32, copy=False)
+        )
+    if outputs.token_embeddings is not None:
+        datasets["token_embeddings"][start:stop] = (
+            outputs.token_embeddings.detach().cpu().numpy().astype(np.float32, copy=False)
+        )
     datasets["coord_x"][start:stop] = xs.astype(np.int32, copy=False)
     datasets["coord_y"][start:stop] = ys.astype(np.int32, copy=False)
 
@@ -273,14 +294,14 @@ def _normalize_outputs(outputs: MultiplexFeatures) -> MultiplexFeatures:
         raise ValueError(
             f"expected feats to have shape (batch, feature), got {tuple(feats.shape)}"
         )
-    if marker_embeddings.ndim != 3:
+    if marker_embeddings is not None and marker_embeddings.ndim != 3:
         raise ValueError(
             "expected marker_embeddings to have shape "
             f"(batch, marker, feature), got {tuple(marker_embeddings.shape)}"
         )
-    if token_embeddings.ndim == 3:
+    if token_embeddings is not None and token_embeddings.ndim == 3:
         token_embeddings = token_embeddings.unsqueeze(2).unsqueeze(3)
-    if token_embeddings.ndim != 5:
+    if token_embeddings is not None and token_embeddings.ndim != 5:
         raise ValueError(
             "expected token_embeddings to have shape "
             f"(batch, marker, token_y, token_x, feature), got "
@@ -300,21 +321,29 @@ def _encode_batch(
     model: torch.nn.Module,
     patch_batch: Tensor,
     marker_normalization: tuple[Tensor, Tensor] | None,
+    marker_names: Sequence[str],
 ) -> MultiplexFeatures:
     model_device = _model_device(model)
 
     with torch.inference_mode():
         if isinstance(extractor, MultiplexExtractor):
-            if marker_normalization is not None:
+            if extractor.preprocess is not None:
+                transformed = extractor.preprocess(model, patch_batch, marker_names)
+            elif marker_normalization is not None:
                 means, stds = marker_normalization
                 patch_batch = (patch_batch.float() - means) / stds
+                transformed = patch_batch
             else:
                 patch_batch = patch_batch.float()
-            transformed = (
-                torch.stack([extractor.transform(patch) for patch in patch_batch])
-                if extractor.transform is not None
-                else patch_batch
-            )
+                transformed = patch_batch
+            if extractor.preprocess is None and extractor.transform is not None:
+                transformed = torch.stack(
+                    [extractor.transform(patch) for patch in transformed]
+                )
+            if extractor.forward_with_markers is not None:
+                return extractor.forward_with_markers(
+                    model, transformed.to(model_device), marker_names
+                )
             return extractor.forward(model, transformed.to(model_device))
 
         marker_embeddings = []
@@ -376,8 +405,8 @@ def _iter_patch_batches(
     for y in range(0, height - patch_size + 1, patch_size):
         for x in range(0, width - patch_size + 1, patch_size):
             patch = torch.from_numpy(
-                np.asarray(slide[:, y : y + patch_size, x : x + patch_size])
-            ).float()
+                np.ascontiguousarray(slide[:, y : y + patch_size, x : x + patch_size])
+            )
             patches.append(patch)
             xs.append(x)
             ys.append(y)

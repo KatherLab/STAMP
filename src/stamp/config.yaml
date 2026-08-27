@@ -4,9 +4,9 @@ preprocessing:
   # Extractor to use for feature extractor.  Possible options are "ctranspath",
   # "uni", "conch", "chief-ctranspath", "conch1_5", "uni2", "dino-bloom",
   # "gigapath", "h-optimus-0", "h-optimus-1", "virchow2", "virchow", 
-  # "virchow-full", "musk", "mstar", "plip", "ticon", "red-dino", "keep", "kronos"
+  # "virchow-full", "musk", "mstar", "plip", "ticon", "red-dino", "keep", "kronos", "kronos2"
   # Some of them require requesting access to the respective authors beforehand.
-  # Multiplex examples in the docs often use "kronos", but the full extractor
+  # Multiplex examples in the docs often use "kronos" or "kronos2", but the full extractor
   # list above remains supported for the appropriate preprocessing workflows.
   extractor: "chief-ctranspath"
 
@@ -47,7 +47,9 @@ preprocessing:
   # `markers` defines the channel order that STAMP will read from the file,
   # as well as optional per-channel normalization stats.
   # In multiplex mode, `stamp preprocess` writes one H5 per slide containing
-  # feats, patch_embeddings, marker_embeddings, token_embeddings, coord_x, coord_y.
+  # feats, patch_embeddings, coord_x, coord_y, plus marker_embeddings and
+  # token_embeddings when the selected extractor provides them. KRONOS2 provides
+  # only its published CLS patch embeddings.
   # For multi-channel multiplex preprocessing, keep max_workers at 1.
 
   # How many workers to use for tile extraction.  Should be less or equal to

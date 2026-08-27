@@ -1,4 +1,4 @@
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from dataclasses import KW_ONLY, dataclass
 from typing import Generic, TypeVar
 
@@ -31,8 +31,13 @@ class Extractor(Generic[ExtractorModel]):
 @dataclass(frozen=True)
 class MultiplexFeatures:
     feats: Float[Tensor, "batch feature"]
-    marker_embeddings: Float[Tensor, "batch marker feature"]
-    token_embeddings: Float[Tensor, "batch marker token_y token_x feature"]
+    marker_embeddings: Float[Tensor, "batch marker feature"] | None = None
+    """Optional per-marker embeddings, when exposed by the extractor."""
+
+    token_embeddings: Float[Tensor, "batch marker token_y token_x feature"] | None = (
+        None
+    )
+    """Optional per-marker spatial embeddings, when exposed by the extractor."""
 
 
 @dataclass(frozen=True)
@@ -48,6 +53,34 @@ class MultiplexExtractor(Generic[ExtractorModel]):
         Callable[
             [Float[Tensor, "marker height width"]],
             Float[Tensor, "..."],
+        ]
+        | None
+    ) = None
+    preprocess: (
+        Callable[
+            [
+                ExtractorModel,
+                Float[Tensor, "batch marker height width"],
+                Sequence[str],
+            ],
+            Float[Tensor, "batch marker height width"],
+        ]
+        | None
+    ) = None
+    """Optional marker-aware preprocessing applied before ``transform``.
+
+    Extractors such as KRONOS2 carry their own marker vocabulary and
+    normalisation statistics, so they need both the raw channel data and the
+    channel-ordered marker names.
+    """
+    forward_with_markers: (
+        Callable[
+            [
+                ExtractorModel,
+                Float[Tensor, "batch marker height width"],
+                Sequence[str],
+            ],
+            MultiplexFeatures,
         ]
         | None
     ) = None
