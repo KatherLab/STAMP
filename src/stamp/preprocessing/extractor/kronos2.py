@@ -1,0 +1,95 @@
+"""KRONOS2 multiplex spatial-proteomics feature extractor."""
+
+from collections.abc import Sequence
+
+import numpy as np
+import torch
+from torch import Tensor
+from transformers import AutoModel
+
+from stamp.preprocessing.config import ExtractorName
+from stamp.preprocessing.extractor import MultiplexExtractor, MultiplexFeatures
+
+
+_MODEL_ID = "MahmoodLab/KRONOS2"
+
+
+def _preferred_nuclear_marker(marker_names: Sequence[str]) -> str | None:
+    """Select the upstream-preferred nuclear stain when it is present."""
+
+    normalized = {name.strip().upper(): name for name in marker_names}
+    return normalized.get("DAPI") or normalized.get("DRAQ5")
+
+
+def _input_scale(batch: Tensor) -> float:
+    """Map raw TIFF intensities to the range expected by KRONOS2 preprocess."""
+
+    if batch.dtype == torch.uint8:
+        return 255.0
+    if batch.dtype in {torch.uint16, torch.uint32, torch.uint64}:
+        return 65535.0
+    if torch.is_floating_point(batch):
+        return 400.0
+    raise ValueError(
+        "KRONOS2 accepts uint8, unsigned integer, or floating-point multiplex "
+        f"images; got {batch.dtype}."
+    )
+
+
+def _preprocess_kronos2(
+    model: torch.nn.Module,
+    batch: Tensor,
+    marker_names: Sequence[str],
+) -> Tensor:
+    """Apply KRONOS2's marker-aware, upstream-provided normalization on CPU."""
+
+    patches = batch.detach().cpu().numpy().astype(np.float32, copy=False)
+    patches = np.ascontiguousarray(patches / _input_scale(batch))
+    preprocess = getattr(model, "preprocess", None)
+    if not callable(preprocess):
+        raise TypeError("KRONOS2 model does not expose its required preprocess method.")
+    normalized = preprocess(
+        patches,
+        list(marker_names),
+        preferred_dapi=_preferred_nuclear_marker(marker_names),
+    )
+    return torch.from_numpy(np.ascontiguousarray(normalized, dtype=np.float32))
+
+
+def _forward_kronos2(
+    model: torch.nn.Module,
+    batch: Tensor,
+    marker_names: Sequence[str],
+) -> MultiplexFeatures:
+    """Return KRONOS2's published 768-dimensional CLS embedding."""
+
+    feats = model(batch.float(), list(marker_names))
+    if not isinstance(feats, Tensor):
+        raise TypeError(
+            "KRONOS2 returned a non-tensor output; expected its CLS feature tensor."
+        )
+    return MultiplexFeatures(feats=feats)
+
+
+def _missing_marker_aware_forward(
+    _model: torch.nn.Module,
+    _batch: Tensor,
+) -> MultiplexFeatures:
+    raise RuntimeError("KRONOS2 requires channel-ordered marker names.")
+
+
+def kronos2() -> MultiplexExtractor[torch.nn.Module]:
+    """Load the gated KRONOS2 model from Hugging Face.
+
+    Access to ``MahmoodLab/KRONOS2`` must be approved for the active Hugging Face
+    account.  The model includes its own marker vocabulary and normalization data.
+    """
+
+    model = AutoModel.from_pretrained(_MODEL_ID, trust_remote_code=True)
+    return MultiplexExtractor(
+        model=model,
+        identifier=ExtractorName.KRONOS2,
+        forward=_missing_marker_aware_forward,
+        preprocess=_preprocess_kronos2,
+        forward_with_markers=_forward_kronos2,
+    )

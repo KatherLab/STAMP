@@ -12,6 +12,7 @@ __license__ = "MIT"
 
 class ExtractorName(StrEnum):
     KRONOS = "kronos"
+    KRONOS2 = "kronos2"
     CTRANSPATH = "ctranspath"
     CHIEF_CTRANSPATH = "chief-ctranspath"
     CONCH = "conch"
