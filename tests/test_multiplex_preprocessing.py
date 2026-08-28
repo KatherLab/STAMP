@@ -255,6 +255,10 @@ def test_multiplex_preprocess_with_kronos2_extractor_name_unit(
             super().__init__()
             self.preprocess_calls: list[tuple[np.ndarray, list[str], str | None]] = []
             self.forward_calls: list[list[str]] = []
+            self.additional_marker_csvs: list[str] = []
+
+        def register_additional_markers(self, csv_path: str) -> None:
+            self.additional_marker_csvs.append(csv_path)
 
         def preprocess(
             self,
@@ -287,6 +291,8 @@ def test_multiplex_preprocess_with_kronos2_extractor_name_unit(
     wsi_dir = tmp_path / "wsis"
     wsi_dir.mkdir()
     imwrite(wsi_dir / "slide.qptiff", slide)
+    marker_metadata_csv = tmp_path / "additional_markers.csv"
+    marker_metadata_csv.write_text("marker_name,mean,std\nDLL3,0.01,0.02\n")
 
     extract_(
         wsi_dir=wsi_dir,
@@ -308,14 +314,16 @@ def test_multiplex_preprocess_with_kronos2_extractor_name_unit(
             MultiplexMarkerConfig(name="DAPI"),
             MultiplexMarkerConfig(name="HER2"),
         ],
+        marker_metadata_csv=marker_metadata_csv,
     )
 
+    assert model.additional_marker_csvs == [str(marker_metadata_csv)]
     assert len(model.preprocess_calls) == 1
     preprocessed, marker_names, preferred_dapi = model.preprocess_calls[0]
-    assert marker_names == ["DAPI", "HER2"]
-    assert preferred_dapi == "DAPI"
+    assert marker_names == ["dapi", "her2"]
+    assert preferred_dapi == "dapi"
     assert np.isclose(preprocessed[0, 0, 0, 1], 1.0)
-    assert model.forward_calls == [["DAPI", "HER2"]]
+    assert model.forward_calls == [["dapi", "her2"]]
 
     h5_path = next((tmp_path / "output").glob("kronos2/*.h5"))
     with h5py.File(h5_path, "r") as h5:
@@ -350,7 +358,9 @@ def test_multiplex_preprocess_with_kronos2_extractor_name(tmp_path: Path) -> Non
         pytest.skip("the active Hugging Face account cannot access MahmoodLab/KRONOS2")
 
     marker_names = [
-        line.strip() for line in Path(names_path).read_text().splitlines() if line.strip()
+        line.strip()
+        for line in Path(names_path).read_text().splitlines()
+        if line.strip()
     ]
     assert marker_names, "KRONOS2 demo is missing channel names"
 
@@ -382,6 +392,20 @@ def test_multiplex_preprocess_with_kronos2_extractor_name(tmp_path: Path) -> Non
         assert h5.attrs["extractor"] == "kronos2"
         assert h5["feats"].shape[0] > 0
         assert h5["feats"].shape[1] == 768
+
+
+def test_spimage_uses_official_float_scaling_and_edge_grid() -> None:
+    from stamp.preprocessing.sp_image import SPImage
+
+    image = np.arange(9, dtype=np.float32).reshape(1, 3, 3)
+    patches, marker_names, coords = SPImage(
+        image, markers=["CD-8"], mpp=1.0
+    ).to_patches(patch_size=2)
+
+    assert marker_names == ["cd_8"]
+    assert np.array_equal(coords, np.array([[0, 0], [1, 0], [0, 1], [1, 1]]))
+    assert patches.shape == (4, 1, 2, 2)
+    assert np.isclose(patches[0, 0, 1, 1], 4.0 / 400.0)
 
 
 def test_read_slide_reports_missing_imagecodecs(monkeypatch, tmp_path: Path) -> None:
