@@ -70,6 +70,15 @@ class PreprocessingConfig(BaseModel, arbitrary_types_allowed=True):
     )
     generate_hash: bool = True
     parallel: bool = False
+    process_step: str | None = Field(
+        default=None,
+        min_length=1,
+        description=(
+            "Optional explicit name for the feature-output subdirectory. "
+            "When set, feature files are written to output_dir/process_step "
+            "instead of STAMP's extractor-name directory."
+        ),
+    )
 
     default_slide_mpp: SlideMPP | None = None
     """MPP of the slide to use if none can be inferred from the WSI"""

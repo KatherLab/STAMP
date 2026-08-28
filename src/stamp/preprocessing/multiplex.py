@@ -48,6 +48,7 @@ def extract_multiplex_(
     marker_configs: Sequence[MultiplexMarkerConfig],
     marker_metadata_csv: Path | None,
     generate_hash: bool,
+    process_step: str | None = None,
     slide_start: int | None = None,
     slide_end: int | None = None,
 ) -> None:
@@ -70,9 +71,13 @@ def extract_multiplex_(
     extractor_id = extractor.identifier
 
     feat_output_dir = (
-        output_dir / f"{extractor_id}-{code_hash}"
-        if generate_hash
-        else output_dir / extractor_id
+        output_dir / process_step
+        if process_step is not None
+        else (
+            output_dir / f"{extractor_id}-{code_hash}"
+            if generate_hash
+            else output_dir / extractor_id
+        )
     )
     feat_output_dir.mkdir(parents=True, exist_ok=True)
 

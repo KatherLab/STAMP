@@ -280,6 +280,7 @@ def extract_(
     brightness_cutoff: int | None,
     canny_cutoff: float | None,
     generate_hash: bool,
+    process_step: str | None = None,
     mode: PreprocessingMode = PreprocessingMode.WSI,
     marker_configs: Sequence[MultiplexMarkerConfig] | None = None,
     marker_metadata_csv: Path | None = None,
@@ -316,6 +317,7 @@ def extract_(
             marker_configs=marker_configs,
             marker_metadata_csv=marker_metadata_csv,
             generate_hash=generate_hash,
+            process_step=process_step,
             slide_start=slide_start,
             slide_end=slide_end,
         )
