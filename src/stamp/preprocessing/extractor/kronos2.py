@@ -1,6 +1,7 @@
 """KRONOS2 multiplex spatial-proteomics feature extractor."""
 
 from collections.abc import Sequence
+from pathlib import Path
 
 import numpy as np
 import torch
@@ -14,26 +15,26 @@ from stamp.preprocessing.extractor import MultiplexExtractor, MultiplexFeatures
 _MODEL_ID = "MahmoodLab/KRONOS2"
 
 
+def register_additional_markers(
+    model: torch.nn.Module,
+    marker_metadata_csv: Path,
+) -> None:
+    """Register novel marker metadata with KRONOS2 before inference."""
+
+    register = getattr(model, "register_additional_markers", None)
+    if not callable(register):
+        raise TypeError(
+            "The selected model does not support registering novel markers. "
+            "Use the official KRONOS2 model with a valid marker_metadata_csv."
+        )
+    register(str(marker_metadata_csv))
+
+
 def _preferred_nuclear_marker(marker_names: Sequence[str]) -> str | None:
     """Select the upstream-preferred nuclear stain when it is present."""
 
     normalized = {name.strip().upper(): name for name in marker_names}
     return normalized.get("DAPI") or normalized.get("DRAQ5")
-
-
-def _input_scale(batch: Tensor) -> float:
-    """Map raw TIFF intensities to the range expected by KRONOS2 preprocess."""
-
-    if batch.dtype == torch.uint8:
-        return 255.0
-    if batch.dtype in {torch.uint16, torch.uint32, torch.uint64}:
-        return 65535.0
-    if torch.is_floating_point(batch):
-        return 400.0
-    raise ValueError(
-        "KRONOS2 accepts uint8, unsigned integer, or floating-point multiplex "
-        f"images; got {batch.dtype}."
-    )
 
 
 def _preprocess_kronos2(
@@ -43,8 +44,10 @@ def _preprocess_kronos2(
 ) -> Tensor:
     """Apply KRONOS2's marker-aware, upstream-provided normalization on CPU."""
 
-    patches = batch.detach().cpu().numpy().astype(np.float32, copy=False)
-    patches = np.ascontiguousarray(patches / _input_scale(batch))
+    # ``SPImage.to_patches`` has already applied its one dtype-dependent scale.
+    patches = np.ascontiguousarray(
+        batch.detach().cpu().numpy().astype(np.float32, copy=False)
+    )
     preprocess = getattr(model, "preprocess", None)
     if not callable(preprocess):
         raise TypeError("KRONOS2 model does not expose its required preprocess method.")

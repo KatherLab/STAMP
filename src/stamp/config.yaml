@@ -44,6 +44,8 @@ preprocessing:
   #- name: "PanCK"
   #- name: "HER2"
   #marker_metadata_csv: "/optional/path/to/marker_metadata.csv"
+  # For KRONOS2, this file contains additional markers only; for other
+  # multiplex extractors it supplies marker_name, marker_mean, marker_std.
   # `markers` defines the channel order that STAMP will read from the file,
   # as well as optional per-channel normalization stats.
   # In multiplex mode, `stamp preprocess` writes one H5 per slide containing

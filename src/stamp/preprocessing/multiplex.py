@@ -15,7 +15,7 @@ from torch import Tensor
 from tqdm import tqdm
 
 import stamp
-from stamp.preprocessing.config import MultiplexMarkerConfig
+from stamp.preprocessing.config import ExtractorName, MultiplexMarkerConfig
 from stamp.preprocessing.extractor import (
     Extractor,
     MultiplexExtractor,
@@ -53,6 +53,7 @@ def extract_multiplex_(
     slide_end: int | None = None,
 ) -> None:
     wsi_dir = wsi_dir.resolve()
+    is_kronos2 = extractor.identifier == ExtractorName.KRONOS2
     if isinstance(extractor, MultiplexExtractor) and extractor.preprocess is not None:
         # Marker-aware models (currently KRONOS2) own their normalization tables.
         # Do not silently combine those statistics with STAMP's generic table.
@@ -64,9 +65,15 @@ def extract_multiplex_(
             marker_metadata_csv=marker_metadata_csv,
         )
     marker_names = [marker.name for marker in marker_configs]
+    model_marker_names = marker_names
     marker_normalization = _marker_normalization(marker_configs)
 
     model = extractor.model.to(device).eval()
+    if is_kronos2 and marker_metadata_csv is not None:
+        from stamp.preprocessing.extractor.kronos2 import register_additional_markers
+
+        register_additional_markers(model, marker_metadata_csv)
+
     code_hash = get_processing_code_hash(Path(__file__))[:8]
     extractor_id = extractor.identifier
 
@@ -126,6 +133,17 @@ def extract_multiplex_(
 
         try:
             slide = _read_slide(slide_path, required_channels=len(marker_configs))
+            if is_kronos2:
+                from stamp.preprocessing.sp_image import SPImage
+
+                patches, model_marker_names, coords = SPImage(
+                    slide,
+                    markers=marker_names,
+                    mpp=1.0,
+                ).to_patches(
+                    patch_size=patch_size,
+                    marker_subset=marker_names,
+                )
         except Exception:
             _logger.exception(f"error while reading multiplex slide {slide_path}")
             continue
@@ -161,15 +179,21 @@ def extract_multiplex_(
 
                 datasets: _Datasets | None = None
                 patches_written = 0
-                for patch_batch, xs, ys in _iter_patch_batches(
-                    slide, patch_size=patch_size, batch_size=_MULTIPLEX_BATCH_SIZE
-                ):
+                if is_kronos2:
+                    patch_batches = _iter_array_patch_batches(
+                        patches, coords, batch_size=_MULTIPLEX_BATCH_SIZE
+                    )
+                else:
+                    patch_batches = _iter_patch_batches(
+                        slide, patch_size=patch_size, batch_size=_MULTIPLEX_BATCH_SIZE
+                    )
+                for patch_batch, xs, ys in patch_batches:
                     outputs = _encode_batch(
                         extractor=extractor,
                         model=model,
                         patch_batch=patch_batch,
                         marker_normalization=marker_normalization,
-                        marker_names=marker_names,
+                        marker_names=model_marker_names,
                     )
                     outputs = _normalize_outputs(outputs)
 
@@ -284,7 +308,10 @@ def _append_batch(
         )
     if outputs.token_embeddings is not None:
         datasets["token_embeddings"][start:stop] = (
-            outputs.token_embeddings.detach().cpu().numpy().astype(np.float32, copy=False)
+            outputs.token_embeddings.detach()
+            .cpu()
+            .numpy()
+            .astype(np.float32, copy=False)
         )
     datasets["coord_x"][start:stop] = xs.astype(np.int32, copy=False)
     datasets["coord_y"][start:stop] = ys.astype(np.int32, copy=False)
@@ -422,6 +449,24 @@ def _iter_patch_batches(
 
     if patches:
         yield torch.stack(patches), np.asarray(xs), np.asarray(ys)
+
+
+def _iter_array_patch_batches(
+    patches: np.ndarray,
+    coords: np.ndarray,
+    *,
+    batch_size: int,
+) -> Iterator[tuple[Tensor, np.ndarray, np.ndarray]]:
+    """Yield precomputed SPImage patches in STAMP's batched interface."""
+
+    for start in range(0, len(patches), batch_size):
+        stop = start + batch_size
+        batch_coords = coords[start:stop]
+        yield (
+            torch.from_numpy(np.ascontiguousarray(patches[start:stop])),
+            batch_coords[:, 0],
+            batch_coords[:, 1],
+        )
 
 
 def _read_slide(slide_path: Path, *, required_channels: int) -> np.ndarray:

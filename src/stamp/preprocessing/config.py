@@ -105,9 +105,11 @@ class PreprocessingConfig(BaseModel, arbitrary_types_allowed=True):
     marker_metadata_csv: Path | None = Field(
         default=None,
         description=(
-            "Optional CSV containing columns marker_name, marker_mean, marker_std. "
-            "When omitted, STAMP uses its bundled multiplex marker metadata file to "
-            "auto-fill missing marker mean/std values."
+            "Optional extractor-specific marker metadata. For KRONOS2, this is "
+            "the additional-marker CSV registered with the model and must contain "
+            "only markers absent from its shipped vocabulary. For other multiplex "
+            "extractors, it contains marker_name, marker_mean, marker_std and is "
+            "used to auto-fill STAMP's marker-normalization statistics."
         ),
     )
 
