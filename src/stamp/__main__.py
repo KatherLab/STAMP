@@ -173,6 +173,7 @@ def _run_cli(args: argparse.Namespace) -> None:
                 mode=config.preprocessing.mode,
                 marker_configs=config.preprocessing.markers,
                 marker_metadata_csv=config.preprocessing.marker_metadata_csv,
+                multiplex_intensity_scale=config.preprocessing.multiplex_intensity_scale,
             )
 
         case "encode_slides":

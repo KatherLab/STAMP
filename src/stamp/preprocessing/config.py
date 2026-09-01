@@ -112,6 +112,15 @@ class PreprocessingConfig(BaseModel, arbitrary_types_allowed=True):
             "used to auto-fill STAMP's marker-normalization statistics."
         ),
     )
+    multiplex_intensity_scale: float = Field(
+        default=1.0,
+        gt=0.0,
+        description=(
+            "Value used to scale multiplex intensities before per-marker "
+            "mean/std normalization. Set to 255 for float images whose values "
+            "remain on an 8-bit intensity scale."
+        ),
+    )
 
     @model_validator(mode="after")
     def _validate_multiplex_fields(self) -> "PreprocessingConfig":

@@ -284,6 +284,7 @@ def extract_(
     mode: PreprocessingMode = PreprocessingMode.WSI,
     marker_configs: Sequence[MultiplexMarkerConfig] | None = None,
     marker_metadata_csv: Path | None = None,
+    multiplex_intensity_scale: float = 1.0,
 ) -> None:
     """
     Extracts features from slides.
@@ -318,6 +319,7 @@ def extract_(
             marker_metadata_csv=marker_metadata_csv,
             generate_hash=generate_hash,
             process_step=process_step,
+            intensity_scale=multiplex_intensity_scale,
             slide_start=slide_start,
             slide_end=slide_end,
         )

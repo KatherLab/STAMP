@@ -49,10 +49,14 @@ def extract_multiplex_(
     marker_metadata_csv: Path | None,
     generate_hash: bool,
     process_step: str | None = None,
+    intensity_scale: float = 1.0,
     slide_start: int | None = None,
     slide_end: int | None = None,
 ) -> None:
     wsi_dir = wsi_dir.resolve()
+    if intensity_scale <= 0.0:
+        raise ValueError("intensity_scale must be positive for multiplex preprocessing")
+
     is_kronos2 = extractor.identifier == ExtractorName.KRONOS2
     if isinstance(extractor, MultiplexExtractor) and extractor.preprocess is not None:
         # Marker-aware models (currently KRONOS2) own their normalization tables.
@@ -194,6 +198,7 @@ def extract_multiplex_(
                         patch_batch=patch_batch,
                         marker_normalization=marker_normalization,
                         marker_names=model_marker_names,
+                        intensity_scale=intensity_scale,
                     )
                     outputs = _normalize_outputs(outputs)
 
@@ -354,6 +359,7 @@ def _encode_batch(
     patch_batch: Tensor,
     marker_normalization: tuple[Tensor, Tensor] | None,
     marker_names: Sequence[str],
+    intensity_scale: float = 1.0,
 ) -> MultiplexFeatures:
     model_device = _model_device(model)
 
@@ -363,7 +369,8 @@ def _encode_batch(
                 transformed = extractor.preprocess(model, patch_batch, marker_names)
             elif marker_normalization is not None:
                 means, stds = marker_normalization
-                patch_batch = (patch_batch.float() - means) / stds
+                patch_batch = patch_batch.float() / intensity_scale
+                patch_batch = (patch_batch - means) / stds
                 transformed = patch_batch
             else:
                 patch_batch = patch_batch.float()
