@@ -34,6 +34,7 @@ preprocessing:
   #default_slide_mpp: 1.0
 
   # For multiplex TIFF/QPTIFF inputs instead of OpenSlide WSIs:
+  # possible modes: multiplex | wsi
   #mode: "multiplex"
   #markers:
   #- name: "DAPI"
@@ -72,7 +73,7 @@ preprocessing:
 
   # A list (.txt, .xlsx or .csv) specifying filenames to preprocess 
   # instead of processing all data in the directory.
-  #slide_list: "list.csv"
+  #wsi_list: "list.csv"
 
 crossval:
   output_dir: "/path/to/save/files/to"
