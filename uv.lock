@@ -553,7 +553,7 @@ name = "cuda-bindings"
 version = "13.0.3"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "cuda-pathfinder", marker = "(platform_machine != 'AMD64' and extra == 'extra-5-stamp-gpu') or (platform_machine != 'AMD64' and extra == 'extra-5-stamp-gpu-all') or (platform_machine != 'AMD64' and extra == 'extra-5-stamp-gpu-prebuilt') or (sys_platform != 'win32' and extra == 'extra-5-stamp-gpu') or (sys_platform != 'win32' and extra == 'extra-5-stamp-gpu-all') or (sys_platform != 'win32' and extra == 'extra-5-stamp-gpu-prebuilt') or (extra == 'extra-5-stamp-cpu' and extra == 'extra-5-stamp-gpu') or (extra == 'extra-5-stamp-cpu' and extra == 'extra-5-stamp-gpu-all') or (extra == 'extra-5-stamp-cpu' and extra == 'extra-5-stamp-gpu-prebuilt') or (extra == 'extra-5-stamp-gpu' and extra != 'extra-5-stamp-gpu-prebuilt') or (extra == 'extra-5-stamp-gpu-all' and extra != 'extra-5-stamp-gpu-prebuilt')" },
+    { name = "cuda-pathfinder", marker = "(sys_platform == 'linux' and extra == 'extra-5-stamp-gpu') or (sys_platform == 'linux' and extra == 'extra-5-stamp-gpu-all') or (sys_platform == 'linux' and extra == 'extra-5-stamp-gpu-prebuilt') or (extra == 'extra-5-stamp-cpu' and extra == 'extra-5-stamp-gpu') or (extra == 'extra-5-stamp-cpu' and extra == 'extra-5-stamp-gpu-all') or (extra == 'extra-5-stamp-cpu' and extra == 'extra-5-stamp-gpu-prebuilt')" },
 ]
 wheels = [
     { url = "https://files.pythonhosted.org/packages/2f/36/41ccc303eb6be8ae82c5edd2ccae938876e8a794660e8bb96a193174a978/cuda_bindings-13.0.3-cp313-cp313-manylinux_2_24_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:fb16a7f769c9c67469add7a1d9f6c14dd44637f6921cb6b9eb82cb5015b35c3d", size = 11537064, upload-time = "2025-10-21T15:09:07.84Z" },
@@ -1207,6 +1207,26 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/f1/70/7703c29685631f5a7590aa73f1f1d3fa9a380e654b86af429e0934a32f7d/idna-3.10.tar.gz", hash = "sha256:12f65c9b470abda6dc35cf8e63cc574b1c52b11df2c86030af0ac09b01b13ea9", size = 190490, upload-time = "2024-09-15T18:07:39.745Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/76/c6/c88e154df9c4e1a2a66ccf0005a88dfb2650c1dffb6f5ce603dfbd452ce3/idna-3.10-py3-none-any.whl", hash = "sha256:946d195a0d259cbba61165e88e65941f16e9b36ea6ddb97f00452bae8b1287d3", size = 70442, upload-time = "2024-09-15T18:07:37.964Z" },
+]
+
+[[package]]
+name = "imagecodecs"
+version = "2026.8.16"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "numpy" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/87/da/c2488dd650a72f65e6f7c808fecea4650e1fe9d34783583870056399e378/imagecodecs-2026.8.16.tar.gz", hash = "sha256:03a6add9ad9ba61dce1520489fd090b1b5cf2a2701a9666d1ab8e7653278175f", size = 9703497, upload-time = "2026-08-15T16:07:19.803Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/1f/e4/f0db4e878aa61a7b70940531be3d21ecd9d0730744d366757fb283d0d604/imagecodecs-2026.8.16-cp312-abi3-macosx_10_15_x86_64.whl", hash = "sha256:45be0f38ca22144dcaf2927feceab6f765cd311581e554302abc3fcb9c3aeddb", size = 14993070, upload-time = "2026-08-15T16:06:04.7Z" },
+    { url = "https://files.pythonhosted.org/packages/be/ea/416657fb1cf0cb93c2564922a94f8bd361ae3d73a591c4b84e257a2305d8/imagecodecs-2026.8.16-cp312-abi3-macosx_11_0_arm64.whl", hash = "sha256:53f4b7d70a5554f8d5f6f09746e5e9569ce4932b12e6997d805b81c377621fed", size = 12928116, upload-time = "2026-08-15T16:06:08.041Z" },
+    { url = "https://files.pythonhosted.org/packages/21/cf/398d49c8b616bc997b58749812dab5719e68165caa0275d5a1e3e310a1ba/imagecodecs-2026.8.16-cp312-abi3-manylinux_2_28_aarch64.whl", hash = "sha256:908fa48740d52acbaea200d422e2267623122a1987fc85e898c77b2bb02d3e00", size = 28094370, upload-time = "2026-08-15T16:06:11.642Z" },
+    { url = "https://files.pythonhosted.org/packages/67/1b/0771f9b93a8f43b1e98a20d33fab02a6eceb8bb75c32764b5d47ee4db36f/imagecodecs-2026.8.16-cp312-abi3-manylinux_2_28_x86_64.whl", hash = "sha256:c1068e0db9bc09cbd32510e543caed50f231096aecbb4c9cf7bcfbd2ffc53a50", size = 28080673, upload-time = "2026-08-15T16:06:15.463Z" },
+    { url = "https://files.pythonhosted.org/packages/66/57/876bf8245b672b1fc901b65b9d1d0a37c60f7ed36e6ae8815c4af49e2779/imagecodecs-2026.8.16-cp312-abi3-pyemscripten_2025_0_wasm32.whl", hash = "sha256:59e16b27641bd08b5162de01a8bc382cd32a5e448cb5c2f4a1b252ea96d37fed", size = 2280993, upload-time = "2026-08-15T16:06:17.576Z" },
+    { url = "https://files.pythonhosted.org/packages/ac/a2/b0ea5fee8c2c4f3cf68bb2243f640ea087885598aedb2f98bde0298f73ec/imagecodecs-2026.8.16-cp312-abi3-pyemscripten_2026_0_wasm32.whl", hash = "sha256:fcb28f8e552f26c195710bddbf7e8685e789ee9309725df4a275df16d7a136bc", size = 2273594, upload-time = "2026-08-15T16:06:19.082Z" },
+    { url = "https://files.pythonhosted.org/packages/cf/b7/cae1b739d368bc17df669f43793b5e6a7d1f56e19438eaa41add21611919/imagecodecs-2026.8.16-cp312-abi3-win32.whl", hash = "sha256:82bc27758f25d181eb4fd4fd8997b3eb07118dc673dee93aa3e64df8485e89bc", size = 16562229, upload-time = "2026-08-15T16:06:21.677Z" },
+    { url = "https://files.pythonhosted.org/packages/3e/da/d168a0e706103db3b82bde1b088d493e84a20da26f58be42bb2f1fca87e7/imagecodecs-2026.8.16-cp312-abi3-win_amd64.whl", hash = "sha256:6444a421272665ebd0116b54ad96347b86b4a5e21b59ed184487145cd3937f4b", size = 21271669, upload-time = "2026-08-15T16:06:25.021Z" },
+    { url = "https://files.pythonhosted.org/packages/99/0b/31642c8c404d436496b76c7cf6df220617f2e1ae36ae25e6809aa0a36a10/imagecodecs-2026.8.16-cp312-abi3-win_arm64.whl", hash = "sha256:b05e3ae5fa190c9722a0865cc06a3efccf27b025cbeeb8e9fd6beae0de5ce1d2", size = 16870662, upload-time = "2026-08-15T16:06:28.055Z" },
 ]
 
 [[package]]
@@ -2057,7 +2077,7 @@ name = "nvidia-cudnn-cu13"
 version = "9.15.1.9"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "nvidia-cublas", marker = "(platform_machine != 'AMD64' and extra == 'extra-5-stamp-gpu') or (platform_machine != 'AMD64' and extra == 'extra-5-stamp-gpu-all') or (platform_machine != 'AMD64' and extra == 'extra-5-stamp-gpu-prebuilt') or (sys_platform != 'win32' and extra == 'extra-5-stamp-gpu') or (sys_platform != 'win32' and extra == 'extra-5-stamp-gpu-all') or (sys_platform != 'win32' and extra == 'extra-5-stamp-gpu-prebuilt') or (extra == 'extra-5-stamp-cpu' and extra == 'extra-5-stamp-gpu') or (extra == 'extra-5-stamp-cpu' and extra == 'extra-5-stamp-gpu-all') or (extra == 'extra-5-stamp-cpu' and extra == 'extra-5-stamp-gpu-prebuilt') or (extra == 'extra-5-stamp-gpu' and extra != 'extra-5-stamp-gpu-prebuilt') or (extra == 'extra-5-stamp-gpu-all' and extra != 'extra-5-stamp-gpu-prebuilt')" },
+    { name = "nvidia-cublas", marker = "(sys_platform == 'linux' and extra == 'extra-5-stamp-gpu') or (sys_platform == 'linux' and extra == 'extra-5-stamp-gpu-all') or (sys_platform == 'linux' and extra == 'extra-5-stamp-gpu-prebuilt') or (extra == 'extra-5-stamp-cpu' and extra == 'extra-5-stamp-gpu') or (extra == 'extra-5-stamp-cpu' and extra == 'extra-5-stamp-gpu-all') or (extra == 'extra-5-stamp-cpu' and extra == 'extra-5-stamp-gpu-prebuilt')" },
 ]
 wheels = [
     { url = "https://files.pythonhosted.org/packages/ff/93/b3c9db2c35d6183361333d2dcfea50e094c012d012c8a4d7effbfb53ef62/nvidia_cudnn_cu13-9.15.1.9-py3-none-manylinux_2_27_aarch64.whl", hash = "sha256:44cd2ec83c3ef62a7357614bd02ce7f3dac35ffcbb04ad20999e730741f0ba17", size = 415636241, upload-time = "2025-11-12T20:22:26.582Z" },
@@ -2070,7 +2090,7 @@ name = "nvidia-cufft"
 version = "12.0.0.61"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "nvidia-nvjitlink", marker = "(platform_machine != 'AMD64' and extra == 'extra-5-stamp-gpu') or (platform_machine != 'AMD64' and extra == 'extra-5-stamp-gpu-all') or (platform_machine != 'AMD64' and extra == 'extra-5-stamp-gpu-prebuilt') or (sys_platform != 'win32' and extra == 'extra-5-stamp-gpu') or (sys_platform != 'win32' and extra == 'extra-5-stamp-gpu-all') or (sys_platform != 'win32' and extra == 'extra-5-stamp-gpu-prebuilt') or (extra == 'extra-5-stamp-cpu' and extra == 'extra-5-stamp-gpu') or (extra == 'extra-5-stamp-cpu' and extra == 'extra-5-stamp-gpu-all') or (extra == 'extra-5-stamp-cpu' and extra == 'extra-5-stamp-gpu-prebuilt') or (extra == 'extra-5-stamp-gpu' and extra != 'extra-5-stamp-gpu-prebuilt') or (extra == 'extra-5-stamp-gpu-all' and extra != 'extra-5-stamp-gpu-prebuilt')" },
+    { name = "nvidia-nvjitlink", marker = "(sys_platform == 'linux' and extra == 'extra-5-stamp-gpu') or (sys_platform == 'linux' and extra == 'extra-5-stamp-gpu-all') or (sys_platform == 'linux' and extra == 'extra-5-stamp-gpu-prebuilt') or (extra == 'extra-5-stamp-cpu' and extra == 'extra-5-stamp-gpu') or (extra == 'extra-5-stamp-cpu' and extra == 'extra-5-stamp-gpu-all') or (extra == 'extra-5-stamp-cpu' and extra == 'extra-5-stamp-gpu-prebuilt')" },
 ]
 wheels = [
     { url = "https://files.pythonhosted.org/packages/8b/ae/f417a75c0259e85c1d2f83ca4e960289a5f814ed0cea74d18c353d3e989d/nvidia_cufft-12.0.0.61-py3-none-manylinux2014_aarch64.manylinux_2_17_aarch64.whl", hash = "sha256:2708c852ef8cd89d1d2068bdbece0aa188813a0c934db3779b9b1faa8442e5f5", size = 214053554, upload-time = "2025-09-04T08:31:38.196Z" },
@@ -2102,9 +2122,9 @@ name = "nvidia-cusolver"
 version = "12.0.4.66"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "nvidia-cublas", marker = "(platform_machine != 'AMD64' and extra == 'extra-5-stamp-gpu') or (platform_machine != 'AMD64' and extra == 'extra-5-stamp-gpu-all') or (platform_machine != 'AMD64' and extra == 'extra-5-stamp-gpu-prebuilt') or (sys_platform != 'win32' and extra == 'extra-5-stamp-gpu') or (sys_platform != 'win32' and extra == 'extra-5-stamp-gpu-all') or (sys_platform != 'win32' and extra == 'extra-5-stamp-gpu-prebuilt') or (extra == 'extra-5-stamp-cpu' and extra == 'extra-5-stamp-gpu') or (extra == 'extra-5-stamp-cpu' and extra == 'extra-5-stamp-gpu-all') or (extra == 'extra-5-stamp-cpu' and extra == 'extra-5-stamp-gpu-prebuilt') or (extra == 'extra-5-stamp-gpu' and extra != 'extra-5-stamp-gpu-prebuilt') or (extra == 'extra-5-stamp-gpu-all' and extra != 'extra-5-stamp-gpu-prebuilt')" },
-    { name = "nvidia-cusparse", marker = "(platform_machine != 'AMD64' and extra == 'extra-5-stamp-gpu') or (platform_machine != 'AMD64' and extra == 'extra-5-stamp-gpu-all') or (platform_machine != 'AMD64' and extra == 'extra-5-stamp-gpu-prebuilt') or (sys_platform != 'win32' and extra == 'extra-5-stamp-gpu') or (sys_platform != 'win32' and extra == 'extra-5-stamp-gpu-all') or (sys_platform != 'win32' and extra == 'extra-5-stamp-gpu-prebuilt') or (extra == 'extra-5-stamp-cpu' and extra == 'extra-5-stamp-gpu') or (extra == 'extra-5-stamp-cpu' and extra == 'extra-5-stamp-gpu-all') or (extra == 'extra-5-stamp-cpu' and extra == 'extra-5-stamp-gpu-prebuilt') or (extra == 'extra-5-stamp-gpu' and extra != 'extra-5-stamp-gpu-prebuilt') or (extra == 'extra-5-stamp-gpu-all' and extra != 'extra-5-stamp-gpu-prebuilt')" },
-    { name = "nvidia-nvjitlink", marker = "(platform_machine != 'AMD64' and extra == 'extra-5-stamp-gpu') or (platform_machine != 'AMD64' and extra == 'extra-5-stamp-gpu-all') or (platform_machine != 'AMD64' and extra == 'extra-5-stamp-gpu-prebuilt') or (sys_platform != 'win32' and extra == 'extra-5-stamp-gpu') or (sys_platform != 'win32' and extra == 'extra-5-stamp-gpu-all') or (sys_platform != 'win32' and extra == 'extra-5-stamp-gpu-prebuilt') or (extra == 'extra-5-stamp-cpu' and extra == 'extra-5-stamp-gpu') or (extra == 'extra-5-stamp-cpu' and extra == 'extra-5-stamp-gpu-all') or (extra == 'extra-5-stamp-cpu' and extra == 'extra-5-stamp-gpu-prebuilt') or (extra == 'extra-5-stamp-gpu' and extra != 'extra-5-stamp-gpu-prebuilt') or (extra == 'extra-5-stamp-gpu-all' and extra != 'extra-5-stamp-gpu-prebuilt')" },
+    { name = "nvidia-cublas", marker = "(sys_platform == 'linux' and extra == 'extra-5-stamp-gpu') or (sys_platform == 'linux' and extra == 'extra-5-stamp-gpu-all') or (sys_platform == 'linux' and extra == 'extra-5-stamp-gpu-prebuilt') or (extra == 'extra-5-stamp-cpu' and extra == 'extra-5-stamp-gpu') or (extra == 'extra-5-stamp-cpu' and extra == 'extra-5-stamp-gpu-all') or (extra == 'extra-5-stamp-cpu' and extra == 'extra-5-stamp-gpu-prebuilt')" },
+    { name = "nvidia-cusparse", marker = "(sys_platform == 'linux' and extra == 'extra-5-stamp-gpu') or (sys_platform == 'linux' and extra == 'extra-5-stamp-gpu-all') or (sys_platform == 'linux' and extra == 'extra-5-stamp-gpu-prebuilt') or (extra == 'extra-5-stamp-cpu' and extra == 'extra-5-stamp-gpu') or (extra == 'extra-5-stamp-cpu' and extra == 'extra-5-stamp-gpu-all') or (extra == 'extra-5-stamp-cpu' and extra == 'extra-5-stamp-gpu-prebuilt')" },
+    { name = "nvidia-nvjitlink", marker = "(sys_platform == 'linux' and extra == 'extra-5-stamp-gpu') or (sys_platform == 'linux' and extra == 'extra-5-stamp-gpu-all') or (sys_platform == 'linux' and extra == 'extra-5-stamp-gpu-prebuilt') or (extra == 'extra-5-stamp-cpu' and extra == 'extra-5-stamp-gpu') or (extra == 'extra-5-stamp-cpu' and extra == 'extra-5-stamp-gpu-all') or (extra == 'extra-5-stamp-cpu' and extra == 'extra-5-stamp-gpu-prebuilt')" },
 ]
 wheels = [
     { url = "https://files.pythonhosted.org/packages/c8/c3/b30c9e935fc01e3da443ec0116ed1b2a009bb867f5324d3f2d7e533e776b/nvidia_cusolver-12.0.4.66-py3-none-manylinux_2_27_aarch64.whl", hash = "sha256:02c2457eaa9e39de20f880f4bd8820e6a1cfb9f9a34f820eb12a155aa5bc92d2", size = 223467760, upload-time = "2025-09-04T08:33:04.222Z" },
@@ -2117,7 +2137,7 @@ name = "nvidia-cusparse"
 version = "12.6.3.3"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "nvidia-nvjitlink", marker = "(platform_machine != 'AMD64' and extra == 'extra-5-stamp-gpu') or (platform_machine != 'AMD64' and extra == 'extra-5-stamp-gpu-all') or (platform_machine != 'AMD64' and extra == 'extra-5-stamp-gpu-prebuilt') or (sys_platform != 'win32' and extra == 'extra-5-stamp-gpu') or (sys_platform != 'win32' and extra == 'extra-5-stamp-gpu-all') or (sys_platform != 'win32' and extra == 'extra-5-stamp-gpu-prebuilt') or (extra == 'extra-5-stamp-cpu' and extra == 'extra-5-stamp-gpu') or (extra == 'extra-5-stamp-cpu' and extra == 'extra-5-stamp-gpu-all') or (extra == 'extra-5-stamp-cpu' and extra == 'extra-5-stamp-gpu-prebuilt') or (extra == 'extra-5-stamp-gpu' and extra != 'extra-5-stamp-gpu-prebuilt') or (extra == 'extra-5-stamp-gpu-all' and extra != 'extra-5-stamp-gpu-prebuilt')" },
+    { name = "nvidia-nvjitlink", marker = "(sys_platform == 'linux' and extra == 'extra-5-stamp-gpu') or (sys_platform == 'linux' and extra == 'extra-5-stamp-gpu-all') or (sys_platform == 'linux' and extra == 'extra-5-stamp-gpu-prebuilt') or (extra == 'extra-5-stamp-cpu' and extra == 'extra-5-stamp-gpu') or (extra == 'extra-5-stamp-cpu' and extra == 'extra-5-stamp-gpu-all') or (extra == 'extra-5-stamp-cpu' and extra == 'extra-5-stamp-gpu-prebuilt')" },
 ]
 wheels = [
     { url = "https://files.pythonhosted.org/packages/f8/94/5c26f33738ae35276672f12615a64bd008ed5be6d1ebcb23579285d960a9/nvidia_cusparse-12.6.3.3-py3-none-manylinux2014_aarch64.manylinux_2_17_aarch64.whl", hash = "sha256:80bcc4662f23f1054ee334a15c72b8940402975e0eab63178fc7e670aa59472c", size = 162155568, upload-time = "2025-09-04T08:33:42.864Z" },
@@ -3267,6 +3287,7 @@ dependencies = [
     { name = "einops" },
     { name = "h5py" },
     { name = "huggingface-hub" },
+    { name = "imagecodecs" },
     { name = "jaxtyping" },
     { name = "lifelines" },
     { name = "lightning" },
@@ -3283,6 +3304,7 @@ dependencies = [
     { name = "pyyaml" },
     { name = "scikit-learn" },
     { name = "scipy" },
+    { name = "tifffile" },
     { name = "timm" },
     { name = "torchmetrics" },
     { name = "tqdm" },
@@ -3558,6 +3580,7 @@ requires-dist = [
     { name = "huggingface-hub", marker = "extra == 'conch'", specifier = ">=0.26.2" },
     { name = "huggingface-hub", marker = "extra == 'uni'", specifier = ">=0.26.2" },
     { name = "huggingface-hub", marker = "extra == 'virchow2'", specifier = ">=0.27.1" },
+    { name = "imagecodecs" },
     { name = "iopath", marker = "extra == 'gigapath'" },
     { name = "jaxtyping", specifier = "~=0.3.9" },
     { name = "jinja2", marker = "extra == 'cobra'", specifier = ">=3.1.4" },
@@ -3597,6 +3620,7 @@ requires-dist = [
     { name = "stamp", extras = ["musk-cpu", "flash-attention"], marker = "extra == 'musk'" },
     { name = "stamp", extras = ["plip-cpu"], marker = "extra == 'plip'" },
     { name = "stamp", extras = ["prism-cpu"], marker = "extra == 'prism'" },
+    { name = "tifffile", specifier = "~=2026.3.3" },
     { name = "timm", specifier = "~=1.0.25" },
     { name = "torch", marker = "extra == 'chief-ctranspath'", specifier = ">=2.0.0" },
     { name = "torch", marker = "extra == 'cpu'", specifier = "~=2.10.0", index = "https://download.pytorch.org/whl/cpu", conflict = { package = "stamp", extra = "cpu" } },
@@ -3681,14 +3705,14 @@ wheels = [
 
 [[package]]
 name = "tifffile"
-version = "2025.6.11"
+version = "2026.3.3"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "numpy" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/11/9e/636e3e433c24da41dd639e0520db60750dbf5e938d023b83af8097382ea3/tifffile-2025.6.11.tar.gz", hash = "sha256:0ece4c2e7a10656957d568a093b07513c0728d30c1bd8cc12725901fffdb7143", size = 370125, upload-time = "2025-06-12T04:49:38.839Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/c5/cb/2f6d79c7576e22c116352a801f4c3c8ace5957e9aced862012430b62e14f/tifffile-2026.3.3.tar.gz", hash = "sha256:d9a1266bed6f2ee1dd0abde2018a38b4f8b2935cb843df381d70ac4eac5458b7", size = 388745, upload-time = "2026-03-03T19:14:38.134Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/3a/d8/1ba8f32bfc9cb69e37edeca93738e883f478fbe84ae401f72c0d8d507841/tifffile-2025.6.11-py3-none-any.whl", hash = "sha256:32effb78b10b3a283eb92d4ebf844ae7e93e151458b0412f38518b4e6d2d7542", size = 230800, upload-time = "2025-06-12T04:49:37.458Z" },
+    { url = "https://files.pythonhosted.org/packages/1a/e4/e804505f87627cd8cdae9c010c47c4485fd8c1ce31a7dd0ab7fcc4707377/tifffile-2026.3.3-py3-none-any.whl", hash = "sha256:e8be15c94273113d31ecb7aa3a39822189dd11c4967e3cc88c178f1ad2fd1170", size = 243960, upload-time = "2026-03-03T19:14:35.808Z" },
 ]
 
 [[package]]
@@ -4303,11 +4327,10 @@ name = "xformers"
 version = "0.0.35"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "numpy", marker = "platform_machine != 'aarch64' or sys_platform != 'linux' or (extra == 'extra-5-stamp-cpu' and extra == 'extra-5-stamp-gpu') or (extra == 'extra-5-stamp-cpu' and extra == 'extra-5-stamp-gpu-all') or (extra == 'extra-5-stamp-cpu' and extra == 'extra-5-stamp-gpu-prebuilt')" },
-    { name = "torch", version = "2.10.0", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "(sys_platform == 'darwin' and extra == 'extra-5-stamp-cpu') or (extra == 'extra-5-stamp-cpu' and extra == 'extra-5-stamp-gpu') or (extra == 'extra-5-stamp-cpu' and extra == 'extra-5-stamp-gpu-all') or (extra == 'extra-5-stamp-cpu' and extra == 'extra-5-stamp-gpu-prebuilt')" },
-    { name = "torch", version = "2.10.0", source = { registry = "https://pypi.org/simple" }, marker = "(platform_machine != 'aarch64' and extra != 'extra-5-stamp-cpu' and extra != 'extra-5-stamp-gpu' and extra != 'extra-5-stamp-gpu-all' and extra != 'extra-5-stamp-gpu-prebuilt') or (sys_platform != 'linux' and extra != 'extra-5-stamp-cpu' and extra != 'extra-5-stamp-gpu' and extra != 'extra-5-stamp-gpu-all' and extra != 'extra-5-stamp-gpu-prebuilt') or (extra == 'extra-5-stamp-cpu' and extra == 'extra-5-stamp-gpu') or (extra == 'extra-5-stamp-cpu' and extra == 'extra-5-stamp-gpu-all') or (extra == 'extra-5-stamp-cpu' and extra == 'extra-5-stamp-gpu-prebuilt')" },
-    { name = "torch", version = "2.10.0+cpu", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "(platform_machine != 'aarch64' and sys_platform == 'linux' and extra == 'extra-5-stamp-cpu') or (sys_platform != 'darwin' and sys_platform != 'linux' and extra == 'extra-5-stamp-cpu') or (sys_platform == 'darwin' and extra == 'extra-5-stamp-cpu' and extra == 'extra-5-stamp-gpu') or (sys_platform == 'darwin' and extra == 'extra-5-stamp-cpu' and extra == 'extra-5-stamp-gpu-all') or (sys_platform == 'darwin' and extra == 'extra-5-stamp-cpu' and extra == 'extra-5-stamp-gpu-prebuilt') or (sys_platform == 'linux' and extra == 'extra-5-stamp-cpu' and extra == 'extra-5-stamp-gpu') or (sys_platform == 'linux' and extra == 'extra-5-stamp-cpu' and extra == 'extra-5-stamp-gpu-all') or (sys_platform == 'linux' and extra == 'extra-5-stamp-cpu' and extra == 'extra-5-stamp-gpu-prebuilt')" },
-    { name = "torch", version = "2.10.0+cu130", source = { registry = "https://download.pytorch.org/whl/cu130" }, marker = "(platform_machine != 'aarch64' and extra == 'extra-5-stamp-gpu') or (platform_machine != 'aarch64' and extra == 'extra-5-stamp-gpu-all') or (platform_machine != 'aarch64' and extra == 'extra-5-stamp-gpu-prebuilt') or (sys_platform != 'linux' and extra == 'extra-5-stamp-gpu') or (sys_platform != 'linux' and extra == 'extra-5-stamp-gpu-all') or (sys_platform != 'linux' and extra == 'extra-5-stamp-gpu-prebuilt') or (extra == 'extra-5-stamp-cpu' and extra == 'extra-5-stamp-gpu') or (extra == 'extra-5-stamp-cpu' and extra == 'extra-5-stamp-gpu-all') or (extra == 'extra-5-stamp-cpu' and extra == 'extra-5-stamp-gpu-prebuilt')" },
+    { name = "numpy", marker = "(platform_machine == 'x86_64' and sys_platform == 'linux') or (platform_machine == 'AMD64' and sys_platform == 'win32') or (sys_platform != 'darwin' and sys_platform != 'linux' and sys_platform != 'win32' and extra == 'extra-5-stamp-cpu') or (sys_platform != 'linux' and sys_platform != 'win32' and extra != 'extra-5-stamp-cpu' and extra != 'extra-5-stamp-gpu-prebuilt') or (sys_platform == 'win32' and extra == 'extra-5-stamp-cpu') or (sys_platform == 'win32' and extra != 'extra-5-stamp-gpu-prebuilt') or (sys_platform == 'darwin' and extra == 'extra-5-stamp-cpu' and extra == 'extra-5-stamp-gpu') or (sys_platform == 'darwin' and extra == 'extra-5-stamp-cpu' and extra == 'extra-5-stamp-gpu-all') or (sys_platform == 'darwin' and extra == 'extra-5-stamp-cpu' and extra == 'extra-5-stamp-gpu-prebuilt') or (sys_platform == 'darwin' and extra != 'extra-5-stamp-cpu' and extra != 'extra-5-stamp-gpu-prebuilt') or (sys_platform == 'linux' and extra == 'extra-5-stamp-cpu' and extra == 'extra-5-stamp-gpu') or (sys_platform == 'linux' and extra == 'extra-5-stamp-cpu' and extra == 'extra-5-stamp-gpu-all') or (sys_platform == 'linux' and extra == 'extra-5-stamp-cpu' and extra == 'extra-5-stamp-gpu-prebuilt')" },
+    { name = "torch", version = "2.10.0", source = { registry = "https://pypi.org/simple" }, marker = "(platform_machine == 'x86_64' and extra != 'extra-5-stamp-cpu' and extra != 'extra-5-stamp-gpu' and extra != 'extra-5-stamp-gpu-all' and extra != 'extra-5-stamp-gpu-prebuilt') or (sys_platform != 'linux' and extra != 'extra-5-stamp-cpu' and extra != 'extra-5-stamp-gpu' and extra != 'extra-5-stamp-gpu-all' and extra != 'extra-5-stamp-gpu-prebuilt') or (extra == 'extra-5-stamp-cpu' and extra == 'extra-5-stamp-gpu') or (extra == 'extra-5-stamp-cpu' and extra == 'extra-5-stamp-gpu-all') or (extra == 'extra-5-stamp-cpu' and extra == 'extra-5-stamp-gpu-prebuilt')" },
+    { name = "torch", version = "2.10.0+cpu", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "(platform_machine == 'x86_64' and sys_platform == 'linux' and extra == 'extra-5-stamp-cpu') or (sys_platform != 'darwin' and sys_platform != 'linux' and extra == 'extra-5-stamp-cpu') or (sys_platform == 'darwin' and extra == 'extra-5-stamp-cpu' and extra == 'extra-5-stamp-gpu') or (sys_platform == 'darwin' and extra == 'extra-5-stamp-cpu' and extra == 'extra-5-stamp-gpu-all') or (sys_platform == 'darwin' and extra == 'extra-5-stamp-cpu' and extra == 'extra-5-stamp-gpu-prebuilt') or (sys_platform == 'linux' and extra == 'extra-5-stamp-cpu' and extra == 'extra-5-stamp-gpu') or (sys_platform == 'linux' and extra == 'extra-5-stamp-cpu' and extra == 'extra-5-stamp-gpu-all') or (sys_platform == 'linux' and extra == 'extra-5-stamp-cpu' and extra == 'extra-5-stamp-gpu-prebuilt')" },
+    { name = "torch", version = "2.10.0+cu130", source = { registry = "https://download.pytorch.org/whl/cu130" }, marker = "(platform_machine == 'x86_64' and sys_platform == 'linux' and extra == 'extra-5-stamp-gpu') or (platform_machine == 'x86_64' and sys_platform == 'linux' and extra == 'extra-5-stamp-gpu-all') or (platform_machine == 'x86_64' and sys_platform == 'linux' and extra == 'extra-5-stamp-gpu-prebuilt') or (platform_machine == 'AMD64' and sys_platform == 'win32' and extra == 'extra-5-stamp-gpu') or (platform_machine == 'AMD64' and sys_platform == 'win32' and extra == 'extra-5-stamp-gpu-all') or (platform_machine == 'AMD64' and sys_platform == 'win32' and extra == 'extra-5-stamp-gpu-prebuilt') or (sys_platform != 'linux' and sys_platform != 'win32' and extra == 'extra-5-stamp-cpu' and extra == 'extra-5-stamp-gpu') or (sys_platform != 'linux' and sys_platform != 'win32' and extra == 'extra-5-stamp-cpu' and extra == 'extra-5-stamp-gpu-all') or (sys_platform != 'linux' and sys_platform != 'win32' and extra == 'extra-5-stamp-cpu' and extra == 'extra-5-stamp-gpu-prebuilt') or (sys_platform != 'linux' and sys_platform != 'win32' and extra == 'extra-5-stamp-gpu' and extra != 'extra-5-stamp-gpu-prebuilt') or (sys_platform != 'linux' and sys_platform != 'win32' and extra == 'extra-5-stamp-gpu-all' and extra != 'extra-5-stamp-gpu-prebuilt') or (sys_platform == 'linux' and extra == 'extra-5-stamp-cpu' and extra == 'extra-5-stamp-gpu') or (sys_platform == 'linux' and extra == 'extra-5-stamp-cpu' and extra == 'extra-5-stamp-gpu-all') or (sys_platform == 'linux' and extra == 'extra-5-stamp-cpu' and extra == 'extra-5-stamp-gpu-prebuilt') or (sys_platform == 'win32' and extra == 'extra-5-stamp-cpu' and extra == 'extra-5-stamp-gpu') or (sys_platform == 'win32' and extra == 'extra-5-stamp-cpu' and extra == 'extra-5-stamp-gpu-all') or (sys_platform == 'win32' and extra == 'extra-5-stamp-cpu' and extra == 'extra-5-stamp-gpu-prebuilt') or (sys_platform == 'win32' and extra == 'extra-5-stamp-gpu' and extra != 'extra-5-stamp-gpu-prebuilt') or (sys_platform == 'win32' and extra == 'extra-5-stamp-gpu-all' and extra != 'extra-5-stamp-gpu-prebuilt')" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/de/5a/6e27734bd793adc44d0b8d294e67cfacf4ec590572c1aef51d683fc7a791/xformers-0.0.35.tar.gz", hash = "sha256:f7fc183a58e4bf0e2ae339a18fb1b1d4a37854c0f2545b4f360fef001646ab76", size = 4258182, upload-time = "2026-02-20T20:33:05.417Z" }
 wheels = [

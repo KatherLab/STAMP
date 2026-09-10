@@ -15,7 +15,7 @@ from torch import Tensor
 from tqdm import tqdm
 
 import stamp
-from stamp.preprocessing.config import MultiplexMarkerConfig
+from stamp.preprocessing.config import ExtractorName, MultiplexMarkerConfig
 from stamp.preprocessing.extractor import (
     Extractor,
     MultiplexExtractor,
@@ -48,25 +48,50 @@ def extract_multiplex_(
     marker_configs: Sequence[MultiplexMarkerConfig],
     marker_metadata_csv: Path | None,
     generate_hash: bool,
+    process_step: str | None = None,
+    intensity_scale: float = 1.0,
     slide_start: int | None = None,
     slide_end: int | None = None,
 ) -> None:
     wsi_dir = wsi_dir.resolve()
-    marker_configs, marker_metadata_source = _autofill_marker_statistics(
-        marker_configs=marker_configs,
-        marker_metadata_csv=marker_metadata_csv,
-    )
+    if intensity_scale <= 0.0:
+        raise ValueError("intensity_scale must be positive for multiplex preprocessing")
+
+    is_kronos2 = extractor.identifier in {
+        ExtractorName.KRONOS2,
+        ExtractorName.KRONOS2_PER_MARKER,
+    }
+    if isinstance(extractor, MultiplexExtractor) and extractor.preprocess is not None:
+        # Marker-aware models (currently KRONOS2) own their normalization tables.
+        # Do not silently combine those statistics with STAMP's generic table.
+        marker_configs = list(marker_configs)
+        marker_metadata_source = None
+    else:
+        marker_configs, marker_metadata_source = _autofill_marker_statistics(
+            marker_configs=marker_configs,
+            marker_metadata_csv=marker_metadata_csv,
+        )
     marker_names = [marker.name for marker in marker_configs]
+    model_marker_names = marker_names
     marker_normalization = _marker_normalization(marker_configs)
 
     model = extractor.model.to(device).eval()
+    if is_kronos2 and marker_metadata_csv is not None:
+        from stamp.preprocessing.extractor.kronos2 import register_additional_markers
+
+        register_additional_markers(model, marker_metadata_csv)
+
     code_hash = get_processing_code_hash(Path(__file__))[:8]
     extractor_id = extractor.identifier
 
     feat_output_dir = (
-        output_dir / f"{extractor_id}-{code_hash}"
-        if generate_hash
-        else output_dir / extractor_id
+        output_dir / process_step
+        if process_step is not None
+        else (
+            output_dir / f"{extractor_id}-{code_hash}"
+            if generate_hash
+            else output_dir / extractor_id
+        )
     )
     feat_output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -95,6 +120,11 @@ def extract_multiplex_(
             "uses per-marker RGB tiles. Marker normalization is only applied for "
             "MultiplexExtractor implementations."
         )
+    elif isinstance(extractor, MultiplexExtractor) and extractor.preprocess is not None:
+        _logger.info(
+            "The selected multiplex extractor applies its own marker-aware "
+            "normalization; STAMP marker mean/std values are not used."
+        )
 
     for slide_path in (progress := tqdm(slide_paths)):
         progress.set_description(str(slide_path.relative_to(wsi_dir)))
@@ -110,6 +140,17 @@ def extract_multiplex_(
 
         try:
             slide = _read_slide(slide_path, required_channels=len(marker_configs))
+            if is_kronos2:
+                from stamp.preprocessing.sp_image import SPImage
+
+                patches, model_marker_names, coords = SPImage(
+                    slide,
+                    markers=marker_names,
+                    mpp=1.0,
+                ).to_patches(
+                    patch_size=patch_size,
+                    marker_subset=marker_names,
+                )
         except Exception:
             _logger.exception(f"error while reading multiplex slide {slide_path}")
             continue
@@ -122,6 +163,11 @@ def extract_multiplex_(
             ):
                 h5_fp.attrs["stamp_version"] = stamp.__version__
                 h5_fp.attrs["extractor"] = str(extractor.identifier)
+                if extractor.identifier == ExtractorName.KRONOS2_PER_MARKER:
+                    h5_fp.attrs["marker_embedding_method"] = (
+                        "independent_single_channel_cls"
+                    )
+                    h5_fp.attrs["patch_embedding_method"] = "mean_of_marker_embeddings"
                 h5_fp.attrs["feat_type"] = "tile"
                 h5_fp.attrs["unit"] = "px"
                 h5_fp.attrs["tile_size_px"] = patch_size
@@ -145,14 +191,22 @@ def extract_multiplex_(
 
                 datasets: _Datasets | None = None
                 patches_written = 0
-                for patch_batch, xs, ys in _iter_patch_batches(
-                    slide, patch_size=patch_size, batch_size=_MULTIPLEX_BATCH_SIZE
-                ):
+                if is_kronos2:
+                    patch_batches = _iter_array_patch_batches(
+                        patches, coords, batch_size=_MULTIPLEX_BATCH_SIZE
+                    )
+                else:
+                    patch_batches = _iter_patch_batches(
+                        slide, patch_size=patch_size, batch_size=_MULTIPLEX_BATCH_SIZE
+                    )
+                for patch_batch, xs, ys in patch_batches:
                     outputs = _encode_batch(
                         extractor=extractor,
                         model=model,
                         patch_batch=patch_batch,
                         marker_normalization=marker_normalization,
+                        marker_names=model_marker_names,
+                        intensity_scale=intensity_scale,
                     )
                     outputs = _normalize_outputs(outputs)
 
@@ -188,11 +242,6 @@ class _Datasets(dict[str, h5py.Dataset]):
 
 def _create_datasets(h5_fp: h5py.File, outputs: MultiplexFeatures) -> _Datasets:
     feat_dim = int(outputs.feats.shape[1])
-    n_markers = int(outputs.marker_embeddings.shape[1])
-    marker_feat_dim = int(outputs.marker_embeddings.shape[2])
-    token_y = int(outputs.token_embeddings.shape[2])
-    token_x = int(outputs.token_embeddings.shape[3])
-    token_feat_dim = int(outputs.token_embeddings.shape[4])
 
     feats_ds = h5_fp.create_dataset(
         "feats",
@@ -202,20 +251,8 @@ def _create_datasets(h5_fp: h5py.File, outputs: MultiplexFeatures) -> _Datasets:
     )
     h5_fp["patch_embeddings"] = feats_ds
 
-    return _Datasets(
+    datasets = _Datasets(
         feats=feats_ds,
-        marker_embeddings=h5_fp.create_dataset(
-            "marker_embeddings",
-            shape=(0, n_markers, marker_feat_dim),
-            maxshape=(None, n_markers, marker_feat_dim),
-            dtype="f4",
-        ),
-        token_embeddings=h5_fp.create_dataset(
-            "token_embeddings",
-            shape=(0, n_markers, token_y, token_x, token_feat_dim),
-            maxshape=(None, n_markers, token_y, token_x, token_feat_dim),
-            dtype="f4",
-        ),
         coord_x=h5_fp.create_dataset(
             "coord_x",
             shape=(0,),
@@ -229,6 +266,27 @@ def _create_datasets(h5_fp: h5py.File, outputs: MultiplexFeatures) -> _Datasets:
             dtype="i4",
         ),
     )
+    if outputs.marker_embeddings is not None:
+        n_markers = int(outputs.marker_embeddings.shape[1])
+        marker_feat_dim = int(outputs.marker_embeddings.shape[2])
+        datasets["marker_embeddings"] = h5_fp.create_dataset(
+            "marker_embeddings",
+            shape=(0, n_markers, marker_feat_dim),
+            maxshape=(None, n_markers, marker_feat_dim),
+            dtype="f4",
+        )
+    if outputs.token_embeddings is not None:
+        n_markers = int(outputs.token_embeddings.shape[1])
+        token_y = int(outputs.token_embeddings.shape[2])
+        token_x = int(outputs.token_embeddings.shape[3])
+        token_feat_dim = int(outputs.token_embeddings.shape[4])
+        datasets["token_embeddings"] = h5_fp.create_dataset(
+            "token_embeddings",
+            shape=(0, n_markers, token_y, token_x, token_feat_dim),
+            maxshape=(None, n_markers, token_y, token_x, token_feat_dim),
+            dtype="f4",
+        )
+    return datasets
 
 
 def _append_batch(
@@ -254,12 +312,20 @@ def _append_batch(
             copy=False,
         )
     )
-    datasets["marker_embeddings"][start:stop] = (
-        outputs.marker_embeddings.detach().cpu().numpy().astype(np.float32, copy=False)
-    )
-    datasets["token_embeddings"][start:stop] = (
-        outputs.token_embeddings.detach().cpu().numpy().astype(np.float32, copy=False)
-    )
+    if outputs.marker_embeddings is not None:
+        datasets["marker_embeddings"][start:stop] = (
+            outputs.marker_embeddings.detach()
+            .cpu()
+            .numpy()
+            .astype(np.float32, copy=False)
+        )
+    if outputs.token_embeddings is not None:
+        datasets["token_embeddings"][start:stop] = (
+            outputs.token_embeddings.detach()
+            .cpu()
+            .numpy()
+            .astype(np.float32, copy=False)
+        )
     datasets["coord_x"][start:stop] = xs.astype(np.int32, copy=False)
     datasets["coord_y"][start:stop] = ys.astype(np.int32, copy=False)
 
@@ -273,14 +339,14 @@ def _normalize_outputs(outputs: MultiplexFeatures) -> MultiplexFeatures:
         raise ValueError(
             f"expected feats to have shape (batch, feature), got {tuple(feats.shape)}"
         )
-    if marker_embeddings.ndim != 3:
+    if marker_embeddings is not None and marker_embeddings.ndim != 3:
         raise ValueError(
             "expected marker_embeddings to have shape "
             f"(batch, marker, feature), got {tuple(marker_embeddings.shape)}"
         )
-    if token_embeddings.ndim == 3:
+    if token_embeddings is not None and token_embeddings.ndim == 3:
         token_embeddings = token_embeddings.unsqueeze(2).unsqueeze(3)
-    if token_embeddings.ndim != 5:
+    if token_embeddings is not None and token_embeddings.ndim != 5:
         raise ValueError(
             "expected token_embeddings to have shape "
             f"(batch, marker, token_y, token_x, feature), got "
@@ -300,21 +366,31 @@ def _encode_batch(
     model: torch.nn.Module,
     patch_batch: Tensor,
     marker_normalization: tuple[Tensor, Tensor] | None,
+    marker_names: Sequence[str],
+    intensity_scale: float = 1.0,
 ) -> MultiplexFeatures:
     model_device = _model_device(model)
 
     with torch.inference_mode():
         if isinstance(extractor, MultiplexExtractor):
-            if marker_normalization is not None:
+            if extractor.preprocess is not None:
+                transformed = extractor.preprocess(model, patch_batch, marker_names)
+            elif marker_normalization is not None:
                 means, stds = marker_normalization
-                patch_batch = (patch_batch.float() - means) / stds
+                patch_batch = patch_batch.float() / intensity_scale
+                patch_batch = (patch_batch - means) / stds
+                transformed = patch_batch
             else:
                 patch_batch = patch_batch.float()
-            transformed = (
-                torch.stack([extractor.transform(patch) for patch in patch_batch])
-                if extractor.transform is not None
-                else patch_batch
-            )
+                transformed = patch_batch
+            if extractor.preprocess is None and extractor.transform is not None:
+                transformed = torch.stack(
+                    [extractor.transform(patch) for patch in transformed]
+                )
+            if extractor.forward_with_markers is not None:
+                return extractor.forward_with_markers(
+                    model, transformed.to(model_device), marker_names
+                )
             return extractor.forward(model, transformed.to(model_device))
 
         marker_embeddings = []
@@ -376,8 +452,8 @@ def _iter_patch_batches(
     for y in range(0, height - patch_size + 1, patch_size):
         for x in range(0, width - patch_size + 1, patch_size):
             patch = torch.from_numpy(
-                np.asarray(slide[:, y : y + patch_size, x : x + patch_size])
-            ).float()
+                np.ascontiguousarray(slide[:, y : y + patch_size, x : x + patch_size])
+            )
             patches.append(patch)
             xs.append(x)
             ys.append(y)
@@ -388,6 +464,24 @@ def _iter_patch_batches(
 
     if patches:
         yield torch.stack(patches), np.asarray(xs), np.asarray(ys)
+
+
+def _iter_array_patch_batches(
+    patches: np.ndarray,
+    coords: np.ndarray,
+    *,
+    batch_size: int,
+) -> Iterator[tuple[Tensor, np.ndarray, np.ndarray]]:
+    """Yield precomputed SPImage patches in STAMP's batched interface."""
+
+    for start in range(0, len(patches), batch_size):
+        stop = start + batch_size
+        batch_coords = coords[start:stop]
+        yield (
+            torch.from_numpy(np.ascontiguousarray(patches[start:stop])),
+            batch_coords[:, 0],
+            batch_coords[:, 1],
+        )
 
 
 def _read_slide(slide_path: Path, *, required_channels: int) -> np.ndarray:

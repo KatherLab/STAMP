@@ -12,6 +12,8 @@ __license__ = "MIT"
 
 class ExtractorName(StrEnum):
     KRONOS = "kronos"
+    KRONOS2 = "kronos2"
+    KRONOS2_PER_MARKER = "kronos2_per_marker"
     CTRANSPATH = "ctranspath"
     CHIEF_CTRANSPATH = "chief-ctranspath"
     CONCH = "conch"
@@ -69,6 +71,15 @@ class PreprocessingConfig(BaseModel, arbitrary_types_allowed=True):
     )
     generate_hash: bool = True
     parallel: bool = False
+    process_step: str | None = Field(
+        default=None,
+        min_length=1,
+        description=(
+            "Optional explicit name for the feature-output subdirectory. "
+            "When set, feature files are written to output_dir/process_step "
+            "instead of STAMP's extractor-name directory."
+        ),
+    )
 
     default_slide_mpp: SlideMPP | None = None
     """MPP of the slide to use if none can be inferred from the WSI"""
@@ -95,9 +106,20 @@ class PreprocessingConfig(BaseModel, arbitrary_types_allowed=True):
     marker_metadata_csv: Path | None = Field(
         default=None,
         description=(
-            "Optional CSV containing columns marker_name, marker_mean, marker_std. "
-            "When omitted, STAMP uses its bundled multiplex marker metadata file to "
-            "auto-fill missing marker mean/std values."
+            "Optional extractor-specific marker metadata. For KRONOS2, this is "
+            "the additional-marker CSV registered with the model and must contain "
+            "only markers absent from its shipped vocabulary. For other multiplex "
+            "extractors, it contains marker_name, marker_mean, marker_std and is "
+            "used to auto-fill STAMP's marker-normalization statistics."
+        ),
+    )
+    multiplex_intensity_scale: float = Field(
+        default=1.0,
+        gt=0.0,
+        description=(
+            "Value used to scale multiplex intensities before per-marker "
+            "mean/std normalization. Set to 255 for float images whose values "
+            "remain on an 8-bit intensity scale."
         ),
     )
 

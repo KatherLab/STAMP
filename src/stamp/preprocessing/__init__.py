@@ -123,6 +123,16 @@ def _resolve_extractor(
 
             return kronos()
 
+        case ExtractorName.KRONOS2:
+            from stamp.preprocessing.extractor.kronos2 import kronos2
+
+            return kronos2()
+
+        case ExtractorName.KRONOS2_PER_MARKER:
+            from stamp.preprocessing.extractor.kronos2 import kronos2_per_marker
+
+            return kronos2_per_marker()
+
         case ExtractorName.CTRANSPATH:
             from stamp.preprocessing.extractor.ctranspath import ctranspath
 
@@ -275,9 +285,11 @@ def extract_(
     brightness_cutoff: int | None,
     canny_cutoff: float | None,
     generate_hash: bool,
+    process_step: str | None = None,
     mode: PreprocessingMode = PreprocessingMode.WSI,
     marker_configs: Sequence[MultiplexMarkerConfig] | None = None,
     marker_metadata_csv: Path | None = None,
+    multiplex_intensity_scale: float = 1.0,
 ) -> None:
     """
     Extracts features from slides.
@@ -311,6 +323,8 @@ def extract_(
             marker_configs=marker_configs,
             marker_metadata_csv=marker_metadata_csv,
             generate_hash=generate_hash,
+            process_step=process_step,
+            intensity_scale=multiplex_intensity_scale,
             slide_start=slide_start,
             slide_end=slide_end,
         )

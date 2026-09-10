@@ -1,9 +1,12 @@
+import os
 from pathlib import Path
 
 import h5py
 import numpy as np
 import pytest
 import torch
+from huggingface_hub import hf_hub_download
+from huggingface_hub.errors import GatedRepoError
 from PIL import Image
 from tifffile import imwrite
 
@@ -239,6 +242,170 @@ def test_multiplex_preprocess_with_kronos_extractor_name(
         assert h5["marker_embeddings"].shape == (1, 2, 2)
         assert h5["token_embeddings"].shape == (1, 2, 1, 1, 2)
         assert np.allclose(h5["feats"][0], np.array([7.0, 7.0, 7.0], dtype=np.float32))
+
+
+def test_multiplex_preprocess_with_kronos2_extractor_name_unit(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    import stamp.preprocessing.extractor.kronos2 as kronos2_module
+
+    class _StubKronos2Model(torch.nn.Module):
+        def __init__(self) -> None:
+            super().__init__()
+            self.preprocess_calls: list[tuple[np.ndarray, list[str], str | None]] = []
+            self.forward_calls: list[list[str]] = []
+            self.additional_marker_csvs: list[str] = []
+
+        def register_additional_markers(self, csv_path: str) -> None:
+            self.additional_marker_csvs.append(csv_path)
+
+        def preprocess(
+            self,
+            batch: np.ndarray,
+            marker_names: list[str],
+            *,
+            preferred_dapi: str | None,
+        ) -> np.ndarray:
+            self.preprocess_calls.append((batch, marker_names, preferred_dapi))
+            return batch + 1.0
+
+        def forward(self, batch: torch.Tensor, marker_names: list[str]) -> torch.Tensor:
+            self.forward_calls.append(marker_names)
+            return batch.mean(dim=(1, 2, 3), keepdim=False).unsqueeze(1).repeat(1, 3)
+
+    model = _StubKronos2Model()
+    monkeypatch.setattr(
+        kronos2_module.AutoModel,
+        "from_pretrained",
+        lambda *_args, **_kwargs: model,
+    )
+
+    slide = np.array(
+        [
+            [[0, 255], [127, 64]],
+            [[1, 2], [3, 4]],
+        ],
+        dtype=np.uint8,
+    )
+    wsi_dir = tmp_path / "wsis"
+    wsi_dir.mkdir()
+    imwrite(wsi_dir / "slide.qptiff", slide)
+    marker_metadata_csv = tmp_path / "additional_markers.csv"
+    marker_metadata_csv.write_text("marker_name,mean,std\nDLL3,0.01,0.02\n")
+
+    extract_(
+        wsi_dir=wsi_dir,
+        output_dir=tmp_path / "output",
+        wsi_list=None,
+        cache_dir=None,
+        cache_tiles_ext="png",
+        extractor=ExtractorName.KRONOS2,
+        tile_size_px=TilePixels(2),
+        tile_size_um=Microns(256.0),
+        max_workers=1,
+        device="cpu",
+        default_slide_mpp=None,
+        brightness_cutoff=None,
+        canny_cutoff=None,
+        generate_hash=False,
+        mode=PreprocessingMode.MULTIPLEX,
+        marker_configs=[
+            MultiplexMarkerConfig(name="DAPI"),
+            MultiplexMarkerConfig(name="HER2"),
+        ],
+        marker_metadata_csv=marker_metadata_csv,
+    )
+
+    assert model.additional_marker_csvs == [str(marker_metadata_csv)]
+    assert len(model.preprocess_calls) == 1
+    preprocessed, marker_names, preferred_dapi = model.preprocess_calls[0]
+    assert marker_names == ["dapi", "her2"]
+    assert preferred_dapi == "dapi"
+    assert np.isclose(preprocessed[0, 0, 0, 1], 1.0)
+    assert model.forward_calls == [["dapi", "her2"]]
+
+    h5_path = next((tmp_path / "output").glob("kronos2/*.h5"))
+    with h5py.File(h5_path, "r") as h5:
+        assert set(h5.keys()) == {"coord_x", "coord_y", "feats", "patch_embeddings"}
+        assert h5["feats"].shape == (1, 3)
+        assert h5.attrs["extractor"] == "kronos2"
+
+
+@pytest.mark.slow
+def test_multiplex_preprocess_with_kronos2_extractor_name(tmp_path: Path) -> None:
+    """Run KRONOS2 on its official multiplex demo image.
+
+    This is opt-in because KRONOS2 is gated and downloading its model weights is
+    too expensive for the regular unit-test suite. Before running, authenticate
+    with ``hf auth login``, accept the model terms, and set
+    ``STAMP_RUN_KRONOS2_INTEGRATION=1``.
+    """
+
+    if os.environ.get("STAMP_RUN_KRONOS2_INTEGRATION") != "1":
+        pytest.skip("set STAMP_RUN_KRONOS2_INTEGRATION=1 to run the gated test")
+
+    try:
+        tiff_path = hf_hub_download(
+            repo_id="MahmoodLab/KRONOS2",
+            filename="demo_image/core.ome.tiff",
+        )
+        names_path = hf_hub_download(
+            repo_id="MahmoodLab/KRONOS2",
+            filename="demo_image/channel_names.txt",
+        )
+    except GatedRepoError:
+        pytest.skip("the active Hugging Face account cannot access MahmoodLab/KRONOS2")
+
+    marker_names = [
+        line.strip()
+        for line in Path(names_path).read_text().splitlines()
+        if line.strip()
+    ]
+    assert marker_names, "KRONOS2 demo is missing channel names"
+
+    wsi_dir = tmp_path / "wsis"
+    wsi_dir.mkdir()
+    (wsi_dir / "core.ome.tiff").symlink_to(tiff_path)
+
+    extract_(
+        wsi_dir=wsi_dir,
+        output_dir=tmp_path / "output",
+        wsi_list=None,
+        cache_dir=None,
+        cache_tiles_ext="png",
+        extractor=ExtractorName.KRONOS2,
+        tile_size_px=TilePixels(256),
+        tile_size_um=Microns(256.0),
+        max_workers=1,
+        device="cuda" if torch.cuda.is_available() else "cpu",
+        default_slide_mpp=None,
+        brightness_cutoff=None,
+        canny_cutoff=None,
+        generate_hash=False,
+        mode=PreprocessingMode.MULTIPLEX,
+        marker_configs=[MultiplexMarkerConfig(name=name) for name in marker_names],
+    )
+
+    h5_path = next((tmp_path / "output").glob("kronos2/*.h5"))
+    with h5py.File(h5_path, "r") as h5:
+        assert h5.attrs["extractor"] == "kronos2"
+        assert h5["feats"].shape[0] > 0
+        assert h5["feats"].shape[1] == 768
+
+
+def test_spimage_uses_official_float_scaling_and_edge_grid() -> None:
+    from stamp.preprocessing.sp_image import SPImage
+
+    image = np.arange(9, dtype=np.float32).reshape(1, 3, 3)
+    patches, marker_names, coords = SPImage(
+        image, markers=["CD-8"], mpp=1.0
+    ).to_patches(patch_size=2)
+
+    assert marker_names == ["cd_8"]
+    assert np.array_equal(coords, np.array([[0, 0], [1, 0], [0, 1], [1, 1]]))
+    assert patches.shape == (4, 1, 2, 2)
+    assert np.isclose(patches[0, 0, 1, 1], 4.0 / 400.0)
 
 
 def test_read_slide_reports_missing_imagecodecs(monkeypatch, tmp_path: Path) -> None:
