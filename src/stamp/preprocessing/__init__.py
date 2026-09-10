@@ -128,6 +128,11 @@ def _resolve_extractor(
 
             return kronos2()
 
+        case ExtractorName.KRONOS2_PER_MARKER:
+            from stamp.preprocessing.extractor.kronos2 import kronos2_per_marker
+
+            return kronos2_per_marker()
+
         case ExtractorName.CTRANSPATH:
             from stamp.preprocessing.extractor.ctranspath import ctranspath
 

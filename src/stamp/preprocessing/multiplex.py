@@ -57,7 +57,10 @@ def extract_multiplex_(
     if intensity_scale <= 0.0:
         raise ValueError("intensity_scale must be positive for multiplex preprocessing")
 
-    is_kronos2 = extractor.identifier == ExtractorName.KRONOS2
+    is_kronos2 = extractor.identifier in {
+        ExtractorName.KRONOS2,
+        ExtractorName.KRONOS2_PER_MARKER,
+    }
     if isinstance(extractor, MultiplexExtractor) and extractor.preprocess is not None:
         # Marker-aware models (currently KRONOS2) own their normalization tables.
         # Do not silently combine those statistics with STAMP's generic table.
@@ -160,6 +163,11 @@ def extract_multiplex_(
             ):
                 h5_fp.attrs["stamp_version"] = stamp.__version__
                 h5_fp.attrs["extractor"] = str(extractor.identifier)
+                if extractor.identifier == ExtractorName.KRONOS2_PER_MARKER:
+                    h5_fp.attrs["marker_embedding_method"] = (
+                        "independent_single_channel_cls"
+                    )
+                    h5_fp.attrs["patch_embedding_method"] = "mean_of_marker_embeddings"
                 h5_fp.attrs["feat_type"] = "tile"
                 h5_fp.attrs["unit"] = "px"
                 h5_fp.attrs["tile_size_px"] = patch_size
