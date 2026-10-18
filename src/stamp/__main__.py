@@ -169,9 +169,11 @@ def _run_cli(args: argparse.Namespace) -> None:
                 canny_cutoff=config.preprocessing.canny_cutoff,
                 cache_tiles_ext=config.preprocessing.cache_tiles_ext,
                 generate_hash=config.preprocessing.generate_hash,
+                process_step=config.preprocessing.process_step,
                 mode=config.preprocessing.mode,
                 marker_configs=config.preprocessing.markers,
                 marker_metadata_csv=config.preprocessing.marker_metadata_csv,
+                multiplex_intensity_scale=config.preprocessing.multiplex_intensity_scale,
             )
 
         case "encode_slides":
