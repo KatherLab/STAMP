@@ -325,6 +325,7 @@ def extract_(
             generate_hash=generate_hash,
             process_step=process_step,
             intensity_scale=multiplex_intensity_scale,
+            default_slide_mpp=default_slide_mpp,
             slide_start=slide_start,
             slide_end=slide_end,
         )

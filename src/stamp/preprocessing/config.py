@@ -82,7 +82,10 @@ class PreprocessingConfig(BaseModel, arbitrary_types_allowed=True):
     )
 
     default_slide_mpp: SlideMPP | None = None
-    """MPP of the slide to use if none can be inferred from the WSI"""
+    """Fallback microns per pixel for WSI or multiplex images without calibration.
+
+    Multiplex extraction records native MPP but does not resample images.
+    """
 
     # Background rejection
     brightness_cutoff: int | None = Field(240, gt=0, lt=255)

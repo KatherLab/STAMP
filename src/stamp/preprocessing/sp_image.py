@@ -61,7 +61,7 @@ class SPImage:
         image: str | os.PathLike[str] | np.ndarray,
         *,
         markers: Sequence[str],
-        mpp: float,
+        mpp: float | None,
     ) -> None:
         array = (
             imread(image)
@@ -77,6 +77,7 @@ class SPImage:
                 f"{len(markers)} marker names were given"
             )
         self.img = array
+        # Native physical calibration only; patch extraction stays in pixels.
         self.mpp = mpp
         self.markers = [_clean_marker_name(marker) for marker in markers]
 

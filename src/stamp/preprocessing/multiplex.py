@@ -7,6 +7,7 @@ from tempfile import NamedTemporaryFile
 
 import h5py
 import numpy as np
+import openslide
 import pandas as pd
 import torch
 from PIL import Image
@@ -21,7 +22,8 @@ from stamp.preprocessing.extractor import (
     MultiplexExtractor,
     MultiplexFeatures,
 )
-from stamp.types import DeviceLikeType, TilePixels
+from stamp.preprocessing.tiling import MPPExtractionError, get_slide_mpp_
+from stamp.types import DeviceLikeType, SlideMPP, TilePixels
 from stamp.utils.cache import get_processing_code_hash
 
 __author__ = "Marko van Treeck, OpenAI Codex"
@@ -52,6 +54,7 @@ def extract_multiplex_(
     intensity_scale: float = 1.0,
     slide_start: int | None = None,
     slide_end: int | None = None,
+    default_slide_mpp: SlideMPP | None = None,
 ) -> None:
     wsi_dir = wsi_dir.resolve()
     if intensity_scale <= 0.0:
@@ -140,13 +143,25 @@ def extract_multiplex_(
 
         try:
             slide = _read_slide(slide_path, required_channels=len(marker_configs))
+            try:
+                with openslide.open_slide(slide_path) as metadata_slide:
+                    source_mpp = get_slide_mpp_(
+                        metadata_slide, default_mpp=default_slide_mpp
+                    )
+            except (openslide.OpenSlideError, MPPExtractionError):
+                source_mpp = default_slide_mpp
+                _logger.warning(
+                    "%s: could not read slide MPP; using %s",
+                    slide_path,
+                    source_mpp if source_mpp is not None else "unknown resolution",
+                )
             if is_kronos2:
                 from stamp.preprocessing.sp_image import SPImage
 
                 patches, model_marker_names, coords = SPImage(
                     slide,
                     markers=marker_names,
-                    mpp=1.0,
+                    mpp=source_mpp,
                 ).to_patches(
                     patch_size=patch_size,
                     marker_subset=marker_names,
@@ -171,6 +186,8 @@ def extract_multiplex_(
                 h5_fp.attrs["feat_type"] = "tile"
                 h5_fp.attrs["unit"] = "px"
                 h5_fp.attrs["tile_size_px"] = patch_size
+                if source_mpp is not None:
+                    h5_fp.attrs["source_mpp"] = source_mpp
                 h5_fp.attrs["marker_names"] = np.asarray(marker_names, dtype=object)
                 h5_fp.attrs["marker_means"] = np.asarray(
                     [
