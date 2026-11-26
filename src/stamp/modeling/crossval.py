@@ -334,6 +334,8 @@ def categorical_crossval_(
                         ),
                         predictions=cast(Mapping[PatientId, torch.Tensor], predictions),
                         patient_label=config.patient_label,
+                        time_label=config.time_label or "time",
+                        status_label=config.status_label or "event",
                         cut_off=getattr(model.hparams, "train_pred_median", None),
                     ).to_csv(split_dir / "patient-preds.csv", index=False)
             elif config.task == "regression":
